@@ -1,5 +1,6 @@
 package com.bloomlet.herobrine;
 
+import com.bloomlet.herobrine.entity.HauntingSpawner;
 import com.bloomlet.herobrine.entity.ModEntities;
 
 import net.fabricmc.api.ModInitializer;
@@ -24,6 +25,7 @@ public class HerobrineMod implements ModInitializer {
 		// Proceed with mild caution.
 
 		ModEntities.register();
+		HauntingSpawner.register();
 
 		LOGGER.info("Herobrine is watching.");
 	}

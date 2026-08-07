@@ -1,5 +1,8 @@
 package com.bloomlet.herobrine.entity;
 
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
@@ -56,11 +59,37 @@ public class HerobrineEntity extends PathfinderMob {
 			// he was always standing there.
 			this.getNavigation().stop();
 			if (++this.watchedTicks > 40) {
-				this.discard();
+				this.vanish();
 			}
 		} else {
 			this.watchedTicks = 0;
 		}
+	}
+
+	/**
+	 * Leaves in a puff rather than blinking out.
+	 *
+	 * discard() alone is instantaneous and reads as a bug — you are never sure
+	 * whether he left or the game hiccuped. Smoke and a sound at the position
+	 * he occupied make it deliberate.
+	 *
+	 * level().playSound rather than this.playSound: he is isSilent(), which
+	 * suppresses entity-emitted sound, and that suppression is wanted
+	 * everywhere except here.
+	 */
+	private void vanish() {
+		if (this.level() instanceof ServerLevel server) {
+			server.sendParticles(
+				ParticleTypes.LARGE_SMOKE,
+				this.getX(), this.getY() + 1.0, this.getZ(),
+				30, 0.3, 0.7, 0.3, 0.02
+			);
+			server.playSound(
+				null, this.getX(), this.getY(), this.getZ(),
+				SoundEvents.ENDERMAN_TELEPORT, this.getSoundSource(), 0.7F, 0.6F
+			);
+		}
+		this.discard();
 	}
 
 	/**

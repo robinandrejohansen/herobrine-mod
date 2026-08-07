@@ -35,7 +35,12 @@ def index():
             if i == -1 or j == -1 or k == -1:
                 continue
             name = raw[i + 8:j].decode("utf-8", "replace")
-            out[name] = raw[k:].decode("utf-8", "replace")
+            # The java is followed by an "LNUM" line-number table containing
+            # NUL bytes. Left in, every dump looks like a binary file to grep
+            # and matches are silently suppressed. Cut it.
+            end = raw.find(b"LNUM", k)
+            body = raw[k:end] if end != -1 else raw[k:]
+            out[name] = body.decode("utf-8", "replace")
     return out
 
 def main():
