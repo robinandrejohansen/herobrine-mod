@@ -182,7 +182,14 @@ You need a wall within 10 blocks — stand in a tunnel, a cave, or your base.
 /herobrine provoke the_page
 ```
 
-- [ ] A **written book** appears on the floor behind you, titled `torn page 1`
+- [ ] A **written book** appears titled `torn page 1` — **inside a nearby
+      chest** if there is one, otherwise on the floor behind you. Put a chest
+      down and provoke to see the chest path
+- [ ] Floor pages **do not despawn** — walk away for ten minutes, come back,
+      it is still lying there
+- [ ] Provoke again *without* collecting the first: **nothing happens**. There
+      is never a second page while one is still waiting
+- [ ] Collect it, then provoke: page 2 arrives
 - [ ] Right-click to read it — it uses Minecraft's own book UI
 - [ ] The author shows as a single dash, not a name
 - [ ] Provoke repeatedly: pages arrive **in order**, 1, 2, 3…
