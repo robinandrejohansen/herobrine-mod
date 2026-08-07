@@ -130,11 +130,19 @@ public final class ConfinedPlacement {
 			&& level.getFluidState(pos).isEmpty();
 	}
 
-	/** Room for a person, on a floor, out of any liquid. */
+	/**
+	 * Room for a person, on a floor, out of any liquid.
+	 *
+	 * isFaceSturdy rather than isSolid: the latter demands a full cube, so he
+	 * refused to stand on slabs, stairs, paths and a great deal of ordinary
+	 * cave floor, and placement failed for reasons no player could have
+	 * guessed at.
+	 */
 	public static boolean canStand(ServerLevel level, BlockPos pos) {
 		return passable(level, pos)
 			&& passable(level, pos.above())
-			&& level.getBlockState(pos.below()).isSolid();
+			&& level.getBlockState(pos.below())
+				.isFaceSturdy(level, pos.below(), Direction.UP);
 	}
 
 	private static boolean isBehind(ServerPlayer player, Vec3 look, BlockPos pos) {

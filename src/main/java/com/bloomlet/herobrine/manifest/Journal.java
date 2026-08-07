@@ -13,6 +13,7 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -305,15 +306,44 @@ public final class Journal {
 
 	/** Somewhere on the floor near the player, out of their current view. */
 	private static BlockPos onFloor(ServerLevel level, ServerPlayer player, int number) {
+		// Behind the player first. If the surroundings genuinely offer nowhere
+		// — a ledge, a boat, a one-block ledge in a ravine — widen out and
+		// accept anywhere far enough away that a small item settling is not
+		// something you would catch happening.
+		BlockPos spot = searchFloor(level, player, SEARCH_RADIUS, true);
+		if (spot == null) {
+			spot = searchFloor(level, player, SEARCH_RADIUS + 8, false);
+		}
+		if (spot == null) {
+			return null;
+		}
+
+		ItemEntity dropped = new ItemEntity(level,
+			spot.getX() + 0.5, spot.getY() + 0.2, spot.getZ() + 0.5, page(number));
+		dropped.setDeltaMovement(Vec3.ZERO);
+		// It waits. A page that despawns after five minutes is a hole in the
+		// account that nothing can fill, and the whole point is that the
+		// player finds it in their own time.
+		dropped.setUnlimitedLifetime();
+		level.addFreshEntity(dropped);
+		return spot;
+	}
+
+	private static BlockPos searchFloor(ServerLevel level, ServerPlayer player,
+	                                    int r, boolean behindOnly) {
 		List<BlockPos> candidates = new ArrayList<>();
 		BlockPos origin = player.blockPosition();
 		Vec3 look = player.getViewVector(1.0F).normalize();
-		int r = SEARCH_RADIUS;
 
 		for (BlockPos pos : BlockPos.betweenClosed(
 				origin.offset(-r, -3, -r), origin.offset(r, 3, r))) {
+			// isSolid() demands a full cube, so slabs, stairs, paths, farmland
+			// and a great deal of ordinary terrain all failed it and placement
+			// silently gave up. isFaceSturdy is the actual "something can rest
+			// here" test.
 			if (!level.getBlockState(pos).isAir()
-				|| !level.getBlockState(pos.below()).isSolid()) {
+				|| !level.getBlockState(pos.below())
+					.isFaceSturdy(level, pos.below(), Direction.UP)) {
 				continue;
 			}
 			double distance = Math.sqrt(pos.distSqr(origin));
@@ -325,24 +355,17 @@ public final class Journal {
 				pos.getY() + 0.5 - player.getEyeY(),
 				pos.getZ() + 0.5 - player.getZ()
 			).normalize();
-			if (look.dot(toPos) > 0.1) {
+			if (behindOnly && look.dot(toPos) > 0.1) {
 				continue;   // never watched appearing
+			}
+			if (!behindOnly && distance < 14.0 && look.dot(toPos) > 0.1) {
+				continue;   // in the widened pass, only far enough ahead
 			}
 			candidates.add(pos.immutable());
 		}
 		if (candidates.isEmpty()) {
 			return null;
 		}
-		BlockPos spot = candidates.get(level.getRandom().nextInt(candidates.size()));
-
-		ItemEntity dropped = new ItemEntity(level,
-			spot.getX() + 0.5, spot.getY() + 0.2, spot.getZ() + 0.5, page(number));
-		dropped.setDeltaMovement(Vec3.ZERO);
-		// It waits. A page that despawns after five minutes is a hole in the
-		// account that nothing can fill, and the whole point is that the
-		// player finds it in their own time.
-		dropped.setUnlimitedLifetime();
-		level.addFreshEntity(dropped);
-		return spot;
+		return candidates.get(level.getRandom().nextInt(candidates.size()));
 	}
 }
