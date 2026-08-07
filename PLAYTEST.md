@@ -85,7 +85,30 @@ The main event. No commands.
 > Too rare to test comfortably? Say so and I will drop the spawn chance
 > temporarily. It is one constant.
 
-### A7 — He does not wreck anything
+### A7 — Wrath and pacing (Step 1)
+
+Mostly invisible by design. These commands are the window into it — they need
+cheats, same as `/summon`.
+
+- [ ] `/herobrine status` prints wrath, phase, your share, and seconds until
+      your next possible manifestation
+- [ ] Kill a few mobs — wrath goes up by 1 each
+- [ ] Sleep in a bed — wrath jumps by 12
+- [ ] Stand below y=0 for a minute — wrath rises faster than on the surface
+- [ ] Die — wrath drops by 40 (he is satisfied, briefly)
+- [ ] `/herobrine wrath 250` — phase should move to **TRESPASSER**
+- [ ] Phase names in order: RUMOUR → WATCHER → TRESPASSER → MIMIC → HUNTER →
+      SIEGE
+- [ ] `/herobrine provoke` makes him appear immediately (if the spot allows)
+- [ ] `/herobrine provoke` twice in a row: the second says *nothing —
+      suppressed*, because the same event cannot fire consecutively
+- [ ] Quit to title and rejoin — **wrath is still there**
+
+> At wrath 0 you are in RUMOUR, which is below the stare's minimum phase — so
+> a brand new world gives you nothing at all until wrath reaches 60. That is
+> correct. Use `/herobrine wrath 60` to skip ahead when testing.
+
+### A8 — He does not wreck anything
 
 - [ ] He never breaks blocks
 - [ ] He never opens or takes from chests
@@ -102,7 +125,6 @@ Do not report these as bugs — they are simply not written.
 |---|---|
 | **He can be killed** | He has 40 health and no protection, so you can just hit him. Per the design he should be unkillable until the Effigy — not implemented. |
 | **He drops nothing** | No loot table yet. |
-| **Wrath / escalation** | No memory at all. His behaviour today is identical on minute one and hour fifty. |
 | **Signs, builds, theft** | None. |
 | **Possessed mobs, mimicry** | None. |
 | **Chasing, flying, attacking** | None. He only ever stalks and stares. |

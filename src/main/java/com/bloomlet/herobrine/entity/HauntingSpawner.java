@@ -1,9 +1,6 @@
 package com.bloomlet.herobrine.entity;
 
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -14,7 +11,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Puts him in the world on his own, rather than waiting for /summon.
+ * Places him in the world. WHEN is the director's call, not this class's.
  *
  * Deliberately NOT vanilla natural spawning. Biome spawn rules would give him
  * a spawn weight and a pack size, which means groups of Herobrines in caves —
@@ -33,11 +30,6 @@ import net.minecraft.world.phys.Vec3;
 public final class HauntingSpawner {
 	private HauntingSpawner() {}
 
-	/** How often to consider haunting a player. 200 ticks = 10 seconds. */
-	private static final int CHECK_INTERVAL = 200;
-	/** Chance per check, per player. Rare on purpose — the rarity IS the effect. */
-	private static final int ONE_IN = 10;
-
 	private static final double MIN_RADIUS = 26.0;
 	private static final double MAX_RADIUS = 44.0;
 	/** 0-15. 7 and below is "dark enough for monsters". */
@@ -47,33 +39,21 @@ public final class HauntingSpawner {
 	/** Above this, the position is in front of the player and unusable. */
 	private static final double IN_VIEW_DOT = 0.25;
 
-	private static int tickCounter;
-
-	public static void register() {
-		ServerTickEvents.END_SERVER_TICK.register(HauntingSpawner::onServerTick);
-	}
-
-	private static void onServerTick(MinecraftServer server) {
-		if (++tickCounter % CHECK_INTERVAL != 0) {
-			return;
-		}
-		for (ServerLevel level : server.getAllLevels()) {
-			for (ServerPlayer player : level.players()) {
-				if (level.getRandom().nextInt(ONE_IN) == 0) {
-					tryHaunt(level, player);
-				}
-			}
-		}
-	}
-
-	private static void tryHaunt(ServerLevel level, ServerPlayer player) {
+	/**
+	 * Places him behind the player, if the world allows it.
+	 *
+	 * @return false when it could not happen — too bright, nowhere to stand, or
+	 *         one of him is already nearby. The director treats that as a quiet
+	 *         night rather than retrying.
+	 */
+	public static boolean spawnBehind(ServerLevel level, ServerPlayer player) {
 		if (player.isSpectator() || !player.isAlive()) {
-			return;
+			return false;
 		}
 
 		AABB nearby = player.getBoundingBox().inflate(SOLITUDE_RADIUS);
 		if (!level.getEntitiesOfClass(HerobrineEntity.class, nearby).isEmpty()) {
-			return;
+			return false;
 		}
 
 		RandomSource random = level.getRandom();
@@ -97,7 +77,7 @@ public final class HauntingSpawner {
 
 			HerobrineEntity herobrine = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
 			if (herobrine == null) {
-				return;
+				return false;
 			}
 			// Face him at the player from the moment he exists. Turning to
 			// look at you afterwards would give away that he just arrived.
@@ -106,8 +86,9 @@ public final class HauntingSpawner {
 			float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
 			herobrine.snapTo(x + 0.5, y, z + 0.5, yaw, 0.0F);
 			level.addFreshEntity(herobrine);
-			return;
+			return true;
 		}
+		return false;
 	}
 
 	/** True if the position falls inside the player's rough view cone. */
