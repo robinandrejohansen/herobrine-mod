@@ -21,23 +21,27 @@ Cheats: ON → Start LAN World**.
 
 Do this at **midday, above ground** (`/time set day`).
 
-- [ ] Skin is ashen grey-brown, not Steve-coloured
+- [ ] He looks like **Steve** — same build, warm skin, brown hair, short
+      sleeves, blue jeans, grey shoes
+- [ ] The shirt is **oxblood red**, not Steve's cyan
 - [ ] Eyes are **dark hollow sockets** — not glowing, not white
-- [ ] Shirt is a rotted dark teal; jeans dark indigo
-- [ ] A **black jagged fissure** runs down the torso, both arms, both legs
-- [ ] Hair is near-black with a ragged (non-square) silhouette
+- [ ] Thin **near-black fissures** on the shirt, arms and legs
 - [ ] He casts a shadow and is lit normally by the sun
 
-> The point: he must read as menacing *in daylight too*. If he only works in
-> the dark, the texture failed.
+> The point is that he reads as *a person*, not a monster. A shambling corpse
+> is a mob; a man standing in your valley with your posture and no eyes is
+> someone. If he looks like a zombie variant, the texture failed.
 
 ### A3 — The glow
 
 Now `/time set midnight`, or go into an unlit cave.
 
 - [ ] Eyes are **pure white and fully bright**
-- [ ] The body fissures light up **cyan-white**
-- [ ] His **palms** glow (look at the underside of his hands)
+- [ ] The body fissures light up **violet**
+- [ ] His **palms** glow violet (look at the underside of his hands)
+- [ ] The two colours are clearly different — white eyes, violet everything
+      else. See [LORE.md](LORE.md): white is what is left of him, violet is
+      the thing wearing him.
 - [ ] The glowing parts are **exactly as bright in pitch darkness as in
       daylight** — they do not dim with the surroundings
 - [ ] The rest of him (skin, clothes, hair) *does* darken normally
@@ -96,7 +100,6 @@ Do not report these as bugs — they are simply not written.
 
 | Not there | Note |
 |---|---|
-| **The tattered shroud** | It is painted in the texture but does not render. He is on the zombie rig, which has no cloak layer. Known gap. |
 | **He can be killed** | He has 40 health and no protection, so you can just hit him. Per the design he should be unkillable until the Effigy — not implemented. |
 | **He drops nothing** | No loot table yet. |
 | **Wrath / escalation** | No memory at all. His behaviour today is identical on minute one and hour fifty. |
