@@ -103,8 +103,21 @@ public final class ManifestationDirector {
 			return null;
 		}
 
-		Manifestation chosen = pick(eligible, random);
-		boolean happened = chosen.run(level, player);
+		// Keep drawing until something actually runs. A pick that the world
+		// cannot accommodate is not restraint, it is a wasted slot — the
+		// player gets silence when a different event would have landed fine.
+		// Only genuine exhaustion of the pool means a quiet night.
+		Manifestation chosen = null;
+		boolean happened = false;
+		List<Manifestation> remaining = new ArrayList<>(eligible);
+		while (!remaining.isEmpty() && !happened) {
+			chosen = pick(remaining, phase, random);
+			remaining.remove(chosen);
+			happened = chosen.run(level, player);
+			if (!happened) {
+				HerobrineMod.LOGGER.debug("{} could not run here, trying another", chosen.name());
+			}
+		}
 
 		if (happened) {
 			recent.addLast(chosen);
@@ -126,19 +139,34 @@ public final class ManifestationDirector {
 		return happened ? chosen : null;
 	}
 
-	private static Manifestation pick(List<Manifestation> pool, RandomSource random) {
+	/**
+	 * Weighted pick, with the CURRENT phase's own content favoured heavily.
+	 *
+	 * Without this, every phase dilutes the one before it: by WATCHER the
+	 * stare is one option in four and you barely ever see him, even though he
+	 * is the entire point of that phase. Older content still appears — a late
+	 * world should still get a quiet footstep — it just stops drowning out
+	 * whatever the phase actually unlocked.
+	 */
+	private static final int CURRENT_PHASE_BOOST = 3;
+
+	private static Manifestation pick(List<Manifestation> pool, Phase phase, RandomSource random) {
 		int total = 0;
 		for (Manifestation m : pool) {
-			total += m.weight;
+			total += weightIn(m, phase);
 		}
 		int roll = random.nextInt(Math.max(1, total));
 		for (Manifestation m : pool) {
-			roll -= m.weight;
+			roll -= weightIn(m, phase);
 			if (roll < 0) {
 				return m;
 			}
 		}
 		return pool.get(pool.size() - 1);
+	}
+
+	private static int weightIn(Manifestation m, Phase phase) {
+		return m.minimum == phase ? m.weight * CURRENT_PHASE_BOOST : m.weight;
 	}
 
 	private static void reschedule(ServerPlayer player, ServerLevel level, MinecraftServer server) {
