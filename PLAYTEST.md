@@ -274,6 +274,10 @@ Needs a second client, or a friend on Open to LAN.
       different **share**
 - [ ] Signs address whoever they were written for, using that player's own
       habits — sleep, depth, deaths
+- [ ] **The Journal is one account, shared.** If player A collects page 3,
+      player B's next page is 4 — not their own page 3. There are never two
+      copies of the same page in the world
+- [ ] Either player can hand a page to the other; they are ordinary books
 
 ---
 

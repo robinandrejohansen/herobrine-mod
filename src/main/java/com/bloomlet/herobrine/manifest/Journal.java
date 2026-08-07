@@ -60,7 +60,23 @@ import net.minecraft.world.phys.Vec3;
 public final class Journal {
 	private Journal() {}
 
-	/** How far this player has read. Persistent, so it survives a rejoin. */
+	/**
+	 * How far the WORLD has got through the account — not the player.
+	 *
+	 * There was one journal. The elder brother wrote it once and tore it up
+	 * once, and no amount of multiplayer changes that. Per-player progress
+	 * would put two copies of page three in the same world, which breaks the
+	 * only guarantee this system makes.
+	 *
+	 * It also matches the split in DESIGN.md: the seal is shared, his
+	 * attention is personal. The journal is a physical object that predates
+	 * both players, so it sits firmly on the shared side, exactly like wrath.
+	 *
+	 * The consequence in play is a good one. Two players assemble one account
+	 * between them, which gives them something to compare and a reason to talk
+	 * — and since the pages are ordinary books, whoever finds one can hand it
+	 * over or leave it in a chest for the other to read.
+	 */
 	private static final AttachmentType<Integer> FOUND =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("journal_pages"), Codec.INT);
 
@@ -76,6 +92,7 @@ public final class Journal {
 	 * The consequence the player feels: every page exists exactly once, and no
 	 * page can be lost.
 	 */
+	/** Also world-level: there is one uncollected page, not one per player. */
 	private static final AttachmentType<long[]> OUTSTANDING =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("journal_outstanding"),
 			Codec.LONG.listOf().xmap(
@@ -104,8 +121,8 @@ public final class Journal {
 		HerobrineMod.LOGGER.debug("journal attachment registered");
 	}
 
-	public static int pagesFound(ServerPlayer player) {
-		return player.getAttachedOrElse(FOUND, 0);
+	public static int pagesFound(ServerLevel level) {
+		return level.getServer().overworld().getAttachedOrElse(FOUND, 0);
 	}
 
 	public static boolean leavePage(ServerLevel level, ServerPlayer player) {
@@ -120,7 +137,7 @@ public final class Journal {
 		}
 
 		// Either the next page, or the abandoned one being brought to them.
-		int next = reissue > 0 ? reissue : pagesFound(player) + 1;
+		int next = reissue > 0 ? reissue : pagesFound(level) + 1;
 
 		// Everything this phase allows has been read. He has nothing further
 		// to give yet, and inventing filler would be worse than silence.
@@ -140,8 +157,9 @@ public final class Journal {
 			removeAbandoned(level, player);
 		}
 
-		player.setAttached(FOUND, Math.max(pagesFound(player), next));
-		player.setAttached(OUTSTANDING,
+		ServerLevel shared = level.getServer().overworld();
+		shared.setAttached(FOUND, Math.max(pagesFound(level), next));
+		shared.setAttached(OUTSTANDING,
 			new long[] { spot.asLong(), next, level.getGameTime() });
 		HerobrineMod.LOGGER.info("journal page {} {} at [{}, {}, {}] for {}{}",
 			next, inChest ? "in a chest" : "on the floor",
@@ -183,7 +201,7 @@ public final class Journal {
 	 * @return the page number to move to the player, or 0 if nothing is stale
 	 */
 	private static int staleOutstanding(ServerLevel level, ServerPlayer player) {
-		long[] outstanding = player.getAttached(OUTSTANDING);
+		long[] outstanding = level.getServer().overworld().getAttached(OUTSTANDING);
 		if (outstanding == null || outstanding.length < 3) {
 			return 0;
 		}
@@ -198,7 +216,7 @@ public final class Journal {
 
 	/** Takes the abandoned copy back, so only one ever exists. */
 	private static void removeAbandoned(ServerLevel level, ServerPlayer player) {
-		long[] outstanding = player.getAttached(OUTSTANDING);
+		long[] outstanding = level.getServer().overworld().getAttached(OUTSTANDING);
 		if (outstanding == null || outstanding.length < 2) {
 			return;
 		}
@@ -224,7 +242,7 @@ public final class Journal {
 	}
 
 	private static boolean stillWaiting(ServerLevel level, ServerPlayer player) {
-		long[] outstanding = player.getAttached(OUTSTANDING);
+		long[] outstanding = level.getServer().overworld().getAttached(OUTSTANDING);
 		if (outstanding == null || outstanding.length < 2) {
 			return false;
 		}

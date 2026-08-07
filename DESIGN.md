@@ -335,6 +335,16 @@ Flagged honestly, to be resolved before the relevant phase is built.
   Sign text is chosen from the reading player's own stats, so two players at
   the same base get different words.
 
+  **The Journal is shared**, on the same reasoning as the seal. There was one
+  journal; the elder brother wrote it once and tore it up once. Two players
+  assemble one account between them, which gives them something to compare and
+  a reason to talk — and because the pages are ordinary books, whoever finds
+  one can hand it over or leave it in a chest.
+
+  A player joining a mature world therefore arrives partway through the story.
+  That is intended: they are joining a haunting already in progress, and the
+  earlier pages exist in the world for them to be shown.
+
   Still open: whether one player pushing the world to SIEGE is acceptable for
   a group that did not choose it. Currently it is, on the grounds that a
   haunting you can opt out of is not a haunting.

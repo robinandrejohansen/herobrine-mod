@@ -86,7 +86,7 @@ public final class HerobrineCommand {
 			+ "  |  share " + Wrath.getShare(player)
 			+ "  |  next in " + (seconds < 0 ? "unscheduled" : seconds + "s")
 			+ "  |  light here " + light + (light > 7 ? " (too bright for him)" : " (dark enough)")
-			+ "  |  pages " + com.bloomlet.herobrine.manifest.Journal.pagesFound(player)
+			+ "  |  pages " + com.bloomlet.herobrine.manifest.Journal.pagesFound(level)
 				+ "/" + com.bloomlet.herobrine.manifest.JournalPages.maxPageFor(phase)
 				+ " readable now"
 			+ (ManifestationDirector.speed() > 1 ? "  |  pacing x" + ManifestationDirector.speed() : "");
