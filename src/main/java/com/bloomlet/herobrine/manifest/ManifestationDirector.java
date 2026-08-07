@@ -116,7 +116,7 @@ public final class ManifestationDirector {
 			HerobrineMod.LOGGER.info("{} at [{}, {}, {}] for {}{}",
 				chosen.name(),
 				(int)player.getX(), (int)player.getY(), (int)player.getZ(),
-				player.getGameProfile().getName(),
+				player.getName().getString(),
 				forced ? " (forced)" : "");
 		}
 		// Reschedule either way, forced included — otherwise a debug provoke
