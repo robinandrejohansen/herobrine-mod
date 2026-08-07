@@ -14,6 +14,7 @@ import com.bloomlet.herobrine.wrath.Wrath;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -304,6 +305,24 @@ public final class ManifestationDirector {
 	public static void wasted(Manifestation manifestation, ServerPlayer player) {
 		recentFor(player).remove(manifestation);
 		HerobrineMod.LOGGER.debug("{} went unwitnessed — not counted", manifestation.name());
+	}
+
+	/**
+	 * Where the last manifestation put something.
+	 *
+	 * Debug only. Ruins are raised 28-60 blocks away out of sight, signs go
+	 * behind you and pages onto the floor of somewhere you are not looking —
+	 * all correct, and all of it means a tester has no idea where to go and
+	 * cannot tell "it worked but I missed it" from "it silently failed".
+	 */
+	private static @org.jspecify.annotations.Nullable BlockPos lastLocation;
+
+	public static void noteLocation(BlockPos pos) {
+		lastLocation = pos;
+	}
+
+	public static @org.jspecify.annotations.Nullable BlockPos lastLocation() {
+		return lastLocation;
 	}
 
 	/** Whether anything at all is eligible right now, for debug reporting. */

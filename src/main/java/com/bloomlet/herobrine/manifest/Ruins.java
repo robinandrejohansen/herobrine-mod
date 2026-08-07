@@ -76,6 +76,7 @@ public final class Ruins {
 			if (built == null) {
 				continue;
 			}
+			ManifestationDirector.noteLocation(base);
 			HerobrineMod.LOGGER.info("ruin ({}) raised at [{}, {}, {}]",
 				built, base.getX(), base.getY(), base.getZ());
 			return true;

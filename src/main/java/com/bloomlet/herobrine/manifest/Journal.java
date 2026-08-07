@@ -161,6 +161,7 @@ public final class Journal {
 		shared.setAttached(FOUND, Math.max(pagesFound(level), next));
 		shared.setAttached(OUTSTANDING,
 			new long[] { spot.asLong(), next, level.getGameTime() });
+		ManifestationDirector.noteLocation(spot);
 		HerobrineMod.LOGGER.info("journal page {} {} at [{}, {}, {}] for {}{}",
 			next, inChest ? "in a chest" : "on the floor",
 			spot.getX(), spot.getY(), spot.getZ(), player.getName().getString(),

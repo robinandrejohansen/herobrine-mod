@@ -219,8 +219,9 @@ You need a wall within 10 blocks — stand in a tunnel, a cave, or your base.
 /herobrine provoke the_ruin
 ```
 
-Stand somewhere open with flat ground around. Then **go and look for it** —
-it is raised 28-60 blocks away, out of your view.
+Stand somewhere open with flat ground around. **The command now tells you
+where it went** — `ran THE_RUIN | at -113 79 2 (41 blocks away)` — so you can
+walk to it rather than hunting. Signs and pages report their position too.
 
 - [ ] One of three appears: a **doorway** standing alone with nothing behind
       it, a **cairn** with a sign whose name is worn off, or the **footprint**

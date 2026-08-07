@@ -122,7 +122,8 @@ public final class HerobrineCommand {
 
 		Manifestation ran = ManifestationDirector.attempt(server, level, player, true);
 		if (ran != null) {
-			ctx.getSource().sendSuccess(() -> Component.literal("ran " + ran.name()), false);
+			ctx.getSource().sendSuccess(
+				() -> Component.literal("ran " + ran.name() + where(player)), false);
 			return 1;
 		}
 
@@ -173,9 +174,24 @@ public final class HerobrineCommand {
 		Manifestation chosen = match;
 		boolean ran = ManifestationDirector.runNamed(chosen, level, player);
 		ctx.getSource().sendSuccess(() -> Component.literal(
-			ran ? "ran " + chosen.name()
+			ran ? "ran " + chosen.name() + where(player)
 				: chosen.name() + " could not run here — wrong surroundings for it"), false);
 		return ran ? 1 : 0;
+	}
+
+	/**
+	 * Where it happened, and how far. Everything he does is placed out of
+	 * sight on purpose, which leaves a tester unable to tell "it worked and I
+	 * missed it" from "it quietly failed".
+	 */
+	private static String where(ServerPlayer player) {
+		net.minecraft.core.BlockPos pos = ManifestationDirector.lastLocation();
+		if (pos == null) {
+			return "";
+		}
+		int distance = (int)Math.sqrt(pos.distSqr(player.blockPosition()));
+		return "  |  at " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
+			+ " (" + distance + " blocks away)";
 	}
 
 	private static int wrath(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {

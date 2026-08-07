@@ -109,6 +109,7 @@ public final class Signs {
 		if (!(level.getBlockEntity(spot.pos) instanceof SignBlockEntity entity)) {
 			return false;
 		}
+		ManifestationDirector.noteLocation(spot.pos);
 		entity.setAttached(HIS, true);
 		entity.updateText(text -> {
 			net.minecraft.world.level.block.entity.SignText updated = text;
