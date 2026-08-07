@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "herobrine",
+  "version": "${version}",
+  "name": "Herobrine",
+  "description": "He was already in your world.",
+  "authors": [
+    "Robin Johansen"
+  ],
+  "contact": {},
+  "license": "CC0-1.0",
+  "icon": "assets/herobrine/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.bloomlet.herobrine.HerobrineMod"
+    ],
+    "client": [
+      "com.bloomlet.herobrine.client.HerobrineModClient"
+    ]
+  },
+  "mixins": [
+    "herobrine.mixins.json",
+    {
+      "config": "herobrine.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
