@@ -45,8 +45,13 @@ import org.jspecify.annotations.Nullable;
 public final class ConfinedPlacement {
 	private ConfinedPlacement() {}
 
-	private static final double MIN_DISTANCE = 10.0;
-	private static final double MAX_DISTANCE = 22.0;
+	/**
+	 * Just outside the 8-block radius at which he dissolves. Underground you
+	 * cannot see far, so there is little room between "he vanishes instantly"
+	 * and "too far to make out".
+	 */
+	private static final double MIN_DISTANCE = 9.0;
+	private static final double MAX_DISTANCE = 24.0;
 	/** Cap on flood-fill work. A cave system is effectively unbounded. */
 	private static final int MAX_NODES = 2000;
 	private static final int MAX_RADIUS = 24;
@@ -81,7 +86,12 @@ public final class ConfinedPlacement {
 				continue;
 			}
 
-			if (d >= MIN_DISTANCE && d <= MAX_DISTANCE
+			// Filter on REAL distance, not flood-fill depth. Ten steps round a
+			// twisting cave can be five blocks away in a straight line — well
+			// inside the radius where he dissolves on sight, so he would have
+			// arrived and instantly left.
+			double actual = Math.sqrt(pos.distSqr(start));
+			if (actual >= MIN_DISTANCE && actual <= MAX_DISTANCE
 				&& canStand(level, pos)
 				&& isBehind(player, look, pos)
 				&& hasLineOfSight(level, eye, pos)) {

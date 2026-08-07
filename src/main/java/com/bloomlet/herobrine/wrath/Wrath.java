@@ -36,6 +36,22 @@ public final class Wrath {
 	private static final AttachmentType<Integer> PLAYER_SHARE =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("wrath_share"), Codec.INT);
 
+	/**
+	 * Forces this class to initialise during mod setup.
+	 *
+	 * The AttachmentTypes above are created by the static initialiser, which
+	 * Java only runs when the class is first touched. Nothing touched it until
+	 * the first wrath event — which happens AFTER the world has loaded — so on
+	 * load Fabric found saved data referring to types it had never heard of,
+	 * logged "unknown attachment type", and discarded it. Every session
+	 * silently started from zero.
+	 *
+	 * Called from the mod initialiser purely for this side effect.
+	 */
+	public static void register() {
+		HerobrineMod.LOGGER.debug("wrath attachments registered");
+	}
+
 	public static int get(MinecraftServer server) {
 		return server.overworld().getAttachedOrElse(TOTAL, 0);
 	}

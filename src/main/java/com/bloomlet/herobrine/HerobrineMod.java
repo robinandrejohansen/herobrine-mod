@@ -2,6 +2,7 @@ package com.bloomlet.herobrine;
 
 import com.bloomlet.herobrine.entity.ModEntities;
 import com.bloomlet.herobrine.manifest.ManifestationDirector;
+import com.bloomlet.herobrine.wrath.Wrath;
 import com.bloomlet.herobrine.wrath.WrathTriggers;
 
 import net.fabricmc.api.ModInitializer;
@@ -25,6 +26,9 @@ public class HerobrineMod implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
+		// Must come first: it registers the attachment types, and they have to
+		// exist before any world is loaded or saved wrath is discarded.
+		Wrath.register();
 		ModEntities.register();
 		WrathTriggers.register();
 		ManifestationDirector.register();
