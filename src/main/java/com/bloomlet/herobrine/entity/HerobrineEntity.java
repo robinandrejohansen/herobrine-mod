@@ -26,6 +26,8 @@ public class HerobrineEntity extends PathfinderMob {
 	private int watchedTicks;
 	/** Ticks since he arrived. */
 	private int age;
+	/** Whether any player actually laid eyes on him before he left. */
+	private boolean witnessed;
 
 	/**
 	 * He leaves on his own after this long, seen or not.
@@ -86,6 +88,13 @@ public class HerobrineEntity extends PathfinderMob {
 
 		Player nearest = this.level().getNearestPlayer(this, 48.0);
 
+		// Did anyone actually see him? Not "was he rendered" — was he in
+		// someone's view, unobstructed. A visit nobody perceived should not
+		// count against the pacing budget (see ManifestationDirector).
+		if (nearest != null && !this.witnessed && inViewOf(nearest)) {
+			this.witnessed = true;
+		}
+
 		// You never get to reach him. Walking up to something that does not
 		// react is how a threat becomes an exhibit.
 		if (nearest != null && this.distanceTo(nearest) < TOO_CLOSE) {
@@ -123,7 +132,22 @@ public class HerobrineEntity extends PathfinderMob {
 	 * level().playSound rather than this.playSound: he is isSilent(), and that
 	 * suppression is wanted everywhere except here.
 	 */
+	/** Loosely in front of the player, with line of sight. Not aiming at him. */
+	private boolean inViewOf(Player player) {
+		Vec3 look = player.getViewVector(1.0F).normalize();
+		Vec3 toMe = new Vec3(
+			this.getX() - player.getX(),
+			this.getEyeY() - player.getEyeY(),
+			this.getZ() - player.getZ()
+		).normalize();
+		return look.dot(toMe) > 0.55 && player.hasLineOfSight(this);
+	}
+
 	private void vanish() {
+		if (!this.witnessed) {
+			com.bloomlet.herobrine.manifest.ManifestationDirector.wasted(
+				com.bloomlet.herobrine.manifest.Manifestation.THE_STARE);
+		}
 		if (this.level() instanceof ServerLevel server) {
 			double angle = this.random.nextDouble() * Math.PI * 2.0;
 			double distance = 14.0 + this.random.nextDouble() * 8.0;

@@ -198,6 +198,24 @@ public final class ManifestationDirector {
 		return Math.max(0, (due - server.overworld().getGameTime()) / 20);
 	}
 
+	/**
+	 * A manifestation happened and nobody perceived it.
+	 *
+	 * He is meant to be hard to catch — most visits should be missed, that is
+	 * the whole behaviour. But a visit nobody experienced has still spent a
+	 * window AND marked itself recently-used, so the next slot cannot give it
+	 * either. The player gets a double silence for content that was delivered
+	 * to an empty room.
+	 *
+	 * So an unwitnessed event is un-recorded: it may fire again immediately,
+	 * and the window is pulled in. He gets another go at being noticed
+	 * without the pacing budget paying for the miss.
+	 */
+	public static void wasted(Manifestation manifestation) {
+		recent.remove(manifestation);
+		HerobrineMod.LOGGER.debug("{} went unwitnessed — not counted", manifestation.name());
+	}
+
 	/** Whether anything at all is eligible right now, for debug reporting. */
 	public static boolean anythingEligible(MinecraftServer server) {
 		Phase phase = Wrath.phase(server);
