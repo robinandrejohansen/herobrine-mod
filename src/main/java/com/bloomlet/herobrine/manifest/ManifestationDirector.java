@@ -151,13 +151,14 @@ public final class ManifestationDirector {
 	private static final int CURRENT_PHASE_BOOST = 3;
 
 	private static Manifestation pick(List<Manifestation> pool, Phase phase, RandomSource random) {
+		Phase newest = newestWithContent(phase, pool);
 		int total = 0;
 		for (Manifestation m : pool) {
-			total += weightIn(m, phase);
+			total += weightIn(m, newest);
 		}
 		int roll = random.nextInt(Math.max(1, total));
 		for (Manifestation m : pool) {
-			roll -= weightIn(m, phase);
+			roll -= weightIn(m, newest);
 			if (roll < 0) {
 				return m;
 			}
@@ -165,8 +166,30 @@ public final class ManifestationDirector {
 		return pool.get(pool.size() - 1);
 	}
 
-	private static int weightIn(Manifestation m, Phase phase) {
-		return m.minimum == phase ? m.weight * CURRENT_PHASE_BOOST : m.weight;
+	private static int weightIn(Manifestation m, Phase newest) {
+		return m.minimum == newest ? m.weight * CURRENT_PHASE_BOOST : m.weight;
+	}
+
+	/**
+	 * The most recent phase that actually unlocked something.
+	 *
+	 * Not simply the current phase. A phase with no content of its own — which
+	 * every phase is until it gets built — would boost nothing, so the
+	 * previous phase's signature event silently loses its advantage and gets
+	 * outweighed by the older traces again. Crossing into TRESPASSER would
+	 * have made him appear LESS often than at WATCHER, which is backwards.
+	 *
+	 * Boosting the newest content the player has actually unlocked keeps the
+	 * most recent thing prominent regardless of which phases are still empty.
+	 */
+	private static Phase newestWithContent(Phase current, List<Manifestation> pool) {
+		Phase newest = Phase.RUMOUR;
+		for (Manifestation m : pool) {
+			if (current.atLeast(m.minimum) && m.minimum.ordinal() > newest.ordinal()) {
+				newest = m.minimum;
+			}
+		}
+		return newest;
 	}
 
 	private static void reschedule(ServerPlayer player, ServerLevel level, MinecraftServer server) {
