@@ -64,7 +64,8 @@ Now `/time set midnight`, or go into an unlit cave.
 - [ ] Leave him alone entirely: he goes on his own after **30 seconds**
 - [ ] Walk toward him: at about **8 blocks he is simply gone**. You can never
       reach him
-- [ ] He leaves a **puff of smoke** and a **teleport sound**
+- [ ] There is **no puff, no teleport sound** — he is just not there
+- [ ] A **single footstep sounds from somewhere else** a moment later
 - [ ] Look slightly off to the side instead — he stays indefinitely
 - [ ] Stand far away and glance at him — takes longer / does not trigger
       (the required aim gets tighter with distance)

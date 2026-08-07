@@ -1,6 +1,5 @@
 package com.bloomlet.herobrine.entity;
 
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EntityType;
@@ -107,26 +106,33 @@ public class HerobrineEntity extends PathfinderMob {
 	}
 
 	/**
-	 * Leaves in a puff rather than blinking out.
+	 * He is simply not there any more.
 	 *
-	 * discard() alone is instantaneous and reads as a bug — you are never sure
-	 * whether he left or the game hiccuped. Smoke and a sound at the position
-	 * he occupied make it deliberate.
+	 * No smoke, no teleport sound. An earlier version had both and they were
+	 * the same mistake as glow on his body: a departure effect announces a
+	 * supernatural ability, which files him alongside endermen. People do not
+	 * dissolve. The rule is that he is never seen arriving — the mirror of it
+	 * is that he is never seen leaving, and absence with nothing marking the
+	 * transition is far worse than any animation.
 	 *
-	 * level().playSound rather than this.playSound: he is isSilent(), which
-	 * suppresses entity-emitted sound, and that suppression is wanted
-	 * everywhere except here.
+	 * What replaces it is one footstep, once, from somewhere else. It does not
+	 * show anything and it does not explain anything. It only says he is not
+	 * gone, he has moved — which is the opposite of the closure a puff of
+	 * smoke gives you.
+	 *
+	 * level().playSound rather than this.playSound: he is isSilent(), and that
+	 * suppression is wanted everywhere except here.
 	 */
 	private void vanish() {
 		if (this.level() instanceof ServerLevel server) {
-			server.sendParticles(
-				ParticleTypes.LARGE_SMOKE,
-				this.getX(), this.getY() + 1.0, this.getZ(),
-				30, 0.3, 0.7, 0.3, 0.02
-			);
+			double angle = this.random.nextDouble() * Math.PI * 2.0;
+			double distance = 14.0 + this.random.nextDouble() * 8.0;
 			server.playSound(
-				null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.ENDERMAN_TELEPORT, this.getSoundSource(), 0.7F, 0.6F
+				null,
+				this.getX() + Math.cos(angle) * distance,
+				this.getY(),
+				this.getZ() + Math.sin(angle) * distance,
+				SoundEvents.STONE_STEP, this.getSoundSource(), 0.3F, 0.9F
 			);
 		}
 		this.discard();
