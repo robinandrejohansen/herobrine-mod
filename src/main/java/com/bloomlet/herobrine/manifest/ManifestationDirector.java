@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.wrath.Phase;
 import com.bloomlet.herobrine.wrath.Wrath;
 
@@ -110,6 +111,13 @@ public final class ManifestationDirector {
 			while (recent.size() > SUPPRESS_LAST) {
 				recent.removeFirst();
 			}
+			// Logged so a playtester can correlate what fired with what they
+			// felt. Without this the only record of a scare is a memory.
+			HerobrineMod.LOGGER.info("{} at [{}, {}, {}] for {}{}",
+				chosen.name(),
+				(int)player.getX(), (int)player.getY(), (int)player.getZ(),
+				player.getGameProfile().getName(),
+				forced ? " (forced)" : "");
 		}
 		// Reschedule either way, forced included — otherwise a debug provoke
 		// leaves the window armed and a natural manifestation lands seconds
