@@ -175,6 +175,31 @@ You need a wall within 10 blocks — stand in a tunnel, a cave, or your base.
 > meant to read them the wrong way. If they land as generic monster taunts
 > rather than as someone trying to make you stop, the writing has failed.
 
+### A7c — The Journal (TRESPASSER)
+
+```
+/herobrine wrath 200
+/herobrine provoke the_page
+```
+
+- [ ] A **written book** appears on the floor behind you, titled `torn page 1`
+- [ ] Right-click to read it — it uses Minecraft's own book UI
+- [ ] The author shows as a single dash, not a name
+- [ ] Provoke repeatedly: pages arrive **in order**, 1, 2, 3…
+- [ ] At TRESPASSER it stops at **page 6** and refuses to give more
+- [ ] `/herobrine wrath 500` (MIMIC) unlocks up to page 11; HUNTER 15; SIEGE 16
+- [ ] `/herobrine status` shows `pages 3/6 readable now`
+- [ ] Quit and rejoin — your progress is remembered, you do not restart at 1
+
+> The pages are the ONLY thing that carries the story. Read them in order and
+> judge whether the arc lands: ordinary → something is wrong with him → it is
+> not him → I cannot kill my brother → I sent him back → it is thinning.
+>
+> The handwriting is meant to degrade. Page 1 is a man writing carefully;
+> page 15 has lost its punctuation and page 16 is not the same person. Nothing
+> ever says he was losing his mind — if you notice it happening without being
+> told, it worked.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the

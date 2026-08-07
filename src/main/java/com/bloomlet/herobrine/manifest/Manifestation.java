@@ -40,6 +40,14 @@ public enum Manifestation {
 		}
 	},
 
+	/** A page of someone else's account, on the floor where you will find it. */
+	THE_PAGE(Phase.TRESPASSER, 9) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Journal.leavePage(level, player);
+		}
+	},
+
 	/** Four words on your wall. The first thing you cannot argue with. */
 	THE_SIGN(Phase.TRESPASSER, 14) {
 		@Override

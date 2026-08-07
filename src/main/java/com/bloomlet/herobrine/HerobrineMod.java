@@ -2,6 +2,7 @@ package com.bloomlet.herobrine;
 
 import com.bloomlet.herobrine.entity.ModEntities;
 import com.bloomlet.herobrine.manifest.ManifestationDirector;
+import com.bloomlet.herobrine.manifest.Journal;
 import com.bloomlet.herobrine.manifest.Signs;
 import com.bloomlet.herobrine.wrath.Wrath;
 import com.bloomlet.herobrine.wrath.WrathTriggers;
@@ -31,6 +32,7 @@ public class HerobrineMod implements ModInitializer {
 		// exist before any world is loaded or saved wrath is discarded.
 		Wrath.register();
 		Signs.register();
+		Journal.register();
 		ModEntities.register();
 		WrathTriggers.register();
 		ManifestationDirector.register();
