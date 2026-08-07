@@ -142,6 +142,31 @@ cheats, same as `/summon`.
 > a brand new world gives you nothing at all until wrath reaches 60. That is
 > correct. Use `/herobrine wrath 60` to skip ahead when testing.
 
+### A7b — Signs (TRESPASSER)
+
+```
+/herobrine wrath 200
+/herobrine provoke the_sign
+```
+
+You need a wall within 10 blocks — stand in a tunnel, a cave, or your base.
+
+- [ ] A sign appears on a wall **behind you**, never where you were looking
+- [ ] Short, lowercase, no punctuation: `go back`, `stop digging`,
+      `this is deep enough`
+- [ ] It is a normal oak sign — you can break it and keep it
+- [ ] Provoke it several times: **the same words never come back** for at
+      least six signs
+- [ ] `/herobrine wrath 500` (MIMIC) and provoke again — lines using **your
+      username** start appearing
+- [ ] **Break one of his signs**, then `/herobrine status`: wrath jumps by 60,
+      the biggest single rise in the mod
+- [ ] Break a sign *you* placed yourself — wrath does not move
+
+> The lines are warnings, not threats — see [LORE.md](LORE.md). The player is
+> meant to read them the wrong way. If they land as generic monster taunts
+> rather than as someone trying to make you stop, the writing has failed.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the

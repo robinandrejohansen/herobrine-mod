@@ -2,6 +2,7 @@ package com.bloomlet.herobrine;
 
 import com.bloomlet.herobrine.entity.ModEntities;
 import com.bloomlet.herobrine.manifest.ManifestationDirector;
+import com.bloomlet.herobrine.manifest.Signs;
 import com.bloomlet.herobrine.wrath.Wrath;
 import com.bloomlet.herobrine.wrath.WrathTriggers;
 
@@ -29,6 +30,7 @@ public class HerobrineMod implements ModInitializer {
 		// Must come first: it registers the attachment types, and they have to
 		// exist before any world is loaded or saved wrath is discarded.
 		Wrath.register();
+		Signs.register();
 		ModEntities.register();
 		WrathTriggers.register();
 		ManifestationDirector.register();

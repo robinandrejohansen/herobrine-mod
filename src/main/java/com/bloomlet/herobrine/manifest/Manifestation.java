@@ -40,6 +40,14 @@ public enum Manifestation {
 		}
 	},
 
+	/** Four words on your wall. The first thing you cannot argue with. */
+	THE_SIGN(Phase.TRESPASSER, 14) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Signs.write(level, player);
+		}
+	},
+
 	/** He is simply there, at distance, and gone when you look. */
 	THE_STARE(Phase.WATCHER, 10) {
 		@Override
