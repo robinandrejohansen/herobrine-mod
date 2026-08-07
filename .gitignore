@@ -38,3 +38,7 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# generated preview renders
+tools/preview_*.png
+tools/__pycache__/
