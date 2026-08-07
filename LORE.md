@@ -105,14 +105,22 @@ frightening. It only ever **leaks**.
 
 The leak is the visual language:
 
-- **Violet** is the thing. Corruption in his skin, the fissures, the light
-  under a sealed cave room, the tint in the rain.
-- **White** is what is left of him. Only his eyes. Nothing else.
+- **Violet** is the thing. The light under a sealed cave room, the tint in
+  the rain, the wrong colour of a swapped torch.
+- **White** is what is left of him — and *only* his eyes.
 
-Two glow colours, two meanings, and the balance shifts across the phases: at
-phase 1 the eyes dominate; by phase 5 the violet has spread over almost all of
-him and the white is nearly gone. **The player watches the brother disappear
-without ever being told that is what they are watching.**
+**Nothing glows on his body.** An early version bled violet through cracks in
+his skin and clothes and it was wrong: it read as magic, and magic is not
+frightening. It files him alongside every other glowing object in the game,
+and a player who can categorise a thing has stopped being afraid of it. An
+ordinary man whose eyes are wrong cannot be filed anywhere.
+
+So the violet belongs to the WORLD, not to him. He stays a person.
+
+The one exception is late: once he is openly hunting and the pretence of being
+a person is over, corruption on his skin becomes a texture swap. It lands
+because it is the first time his body has ever been wrong — which only works
+if it was never wrong before.
 
 ---
 

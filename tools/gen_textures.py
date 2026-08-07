@@ -13,22 +13,20 @@ texture drawn over the model by an EyesLayer at full brightness (the vanilla
 Enderman and spider pattern). Both files come from the art below so they
 cannot drift out of alignment.
 
-TWO GLOW COLOURS, TWO MEANINGS — see LORE.md:
+ONLY THE EYES GLOW.
 
-    WHITE   what is left of the brother. Only ever his eyes.
-    VIOLET  the thing wearing him, bleeding through the cracks.
+An earlier version bled violet corruption through cracks in his skin and
+clothes. It read as magic, and magic is not frightening — it files him under
+"enchanted thing" alongside every other glowing object in the game. An
+ordinary man whose eyes are wrong has nowhere to be filed, which is the whole
+effect.
 
-The balance is the story. Right now the eyes dominate and the violet is a
-few thin fissures; at later phases the violet spreads until the white is
-nearly gone, and the player watches him disappear without being told that is
-what they are watching.
+Corruption belongs to the late phases, as a texture swap once he is openly
+hunting and the pretence of being a person is gone. Not the baseline.
 
 Marker characters carry position only; each output picks its own colour:
 
-    3  eye         dark socket      -> white
-    1  crack core  near-black       -> bright violet
-    2  crack edge  near-black       -> dim violet
-    4  palm        shadowed skin    -> violet
+    3  eye   dark socket in light  ->  pure white, full bright
 
 Run:  python3 tools/gen_textures.py
 """
@@ -56,18 +54,12 @@ LIT = {
     # shoes
     "G": C("4A4A4A"), "g": C("5A5A5A"),
     # markers as they appear in normal light
-    "3": C("14100C"),
-    "1": C("2A1533"),
-    "2": C("1C0F22"),
-    "4": C("8A6242"),
+    "3": C("14100C"),   # eye socket
     "-": CLEAR,
 }
 GLOW = {k: CLEAR for k in LIT}
 GLOW.update({
-    "3": C("FFFFFF"),   # him
-    "1": C("E0B6FF"),   # it
-    "2": C("9B5FD6"),
-    "4": C("B87FE8"),
+    "3": C("FFFFFF"),   # the eyes, and nothing else
 })
 
 lit = [[CLEAR] * W for _ in range(W)]
@@ -134,28 +126,28 @@ paint("hat_top", [
 ])
 L["hat_bot"].fill(CLEAR); G["hat_bot"].fill(CLEAR)
 
-# ============================== BODY: one thin fissure, not a lightning storm
+# ================================================ BODY: just a shirt
 paint("body_f", [
     "EssssssE",   # collar
     "SSSSSSSS",
-    "SSS1SSSS",
-    "SSS2SSSS",
-    "SSSS1SSS",
-    "SSSS2SSS",
-    "SSS1SSSS",
-    "SSS2SSSS",
+    "SSSSSSSS",
+    "SSSSSSSS",
+    "SSSSSSSS",
+    "SSSSSSSS",
+    "SSSSSSSS",
+    "SSSSSSSS",
     "SSSSSSSS",
     "SSSSSSSS",
     "ESSSSSSE",
     "ESSSSSSE",
 ])
 paint("body_b", [
-    "EssssssE", "SSSSSSSS", "SSSS1SSS", "SSSS2SSS",
-    "SSS1SSSS", "SSS2SSSS", "SSSS1SSS", "SSSS2SSS",
+    "EssssssE", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS",
+    "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS",
     "SSSSSSSS", "SSSSSSSS", "ESSSSSSE", "ESSSSSSE",
 ])
 for f in ("body_r", "body_l"):
-    paint(f, ["EssE", "SSSS", "SSSS", "SS1S", "SS2S", "SSSS",
+    paint(f, ["EssE", "SSSS", "SSSS", "SSSS", "SSSS", "SSSS",
               "SSSS", "SSSS", "SSSS", "SSSS", "ESSE", "ESSE"])
 paint("body_top", ["EssssssE", "sSSSSSSs", "sSSSSSSs", "ESSSSSSE"])
 paint("body_bot", ["ESSSSSSE", "SSSSSSSS", "SSSSSSSS", "ESSSSSSE"])
@@ -168,23 +160,23 @@ for f in ("jac_f", "jac_b", "jac_r", "jac_l", "jac_top", "jac_bot",
           "lpant_f", "lpant_b", "lpant_r", "lpant_l", "lpant_top", "lpant_bot"):
     L[f].fill(CLEAR); G[f].fill(CLEAR)
 
-# ================================== ARMS: short sleeves, and it is in his hands
-arm =     ["EssE", "SSSS", "SS1S", "SS2S", "ESSE", "nnnn",
-           "nnnn", "nnnn", "nnnn", "nnnn", "n44n", "N44N"]
-arm_alt = ["EssE", "SSSS", "S1SS", "S2SS", "ESSE", "nnnn",
-           "nnnn", "nnnn", "nnnn", "nnnn", "n44n", "N44N"]
+# ============================================ ARMS: short sleeves, bare hands
+arm =     ["EssE", "SSSS", "SSSS", "SSSS", "ESSE", "nnnn",
+           "nnnn", "nnnn", "nnnn", "nnnn", "nnnn", "NnnN"]
+arm_alt = ["EssE", "SSSS", "SSSS", "SSSS", "ESSE", "nnnn",
+           "nnnn", "nnnn", "nnnn", "nnnn", "nnnn", "NnnN"]
 for pre in ("rarm", "larm"):
     paint(f"{pre}_f", arm)
     paint(f"{pre}_b", arm_alt)
     paint(f"{pre}_r", arm_alt)
     paint(f"{pre}_l", arm)
     paint(f"{pre}_top", ["EssE", "sSSs", "sSSs", "ESSE"])
-    paint(f"{pre}_bot", ["N44N", "4334", "4334", "N44N"])
+    paint(f"{pre}_bot", ["NnnN", "nnnn", "nnnn", "NnnN"])
 
 # ================================================= LEGS: jeans and grey shoes
-leg =     ["JJJJ", "JjjJ", "JJ1J", "JJ2J", "JJJJ", "JJJJ",
+leg =     ["JJJJ", "JjjJ", "JJJJ", "JJJJ", "JJJJ", "JJJJ",
            "JJJJ", "JJJJ", "JJJJ", "IIII", "GGGG", "GggG"]
-leg_alt = ["JJJJ", "JjjJ", "J1JJ", "J2JJ", "JJJJ", "JJJJ",
+leg_alt = ["JJJJ", "JjjJ", "JJJJ", "JJJJ", "JJJJ", "JJJJ",
            "JJJJ", "JJJJ", "JJJJ", "IIII", "GGGG", "GggG"]
 for pre in ("rleg", "lleg"):
     paint(f"{pre}_f", leg)
@@ -202,9 +194,10 @@ bad = [(n, x, y) for n in BASE for y in range(L[n].h) for x in range(L[n].w)
 assert not bad, f"{len(bad)} transparent pixels in the lit base layer, e.g. {bad[:5]}"
 
 eyes = sum(1 for row in glow for px in row if px == C("FFFFFF"))
-violet = sum(1 for row in glow for px in row
-             if px[3] == 255 and px != C("FFFFFF"))
-assert eyes and violet, "expected both white and violet emissive pixels"
+other = sum(1 for row in glow for px in row
+            if px[3] == 255 and px != C("FFFFFF"))
+assert eyes, "no emissive eye pixels"
+assert not other, f"{other} non-eye emissive pixels — only the eyes may glow"
 
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                    "..", "src", "main", "resources", "assets", "herobrine",
@@ -212,5 +205,4 @@ out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 os.makedirs(out, exist_ok=True)
 write_png(os.path.join(out, "herobrine.png"), lit)
 write_png(os.path.join(out, "herobrine_eyes.png"), glow)
-print(f"wrote herobrine.png + herobrine_eyes.png "
-      f"({eyes} white eye px, {violet} violet corruption px)")
+print(f"wrote herobrine.png + herobrine_eyes.png ({eyes} emissive eye px)")

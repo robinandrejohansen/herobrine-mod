@@ -25,7 +25,8 @@ Do this at **midday, above ground** (`/time set day`).
       sleeves, blue jeans, grey shoes
 - [ ] The shirt is **oxblood red**, not Steve's cyan
 - [ ] Eyes are **dark hollow sockets** — not glowing, not white
-- [ ] Thin **near-black fissures** on the shirt, arms and legs
+- [ ] **No cracks, no marks, nothing unusual on his body** — he is just a
+      person in ordinary clothes
 - [ ] He casts a shadow and is lit normally by the sun
 
 > The point is that he reads as *a person*, not a monster. A shambling corpse
@@ -37,13 +38,10 @@ Do this at **midday, above ground** (`/time set day`).
 Now `/time set midnight`, or go into an unlit cave.
 
 - [ ] Eyes are **pure white and fully bright**
-- [ ] The body fissures light up **violet**
-- [ ] His **palms** glow violet (look at the underside of his hands)
-- [ ] The two colours are clearly different — white eyes, violet everything
-      else. See [LORE.md](LORE.md): white is what is left of him, violet is
-      the thing wearing him.
-- [ ] The glowing parts are **exactly as bright in pitch darkness as in
-      daylight** — they do not dim with the surroundings
+- [ ] **Nothing else on him glows at all** — see [LORE.md](LORE.md): glow on
+      his body reads as magic, and magic is not frightening
+- [ ] The eyes are **exactly as bright in pitch darkness as in daylight** —
+      they do not dim with the surroundings
 - [ ] The rest of him (skin, clothes, hair) *does* darken normally
 
 > This is the emissive layer. If the eyes dim in the dark like the rest of
