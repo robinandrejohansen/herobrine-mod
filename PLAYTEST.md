@@ -60,10 +60,14 @@ Now `/time set midnight`, or go into an unlit cave.
 - [ ] **Chase him** — closing the distance raises wrath sharply. Check with
       `/herobrine status` before and after. Chasing him is supposed to be the
       mistake, not the solution
-- [ ] Chase him and **turn around**: he is standing where *you* were when he
-      arrived, facing you. No sound, no effect — you never see him move
-- [ ] Do it again and he relocates once more, then leaves for good. He cannot
-      be herded around indefinitely
+- [ ] Chase him and **turn around**: sometimes he is standing where *you*
+      were when he arrived, facing you. No sound, no effect — you never see
+      him move
+- [ ] Sometimes he just goes instead. **You should not be able to predict
+      which** — at WATCHER it is roughly one chase in three
+- [ ] `/herobrine wrath 200` (TRESPASSER) and chase again — it should happen
+      about half the time. At MIMIC (500) it should happen every time
+- [ ] He relocates at most twice per visit, then leaves for good
 - [ ] Roughly one visit in three, **torches near you go out as he leaves** —
       all dropped as items, nothing lost
 

@@ -126,6 +126,34 @@ The part that determines whether this feels crafted or random.
 
 ---
 
+## 5b. His own behaviour must escalate too
+
+Easy to miss, and it was missed once already: phases add **manifestations**,
+but they must also change **how he personally reacts**. Otherwise he retreats
+from a player at SIEGE exactly as politely as he did at WATCHER, and the
+escalation is only ever in the surrounding furniture.
+
+The chase response is the clearest case.
+
+| Phase | You close on him |
+|---|---|
+| WATCHER | usually just leaves; one time in three he is behind you |
+| TRESPASSER | half the time he is behind you |
+| MIMIC | he is behind you, every time |
+| **HUNTER** | **he does not move** |
+| SIEGE | he closes on *you* |
+
+The HUNTER row is the payoff for all three above it. A player who has spent
+hours learning that he always gives ground, and then walks at him and watches
+him stand there, has learned something no cutscene could tell them. That beat
+is only available because the earlier phases spent so long teaching the
+opposite — which is the general principle: **teach a rule, then break it.**
+
+Anything that changes his personal behaviour should be entered in this table
+rather than added ad hoc, so the arc stays legible.
+
+---
+
 ## 6. Catalogue
 
 ### 6.1 Traces — phase 0–1

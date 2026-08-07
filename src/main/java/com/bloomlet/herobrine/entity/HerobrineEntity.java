@@ -5,6 +5,8 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import com.bloomlet.herobrine.wrath.Phase;
+import com.bloomlet.herobrine.wrath.Wrath;
 import com.bloomlet.herobrine.wrath.WrathTriggers;
 
 import net.minecraft.server.level.ServerLevel;
@@ -79,6 +81,33 @@ public class HerobrineEntity extends PathfinderMob {
 	 * approach the trick would be a mechanic rather than a fright.
 	 */
 	private static final int MAX_RELOCATIONS = 2;
+
+	/**
+	 * How likely he is to reappear behind you rather than simply leave,
+	 * as a one-in-N chance, by phase.
+	 *
+	 * Not always, for the same reason the arrival cue is not always: a
+	 * reliable response is a rule, and a rule you have learned is a mechanic
+	 * rather than a fright. Not knowing whether chasing him will make him
+	 * vanish or put him at your back is worse than either certainty.
+	 *
+	 * It rises with wrath because his tolerance for being chased should fall.
+	 * Early he mostly gets out of your way; by MIMIC he almost always answers.
+	 *
+	 * The end of this curve is not "always relocates" — it is that he stops
+	 * retreating at all. See DESIGN.md: at HUNTER he should hold his ground
+	 * when you close, and that moment lands precisely because the player spent
+	 * hours learning that he never does.
+	 */
+	private static int relocateChanceIn(Phase phase) {
+		if (phase.atLeast(Phase.MIMIC)) {
+			return 1;    // always
+		}
+		if (phase.atLeast(Phase.TRESPASSER)) {
+			return 2;
+		}
+		return 3;
+	}
 
 	/**
 	 * How often his arrival makes a sound, one in N.
@@ -352,6 +381,10 @@ public class HerobrineEntity extends PathfinderMob {
 			|| this.anchor == null
 			|| !(this.level() instanceof ServerLevel server)) {
 			return false;
+		}
+		Phase phase = Wrath.phase(server.getServer());
+		if (this.random.nextInt(relocateChanceIn(phase)) != 0) {
+			return false;   // this time he simply goes
 		}
 		// The anchor may have been mined out, flooded, or built over since.
 		if (!ConfinedPlacement.canStand(server, this.anchor)) {
