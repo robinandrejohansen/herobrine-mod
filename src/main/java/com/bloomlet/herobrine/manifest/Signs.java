@@ -97,7 +97,7 @@ public final class Signs {
 
 		Phase phase = Wrath.phase(level.getServer());
 		Placement spot = options.get(level.getRandom().nextInt(options.size()));
-		String[] lines = SignLines.pick(phase, player, spot.pos, level.getRandom());
+		String[] lines = SignLines.pick(phase, player, level.getRandom());
 		if (lines == null) {
 			return false;   // everything written lately; say nothing
 		}

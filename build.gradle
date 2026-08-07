@@ -17,6 +17,14 @@ repositories {
 loom {
 	splitEnvironmentSourceSets()
 
+	// The dev client has no Mojang session, so Loom invents a name like
+	// "Player393". Several of his signs address the player directly, and
+	// testing that with a random placeholder tells you nothing about how it
+	// reads. Change this to whatever you want him to call you.
+	runConfigs.client {
+		programArgs("--username", "Robin")
+	}
+
 	mods {
 		"herobrine" {
 			sourceSet sourceSets.main

@@ -158,7 +158,14 @@ You need a wall within 10 blocks — stand in a tunnel, a cave, or your base.
 - [ ] Provoke it several times: **the same words never come back** for at
       least six signs
 - [ ] `/herobrine wrath 500` (MIMIC) and provoke again — lines using **your
-      username** start appearing
+      username** start appearing (the dev client is now named `Robin` rather
+      than `Player393`; change it in `build.gradle` under `runConfigs.client`)
+- [ ] **The lines respond to what you have been doing.** Go below y=0 and
+      provoke — he should mention depth. Sleep in a bed, then provoke — he
+      should mention watching you sleep. Do not sleep for an in-game day and
+      he asks whether you sleep at all. Die three times and he notices
+- [ ] Break one of his signs, then provoke a few times — he starts referring
+      to it
 - [ ] **Break one of his signs**, then `/herobrine status`: wrath jumps by 60,
       the biggest single rise in the mod
 - [ ] Break a sign *you* placed yourself — wrath does not move
