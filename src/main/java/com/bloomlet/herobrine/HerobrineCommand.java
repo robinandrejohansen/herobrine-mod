@@ -101,7 +101,7 @@ public final class HerobrineCommand {
 			HauntingSpawner.Outcome outcome = HauntingSpawner.place(level, player, true);
 			ctx.getSource().sendSuccess(() -> Component.literal(switch (outcome) {
 				case PLACED -> "placed (ignoring darkness)";
-				case ALREADY_NEARBY -> "one of him is already within 96 blocks";
+				case ALREADY_NEARBY -> "he already exists somewhere in this world — there is only ever one";
 				case NO_DARK_SPOT -> "no standable ground behind you at 26-44 blocks";
 				case BAD_PLAYER -> "you are spectating or dead";
 			}), false);
@@ -125,10 +125,10 @@ public final class HerobrineCommand {
 
 		// It was eligible but the world refused. Say which reason applies.
 		int light = level.getMaxLocalRawBrightness(player.blockPosition());
-		boolean crowded = !level.getEntitiesOfClass(HerobrineEntity.class,
-			player.getBoundingBox().inflate(96.0)).isEmpty();
+		boolean crowded = !level.getEntities(
+			com.bloomlet.herobrine.entity.ModEntities.HEROBRINE, e -> true).isEmpty();
 		String why = crowded
-			? "one of him is already within 96 blocks"
+			? "he already exists somewhere in this world — there is only ever one"
 			: light > 7
 				? "too bright — light here is " + light + ", he needs 7 or less"
 				: "nowhere valid to place him from here";

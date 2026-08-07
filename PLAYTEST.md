@@ -105,7 +105,8 @@ The main event. No commands.
 - [ ] **In a 2x1 mined tunnel**, he appears down the tunnel behind you, at
       the edge of your light, with a clear line of sight to you
 - [ ] He never appears round a corner where you could not possibly see him
-- [ ] There is **never more than one of him** near you at once
+- [ ] There is **never more than one of him in the entire world** — not
+      per player, not per area. Two clients far apart cannot both have one
 
 > Too rare to test comfortably? Say so and I will drop the spawn chance
 > temporarily. It is one constant.
@@ -226,6 +227,8 @@ and both are things I cannot see from here.
 Needs a second client, or a friend on Open to LAN.
 
 - [ ] Both players get their own manifestations, at their own times
+- [ ] **Only one of him exists at a time, world-wide.** If he is visiting one
+      player, the other gets a trace instead — never a second Herobrine
 - [ ] The **same event can happen to both** — one player seeing the stare does
       not block the other from it
 - [ ] The player who breaks signs and chases him gets visited **noticeably

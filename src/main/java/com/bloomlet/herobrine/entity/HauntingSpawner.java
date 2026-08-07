@@ -7,7 +7,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -34,8 +33,28 @@ public final class HauntingSpawner {
 	private static final double MAX_RADIUS = 44.0;
 	/** 0-15. 7 and below is "dark enough for monsters". */
 	private static final int MAX_LIGHT = 7;
-	/** No second spawn within this range of the player. */
-	private static final double SOLITUDE_RADIUS = 96.0;
+	/**
+	 * There is only ever ONE of him, in the entire world.
+	 *
+	 * This used to be a 96-block radius around the player, which is not the
+	 * same thing at all: two players far enough apart would each get their own
+	 * simultaneously. Two Herobrines existing at once is the single most
+	 * damaging thing that could happen to this mod — the moment there can be
+	 * more than one, he is a mob type rather than a person, and everything
+	 * else here is built on him being a person.
+	 *
+	 * It also costs nothing narratively. He is in one place because he is one
+	 * thing; if he is with someone else you get a noise instead, and the
+	 * director already falls through to the other manifestations.
+	 */
+	private static boolean existsAnywhere(ServerLevel level) {
+		for (ServerLevel other : level.getServer().getAllLevels()) {
+			if (!other.getEntities(ModEntities.HEROBRINE, e -> true).isEmpty()) {
+				return true;
+			}
+		}
+		return false;
+	}
 	/** Above this, the position is in front of the player and unusable. */
 	private static final double IN_VIEW_DOT = 0.25;
 
@@ -66,8 +85,7 @@ public final class HauntingSpawner {
 			return Outcome.BAD_PLAYER;
 		}
 
-		AABB nearby = player.getBoundingBox().inflate(SOLITUDE_RADIUS);
-		if (!level.getEntitiesOfClass(HerobrineEntity.class, nearby).isEmpty()) {
+		if (existsAnywhere(level)) {
 			return Outcome.ALREADY_NEARBY;
 		}
 
