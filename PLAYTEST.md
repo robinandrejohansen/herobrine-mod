@@ -79,6 +79,10 @@ The main event. No commands.
 - [ ] Within a few minutes he appears somewhere **behind you**
 - [ ] You **never see him arrive** — he is always already standing there
       when you turn around
+- [ ] Roughly one arrival in three makes **a single ordinary noise** behind
+      you — grass, stone, gravel, whatever he is standing on. It should sound
+      like the world, not like the mod. If you learn to treat it as a warning
+      signal, the odds are wrong
 - [ ] He is roughly **26–44 blocks** away when he appears
 - [ ] He does **not** appear in bright daylight on the surface
 - [ ] He **does** appear in an unlit cave at midday

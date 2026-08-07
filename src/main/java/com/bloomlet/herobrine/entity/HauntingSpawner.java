@@ -101,6 +101,9 @@ public final class HauntingSpawner {
 			float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
 			herobrine.snapTo(x + 0.5, y, z + 0.5, yaw, 0.0F);
 			level.addFreshEntity(herobrine);
+			// A reason to turn around — sometimes. He is still never SEEN
+			// arriving; you turn and find him already standing there.
+			herobrine.announceArrival();
 			return Outcome.PLACED;
 		}
 		return Outcome.NO_DARK_SPOT;

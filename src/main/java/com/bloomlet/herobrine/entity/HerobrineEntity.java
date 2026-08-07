@@ -1,6 +1,8 @@
 package com.bloomlet.herobrine.entity;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -43,6 +45,16 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final double TOO_CLOSE = 8.0;
 
 	/**
+	 * How often his arrival makes a sound, one in N.
+	 *
+	 * Not always, on purpose. A reliable cue becomes a tell — players learn
+	 * "noise means he is behind me" and it stops being a fright and starts
+	 * being a mechanic. At one in three you cannot trust it to mean anything,
+	 * so it never resolves into a signal.
+	 */
+	private static final int CUE_CHANCE = 3;
+
+	/**
 	 * How precisely you must be looking at him for it to count.
 	 *
 	 * Vanilla's Enderman formula is 0.025/distance, which at 18 blocks is
@@ -55,6 +67,31 @@ public class HerobrineEntity extends PathfinderMob {
 
 	public HerobrineEntity(EntityType<? extends PathfinderMob> type, Level level) {
 		super(type, level);
+	}
+
+	/**
+	 * One sound as he arrives, sometimes — a reason to turn around.
+	 *
+	 * Uses the step sound of whatever he is standing on: grass outdoors, stone
+	 * in a cave, gravel on a beach. It always suits the surroundings, so it
+	 * reads as the world making an ordinary noise rather than as a mod cue,
+	 * and it can never be learned as one specific "Herobrine sound".
+	 *
+	 * That ordinariness is the point. Your brain files it as an animal and you
+	 * turn round casually — and he is there. Being casually wrong is worse
+	 * than being forewarned, which is why this is a rustle and not a stick
+	 * snapping or a block being placed. Those are sounds only a person can
+	 * make, so they alarm you before you have even turned.
+	 */
+	public void announceArrival() {
+		if (!(this.level() instanceof ServerLevel server)
+			|| this.random.nextInt(CUE_CHANCE) != 0) {
+			return;
+		}
+		BlockPos below = this.blockPosition().below();
+		SoundEvent step = server.getBlockState(below).getSoundType().getStepSound();
+		server.playSound(null, this.getX(), this.getY(), this.getZ(),
+			step, this.getSoundSource(), 0.5F, 0.9F + this.random.nextFloat() * 0.1F);
 	}
 
 	public static AttributeSupplier.Builder createAttributes() {
