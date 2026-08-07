@@ -71,6 +71,20 @@ public final class HauntingSpawner {
 			return Outcome.ALREADY_NEARBY;
 		}
 
+		// Underground the ring-and-drop strategy below is nonsense — it would
+		// place him on the terrain above, through the rock. Follow the space
+		// the player is actually in instead.
+		if (ConfinedPlacement.isConfined(level, player)) {
+			BlockPos spot = ConfinedPlacement.find(level, player);
+			if (spot == null) {
+				return Outcome.NO_DARK_SPOT;
+			}
+			if (!ignoreLight && level.getMaxLocalRawBrightness(spot) > MAX_LIGHT) {
+				return Outcome.NO_DARK_SPOT;
+			}
+			return spawnAt(level, player, spot);
+		}
+
 		RandomSource random = level.getRandom();
 		// Several attempts, because most candidate rings will be too bright or
 		// in front of the player. Failing quietly is correct — he simply does
@@ -90,23 +104,31 @@ public final class HauntingSpawner {
 				continue;
 			}
 
-			HerobrineEntity herobrine = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
-			if (herobrine == null) {
-				return Outcome.NO_DARK_SPOT;
+			Outcome result = spawnAt(level, player, pos);
+			if (result == Outcome.PLACED) {
+				return result;
 			}
-			// Face him at the player from the moment he exists. Turning to
-			// look at you afterwards would give away that he just arrived.
-			double dx = player.getX() - (x + 0.5);
-			double dz = player.getZ() - (z + 0.5);
-			float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
-			herobrine.snapTo(x + 0.5, y, z + 0.5, yaw, 0.0F);
-			level.addFreshEntity(herobrine);
-			// A reason to turn around — sometimes. He is still never SEEN
-			// arriving; you turn and find him already standing there.
-			herobrine.announceArrival();
-			return Outcome.PLACED;
 		}
 		return Outcome.NO_DARK_SPOT;
+	}
+
+	/** Puts him at a chosen spot, already facing the player. */
+	private static Outcome spawnAt(ServerLevel level, ServerPlayer player, BlockPos pos) {
+		HerobrineEntity herobrine = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
+		if (herobrine == null) {
+			return Outcome.NO_DARK_SPOT;
+		}
+		// Facing the player from the moment he exists. Turning to look at you
+		// afterwards would give away that he had just arrived.
+		double dx = player.getX() - (pos.getX() + 0.5);
+		double dz = player.getZ() - (pos.getZ() + 0.5);
+		float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+		herobrine.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, yaw, 0.0F);
+		level.addFreshEntity(herobrine);
+		// A reason to turn around — sometimes. He is still never SEEN
+		// arriving; you turn and find him already standing there.
+		herobrine.announceArrival();
+		return Outcome.PLACED;
 	}
 
 	/** True if the position falls inside the player's rough view cone. */

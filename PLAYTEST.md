@@ -86,6 +86,11 @@ The main event. No commands.
 - [ ] He is roughly **26–44 blocks** away when he appears
 - [ ] He does **not** appear in bright daylight on the surface
 - [ ] He **does** appear in an unlit cave at midday
+- [ ] **Deep in a cave**, he appears *in the cave with you* — not on the
+      surface above, and not inside rock
+- [ ] **In a 2x1 mined tunnel**, he appears down the tunnel behind you, at
+      the edge of your light, with a clear line of sight to you
+- [ ] He never appears round a corner where you could not possibly see him
 - [ ] There is **never more than one of him** near you at once
 
 > Too rare to test comfortably? Say so and I will drop the spawn chance
