@@ -1,5 +1,7 @@
 package com.bloomlet.herobrine;
 
+import com.bloomlet.herobrine.entity.ModEntities;
+
 import net.fabricmc.api.ModInitializer;
 
 import net.minecraft.resources.Identifier;
@@ -20,6 +22,8 @@ public class HerobrineMod implements ModInitializer {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
+
+		ModEntities.register();
 
 		LOGGER.info("Herobrine is watching.");
 	}
