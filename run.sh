@@ -25,4 +25,9 @@ if [ -z "${JAVA_HOME:-}" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
 fi
 
 echo "Using $("$JAVA_HOME/bin/java" -version 2>&1 | head -1)"
+
+# New worlds default to cheats off, and with cheats off Minecraft hides every
+# privileged command — /herobrine and /time both come back as "unknown".
+python3 tools/enable_cheats.py 2>/dev/null || true
+
 exec ./gradlew "${1:-runClient}" --console=plain
