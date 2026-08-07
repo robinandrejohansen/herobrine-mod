@@ -133,6 +133,50 @@ file.
 
 ---
 
+## The Journal
+
+Signs are six words at a time. They are his voice in the moment, and they
+cannot carry a story. The Journal is how the player actually learns anything —
+and it works *without* breaking the "never explain" rule, because the author
+is unreliable and the pages are incomplete.
+
+**It is the elder brother's.** Written while he was still trying to work out
+what had happened to his brother, and then while doing something about it. The
+player is reading the account of the man who did this.
+
+**Found as torn pages.** In cave dead-ends, in the ruins of the house, in the
+bottom of a sealed shaft, sometimes tucked into one of *his* builds — which
+raises the question of who put it there.
+
+**The handwriting degrades.** Early pages are literate and calm, full
+sentences, measured. By the end they are fragments, repeated lines, a page
+with one word on it. Nothing states that he was losing his mind; the prose
+just stops being written by someone who is fine.
+
+**Pages are phase-gated, not random.** Early phases only ever yield early
+pages, so the arc always arrives in order. Within a phase they come at random,
+so there are gaps — and gaps are better than completeness. A player who finds
+page 11 with 9 and 10 missing invents something worse than we would write.
+
+The arc across roughly sixteen pages:
+
+| Pages | Content |
+|---|---|
+| 1–3 | Ordinary. Two of them, a valley, a house. He digs more than he needs to. |
+| 4–6 | Small wrongness. He is up at night. He has stopped eating. He has stopped pretending to. |
+| 7–9 | It is not him. What was done to the family, described in the fewest possible words. |
+| 10–12 | I cannot put an axe in my brother. There is another way. It has a cost and I am going to pay it. |
+| 13–15 | It worked. It did not work. It is thinner every year and I am the only one counting. |
+| 16 | The last page. A different hand. |
+
+**Why the brother and not an outsider:** a Gravity-Falls-style outside
+investigator is a cleaner mystery box, but it costs the personal angle we
+already have. The elder brother writing it makes the Journal a confession, not
+a report — and sets up the late reveal that sealing it was not free, and that
+he never actually left either.
+
+---
+
 ## Voice — for sign text
 
 Rules that keep the writing from turning into a horror-game cliché generator:
@@ -143,6 +187,11 @@ Rules that keep the writing from turning into a horror-game cliché generator:
   opened your door`.
 - **Never explain, never threaten explicitly.** No "I will kill you". The
   threat is that he knows things.
+- **The Journal is the opposite voice.** Full sentences, past tense, first
+person, correct punctuation — degrading. The contrast is the point: one of
+them is a man writing carefully, the other is what is left of a man who
+cannot. Never let them sound alike.
+
 - **Specificity is the weapon.** Generic dread is free and worthless. `i can
   see the light` is fine. Your bed coordinates are devastating.
 

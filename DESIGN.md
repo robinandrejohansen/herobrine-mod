@@ -296,8 +296,10 @@ Each step should be playable before the next begins.
 1. **Wrath + phases + the manifestation budget.** Infrastructure first — it is
    what everything hangs on, and it is invisible, so it must be built before
    there is content pressure.
-2. **Traces and signs** (phase 0–2). Cheapest content, highest atmosphere per
-   line of code. Proves the pacing works.
+2. **Traces, signs, and the Journal** (phase 0–2). Cheapest content, highest
+   atmosphere per line of code. Proves the pacing works. The Journal is the
+   only lore-delivery mechanism we build — signs are his voice, pages are the
+   story, and nothing else narrates. Four voices telling one story is noise.
 3. **Builds and dwell tracking** (phase 2).
 4. **Possessed mobs** (phase 3), then the fake player.
 5. **Hunting behaviours** (phase 4) — chase, break-in, weather.
