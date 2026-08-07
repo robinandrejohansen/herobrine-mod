@@ -109,7 +109,7 @@ public final class HerobrineCommand {
 		}
 
 		Phase phase = Wrath.phase(server);
-		if (!ManifestationDirector.anythingEligible(server)) {
+		if (!ManifestationDirector.anythingEligible(server, player)) {
 			ctx.getSource().sendSuccess(() -> Component.literal(
 				"nothing eligible at phase " + phase.name()
 					+ " — either everything is suppressed from recent use, or wrath is too low"
@@ -132,9 +132,9 @@ public final class HerobrineCommand {
 			: light > 7
 				? "too bright — light here is " + light + ", he needs 7 or less"
 				: "nowhere valid to place him from here";
-		String tried = ManifestationDirector.eligible(server).stream()
+		String tried = ManifestationDirector.eligible(server, player).stream()
 			.map(Enum::name).reduce((a, b) -> a + ", " + b).orElse("none");
-		String blocked = ManifestationDirector.suppressed().stream()
+		String blocked = ManifestationDirector.suppressed(player).stream()
 			.map(Enum::name).reduce((a, b) -> a + ", " + b).orElse("none");
 		ctx.getSource().sendSuccess(() -> Component.literal(
 			"nothing — " + why

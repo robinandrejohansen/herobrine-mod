@@ -54,11 +54,37 @@ public final class ManifestationDirector {
 	private static int speed = 1;
 
 	private static final Map<UUID, Long> nextAllowed = new HashMap<>();
-	private static final Deque<Manifestation> recent = new ArrayDeque<>();
+	/**
+	 * Suppression, per player.
+	 *
+	 * Was shared, which meant one player's stare blocked another's — on a
+	 * server two people playing together would quietly starve each other of
+	 * content, and neither would ever know why. Suppression exists so an
+	 * individual does not see the same thing twice running, so it belongs to
+	 * the individual.
+	 */
+	private static final Map<UUID, Deque<Manifestation>> recent = new HashMap<>();
 	private static int tickCounter;
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(ManifestationDirector::onTick);
+	}
+
+	private static Deque<Manifestation> recentFor(ServerPlayer player) {
+		return recent.computeIfAbsent(player.getUUID(), id -> new ArrayDeque<>());
+	}
+
+	/**
+	 * How much sooner he comes for a player who has provoked him.
+	 *
+	 * The seal is shared — the phase is a property of the world, because the
+	 * door is as open as it is regardless of who opened it. But his ATTENTION
+	 * is personal. A player who tears his signs down and chases him should be
+	 * visited more than the one quietly farming next to them, and on a server
+	 * that difference is the whole point: he is coming for someone specific.
+	 */
+	private static double attentionFactor(ServerPlayer player) {
+		return 1.0 + Math.min(2.0, Wrath.getShare(player) / 250.0);
 	}
 
 	private static void onTick(MinecraftServer server) {
@@ -72,7 +98,7 @@ public final class ManifestationDirector {
 					continue;
 				}
 				long due = nextAllowed.computeIfAbsent(
-					player.getUUID(), id -> now + window(level.getRandom()));
+					player.getUUID(), id -> now + windowFor(player, level.getRandom()));
 				if (now >= due) {
 					attempt(server, level, player, false);
 				}
@@ -91,9 +117,10 @@ public final class ManifestationDirector {
 		Phase phase = Wrath.phase(server);
 		RandomSource random = level.getRandom();
 
+		Deque<Manifestation> mine = recentFor(player);
 		List<Manifestation> eligible = new ArrayList<>();
 		for (Manifestation m : Manifestation.values()) {
-			if (phase.atLeast(m.minimum) && !recent.contains(m)) {
+			if (phase.atLeast(m.minimum) && !mine.contains(m)) {
 				eligible.add(m);
 			}
 		}
@@ -120,9 +147,9 @@ public final class ManifestationDirector {
 		}
 
 		if (happened) {
-			recent.addLast(chosen);
-			while (recent.size() > SUPPRESS_LAST) {
-				recent.removeFirst();
+			mine.addLast(chosen);
+			while (mine.size() > SUPPRESS_LAST) {
+				mine.removeFirst();
 			}
 			// Logged so a playtester can correlate what fired with what they
 			// felt. Without this the only record of a scare is a memory.
@@ -194,7 +221,12 @@ public final class ManifestationDirector {
 
 	private static void reschedule(ServerPlayer player, ServerLevel level, MinecraftServer server) {
 		long now = server.overworld().getGameTime();
-		nextAllowed.put(player.getUUID(), now + window(level.getRandom()));
+		nextAllowed.put(player.getUUID(), now + windowFor(player, level.getRandom()));
+	}
+
+	/** The base window, shortened by how much this player has provoked him. */
+	private static int windowFor(ServerPlayer player, RandomSource random) {
+		return Math.max(40, (int)(window(random) / attentionFactor(player)));
 	}
 
 	private static int window(RandomSource random) {
@@ -239,20 +271,21 @@ public final class ManifestationDirector {
 	}
 
 	/** What is eligible right now, for debug reporting. */
-	public static List<Manifestation> eligible(MinecraftServer server) {
+	public static List<Manifestation> eligible(MinecraftServer server, ServerPlayer player) {
 		Phase phase = Wrath.phase(server);
+		Deque<Manifestation> mine = recentFor(player);
 		List<Manifestation> out = new ArrayList<>();
 		for (Manifestation m : Manifestation.values()) {
-			if (phase.atLeast(m.minimum) && !recent.contains(m)) {
+			if (phase.atLeast(m.minimum) && !mine.contains(m)) {
 				out.add(m);
 			}
 		}
 		return out;
 	}
 
-	/** Recently used, and therefore blocked. */
-	public static List<Manifestation> suppressed() {
-		return new ArrayList<>(recent);
+	/** Recently used by this player, and therefore blocked for them. */
+	public static List<Manifestation> suppressed(ServerPlayer player) {
+		return new ArrayList<>(recentFor(player));
 	}
 
 	/**
@@ -268,19 +301,13 @@ public final class ManifestationDirector {
 	 * and the window is pulled in. He gets another go at being noticed
 	 * without the pacing budget paying for the miss.
 	 */
-	public static void wasted(Manifestation manifestation) {
-		recent.remove(manifestation);
+	public static void wasted(Manifestation manifestation, ServerPlayer player) {
+		recentFor(player).remove(manifestation);
 		HerobrineMod.LOGGER.debug("{} went unwitnessed — not counted", manifestation.name());
 	}
 
 	/** Whether anything at all is eligible right now, for debug reporting. */
-	public static boolean anythingEligible(MinecraftServer server) {
-		Phase phase = Wrath.phase(server);
-		for (Manifestation m : Manifestation.values()) {
-			if (phase.atLeast(m.minimum) && !recent.contains(m)) {
-				return true;
-			}
-		}
-		return false;
+	public static boolean anythingEligible(MinecraftServer server, ServerPlayer player) {
+		return !eligible(server, player).isEmpty();
 	}
 }

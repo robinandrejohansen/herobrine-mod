@@ -221,6 +221,22 @@ and both are things I cannot see from here.
 
 ---
 
+### A10 — Two or more players
+
+Needs a second client, or a friend on Open to LAN.
+
+- [ ] Both players get their own manifestations, at their own times
+- [ ] The **same event can happen to both** — one player seeing the stare does
+      not block the other from it
+- [ ] The player who breaks signs and chases him gets visited **noticeably
+      more often** than the one quietly building
+- [ ] `/herobrine status` shows the same **wrath and phase** for both, but a
+      different **share**
+- [ ] Signs address whoever they were written for, using that player's own
+      habits — sleep, depth, deaths
+
+---
+
 ## B. Deliberately NOT in the build yet
 
 Do not report these as bugs — they are simply not written.

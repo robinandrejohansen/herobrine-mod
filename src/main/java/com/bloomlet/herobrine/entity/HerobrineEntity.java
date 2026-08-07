@@ -297,8 +297,11 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 
 		if (!this.witnessed) {
-			com.bloomlet.herobrine.manifest.ManifestationDirector.wasted(
-				com.bloomlet.herobrine.manifest.Manifestation.THE_STARE);
+			Player missedBy = this.level().getNearestPlayer(this, 96.0);
+			if (missedBy instanceof ServerPlayer sp) {
+				com.bloomlet.herobrine.manifest.ManifestationDirector.wasted(
+					com.bloomlet.herobrine.manifest.Manifestation.THE_STARE, sp);
+			}
 		}
 		if (this.level() instanceof ServerLevel server) {
 			double angle = this.random.nextDouble() * Math.PI * 2.0;

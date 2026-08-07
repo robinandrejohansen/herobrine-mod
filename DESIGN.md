@@ -316,9 +316,28 @@ Flagged honestly, to be resolved before the relevant phase is built.
   entities hard and prefer fewer, tougher mobs over swarms.
 - **Dwell-time tracking** for build placement needs a cheap representation —
   per-chunk counters, decayed over time, not a full heatmap.
-- **Multiplayer semantics** for a single shared wrath number are unclear. One
-  aggressive player should not ruin a server for everyone. Possibly per-player
-  wrath with a world-level floor.
+- **Multiplayer** is resolved as follows, and the split is deliberate:
+
+  **The seal is shared.** Wrath is one world number and the phase is the same
+  for everybody, because the door is as open as it is regardless of who
+  opened it. Two players in one world are in one story.
+
+  **His attention is personal.** Each player has their own share, their own
+  pacing window and their own suppression list. A player who tears his signs
+  down and chases him is visited noticeably more often than someone quietly
+  farming beside them — the window shortens by up to a third at high personal
+  share.
+
+  Suppression being per-player is not a nicety: shared, one player's stare
+  blocks another's, and two friends playing together silently starve each
+  other of content without ever knowing why.
+
+  Sign text is chosen from the reading player's own stats, so two players at
+  the same base get different words.
+
+  Still open: whether one player pushing the world to SIEGE is acceptable for
+  a group that did not choose it. Currently it is, on the grounds that a
+  haunting you can opt out of is not a haunting.
 
 ---
 
