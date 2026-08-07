@@ -38,6 +38,13 @@ public class HerobrineEntity extends PathfinderMob {
 	private int age;
 	/** Whether any player actually laid eyes on him before he left. */
 	private boolean witnessed;
+	/** Where the player stood when he arrived. He goes back to it. */
+	private @org.jspecify.annotations.Nullable BlockPos anchor;
+	private int relocations;
+
+	public void setAnchor(BlockPos pos) {
+		this.anchor = pos;
+	}
 
 	/**
 	 * He leaves on his own after this long, seen or not.
@@ -64,6 +71,14 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private static final int DEFIANCE_APPROACHED = 25;
 	private static final int DEFIANCE_STRUCK = 40;
+
+	/**
+	 * How many times a chase relocates him before he actually goes.
+	 *
+	 * Bounded so a player cannot herd him around indefinitely — by the third
+	 * approach the trick would be a mechanic rather than a fright.
+	 */
+	private static final int MAX_RELOCATIONS = 2;
 
 	/**
 	 * How often his arrival makes a sound, one in N.
@@ -159,7 +174,9 @@ public class HerobrineEntity extends PathfinderMob {
 			if (nearest instanceof ServerPlayer chaser) {
 				WrathTriggers.defiance(chaser, DEFIANCE_APPROACHED);
 			}
-			this.vanish();
+			if (!relocateBehind(nearest)) {
+				this.vanish();
+			}
 			return;
 		}
 
@@ -307,9 +324,53 @@ public class HerobrineEntity extends PathfinderMob {
 		if (source.getEntity() instanceof ServerPlayer attacker) {
 			// Swinging at him is the loudest possible defiance.
 			WrathTriggers.defiance(attacker, DEFIANCE_STRUCK);
-			this.vanish();
+			if (!relocateBehind(attacker)) {
+				this.vanish();
+			}
 		}
 		return false;
+	}
+
+	/**
+	 * Chase him and he is behind you.
+	 *
+	 * Vanishing when approached was a resolution, and resolutions end fear —
+	 * you walked at him, he dissolved, you won. Going back to where you were
+	 * standing when he arrived turns the chase itself into the scare: you
+	 * closed the distance for nothing, and the ground you gave up is now
+	 * occupied.
+	 *
+	 * No effect, no sound, no motion. You never see him move — you turn round
+	 * and he is simply at the other end, which is the same rule that governs
+	 * his arrival.
+	 *
+	 * @return false when he has run out of relocations or there is nowhere
+	 *         valid, in which case the caller makes him leave for good.
+	 */
+	private boolean relocateBehind(Player player) {
+		if (this.relocations >= MAX_RELOCATIONS
+			|| this.anchor == null
+			|| !(this.level() instanceof ServerLevel server)) {
+			return false;
+		}
+		// The anchor may have been mined out, flooded, or built over since.
+		if (!ConfinedPlacement.canStand(server, this.anchor)) {
+			return false;
+		}
+		if (this.anchor.distToCenterSqr(player.getX(), player.getY(), player.getZ())
+			< TOO_CLOSE * TOO_CLOSE) {
+			return false;   // they barely moved; it would look like a stutter
+		}
+
+		double dx = player.getX() - (this.anchor.getX() + 0.5);
+		double dz = player.getZ() - (this.anchor.getZ() + 0.5);
+		float yaw = (float)(net.minecraft.util.Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+		this.snapTo(this.anchor.getX() + 0.5, this.anchor.getY(), this.anchor.getZ() + 0.5, yaw, 0.0F);
+
+		this.relocations++;
+		this.watchedTicks = 0;
+		this.age = 0;          // a fresh visit; you have earned the second look
+		return true;
 	}
 
 	/** Silent by design — no idle noise to give away where he is standing. */

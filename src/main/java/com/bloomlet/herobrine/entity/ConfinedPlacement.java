@@ -131,7 +131,7 @@ public final class ConfinedPlacement {
 	}
 
 	/** Room for a person, on a floor, out of any liquid. */
-	private static boolean canStand(ServerLevel level, BlockPos pos) {
+	public static boolean canStand(ServerLevel level, BlockPos pos) {
 		return passable(level, pos)
 			&& passable(level, pos.above())
 			&& level.getBlockState(pos.below()).isSolid();

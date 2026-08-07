@@ -124,6 +124,9 @@ public final class HauntingSpawner {
 		double dz = player.getZ() - (pos.getZ() + 0.5);
 		float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
 		herobrine.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, yaw, 0.0F);
+		// Where the player is standing right now. Chase him and he comes back
+		// to it, so the ground you gave up is the ground he takes.
+		herobrine.setAnchor(player.blockPosition());
 		level.addFreshEntity(herobrine);
 		// A reason to turn around — sometimes. He is still never SEEN
 		// arriving; you turn and find him already standing there.

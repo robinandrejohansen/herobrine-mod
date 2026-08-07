@@ -60,6 +60,10 @@ Now `/time set midnight`, or go into an unlit cave.
 - [ ] **Chase him** — closing the distance raises wrath sharply. Check with
       `/herobrine status` before and after. Chasing him is supposed to be the
       mistake, not the solution
+- [ ] Chase him and **turn around**: he is standing where *you* were when he
+      arrived, facing you. No sound, no effect — you never see him move
+- [ ] Do it again and he relocates once more, then leaves for good. He cannot
+      be herded around indefinitely
 - [ ] Roughly one visit in three, **torches near you go out as he leaves** —
       all dropped as items, nothing lost
 
