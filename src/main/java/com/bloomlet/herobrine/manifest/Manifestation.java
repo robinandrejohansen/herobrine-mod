@@ -40,6 +40,14 @@ public enum Manifestation {
 		}
 	},
 
+	/** Something old, at the edge of your world, that was not there yesterday. */
+	THE_RUIN(Phase.TRESPASSER, 8) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Ruins.raise(level, player);
+		}
+	},
+
 	/** A page of someone else's account, on the floor where you will find it. */
 	THE_PAGE(Phase.TRESPASSER, 9) {
 		@Override

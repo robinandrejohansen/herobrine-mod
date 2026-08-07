@@ -212,6 +212,33 @@ You need a wall within 10 blocks — stand in a tunnel, a cave, or your base.
 > ever says he was losing his mind — if you notice it happening without being
 > told, it worked.
 
+### A7d — Ruins (TRESPASSER)
+
+```
+/herobrine wrath 200
+/herobrine provoke the_ruin
+```
+
+Stand somewhere open with flat ground around. Then **go and look for it** —
+it is raised 28-60 blocks away, out of your view.
+
+- [ ] One of three appears: a **doorway** standing alone with nothing behind
+      it, a **cairn** with a sign whose name is worn off, or the **footprint**
+      of a house that is no longer there
+- [ ] Everything is **mossy, cracked, weathered** — never fresh stone
+- [ ] **Redstone dust** on the ground around it, like a stain
+- [ ] Cobwebs and dead bushes
+- [ ] The doorway has a single **redstone torch** in it, at head height
+- [ ] All of it is ordinary and can be mined
+- [ ] It is **never raised on top of anything you built** — try provoking
+      while standing in your base and it should pick somewhere else entirely
+
+> The reaction to aim for is "what is this, and why is it here" — a question,
+> not an answer. If it reads as decoration, or as obviously the mod, it has
+> failed. The trick is the contradiction: mossy cracked stone is the
+> vocabulary of something that has stood for centuries, and it was not there
+> an hour ago.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the
