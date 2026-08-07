@@ -1,7 +1,15 @@
 package com.bloomlet.herobrine.entity;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import com.bloomlet.herobrine.wrath.WrathTriggers;
+
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EntityType;
@@ -43,6 +51,19 @@ public class HerobrineEntity extends PathfinderMob {
 
 	/** Get closer than this and he is simply not there any more. */
 	private static final double TOO_CLOSE = 8.0;
+
+	/**
+	 * Chasing him costs you.
+	 *
+	 * Walking at him used to be free: he dissolved, you felt powerful, and the
+	 * fear was spent. Now closing the distance is read as defiance and raises
+	 * wrath sharply — which per LORE.md is precisely the thing that thins the
+	 * seal. Players will chase him; the design should make chasing him the
+	 * mistake rather than the solution, and it should teach that through
+	 * consequence rather than a message.
+	 */
+	private static final int DEFIANCE_APPROACHED = 25;
+	private static final int DEFIANCE_STRUCK = 40;
 
 	/**
 	 * How often his arrival makes a sound, one in N.
@@ -135,6 +156,9 @@ public class HerobrineEntity extends PathfinderMob {
 		// You never get to reach him. Walking up to something that does not
 		// react is how a threat becomes an exhibit.
 		if (nearest != null && this.distanceTo(nearest) < TOO_CLOSE) {
+			if (nearest instanceof ServerPlayer chaser) {
+				WrathTriggers.defiance(chaser, DEFIANCE_APPROACHED);
+			}
 			this.vanish();
 			return;
 		}
@@ -180,7 +204,52 @@ public class HerobrineEntity extends PathfinderMob {
 		return look.dot(toMe) > 0.55 && player.hasLineOfSight(this);
 	}
 
+	/**
+	 * Sometimes the lights go with him.
+	 *
+	 * Approaching and dissolving is one readable pattern, and a pattern you
+	 * have read is not frightening. Leaving something behind makes the visit
+	 * an event rather than a sighting — and darkness closing in as he goes is
+	 * the version that costs the player nothing permanent: every torch is
+	 * dropped, and can be put straight back.
+	 *
+	 * Capped at three, and only ever torches. Anything that strands a player
+	 * without a pickaxe or destroys a build is out of bounds (DESIGN.md §9).
+	 */
+	private void takeTheLight(ServerLevel server, Player player) {
+		BlockPos origin = player.blockPosition();
+		int taken = 0;
+		int r = 8;
+		for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-r, -3, -r), origin.offset(r, 3, r))) {
+			if (taken >= 3) {
+				break;
+			}
+			if (!server.getBlockState(pos).is(Blocks.TORCH)
+				&& !server.getBlockState(pos).is(Blocks.WALL_TORCH)) {
+				continue;
+			}
+			BlockPos at = pos.immutable();
+			server.removeBlock(at, false);
+			server.addFreshEntity(new ItemEntity(server,
+				at.getX() + 0.5, at.getY() + 0.1, at.getZ() + 0.5,
+				new ItemStack(Items.TORCH)));
+			server.playSound(null, at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5,
+				SoundEvents.FIRE_EXTINGUISH, this.getSoundSource(), 0.5F, 1.3F);
+			taken++;
+		}
+	}
+
 	private void vanish() {
+		// One visit in three takes the light with it, so the departure is not
+		// one memorised beat.
+		if (this.witnessed && this.random.nextInt(3) == 0
+			&& this.level() instanceof ServerLevel lights) {
+			Player nearby = lights.getNearestPlayer(this, 24.0);
+			if (nearby != null) {
+				takeTheLight(lights, nearby);
+			}
+		}
+
 		if (!this.witnessed) {
 			com.bloomlet.herobrine.manifest.ManifestationDirector.wasted(
 				com.bloomlet.herobrine.manifest.Manifestation.THE_STARE);
@@ -214,6 +283,33 @@ public class HerobrineEntity extends PathfinderMob {
 		double distance = toMe.length();
 		double dot = view.dot(toMe.normalize());
 		return dot > 1.0 - GAZE_TOLERANCE / distance && player.hasLineOfSight(this);
+	}
+
+	/**
+	 * Nothing touches him.
+	 *
+	 * He had 40 health and no protection, so the first player to swing a sword
+	 * ended the premise — the whole design rests on being unable to fight him
+	 * until the Effigy. Damage now does nothing except make him leave, and
+	 * leave angrier.
+	 *
+	 * This is also how the player is taught the rule. Nobody reads a manual:
+	 * they hit him, watch it do nothing, and understand. Being told "you
+	 * cannot kill this yet" is a worse lesson than finding out.
+	 */
+	@Override
+	public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
+		return true;
+	}
+
+	@Override
+	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+		if (source.getEntity() instanceof ServerPlayer attacker) {
+			// Swinging at him is the loudest possible defiance.
+			WrathTriggers.defiance(attacker, DEFIANCE_STRUCK);
+			this.vanish();
+		}
+		return false;
 	}
 
 	/** Silent by design — no idle noise to give away where he is standing. */

@@ -56,6 +56,12 @@ Now `/time set midnight`, or go into an unlit cave.
 - [ ] Walk toward him — he does **not** back away, he just stops advancing
 - [ ] Walk more than ~32 blocks away — he stops following entirely
 - [ ] He never attacks you, ever, at any range
+- [ ] **Hit him** — the damage does nothing at all, and he leaves
+- [ ] **Chase him** — closing the distance raises wrath sharply. Check with
+      `/herobrine status` before and after. Chasing him is supposed to be the
+      mistake, not the solution
+- [ ] Roughly one visit in three, **torches near you go out as he leaves** —
+      all dropped as items, nothing lost
 
 ### A5 — Vanishing when watched
 
@@ -181,7 +187,6 @@ Do not report these as bugs — they are simply not written.
 
 | Not there | Note |
 |---|---|
-| **He can be killed** | He has 40 health and no protection, so you can just hit him. Per the design he should be unkillable until the Effigy — not implemented. |
 | **He drops nothing** | No loot table yet. |
 | **Signs, builds, theft** | None. |
 | **Possessed mobs, mimicry** | None. |
