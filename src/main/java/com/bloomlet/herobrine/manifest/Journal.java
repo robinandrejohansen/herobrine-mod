@@ -82,6 +82,21 @@ public final class Journal {
 				array -> java.util.Arrays.stream(array).boxed().toList()));
 
 	private static final int SEARCH_RADIUS = 12;
+	/** Chests may be close; a page inside one is not in your face. */
+	private static final double MIN_CHEST_DISTANCE = 2.0;
+
+	/**
+	 * How long an uncollected page may block the next one.
+	 *
+	 * The no-duplicates guarantee deadlocks without this: a page left in a
+	 * cave you never revisit, or behind you as you sail away, would cut you
+	 * off from the rest of the account permanently. After this long, and only
+	 * once the player is well away from it, the SAME page is moved to them
+	 * rather than a new one being issued — so nothing is duplicated and
+	 * nothing is skipped.
+	 */
+	private static final long STALE_TICKS = 12000;      // ten in-game minutes
+	private static final double ABANDONED_DISTANCE = 96.0;
 
 	/** Forces the attachment type to exist before any world loads. */
 	public static void register() {
@@ -98,11 +113,13 @@ public final class Journal {
 		// A page is still lying somewhere unclaimed. Issuing another would
 		// leave two of the same account in the world and let the player skip
 		// one entirely.
-		if (stillWaiting(level, player)) {
+		int reissue = staleOutstanding(level, player);
+		if (reissue == 0 && stillWaiting(level, player)) {
 			return false;
 		}
 
-		int next = pagesFound(player) + 1;
+		// Either the next page, or the abandoned one being brought to them.
+		int next = reissue > 0 ? reissue : pagesFound(player) + 1;
 
 		// Everything this phase allows has been read. He has nothing further
 		// to give yet, and inventing filler would be worse than silence.
@@ -111,18 +128,24 @@ public final class Journal {
 		}
 
 		BlockPos spot = intoChest(level, player, next);
+		boolean inChest = spot != null;
 		if (spot == null) {
 			spot = onFloor(level, player, next);
 		}
 		if (spot == null) {
 			return false;
 		}
+		if (reissue > 0) {
+			removeAbandoned(level, player);
+		}
 
-		player.setAttached(FOUND, next);
+		player.setAttached(FOUND, Math.max(pagesFound(player), next));
 		player.setAttached(OUTSTANDING,
-			new long[] { spot.asLong(), next });
-		HerobrineMod.LOGGER.info("journal page {} left at [{}, {}, {}] for {}",
-			next, spot.getX(), spot.getY(), spot.getZ(), player.getName().getString());
+			new long[] { spot.asLong(), next, level.getGameTime() });
+		HerobrineMod.LOGGER.info("journal page {} {} at [{}, {}, {}] for {}{}",
+			next, inChest ? "in a chest" : "on the floor",
+			spot.getX(), spot.getY(), spot.getZ(), player.getName().getString(),
+			reissue > 0 ? " (moved — the old one was abandoned)" : "");
 		return true;
 	}
 
@@ -155,9 +178,53 @@ public final class Journal {
 	 * looking for the item. Either way, if it is still there nothing new is
 	 * issued.
 	 */
+	/**
+	 * @return the page number to move to the player, or 0 if nothing is stale
+	 */
+	private static int staleOutstanding(ServerLevel level, ServerPlayer player) {
+		long[] outstanding = player.getAttached(OUTSTANDING);
+		if (outstanding == null || outstanding.length < 3) {
+			return 0;
+		}
+		BlockPos pos = BlockPos.of(outstanding[0]);
+		long age = level.getGameTime() - outstanding[2];
+		double away = Math.sqrt(pos.distSqr(player.blockPosition()));
+		if (age > STALE_TICKS && away > ABANDONED_DISTANCE) {
+			return (int)outstanding[1];
+		}
+		return 0;
+	}
+
+	/** Takes the abandoned copy back, so only one ever exists. */
+	private static void removeAbandoned(ServerLevel level, ServerPlayer player) {
+		long[] outstanding = player.getAttached(OUTSTANDING);
+		if (outstanding == null || outstanding.length < 2) {
+			return;
+		}
+		BlockPos pos = BlockPos.of(outstanding[0]);
+		if (!level.isLoaded(pos)) {
+			return;   // unloaded; it will simply sit there unread
+		}
+		if (level.getBlockEntity(pos) instanceof Container container) {
+			for (int slot = 0; slot < container.getContainerSize(); slot++) {
+				if (isPage(container.getItem(slot))) {
+					container.setItem(slot, ItemStack.EMPTY);
+					container.setChanged();
+				}
+			}
+			return;
+		}
+		for (ItemEntity item : level.getEntitiesOfClass(
+				ItemEntity.class, new AABB(pos).inflate(2.0))) {
+			if (isPage(item.getItem())) {
+				item.discard();
+			}
+		}
+	}
+
 	private static boolean stillWaiting(ServerLevel level, ServerPlayer player) {
 		long[] outstanding = player.getAttached(OUTSTANDING);
-		if (outstanding == null || outstanding.length != 2) {
+		if (outstanding == null || outstanding.length < 2) {
 			return false;
 		}
 		BlockPos pos = BlockPos.of(outstanding[0]);
@@ -210,7 +277,7 @@ public final class Journal {
 			if (!(level.getBlockEntity(pos) instanceof Container container)) {
 				continue;
 			}
-			if (Math.sqrt(pos.distSqr(origin)) < 3.0) {
+			if (Math.sqrt(pos.distSqr(origin)) < MIN_CHEST_DISTANCE) {
 				continue;
 			}
 			for (int slot = 0; slot < container.getContainerSize(); slot++) {

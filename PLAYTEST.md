@@ -190,6 +190,11 @@ You need a wall within 10 blocks — stand in a tunnel, a cave, or your base.
 - [ ] Provoke again *without* collecting the first: **nothing happens**. There
       is never a second page while one is still waiting
 - [ ] Collect it, then provoke: page 2 arrives
+- [ ] **Abandon one deliberately**: leave a page uncollected, travel 100+
+      blocks away, wait ten in-game minutes, then provoke. The *same* page is
+      brought to you and the abandoned copy is removed — you are never locked
+      out of the rest of the account, and there is still only one of it
+- [ ] The log line says whether it went `in a chest` or `on the floor`
 - [ ] Right-click to read it — it uses Minecraft's own book UI
 - [ ] The author shows as a single dash, not a name
 - [ ] Provoke repeatedly: pages arrive **in order**, 1, 2, 3…
