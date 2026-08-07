@@ -130,7 +130,8 @@ provoke anything.
 
 - [ ] Things happen without you asking, spaced out, not on a rhythm
 - [ ] You get **footsteps behind you** at least once — and turn around
-- [ ] You find a **torch on the ground, unlit**, that you had placed
+- [ ] You find a **torch lying on the floor** that you had placed on a wall,
+      with that corner now dark
 - [ ] The same thing never happens twice in a row
 - [ ] There are stretches where nothing happens at all
 - [ ] Nothing that happens is *destructive* — you can put the torch back
@@ -138,7 +139,7 @@ provoke anything.
 The questions that actually matter, and only you can answer them:
 
 1. Did you turn around when you heard the footsteps?
-2. When you found the unlit torch, did you doubt yourself for a second — or
+2. When you found the fallen torch, did you doubt yourself for a second — or
    did you immediately think "the mod did that"?
 3. Was the quiet boring, or was it tense?
 
@@ -199,7 +200,7 @@ row.
 
 ### Step 2 — Traces and signs
 
-**What you will see:** a torch you placed lying on the ground unlit. Footsteps
+**What you will see:** a torch you placed lying on the floor. Footsteps
 behind you with nothing there. Your chest lid open. One animal dead with no
 wound. Then, later, **actual signs** with short messages — in a dead-end
 tunnel, on your own wall.

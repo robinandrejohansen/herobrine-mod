@@ -132,7 +132,7 @@ The part that determines whether this feels crafted or random.
 
 Cheap, deniable, high value.
 
-- A torch you placed is on the ground, unlit.
+- A torch you placed is lying on the floor and that corner is dark.
 - Footstep sounds behind you, once, no entity.
 - A distant, wrong sound: cave ambience where there is no cave.
 - Your crafting table or chest is open when you return.
@@ -168,8 +168,13 @@ appear at the edges of the places you live.
 - A small tomb: a stone box with a sign bearing your name.
 - Two redstone torches set into a dark wall at eye height. Just the eyes.
 - A copy of *your* build, wrong: same shape, obsidian, no door.
-- In caves: a sealed room, ores arranged into a face, an unlit corridor
-  that was lit an hour ago.
+- In caves: a sealed room, ores arranged into a face, a corridor that was
+  lit an hour ago and is not now.
+
+Later escalation worth remembering: **swap a torch for a soul torch.** The
+light is still there, so nothing is missing — it is just the wrong colour.
+That is a much better phase 3 beat than taking the torch away, because it
+cannot be explained as a block popping off.
 
 Builds should be **discovered, never witnessed**. If the player watches him
 place blocks, he is a mob with an AI. If they walk back into their valley and

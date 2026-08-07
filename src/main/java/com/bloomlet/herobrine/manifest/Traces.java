@@ -73,11 +73,18 @@ public final class Traces {
 	}
 
 	/**
-	 * A torch you placed is on the ground, unlit.
+	 * A torch you placed is lying on the floor and the light is out.
 	 *
-	 * The best trace in the set, because it is the only one that leaves
-	 * evidence — and the evidence is an item you can pick up and put back,
-	 * which is exactly the level of harm phase 0 is allowed.
+	 * There is no unlit torch block in the game — torches are burning or they
+	 * are an item — so this takes the placed block and drops the item at its
+	 * feet. The light goes out because there is no longer a torch on the wall.
+	 *
+	 * That happens to be the most deniable thing in the set: torches pop off
+	 * on their own in vanilla when their supporting block goes, so a torch on
+	 * the floor is something players have seen happen for ordinary reasons.
+	 * It is also the only trace that leaves evidence, and the evidence is an
+	 * item you can pick up and put back — exactly the level of harm phase 0
+	 * is allowed.
 	 *
 	 * Only ever takes a torch that is BEHIND the player and out of sight, so
 	 * it is never witnessed happening.
@@ -103,7 +110,7 @@ public final class Traces {
 
 		BlockPos chosen = candidates.get(level.getRandom().nextInt(candidates.size()));
 		level.removeBlock(chosen, false);
-		// Drop it, so nothing is destroyed and the player can simply put it back.
+		// Drop rather than delete: nothing is lost, and the player can put it back.
 		ItemEntity dropped = new ItemEntity(level,
 			chosen.getX() + 0.5, chosen.getY() + 0.1, chosen.getZ() + 0.5,
 			new ItemStack(Items.TORCH));
