@@ -59,8 +59,11 @@ Now `/time set midnight`, or go into an unlit cave.
 
 ### A5 — Vanishing when watched
 
-- [ ] Put your crosshair **directly on him** and hold it there
+- [ ] Look at him — roughly, you do not need to be precise — and hold it
 - [ ] After about **2 seconds** he disappears
+- [ ] Leave him alone entirely: he goes on his own after **30 seconds**
+- [ ] Walk toward him: at about **8 blocks he is simply gone**. You can never
+      reach him
 - [ ] He leaves a **puff of smoke** and a **teleport sound**
 - [ ] Look slightly off to the side instead — he stays indefinitely
 - [ ] Stand far away and glance at him — takes longer / does not trigger

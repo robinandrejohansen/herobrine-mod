@@ -25,6 +25,32 @@ import net.minecraft.world.phys.Vec3;
 public class HerobrineEntity extends PathfinderMob {
 	/** Ticks a player has held their gaze on him before he leaves. */
 	private int watchedTicks;
+	/** Ticks since he arrived. */
+	private int age;
+
+	/**
+	 * He leaves on his own after this long, seen or not.
+	 *
+	 * A haunting is a moment. Left indefinitely he becomes scenery — you walk
+	 * over, study him, and discover he does nothing, which is the end of being
+	 * afraid of him. Better to be gone before the player is certain of what
+	 * they saw.
+	 */
+	private static final int LIFETIME = 600;          // 30 seconds
+
+	/** Get closer than this and he is simply not there any more. */
+	private static final double TOO_CLOSE = 8.0;
+
+	/**
+	 * How precisely you must be looking at him for it to count.
+	 *
+	 * Vanilla's Enderman formula is 0.025/distance, which at 18 blocks is
+	 * about 3 degrees — appropriate for a mob you are meant to aggro by
+	 * accident, far too strict for one whose whole behaviour is reacting to
+	 * being seen. This is roughly 7 degrees at stalking range and still
+	 * tightens with distance, so a glance across a valley does not count.
+	 */
+	private static final double GAZE_TOLERANCE = 0.15;
 
 	public HerobrineEntity(EntityType<? extends PathfinderMob> type, Level level) {
 		super(type, level);
@@ -53,7 +79,21 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
+		// Gone on his own, before he can become furniture.
+		if (++this.age > LIFETIME) {
+			this.vanish();
+			return;
+		}
+
 		Player nearest = this.level().getNearestPlayer(this, 48.0);
+
+		// You never get to reach him. Walking up to something that does not
+		// react is how a threat becomes an exhibit.
+		if (nearest != null && this.distanceTo(nearest) < TOO_CLOSE) {
+			this.vanish();
+			return;
+		}
+
 		if (nearest != null && isLookingAtMe(nearest)) {
 			// Hold still while watched — moving would break the illusion that
 			// he was always standing there.
@@ -93,9 +133,9 @@ public class HerobrineEntity extends PathfinderMob {
 	}
 
 	/**
-	 * Vanilla's Enderman test: the further away he is, the tighter the angle
-	 * has to be before it counts as being looked at, so distant glances do not
-	 * trigger him. Requires unobstructed line of sight.
+	 * The further away he is, the tighter the angle has to be, so a distant
+	 * glance does not count. Requires unobstructed line of sight — looking at
+	 * a wall he happens to be behind is not seeing him.
 	 */
 	private boolean isLookingAtMe(Player player) {
 		Vec3 view = player.getViewVector(1.0F).normalize();
@@ -106,7 +146,7 @@ public class HerobrineEntity extends PathfinderMob {
 		);
 		double distance = toMe.length();
 		double dot = view.dot(toMe.normalize());
-		return dot > 1.0 - 0.025 / distance && player.hasLineOfSight(this);
+		return dot > 1.0 - GAZE_TOLERANCE / distance && player.hasLineOfSight(this);
 	}
 
 	/** Silent by design — no idle noise to give away where he is standing. */
