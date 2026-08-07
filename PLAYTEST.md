@@ -113,7 +113,44 @@ cheats, same as `/summon`.
 > a brand new world gives you nothing at all until wrath reaches 60. That is
 > correct. Use `/herobrine wrath 60` to skip ahead when testing.
 
-### A8 — He does not wreck anything
+### A8 — Living the pacing (the real test)
+
+Everything above is mechanical. This is the one that tells you whether the
+mod *works*, and it needs time compression — you cannot judge pacing you have
+to wait 20 minutes to see.
+
+```
+/herobrine speed 20      pacing window drops from 8-20 min to ~24-60s
+/herobrine wrath 60      skip to WATCHER so the stare is in the pool too
+/time set midnight
+```
+
+Now **put the commands away and just play.** Mine, build, wander. Do not
+provoke anything.
+
+- [ ] Things happen without you asking, spaced out, not on a rhythm
+- [ ] You get **footsteps behind you** at least once — and turn around
+- [ ] You find a **torch on the ground, unlit**, that you had placed
+- [ ] The same thing never happens twice in a row
+- [ ] There are stretches where nothing happens at all
+- [ ] Nothing that happens is *destructive* — you can put the torch back
+
+The questions that actually matter, and only you can answer them:
+
+1. Did you turn around when you heard the footsteps?
+2. When you found the unlit torch, did you doubt yourself for a second — or
+   did you immediately think "the mod did that"?
+3. Was the quiet boring, or was it tense?
+
+If (2) is "the mod did that", the traces are too strong for phase 0. If (3)
+is "boring", the window is too long even at normal speed. Both are tuning,
+and both are things I cannot see from here.
+
+> Set `/herobrine speed 1` when you are done. x20 is a testing lie — real
+> pacing is much slower, and judging the *feel* of the slow version needs a
+> normal session.
+
+### A9 — He does not wreck anything
 
 - [ ] He never breaks blocks
 - [ ] He never opens or takes from chests

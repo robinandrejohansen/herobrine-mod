@@ -44,6 +44,14 @@ public final class ManifestationDirector {
 	private static final int SUPPRESS_LAST = 2;
 	private static final int CHECK_INTERVAL = 100;
 
+	/**
+	 * Debug time compression. The real window is 8-20 minutes, which is right
+	 * for play and useless for testing — you cannot judge pacing you have to
+	 * wait an hour to see. This shrinks it so an evening of haunting happens
+	 * in a few minutes.
+	 */
+	private static int speed = 1;
+
 	private static final Map<UUID, Long> nextAllowed = new HashMap<>();
 	private static final Deque<Manifestation> recent = new ArrayDeque<>();
 	private static int tickCounter;
@@ -131,7 +139,18 @@ public final class ManifestationDirector {
 	}
 
 	private static int window(RandomSource random) {
-		return WINDOW_MIN_TICKS + random.nextInt(WINDOW_MAX_TICKS - WINDOW_MIN_TICKS);
+		int base = WINDOW_MIN_TICKS + random.nextInt(WINDOW_MAX_TICKS - WINDOW_MIN_TICKS);
+		return Math.max(40, base / speed);
+	}
+
+	/** 1 is normal. Higher compresses the wait; 20 turns 8-20 min into 24-60s. */
+	public static void setSpeed(int value, MinecraftServer server) {
+		speed = Math.max(1, value);
+		nextAllowed.clear();   // re-arm everyone against the new window
+	}
+
+	public static int speed() {
+		return speed;
 	}
 
 	/** Seconds until this player's next possible manifestation. For /herobrine status. */

@@ -43,6 +43,17 @@ public final class HerobrineCommand {
 					// LOOKS without waiting for night.
 					.then(Commands.literal("force").executes(ctx -> provoke(ctx, true))))
 
+				.then(Commands.literal("speed")
+					.then(Commands.argument("multiplier", IntegerArgumentType.integer(1, 60))
+						.executes(ctx -> {
+							int value = IntegerArgumentType.getInteger(ctx, "multiplier");
+							ManifestationDirector.setSpeed(value, ctx.getSource().getServer());
+							ctx.getSource().sendSuccess(() -> Component.literal(
+								"pacing x" + value + " — window is now roughly "
+									+ (8 * 60 / value) + "-" + (20 * 60 / value) + "s"), false);
+							return 1;
+						})))
+
 				.then(Commands.literal("wrath")
 					.then(Commands.argument("amount", IntegerArgumentType.integer(-10000, 10000))
 						.executes(HerobrineCommand::wrath)))
@@ -64,7 +75,8 @@ public final class HerobrineCommand {
 			+ (remaining >= 0 ? "  |  next phase in " + remaining : "  |  final phase")
 			+ "  |  share " + Wrath.getShare(player)
 			+ "  |  next in " + (seconds < 0 ? "unscheduled" : seconds + "s")
-			+ "  |  light here " + light + (light > 7 ? " (too bright for him)" : " (dark enough)");
+			+ "  |  light here " + light + (light > 7 ? " (too bright for him)" : " (dark enough)")
+			+ (ManifestationDirector.speed() > 1 ? "  |  pacing x" + ManifestationDirector.speed() : "");
 		ctx.getSource().sendSuccess(() -> Component.literal(line), false);
 		return 1;
 	}

@@ -16,6 +16,30 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public enum Manifestation {
 
+	/** Footsteps behind you, once, with nothing there. */
+	FOOTSTEPS(Phase.RUMOUR, 10) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Traces.footsteps(level, player);
+		}
+	},
+
+	/** A sound that belongs somewhere else. */
+	WRONG_SOUND(Phase.RUMOUR, 8) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Traces.wrongSound(level, player);
+		}
+	},
+
+	/** A torch you placed, on the ground, unlit. */
+	SNUFFED_TORCH(Phase.RUMOUR, 12) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Traces.snuffTorch(level, player);
+		}
+	},
+
 	/** He is simply there, at distance, and gone when you look. */
 	THE_STARE(Phase.WATCHER, 10) {
 		@Override
