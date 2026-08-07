@@ -8,6 +8,7 @@ import com.bloomlet.herobrine.wrath.Phase;
 import com.bloomlet.herobrine.wrath.Wrath;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -41,7 +42,16 @@ public final class HerobrineCommand {
 					.executes(ctx -> provoke(ctx, false))
 					// Ignores the darkness requirement. For checking how he
 					// LOOKS without waiting for night.
-					.then(Commands.literal("force").executes(ctx -> provoke(ctx, true))))
+					.then(Commands.literal("force").executes(ctx -> provoke(ctx, true)))
+					// Name one directly, bypassing the pool and suppression.
+					.then(Commands.argument("what", StringArgumentType.word())
+						.suggests((c, b) -> {
+							for (Manifestation m : Manifestation.values()) {
+								b.suggest(m.name().toLowerCase(java.util.Locale.ROOT));
+							}
+							return b.buildFuture();
+						})
+						.executes(HerobrineCommand::provokeNamed)))
 
 				.then(Commands.literal("speed")
 					.then(Commands.argument("multiplier", IntegerArgumentType.integer(1, 60))
@@ -120,11 +130,49 @@ public final class HerobrineCommand {
 		String why = crowded
 			? "one of him is already within 96 blocks"
 			: light > 7
-				? "too bright — light here is " + light + ", he needs 7 or less."
-					+ " Try /time set midnight, go underground, or /herobrine provoke force"
-				: "no standable ground behind you at 26-44 blocks";
-		ctx.getSource().sendSuccess(() -> Component.literal("nothing — " + why), false);
+				? "too bright — light here is " + light + ", he needs 7 or less"
+				: "nowhere valid to place him from here";
+		String tried = ManifestationDirector.eligible(server).stream()
+			.map(Enum::name).reduce((a, b) -> a + ", " + b).orElse("none");
+		String blocked = ManifestationDirector.suppressed().stream()
+			.map(Enum::name).reduce((a, b) -> a + ", " + b).orElse("none");
+		ctx.getSource().sendSuccess(() -> Component.literal(
+			"nothing — " + why
+				+ "  |  tried: " + tried
+				+ "  |  suppressed: " + blocked
+				+ "  |  name one directly with /herobrine provoke <what>"), false);
 		return 0;
+	}
+
+	/** Run one named manifestation, ignoring pool, suppression and phase. */
+	private static int provokeNamed(CommandContext<CommandSourceStack> ctx)
+			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		ServerLevel level = (ServerLevel)player.level();
+		String requested = StringArgumentType.getString(ctx, "what");
+
+		Manifestation match = null;
+		for (Manifestation m : Manifestation.values()) {
+			if (m.name().equalsIgnoreCase(requested)) {
+				match = m;
+				break;
+			}
+		}
+		if (match == null) {
+			String all = java.util.Arrays.stream(Manifestation.values())
+				.map(m -> m.name().toLowerCase(java.util.Locale.ROOT))
+				.reduce((a, b) -> a + ", " + b).orElse("");
+			ctx.getSource().sendSuccess(() -> Component.literal(
+				"no such manifestation. try: " + all), false);
+			return 0;
+		}
+
+		Manifestation chosen = match;
+		boolean ran = ManifestationDirector.runNamed(chosen, level, player);
+		ctx.getSource().sendSuccess(() -> Component.literal(
+			ran ? "ran " + chosen.name()
+				: chosen.name() + " could not run here — wrong surroundings for it"), false);
+		return ran ? 1 : 0;
 	}
 
 	private static int wrath(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {

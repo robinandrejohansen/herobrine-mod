@@ -116,6 +116,10 @@ cheats, same as `/summon`.
       exactly that instead of failing silently
 - [ ] `/herobrine provoke force` places him regardless of light, for checking
       how he looks without waiting for night
+- [ ] **`/herobrine provoke the_stare`** runs one named event directly,
+      ignoring the pool and suppression — use this to test a specific thing
+      rather than rolling for it. Tab-completes the list.
+- [ ] A failed `provoke` now lists what it tried and what was suppressed
 - [ ] `/herobrine provoke` twice in a row: the second says *nothing —
       suppressed*, because the same event cannot fire consecutively
 - [ ] Quit to title and rejoin — **wrath is still there**

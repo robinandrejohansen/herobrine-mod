@@ -199,6 +199,40 @@ public final class ManifestationDirector {
 	}
 
 	/**
+	 * Debug: run one specific manifestation, ignoring the pool, suppression
+	 * and the phase gate. There is no way to test a single event otherwise —
+	 * with the last two suppressed, several draws can pass before the one you
+	 * want comes up.
+	 *
+	 * Deliberately does NOT reschedule or record: forcing a named event is an
+	 * inspection, not a haunting, and it should not perturb the pacing you are
+	 * about to observe.
+	 */
+	public static boolean runNamed(Manifestation manifestation, ServerLevel level, ServerPlayer player) {
+		boolean happened = manifestation.run(level, player);
+		HerobrineMod.LOGGER.info("{} forced by name -> {}", manifestation.name(),
+			happened ? "ran" : "could not run here");
+		return happened;
+	}
+
+	/** What is eligible right now, for debug reporting. */
+	public static List<Manifestation> eligible(MinecraftServer server) {
+		Phase phase = Wrath.phase(server);
+		List<Manifestation> out = new ArrayList<>();
+		for (Manifestation m : Manifestation.values()) {
+			if (phase.atLeast(m.minimum) && !recent.contains(m)) {
+				out.add(m);
+			}
+		}
+		return out;
+	}
+
+	/** Recently used, and therefore blocked. */
+	public static List<Manifestation> suppressed() {
+		return new ArrayList<>(recent);
+	}
+
+	/**
 	 * A manifestation happened and nobody perceived it.
 	 *
 	 * He is meant to be hard to catch — most visits should be missed, that is
