@@ -1,0 +1,317 @@
+# Herobrine — design
+
+> He was already in your world. You are not clearing a dungeon; you are
+> being hunted in your own save file, and the only way out is to become
+> strong enough to end him.
+
+Status: **design only.** Nothing below is implemented except where marked
+`BUILT`.
+
+---
+
+## 1. The pitch
+
+Most Herobrine mods give you a summoning totem and a boss fight. This one
+inverts it: he is present from world creation, he escalates on his own, and
+for a long stretch of the game **you cannot fight him at all**. You hide, you
+light your base, you avoid deep caves at night. Then you find the means to
+give him a body, and the game changes from horror to a fight you have earned.
+
+The arc in one line: **denial → dread → siege → reckoning.**
+
+---
+
+## 2. Design pillars
+
+These are the rules that keep it frightening. Every feature below is
+subordinate to them.
+
+**Deniability first.** Early events must have a mundane explanation. A torch
+is out. A door is open. A pig is dead with no wound. The player should be
+able to tell themselves they misremembered. Horror lives in the gap between
+"something happened" and "I can prove it". Once he is undeniable, that
+tension is spent forever — so spend it late.
+
+**Never twice in a row.** Repetition kills fear faster than anything. The
+same manifestation must never fire consecutively, and recently-used events
+are suppressed. Variety is not decoration here; it is the mechanic.
+
+**Silence is the majority state.** If something happens every five minutes,
+nothing is scary. Long quiet stretches are what make a single sign in a cave
+land. The event budget (§5) exists to enforce restraint against our own
+temptation to add more.
+
+**He is never seen arriving.** Spawning in view turns him into a mob. Placed
+behind you, he was always standing there. `BUILT`
+
+**Player agency must survive.** He can frighten, take, and mark. He must not
+softlock a run or erase a build beyond recovery (§9).
+
+**He acts like a player, not a monster.** Building, mining, opening doors,
+leaving signs, wearing a skin. The uncanny part is that everything he does is
+something *a person* could have done.
+
+---
+
+## 3. The arc
+
+Phases are driven by **Wrath** (§4). Each phase adds to the pool; it does not
+replace it — a phase 4 world can still get a quiet phase 1 stare, and should.
+
+| Phase | Name | He is… | Player posture |
+|---|---|---|---|
+| 0 | **Rumour** | traces only — a sound, a snuffed torch, distant footsteps | unaware |
+| 1 | **Watcher** | seen at distance, gone when looked at `BUILT` | unsettled |
+| 2 | **Trespasser** | touching the world — signs, small builds, dead animals, opened doors | defensive |
+| 3 | **Mimic** | wearing skins and names, possessing mobs, stealing | paranoid |
+| 4 | **Hunter** | chasing, flying, breaking in, weather turning | fleeing |
+| 5 | **Siege** | hordes, sustained assault, blood rain | fighting or dying |
+| — | **Reckoning** | given a body, mortal, furious | hunting *him* |
+
+The player should reach phase 2 in a first evening of play, phase 3 over a
+few sessions, and phase 5 only if they have pushed. Reckoning is opt-in — it
+requires deliberate preparation, never an accident.
+
+---
+
+## 4. Wrath — the memory
+
+A single persistent number per world, plus a smaller per-player share. This
+is the "how much have we done in total" the whole thing hangs on.
+
+**Raises wrath**
+
+| Action | Why it fits |
+|---|---|
+| Time survived in the world | baseline drift; the world remembers |
+| Descending below y-0, first time and per session | depth is his territory |
+| Killing mobs, weighted by rarity | he notices violence |
+| Mining diamonds / ancient debris | greed |
+| Entering the Nether, killing a boss | milestones |
+| Destroying his builds or breaking his signs | **defiance — the biggest single jump** |
+| Sleeping through a night | you denied him the dark |
+
+**Lowers wrath**
+
+| Action | Why |
+|---|---|
+| Leaving his marks untouched for a long stretch | submission |
+| Being underground in the dark without a light | ? |
+| Dying to him | he is satisfied, briefly |
+
+That last one matters: **death should reset a little of the pressure**, or
+phase 5 becomes a death spiral the player cannot escape.
+
+Defiance being the largest riser is the key tuning decision. It makes the
+player's own reaction the engine of escalation — tearing down his sign is
+what summons the next thing. That is a much better loop than a timer.
+
+---
+
+## 5. The manifestation system
+
+The part that determines whether this feels crafted or random.
+
+- **Budget.** At most one manifestation per window (start: 8–20 min, jittered).
+  Never a fixed interval — predictable timing is predictable horror.
+- **Weighted pool per phase**, with weights shifting as wrath climbs inside a
+  phase.
+- **Suppression.** An event that has fired cannot recur for N draws. Same
+  *category* also suppressed, more weakly.
+- **Context gates.** Cave events need a cave. Build events need a base. Sign
+  events need a surface to place on. If nothing qualifies, spend nothing —
+  do not fall back to a generic event just to fire something.
+- **Aftermath quiet.** After a big manifestation, force a long silence. The
+  quiet after is part of the event.
+
+---
+
+## 6. Catalogue
+
+### 6.1 Traces — phase 0–1
+
+Cheap, deniable, high value.
+
+- A torch you placed is on the ground, unlit.
+- Footstep sounds behind you, once, no entity.
+- A distant, wrong sound: cave ambience where there is no cave.
+- Your crafting table or chest is open when you return.
+- One animal in your pen is dead, no damage source, eyes white.
+- Rendered at the very edge of render distance for under a second.
+
+### 6.2 Signs — phase 2+
+
+Literal signs, placed where you will find them: in a dead-end, on your own
+wall, at the bottom of a shaft. Short, lowercase, no punctuation flourish.
+Personal once he knows you.
+
+```
+i was here first          stop digging          it is not your house
+go back                   i can see the light   you left the door open
+this is deep enough       do you sleep          <playername>
+```
+
+Escalating variants at phase 3+ use the player's name, their death count, or
+the coordinates of their bed. **The bed one is the single most effective
+line in the design** — it proves he has been there.
+
+Rules: never more than one sign per manifestation early. A wall of them is
+funny; one in the wrong place is not.
+
+### 6.3 Builds — phase 2+
+
+He builds where you spend time. Track dwell time per chunk; his structures
+appear at the edges of the places you live.
+
+- His name in block letters on a hillside you can see from your base.
+- A 2×2 sand pillar with a redstone torch on top — the classic.
+- A small tomb: a stone box with a sign bearing your name.
+- Two redstone torches set into a dark wall at eye height. Just the eyes.
+- A copy of *your* build, wrong: same shape, obsidian, no door.
+- In caves: a sealed room, ores arranged into a face, an unlit corridor
+  that was lit an hour ago.
+
+Builds should be **discovered, never witnessed**. If the player watches him
+place blocks, he is a mob with an AI. If they walk back into their valley and
+the letters are on the hill, he is a person who was here while they were out.
+
+### 6.4 Mimicry — phase 3+
+
+The strongest idea in the list, and the one to hold back longest.
+
+- **A fake player.** Standing at distance with a name tag and a skin, an
+  ordinary username. Gone when approached. Never fights.
+- **He wears your skin and your name.** He is you, standing in your base,
+  facing the wall. Save this — it should happen once per world, at most.
+- **Possessed mobs.** Any animal or villager can be his: white eyes, doesn't
+  flee, faces you and tracks you as you move, will not attack. A possessed
+  zombie is more dangerous and hits harder.
+- **Theft.** One specific item taken from a chest. Not a stack. Something you
+  will notice and doubt yourself about.
+
+### 6.5 Hunting — phase 4+
+
+Where he stops pretending.
+
+- Chase: fast, direct, on the surface, at night. Does not stop at distance.
+- Flight: brief, over terrain, to cut you off.
+- Breaking in: he removes blocks to reach you. Torches go out around him.
+- Ambush at a chokepoint — the ladder up your mineshaft.
+- Weather turns on his arrival: rain, then lightning that lands *near* you.
+
+### 6.6 Siege — phase 5
+
+- **Blood rain.** Sky and rain tinted red. Persistent, unmissable.
+- **Hordes.** Waves of possessed mobs converging on the player's position,
+  raid-shaped: announced, escalating, with a lull between waves.
+- Lightning that starts fires at the perimeter of your base.
+- He appears during the horde, not fighting, watching.
+
+---
+
+## 7. Making him mortal — the Reckoning
+
+He cannot be hurt. Damage passes through; he vanishes if pressed. The
+endgame is a deliberate ritual that gives him a body.
+
+**The proposal: an Effigy built from what he has done to you.**
+
+Reagents are drops from his own manifestations — so the endgame is gated on
+having *survived content*, not on grinding ore:
+
+- **Ash** — from breaking one of his builds.
+- **A marked sign** — one of his signs, broken and kept.
+- **A hollow eye** — dropped by a possessed mob when killed.
+- **Something of yours he took** — recovered from where he leaves it.
+
+Assemble on an altar; he is bound and mortal until the fight resolves. He
+fights properly: teleports, summons, breaks terrain, drains light.
+
+Why this shape: it makes the horror phase *the tutorial for the boss fight*,
+and it rewards the player for engaging rather than hiding. It also means the
+player chooses when the fight happens — consent matters for the arc to feel
+like triumph rather than relief.
+
+---
+
+## 8. Hiding — the defensive layer
+
+"Run and hide" only works if hiding is a real mechanic with real limits.
+
+| Defence | Works until | Notes |
+|---|---|---|
+| Bright light | phase 4 | he avoids lit areas early; later he unlights them |
+| Fully enclosed room, no windows | phase 4 | later he breaks in |
+| Sleeping | always partially | ends the night, but raises wrath |
+| Being near villagers / iron golems | phase 3 | he possesses them instead |
+| Water / boats | never | he is unbothered, and knowing that is its own scare |
+
+The progression should teach the player that **every defence eventually
+fails**, which is what pushes them toward the Effigy.
+
+---
+
+## 9. Anti-frustration rules
+
+The line between horror and an annoying mod. Non-negotiable.
+
+- **No irreversible destruction of player builds.** He may open doors, snuff
+  torches, take one item, place blocks *nearby*. He does not burn your house
+  down or break your chests.
+- **Everything he places is removable** and drops normally.
+- **Warning before lethality.** Phase 4+ events telegraph — weather, sound,
+  a sign — so death feels earned, not arbitrary.
+- **Death lowers pressure**, so a bad run recovers.
+- **A config for everything**, including full disable of griefing-adjacent
+  behaviour. Some players want the stare and none of the theft.
+- **Never touch another player's stuff in multiplayer** without that player's
+  own wrath justifying it.
+
+---
+
+## 10. Risks and unknowns
+
+Flagged honestly, to be resolved before the relevant phase is built.
+
+- **Skin mimicry is technically uncertain.** Player skins come from Mojang's
+  session servers and are cached client-side. Rendering *the local player's*
+  skin on an entity is very likely feasible; arbitrary usernames may not be.
+  Needs a spike before §6.4 is promised.
+- **Blood rain** probably needs a client-side render hook or biome/fog
+  manipulation, not a simple particle. May be phase-5-only for that reason.
+- **Hordes are a performance risk**, especially on a laptop. Cap concurrent
+  entities hard and prefer fewer, tougher mobs over swarms.
+- **Dwell-time tracking** for build placement needs a cheap representation —
+  per-chunk counters, decayed over time, not a full heatmap.
+- **Multiplayer semantics** for a single shared wrath number are unclear. One
+  aggressive player should not ruin a server for everyone. Possibly per-player
+  wrath with a world-level floor.
+
+---
+
+## 11. Build order
+
+Each step should be playable before the next begins.
+
+1. **Wrath + phases + the manifestation budget.** Infrastructure first — it is
+   what everything hangs on, and it is invisible, so it must be built before
+   there is content pressure.
+2. **Traces and signs** (phase 0–2). Cheapest content, highest atmosphere per
+   line of code. Proves the pacing works.
+3. **Builds and dwell tracking** (phase 2).
+4. **Possessed mobs** (phase 3), then the fake player.
+5. **Hunting behaviours** (phase 4) — chase, break-in, weather.
+6. **The Effigy and the fight** — before phase 5, so there is a way out.
+7. **Siege and hordes** (phase 5) last, once there is a counter to them.
+
+Note step 6 before step 7 deliberately: shipping the siege before the means
+to end it would make the mod unwinnable and unfun.
+
+---
+
+## 12. Already built
+
+- Entity with real emissive eyes and body cracks (`RenderTypes.eyes`)
+- Stalk-to-standoff-distance goal; does not approach or attack
+- Vanishes when watched, with smoke and sound
+- Haunting spawner: darkness-gated, out of view, one at a time
