@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
@@ -110,8 +111,16 @@ public final class Ruins {
 			level.setBlockAndUpdate(base.relative(across, side).above(3), weathered(random));
 		}
 
-		// The eye in the dark.
-		level.setBlockAndUpdate(base.above(1), Blocks.REDSTONE_TORCH.defaultBlockState());
+		// The eye in the dark. A WALL torch on the inside of a post — a
+		// standing torch here has nothing under it, because base is the first
+		// air block above the terrain, and it floated.
+		BlockPos post = base.relative(across, -1).above(1);
+		BlockPos socket = base.above(1);
+		if (level.getBlockState(socket).isAir()
+			&& level.getBlockState(post).isSolid()) {
+			level.setBlockAndUpdate(socket, Blocks.REDSTONE_WALL_TORCH.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, across));
+		}
 		stain(level, base, random, 3);
 		scatter(level, base, random);
 		return true;
@@ -213,17 +222,48 @@ public final class Ruins {
 		}
 	}
 
-	/** Cobwebs and dead bushes. Cheap, and they say "nobody has been here". */
+	/**
+	 * Cobwebs and dead bushes. Cheap, and they say "nobody has been here".
+	 *
+	 * Both need something holding them up, for different reasons. A dead bush
+	 * requires soil beneath it or it pops off the moment the block updates.
+	 * A cobweb is legal in mid-air in vanilla, but one hanging in open space
+	 * reads as a glitch rather than as neglect — webs belong in corners, so
+	 * this only places them touching the structure.
+	 */
 	private static void scatter(ServerLevel level, BlockPos base, RandomSource random) {
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 6; i++) {
 			BlockPos pos = base.offset(random.nextInt(5) - 2, random.nextInt(3), random.nextInt(5) - 2);
 			if (!level.getBlockState(pos).isAir()) {
 				continue;
 			}
-			level.setBlockAndUpdate(pos, random.nextBoolean()
-				? Blocks.COBWEB.defaultBlockState()
-				: Blocks.DEAD_BUSH.defaultBlockState());
+
+			boolean grounded = level.getBlockState(pos.below())
+				.isFaceSturdy(level, pos.below(), Direction.UP);
+
+			if (random.nextBoolean()) {
+				if (touchesSomething(level, pos)) {
+					level.setBlockAndUpdate(pos, Blocks.COBWEB.defaultBlockState());
+				}
+			} else if (grounded && level.getBlockState(pos.below()).isSolid()) {
+				BlockState bush = Blocks.DEAD_BUSH.defaultBlockState();
+				// Ask the block itself whether it can live here rather than
+				// guessing at the soil list, which differs by version.
+				if (bush.canSurvive(level, pos)) {
+					level.setBlockAndUpdate(pos, bush);
+				}
+			}
 		}
+	}
+
+	/** At least one solid neighbour, so a web has a corner to sit in. */
+	private static boolean touchesSomething(ServerLevel level, BlockPos pos) {
+		for (Direction dir : Direction.values()) {
+			if (level.getBlockState(pos.relative(dir)).isSolid()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** Nothing of the player's, and reasonably flat. */

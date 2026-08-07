@@ -229,7 +229,10 @@ walk to it rather than hunting. Signs and pages report their position too.
 - [ ] Everything is **mossy, cracked, weathered** — never fresh stone
 - [ ] **Redstone dust** on the ground around it, like a stain
 - [ ] Cobwebs and dead bushes
-- [ ] The doorway has a single **redstone torch** in it, at head height
+- [ ] The doorway has a single **redstone torch** in it, at head height,
+      **mounted on a post** — not floating in the gap
+- [ ] **Nothing floats.** Cobwebs only sit in corners touching the stone, dead
+      bushes only on ground that can hold them
 - [ ] All of it is ordinary and can be mined
 - [ ] It is **never raised on top of anything you built** — try provoking
       while standing in your base and it should pick somewhere else entirely
