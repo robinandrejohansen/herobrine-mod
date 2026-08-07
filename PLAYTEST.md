@@ -90,8 +90,9 @@ The main event. No commands.
 Mostly invisible by design. These commands are the window into it — they need
 cheats, same as `/summon`.
 
-- [ ] `/herobrine status` prints wrath, phase, your share, and seconds until
-      your next possible manifestation
+- [ ] `/herobrine status` prints wrath, phase, your share, seconds until your
+      next possible manifestation, and the **light level where you stand** —
+      if that reads "too bright for him", he will not appear here
 - [ ] Kill a few mobs — wrath goes up by 1 each
 - [ ] Sleep in a bed — wrath jumps by 12
 - [ ] Stand below y=0 for a minute — wrath rises faster than on the surface
@@ -99,7 +100,11 @@ cheats, same as `/summon`.
 - [ ] `/herobrine wrath 250` — phase should move to **TRESPASSER**
 - [ ] Phase names in order: RUMOUR → WATCHER → TRESPASSER → MIMIC → HUNTER →
       SIEGE
-- [ ] `/herobrine provoke` makes him appear immediately (if the spot allows)
+- [ ] `/herobrine provoke` makes him appear immediately — **needs darkness**
+      (`/time set midnight` or go underground). In daylight it now tells you
+      exactly that instead of failing silently
+- [ ] `/herobrine provoke force` places him regardless of light, for checking
+      how he looks without waiting for night
 - [ ] `/herobrine provoke` twice in a row: the second says *nothing —
       suppressed*, because the same event cannot fire consecutively
 - [ ] Quit to title and rejoin — **wrath is still there**

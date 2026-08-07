@@ -39,21 +39,36 @@ public final class HauntingSpawner {
 	/** Above this, the position is in front of the player and unusable. */
 	private static final double IN_VIEW_DOT = 0.25;
 
+	/** Why a placement did or did not happen — debug commands need the reason. */
+	public enum Outcome {
+		PLACED,
+		ALREADY_NEARBY,
+		NO_DARK_SPOT,
+		BAD_PLAYER
+	}
+
 	/**
 	 * Places him behind the player, if the world allows it.
 	 *
-	 * @return false when it could not happen — too bright, nowhere to stand, or
-	 *         one of him is already nearby. The director treats that as a quiet
-	 *         night rather than retrying.
+	 * The director treats anything but PLACED as a quiet night rather than
+	 * retrying — see ManifestationDirector.
 	 */
 	public static boolean spawnBehind(ServerLevel level, ServerPlayer player) {
+		return place(level, player, false) == Outcome.PLACED;
+	}
+
+	/**
+	 * @param ignoreLight debug only. Skips the darkness requirement so he can
+	 *                    be placed in daylight for appearance testing.
+	 */
+	public static Outcome place(ServerLevel level, ServerPlayer player, boolean ignoreLight) {
 		if (player.isSpectator() || !player.isAlive()) {
-			return false;
+			return Outcome.BAD_PLAYER;
 		}
 
 		AABB nearby = player.getBoundingBox().inflate(SOLITUDE_RADIUS);
 		if (!level.getEntitiesOfClass(HerobrineEntity.class, nearby).isEmpty()) {
-			return false;
+			return Outcome.ALREADY_NEARBY;
 		}
 
 		RandomSource random = level.getRandom();
@@ -68,7 +83,7 @@ public final class HauntingSpawner {
 			int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
 			BlockPos pos = new BlockPos(x, y, z);
 
-			if (level.getMaxLocalRawBrightness(pos) > MAX_LIGHT) {
+			if (!ignoreLight && level.getMaxLocalRawBrightness(pos) > MAX_LIGHT) {
 				continue;
 			}
 			if (isInFrontOf(player, pos)) {
@@ -77,7 +92,7 @@ public final class HauntingSpawner {
 
 			HerobrineEntity herobrine = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
 			if (herobrine == null) {
-				return false;
+				return Outcome.NO_DARK_SPOT;
 			}
 			// Face him at the player from the moment he exists. Turning to
 			// look at you afterwards would give away that he just arrived.
@@ -86,9 +101,9 @@ public final class HauntingSpawner {
 			float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
 			herobrine.snapTo(x + 0.5, y, z + 0.5, yaw, 0.0F);
 			level.addFreshEntity(herobrine);
-			return true;
+			return Outcome.PLACED;
 		}
-		return false;
+		return Outcome.NO_DARK_SPOT;
 	}
 
 	/** True if the position falls inside the player's rough view cone. */

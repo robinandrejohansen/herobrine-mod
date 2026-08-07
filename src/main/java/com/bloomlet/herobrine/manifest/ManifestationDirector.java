@@ -90,9 +90,7 @@ public final class ManifestationDirector {
 		}
 		// Everything is suppressed — better to stay quiet than to repeat.
 		if (eligible.isEmpty()) {
-			if (!forced) {
-				reschedule(player, level, server);
-			}
+			reschedule(player, level, server);
 			return null;
 		}
 
@@ -105,12 +103,10 @@ public final class ManifestationDirector {
 				recent.removeFirst();
 			}
 		}
-		// Reschedule either way. A world that could not accommodate him does
-		// not get retried a tick later — that would turn a quiet cave into a
-		// slot machine.
-		if (!forced) {
-			reschedule(player, level, server);
-		}
+		// Reschedule either way, forced included — otherwise a debug provoke
+		// leaves the window armed and a natural manifestation lands seconds
+		// later, which looks like a pacing bug.
+		reschedule(player, level, server);
 		return happened ? chosen : null;
 	}
 
@@ -147,8 +143,14 @@ public final class ManifestationDirector {
 		return Math.max(0, (due - server.overworld().getGameTime()) / 20);
 	}
 
-	/** Debug: bring the next window forward to now. */
-	public static void provoke(MinecraftServer server, ServerPlayer player) {
-		nextAllowed.put(player.getUUID(), server.overworld().getGameTime());
+	/** Whether anything at all is eligible right now, for debug reporting. */
+	public static boolean anythingEligible(MinecraftServer server) {
+		Phase phase = Wrath.phase(server);
+		for (Manifestation m : Manifestation.values()) {
+			if (phase.atLeast(m.minimum) && !recent.contains(m)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
