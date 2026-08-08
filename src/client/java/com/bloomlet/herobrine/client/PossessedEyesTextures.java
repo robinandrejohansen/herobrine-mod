@@ -26,7 +26,8 @@ import net.minecraft.world.entity.EntityTypes;
 public final class PossessedEyesTextures {
 	private PossessedEyesTextures() {}
 
-	private static final Map<EntityType<?>, Identifier> BY_TYPE = new HashMap<>();
+	private static final Map<EntityType<?>, Identifier> LOCKED = new HashMap<>();
+	private static final Map<EntityType<?>, Identifier> HUNTING = new HashMap<>();
 
 	static {
 		add(EntityTypes.COW, "cow");
@@ -36,10 +37,19 @@ public final class PossessedEyesTextures {
 	}
 
 	private static void add(EntityType<?> type, String name) {
-		BY_TYPE.put(type, HerobrineMod.id("textures/entity/possessed/" + name + ".png"));
+		LOCKED.put(type, HerobrineMod.id("textures/entity/possessed/" + name + ".png"));
+		HUNTING.put(type, HerobrineMod.id("textures/entity/possessed/" + name + "_hunting.png"));
 	}
 
-	public static @org.jspecify.annotations.Nullable Identifier forType(EntityType<?> type) {
-		return BY_TYPE.get(type);
+	/**
+	 * @param menace 0 while it is still stalking, 1 locked on, 2 hunting
+	 * @return the emissive overlay to draw, or null for no eyes at all
+	 */
+	public static @org.jspecify.annotations.Nullable Identifier forType(
+			EntityType<?> type, int menace) {
+		if (menace <= 0) {
+			return null;   // stalking animals look like animals
+		}
+		return (menace >= 2 ? HUNTING : LOCKED).get(type);
 	}
 }

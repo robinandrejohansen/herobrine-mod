@@ -56,8 +56,8 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity,
 	private void herobrine$markRevealed(T entity, S state, float partialTicks,
 	                                    CallbackInfo info) {
 		((PossessedEyes)state).herobrine$eyes(
-			entity instanceof Mob mob && Possession.isRevealed(mob)
-				? PossessedEyesTextures.forType(mob.getType())
+			entity instanceof Mob mob
+				? PossessedEyesTextures.forType(mob.getType(), Possession.menace(mob))
 				: null);
 	}
 }

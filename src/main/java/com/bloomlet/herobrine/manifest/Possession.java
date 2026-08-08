@@ -102,11 +102,34 @@ public final class Possession {
 	 *
 	 * Synced, because the client has to draw it.
 	 */
-	public static final AttachmentType<Boolean> REVEALED = AttachmentRegistry
-		.<Boolean>builder()
-		.persistent(Codec.BOOL)
-		.syncWith(ByteBufCodecs.BOOL.cast(), AttachmentSyncPredicate.all())
-		.buildAndRegister(HerobrineMod.id("possessed_revealed"));
+	public static final AttachmentType<Boolean> REVEALED =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("possessed_revealed"), Codec.BOOL);
+
+	/**
+	 * How far past pretending it is. 0 stalking, 1 locked on, 2 hunting.
+	 *
+	 * The eyes belong HERE and not on the reveal, and separating the two was
+	 * the fix. A stalking animal has to look completely ordinary — that is the
+	 * entire first act, an animal that has stopped moving and will not make a
+	 * sound, unsettling precisely because there is nothing to point at. Marking
+	 * it answers the question the player is supposed to be sitting with.
+	 *
+	 * The eyes are what it wears once it has turned on them, which makes them
+	 * information rather than decoration: they mean this one is coming for you
+	 * now, and they only ever appear at the moment that becomes true.
+	 *
+	 * Driven by the world's phase rather than by anything the individual animal
+	 * did, so it arrives as one event. Every one of his in the world lights up
+	 * on the same tick, which is a far better moment than each of them turning
+	 * privately at its own pace.
+	 *
+	 * Synced, because the client draws from it.
+	 */
+	public static final AttachmentType<Integer> MENACE = AttachmentRegistry
+		.<Integer>builder()
+		.persistent(Codec.INT)
+		.syncWith(ByteBufCodecs.VAR_INT.cast(), AttachmentSyncPredicate.all())
+		.buildAndRegister(HerobrineMod.id("possessed_menace"));
 
 	/**
 	 * How long it has spent coming after them.
@@ -171,6 +194,13 @@ public final class Possession {
 	private static final int LULL_MIN_TICKS = 300;    // fifteen seconds
 	private static final int LULL_MAX_TICKS = 900;    // forty-five
 
+	/** How fast one comes at you once it is hunting. Ordinary animals are 1.0. */
+	private static final double HUNT_SPEED = 1.45;
+	/** Close enough to hit. */
+	private static final double STRIKE_RANGE = 2.2;
+	private static final int STRIKE_COOLDOWN = 20;
+	private static final float STRIKE_DAMAGE = 3.0F;
+
 	/** Sweeps of real pursuit before it stops pretending. Roughly half a minute. */
 	private static final int PURSUIT_TO_REVEAL = 14;
 	/** How many you may put down before it stops spreading. */
@@ -203,6 +233,9 @@ public final class Possession {
 	private record Witness(long until, UUID sawWhom) {}
 
 	private static final Map<UUID, Witness> witnesses = new HashMap<>();
+
+	/** When each hunting mob last landed a blow. Transient by design. */
+	private static final Map<UUID, Long> lastStruck = new HashMap<>();
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Possession::onTick);
@@ -268,6 +301,7 @@ public final class Possession {
 	private static void wake(Mob mob) {
 		if (mob.getAttached(LULL) != null) {
 			mob.setAttached(LULL, 0L);
+		mob.setAttached(MENACE, 0);
 		}
 	}
 
@@ -297,6 +331,29 @@ public final class Possession {
 		int length = LULL_MIN_TICKS
 			+ level.getRandom().nextInt(LULL_MAX_TICKS - LULL_MIN_TICKS + 1);
 		mob.setAttached(LULL, level.getGameTime() + length);
+	}
+
+	/** 0 stalking, 1 locked on, 2 hunting. */
+	public static int menace(Mob mob) {
+		Integer level = mob.getAttached(MENACE);
+		return level == null ? 0 : level;
+	}
+
+	/**
+	 * What the world's phase says they should be by now.
+	 *
+	 * HUNTER is where the whole mod stops being about doubt, so it is where
+	 * they stop pretending to be animals. SIEGE turns them red, which is the
+	 * only red in the mod: white is his, and an animal wearing his eyes reads
+	 * as "he is in there" where red reads as "this is going to hurt you". The
+	 * player has to be able to tell those apart across a field, at a glance,
+	 * while running.
+	 */
+	private static int menaceFor(Phase phase) {
+		if (phase.atLeast(Phase.SIEGE)) {
+			return 2;
+		}
+		return phase.atLeast(Phase.HUNTER) ? 1 : 0;
 	}
 
 	/** True once it has followed you far enough to stop pretending. */
@@ -501,6 +558,7 @@ public final class Possession {
 		mob.setAttached(REVEALED, false);
 		mob.setAttached(PURSUIT, 0);
 		mob.setAttached(LULL, 0L);
+		mob.setAttached(MENACE, 0);
 		mob.setAttached(OWNER, owner.getUUID().toString());
 		mob.setSilent(true);
 		mob.setPersistenceRequired();
@@ -556,6 +614,13 @@ public final class Possession {
 							// the most unsettling thing in this file and costs
 							// nothing to produce.
 							stop(mob);
+						} else if (owner == player && menace(mob) > 0) {
+							// Head locked on, every tick, no matter where it
+							// is or what is in the way. A stalking one looks
+							// away sometimes; this one never does, and that
+							// alone is legible from across a field.
+							lockOn(mob, player);
+							strike(level, mob, player);
 						} else if (owner == player && !lulled(level, mob)
 							&& settled(mob, player)) {
 							hold(mob, player, knowsWhereYouAre(mob, player));
@@ -575,6 +640,18 @@ public final class Possession {
 					// Only its owner moves it. Anyone else it is standing near
 					// is scenery as far as it is concerned.
 					if (!isPossessed(mob) || ownerOf(level, mob) != player) {
+						continue;
+					}
+
+					// The world's phase decides, so they all turn together
+					// rather than each at its own private pace.
+					int should = menaceFor(Wrath.phase(server));
+					if (menace(mob) != should) {
+						mob.setAttached(MENACE, should);
+					}
+					if (should > 0) {
+						// No ring, no lull, no keeping its distance. It comes.
+						mob.getNavigation().moveTo(player, HUNT_SPEED);
 						continue;
 					}
 					if (mob.distanceTo(player) > CATCHUP_RADIUS) {
@@ -729,6 +806,48 @@ public final class Possession {
 			return null;
 		}
 		return level.getServer().getPlayerList().getPlayer(witness.sawWhom());
+	}
+
+	/**
+	 * The head never leaves you.
+	 *
+	 * Deliberately not a stare — it does not stop to look. It keeps running and
+	 * its head stays pointed at the player the whole way, which is what
+	 * separates this from an angry cow: an angry cow looks where it is going.
+	 * Body yaw is left to pathfinding so it still turns corners like a real
+	 * thing.
+	 */
+	private static void lockOn(Mob mob, ServerPlayer player) {
+		mob.getLookControl().setLookAt(player, 90.0F, 90.0F);
+		float yaw = (float)(Math.atan2(
+			player.getZ() - mob.getZ(), player.getX() - mob.getX()) * (180.0 / Math.PI)) - 90.0F;
+		mob.yHeadRot = yaw;
+	}
+
+	/**
+	 * It can actually hurt you now.
+	 *
+	 * Dealt directly rather than through the goal system, because the things he
+	 * takes are animals and villagers and none of them own an attack goal — a
+	 * cow has no way to hit anybody, which is exactly why one that does is
+	 * wrong. Modest per blow and on a cooldown: the danger is that there are
+	 * four of them and they do not stop, not that any one of them is deadly.
+	 *
+	 * They stay ordinary mobs with ordinary health throughout. The player can
+	 * kill them, and at this phase they very much should — which is the arc the
+	 * whole mod is for.
+	 */
+	private static void strike(ServerLevel level, Mob mob, ServerPlayer player) {
+		if (mob.distanceTo(player) > STRIKE_RANGE) {
+			return;
+		}
+		long now = level.getGameTime();
+		Long last = lastStruck.get(mob.getUUID());
+		if (last != null && now - last < STRIKE_COOLDOWN) {
+			return;
+		}
+		lastStruck.put(mob.getUUID(), now);
+		player.hurtServer(level, level.damageSources().mobAttack(mob), STRIKE_DAMAGE);
 	}
 
 	/** Undo whatever the goals decided this tick. */

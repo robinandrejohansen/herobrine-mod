@@ -51,7 +51,21 @@ MOBS = {
 #
 # Still emissive, so it holds up at midnight exactly as it does at noon. Only
 # the intensity changed, never the trick.
-EYE = (206, 210, 216, 160)
+# Two states, and the animal only ever wears one of them.
+#
+# Nothing at all while it is stalking. That is the whole first act: an animal
+# that has stopped moving and will not make a sound is unsettling precisely
+# because it looks completely ordinary, and marking it would answer the
+# question the player is supposed to be sitting with.
+#
+# LOCKED is what it wears once it has turned on them — pale, cool, and still
+# translucent so it sits IN the eye rather than replacing it. HUNTING is the
+# last one, and it is the only red in the mod. Red is doing a job here that
+# white cannot: white is his, and an animal wearing his eyes reads as "he is in
+# there", where red reads as "this is going to hurt you". The player needs to
+# be able to tell those apart across a field, at a glance, while running.
+LOCKED = (206, 210, 216, 175)
+HUNTING = (196, 44, 40, 190)
 CLEAR = (0, 0, 0, 0)
 
 
@@ -73,20 +87,20 @@ def main():
 			f.write(jar.read('assets/minecraft/textures/entity/' + source))
 		width, height, _ = pngio.read(scratch)
 
-		px = [[CLEAR] * width for _ in range(height)]
-		lit = 0
-		for x0, y0, w, h in eyes:
-			for y in range(y0, y0 + h):
-				for x in range(x0, x0 + w):
-					px[y][x] = EYE
-					lit += 1
+		for suffix, colour in (('', LOCKED), ('_hunting', HUNTING)):
+			px = [[CLEAR] * width for _ in range(height)]
+			lit = 0
+			for x0, y0, w, h in eyes:
+				for y in range(y0, y0 + h):
+					for x in range(x0, x0 + w):
+						px[y][x] = colour
+						lit += 1
 
-		# A texture that is entirely transparent renders nothing and would fail
-		# silently, which is the worst way for this to break.
-		assert lit > 0, name
-		out = os.path.join(OUT, name + '.png')
-		pngio.write(out, width, height, px)
-		print('%-9s %dx%d  %d pixels lit' % (name, width, height, lit))
+			# A texture that is entirely transparent renders nothing and would
+			# fail silently, which is the worst way for this to break.
+			assert lit > 0, name
+			pngio.write(os.path.join(OUT, name + suffix + '.png'), width, height, px)
+			print('%-18s %dx%d  %d pixels lit' % (name + suffix, width, height, lit))
 
 	os.remove(scratch)
 

@@ -283,9 +283,11 @@ The command prints which animal and where. Now go and look at it.
 
 **The eyes:**
 
-- [ ] Before it reveals, a possessed cow looks **completely normal**. No glow
-- [ ] After it reveals, its eyes have a **pale sheen** — like something
-      catching light that is not there. Not two white lamps
+- [ ] While it is stalking — at MIMIC, however long it has followed you — it
+      looks **completely normal**. No glow at all, ever
+- [ ] `/herobrine wrath 1000`: every one of his in the world lights up **on
+      the same tick**, pale and cool
+- [ ] `/herobrine wrath 1800`: they go **red**
 - [ ] Take it into a dark cave or wait for night: the eyes are **exactly as
       bright** as at noon. World light does not touch them
 - [ ] They still read as part of the face at ten blocks, not as a light source
@@ -387,6 +389,18 @@ The command prints which animal and where. Now go and look at it.
 - [ ] Run 60+ blocks away: even the ones that had lost interest come. Distance
       overrules it
 - [ ] Once one has **revealed**, it never loses interest again
+
+**When they turn (HUNTER, `/herobrine wrath 1000`):**
+
+- [ ] Eyes on. No more ring, no more keeping their distance — they **come
+      straight at you**, faster than an ordinary animal
+- [ ] The head is **locked on you the whole way**, even while running and
+      turning corners. An angry cow looks where it is going; this does not
+- [ ] They **hit you**. Not hard — the danger is that there are several and
+      they do not stop
+- [ ] They are still ordinary mobs. You can kill them, and you should
+- [ ] Drop back to `/herobrine wrath 500` and they go back to stalking, eyes
+      off
 - [ ] They **ring** you rather than piling up on one side. Stand still in a
       field with six of his and they spread out around you at about 9 blocks
 - [ ] Each keeps its own side as you walk about — they do not reshuffle
