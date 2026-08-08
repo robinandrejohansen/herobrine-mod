@@ -76,6 +76,18 @@ public final class HerobrineCommand {
 					return outcome == HauntingSpawner.Outcome.PLACED ? 1 : 0;
 				}))
 
+				// The tenth-blow church, on demand. Reaching it honestly needs
+				// SIEGE and ten connected swings, which is a long way to walk
+				// to check whether a doorway is in the right wall.
+				.then(Commands.literal("warning").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					com.bloomlet.herobrine.manifest.Reckoning.theWarning(
+						(ServerLevel)p.level(), p, p);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						"the warning goes up — check the log if you cannot see it"), false);
+					return 1;
+				}))
+
 				.then(Commands.literal("dark").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
 					boolean fell = com.bloomlet.herobrine.manifest.TheDark.fall(

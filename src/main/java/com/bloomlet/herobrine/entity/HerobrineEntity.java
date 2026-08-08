@@ -459,6 +459,30 @@ public class HerobrineEntity extends PathfinderMob {
 	 * one who was reached three times and was still standing, and the numbers
 	 * should say which of those he minds more.
 	 */
+	// ---- THE RECKONING ----------------------------------------------------
+	/**
+	 * How many blows it takes, and why it is counted in blows.
+	 *
+	 * Damage would make this fight a different length for every player: a
+	 * netherite axe would end it in four swings and a stone sword would take
+	 * thirty, and every scripted beat in between would land in the wrong place
+	 * or not at all. Counting hits means the fight has the SHAPE it was written
+	 * with — the tenth blow is the tenth blow for everybody.
+	 *
+	 * It also removes the incentive to spend an hour on gear before starting.
+	 * What decides this is whether the player can survive thirty exchanges,
+	 * which is a question about them rather than about their inventory.
+	 *
+	 * Ten is the marker, not the total. Three acts of ten: he gets angrier, then
+	 * the church arrives and tells them what they have done, then it gets much
+	 * worse.
+	 */
+	private static final int TOTAL_HITS = 30;
+	public static final int THE_WARNING = 10;
+
+	private int hits;
+	// ---- END THE RECKONING ------------------------------------------------
+
 	private static final int DEFIANCE_ENDURED = 130;
 	private static final int DEFIANCE_EVADED = 55;
 
@@ -567,7 +591,7 @@ public class HerobrineEntity extends PathfinderMob {
 
 	public static AttributeSupplier.Builder createAttributes() {
 		return Mob.createMobAttributes()
-			.add(Attributes.MAX_HEALTH, 40.0)
+			.add(Attributes.MAX_HEALTH, TOTAL_HITS)
 			// createMobAttributes does NOT include ATTACK_DAMAGE — it is
 			// LivingEntity's set plus FOLLOW_RANGE and nothing else — so
 			// doHurtTarget would have read the bare default and swung for
@@ -1937,11 +1961,35 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	@Override
 	public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
-		return true;
+		// UNTIL SIEGE, AND ONLY UNTIL SIEGE.
+		//
+		// Five phases of a thing that cannot be touched is what gives the sixth
+		// its weight. A player who has spent forty hours learning that swinging
+		// at him does nothing, and then feels a sword actually connect, has been
+		// told something no message box could tell them.
+		//
+		// Environmental damage stays off permanently. He is not to be finished
+		// by a cactus, a fall or somebody's lava bucket — this ends with a
+		// player hitting him or it does not end.
+		if (!(source.getEntity() instanceof ServerPlayer)) {
+			return true;
+		}
+		return Wrath.phase(level.getServer()) != Phase.SIEGE;
 	}
 
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+		// THE RECKONING. He is being killed, and every blow counts the same.
+		//
+		// The incoming number is thrown away on purpose — see TOTAL_HITS. What
+		// a player is swinging decides how the fight LOOKS, never how long it
+		// lasts, so the tenth blow is the tenth blow whether it came from a
+		// stone sword or a netherite axe.
+		if (source.getEntity() instanceof ServerPlayer striker
+			&& Wrath.phase(level.getServer()) == Phase.SIEGE) {
+			return this.takeTheBlow(level, source, striker);
+		}
+
 		if (source.getEntity() instanceof ServerPlayer attacker) {
 			// Swinging at him is the loudest possible defiance.
 			WrathTriggers.defiance(attacker, DEFIANCE_STRUCK);
@@ -1981,6 +2029,65 @@ public class HerobrineEntity extends PathfinderMob {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * One blow of thirty.
+	 *
+	 * He does not relocate, does not flee and does not vanish. That is the
+	 * whole difference between this and every other time a player has swung at
+	 * him: for five phases the answer to a sword was that he was somewhere else
+	 * by the time it arrived, and here he simply stands and takes it and gets
+	 * worse.
+	 */
+	private boolean takeTheBlow(ServerLevel level, DamageSource source, ServerPlayer striker) {
+		this.hits++;
+		this.hunting = true;      // whatever he was doing, he is doing this now
+		this.relenting = false;
+		this.watching = false;
+		this.struck.clear();
+
+		WrathTriggers.defiance(striker, DEFIANCE_STRUCK);
+		this.anger(level);
+
+		if (this.hits >= TOTAL_HITS) {
+			super.hurtServer(level, source, Float.MAX_VALUE);
+			return true;
+		}
+		if (this.hits == THE_WARNING) {
+			com.bloomlet.herobrine.manifest.Reckoning.theWarning(level, striker, this);
+		}
+		// One point of the health bar per blow, which is why MAX_HEALTH is the
+		// hit count rather than a number of hearts. The bar is the honest
+		// progress meter and it is the only one the player gets.
+		this.setHealth(Math.max(1.0F, TOTAL_HITS - this.hits));
+		this.hurtTime = 10;
+		this.hurtDuration = 10;
+		return true;
+	}
+
+	/**
+	 * He gets worse, and it has to be visible without a new texture.
+	 *
+	 * The enderman note was the right reference: what makes one frightening
+	 * when provoked is that it visibly changes while doing nothing else
+	 * differently. So the escalation is particles and fire, both scaling with
+	 * the count, because those cost nothing to add and — unlike a colour on the
+	 * model — cannot crash a client if the mixin selector is wrong, which has
+	 * already happened twice on this project.
+	 */
+	private void anger(ServerLevel level) {
+		int stage = 1 + this.hits / THE_WARNING;
+		level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+			this.getX(), this.getY() + 1.1, this.getZ(),
+			12 * stage, 0.45, 0.7, 0.45, 0.02);
+		level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+			this.getX(), this.getY() + 1.0, this.getZ(),
+			4 * stage, 0.4, 0.6, 0.4, 0.01);
+		level.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.WARDEN_ANGRY, this.getSoundSource(), 1.0F, 0.6F + stage * 0.15F);
+		// More of it every act, and still refused wherever it would spread.
+		this.scorch(level, stage * 2);
 	}
 
 	/**

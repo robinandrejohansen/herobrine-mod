@@ -162,6 +162,19 @@ much faster and is the intended route.
 - [x] He arrives with three bolts on the ground he lands on — the one phase
       that abandons "never seen arriving", and loudly
 
+### The reckoning (SIEGE only)
+- [x] He can be hurt, and only by a player, and only at SIEGE. Five phases of
+      being untouchable is what gives the sixth its weight
+- [x] Counted in BLOWS, not damage — thirty of them. A netherite axe changes
+      how the fight looks and never how long it lasts, so the tenth blow is the
+      tenth blow for everybody
+- [x] He does not flee, relocate or vanish when struck any more. He stands and
+      takes it and gets worse
+- [x] Visibly angrier each act — smoke, soul fire, and more scorch per blow
+- [x] **The tenth blow: the church.** A parish chapel the size of a shed, your
+      grave outside it with your name on the stone, signs saying PRAY, and a
+      bell you hear from wherever you are standing
+
 ### Atmosphere
 - [x] Rain and thunder scale with wrath
 - [x] Nights get longer, days do not get shorter
@@ -202,10 +215,8 @@ ending now exists, so they can be filled in whenever.
 - [ ] **The fight** — he flies, throws fire, looses arrows. Deliberately held
       for the ending rather than spent at HUNTER, or SIEGE has nowhere to go
 - [ ] **SIEGE: the caves and long paths near him** — still to build
-- [ ] **THE RECKONING (the ending)** — he becomes damageable at SIEGE and only
-      there, and the player starts it by swinging. Every hit angers him; at ten
-      hits the church, the grave, the signs; then fireballs, arrows, lightning
-      on your builds. Kill him and it is over
+- [ ] **THE RECKONING, act two and three** — fireballs, arrows, lightning on
+      your builds, flight in combat. The frame is in; the arsenal is not
 - [ ] **A config** — nothing can be switched off. Blocks anyone else playing it
 - [ ] **Nothing points at the houses** — findable only by command or luck
 - [ ] The stranger — an NPC who arrives before him
