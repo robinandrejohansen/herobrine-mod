@@ -6,7 +6,8 @@
 		"ExampleClientMixin",
 		"LivingEntityRenderStateMixin",
 		"LivingEntityRendererMixin",
-		"ClientLevelMixin"
+		"ClientLevelMixin",
+		"WeatherTintMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

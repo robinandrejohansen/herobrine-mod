@@ -95,6 +95,20 @@ public enum Manifestation {
 	},
 
 	/**
+	 * The day ends, the storm arrives, and every torch you own goes out.
+	 *
+	 * The first event that happens TO the world rather than in it. Everything
+	 * before this is deniable and local; nobody talks themselves out of the
+	 * afternoon ending.
+	 */
+	THE_DARK(Phase.HUNTER, 12) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return TheDark.fall(level, player);
+		}
+	},
+
+	/**
 	 * He follows, and none of the rules you learned about him apply.
 	 *
 	 * The only manifestation that does not end when the player stops paying

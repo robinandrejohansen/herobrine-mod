@@ -1,6 +1,8 @@
 package com.bloomlet.herobrine.client;
 
 import com.bloomlet.herobrine.wrath.Phase;
+
+import net.minecraft.util.ARGB;
 import com.bloomlet.herobrine.wrath.Wrath;
 
 import net.minecraft.client.Minecraft;
@@ -188,6 +190,48 @@ public final class Atmosphere {
 			case SIEGE -> 0.0F;
 		};
 	}
+
+	/**
+	 * The rain, turned.
+	 *
+	 * WeatherEffectRenderer builds every raindrop quad with `ARGB.white(alpha)`
+	 * — one hardcoded expression, which is the only reason this is possible at
+	 * all. The texture is greyscale, so the vertex colour IS the colour of the
+	 * rain, and the alpha carries the distance fade and must survive untouched.
+	 *
+	 * Held back until HUNTER, and that is the whole point of doing it as a
+	 * gradient rather than a switch. Rain is rain, and a mod whose rain is red
+	 * from the first afternoon has told the player everything on day one. When
+	 * it does turn it should be the thing they cannot get anybody to believe:
+	 * they looked up, and it was the wrong colour.
+	 *
+	 * @param white the ARGB the renderer was about to use
+	 */
+	public static int rainTint(int white) {
+		float strength = switch (phase()) {
+			case RUMOUR, WATCHER, TRESPASSER, MIMIC -> 0.0F;
+			case HUNTER -> 0.6F;
+			case SIEGE -> 1.0F;
+		};
+		if (strength <= 0.0F) {
+			return white;
+		}
+		int alpha = ARGB.alpha(white);
+		int red = Math.round(255 + (RAIN_RED[0] - 255) * strength);
+		int green = Math.round(255 + (RAIN_RED[1] - 255) * strength);
+		int blue = Math.round(255 + (RAIN_RED[2] - 255) * strength);
+		return ARGB.color(alpha, red, green, blue);
+	}
+
+	/**
+	 * Not blood, and deliberately not.
+	 *
+	 * Rain is thin and half transparent, so a deep arterial red simply goes
+	 * dark and reads as dirty water. This is lighter and hotter than the colour
+	 * anybody would pick on paper, because it has to survive being drawn at
+	 * about a third opacity over whatever is behind it.
+	 */
+	private static final int[] RAIN_RED = { 205, 58, 48 };
 
 	/**
 	 * What the server last told this client.

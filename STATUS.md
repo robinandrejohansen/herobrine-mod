@@ -33,7 +33,7 @@ are the next slice.
 | WATCHER | 60 | the stare | ✅ |
 | TRESPASSER | 200 | signs, ruins, journal pages | ✅ |
 | MIMIC | 500 | possessed mobs | ✅ |
-| HUNTER | 1000 | the hunt — he follows, and stands his ground | ✅ |
+| HUNTER | 1000 | the hunt, the dark | ✅ |
 | SIEGE | 1800 | **none** | ❌ |
 
 Roughly 2½–3 hours of normal play from MIMIC to HUNTER. Culling his animals is
@@ -109,6 +109,15 @@ much faster and is the intended route.
 - [x] Walk into the last of it and he closes it himself, then goes — and the
       torches go with him
 
+### The dark (HUNTER)
+- [x] If it is day, the day ends — forward only, never a free extra night
+- [x] Thunderstorm, at once rather than over a morning
+- [x] Every torch within 22 blocks goes out — dropped, never destroyed
+- [x] Nine bolts land around you over several seconds, visual-only: no fire,
+      no damage, nothing broken
+- [x] It reaches you indoors — the room goes dark and the field outside lights up
+- [x] Rain turns red at HUNTER, fully red at SIEGE
+
 ### Atmosphere
 - [x] Rain and thunder scale with wrath
 - [x] Nights get longer, days do not get shorter
@@ -146,8 +155,8 @@ ending now exists, so they can be filled in whenever.
 ### Everything else outstanding
 - [ ] **The town's remaining buildings** — smithy, 2 shops, 2 pens, church last
 - [ ] **Village names and signposts**, and roads between villages
-- [ ] **HUNTER content** — the hunt is in; the dark (every torch near you goes
-      out at once) is still to build
+- [ ] **The fight** — he flies, throws fire, looses arrows. Deliberately held
+      for the ending rather than spent at HUNTER, or SIEGE has nowhere to go
 - [ ] **SIEGE content** — same
 - [ ] **An ending** — no fight, no Effigy, no way to kill anything
 - [ ] **A config** — nothing can be switched off. Blocks anyone else playing it

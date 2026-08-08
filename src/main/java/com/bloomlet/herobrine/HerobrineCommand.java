@@ -76,6 +76,16 @@ public final class HerobrineCommand {
 					return outcome == HauntingSpawner.Outcome.PLACED ? 1 : 0;
 				}))
 
+				.then(Commands.literal("dark").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					boolean fell = com.bloomlet.herobrine.manifest.TheDark.fall(
+						(ServerLevel)p.level(), p);
+					ctx.getSource().sendSuccess(() -> Component.literal(fell
+						? "the dark falls"
+						: "nothing to take — already night, already storming, no torches"), false);
+					return fell ? 1 : 0;
+				}))
+
 				.then(Commands.literal("provoke")
 					.executes(ctx -> provoke(ctx, false))
 					// Ignores the darkness requirement. For checking how he
