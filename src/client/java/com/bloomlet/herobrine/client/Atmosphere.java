@@ -4,7 +4,9 @@ import com.bloomlet.herobrine.wrath.Phase;
 import com.bloomlet.herobrine.wrath.Wrath;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.ARGB;
+import net.minecraft.world.attribute.AmbientParticle;
 import net.minecraft.world.attribute.EnvironmentAttributeSystem;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 
@@ -25,11 +27,10 @@ import net.minecraft.world.attribute.EnvironmentAttributes;
  * that stop. Vanilla thunder is exactly this and nobody has ever called a
  * thunderstorm fake.
  *
- * Distance survives only in a much smaller role, at the top two phases, as a
- * gentle pull rather than the main event — and every distance moves together
- * with the clouds and the sky, because the previous version scaled terrain fog
- * without them and left crisp clouds hanging over a fogged world, which is its
- * own kind of wrong.
+ * With colour and distance now agreeing, the fog is allowed to be heavy again.
+ * A world reduced to forty per cent of its sight lines is a real thing to be
+ * standing in — it was never the amount that was wrong, it was that the fog
+ * and the sky it met were different colours and the seam gave it away.
  *
  * Nothing at all before TRESPASSER. The early phases have to be an ordinary
  * world with a few things wrong in it, and a world that had visibly changed
@@ -38,23 +39,37 @@ import net.minecraft.world.attribute.EnvironmentAttributes;
 public final class Atmosphere {
 	private Atmosphere() {}
 
-	/** What everything drifts towards: cold, dark, and nearly colourless. */
-	private static final int PALL = ARGB.color(255, 54, 56, 62);
-	/** Fog goes slightly warmer than the sky, so the two do not flatten together. */
-	private static final int HAZE = ARGB.color(255, 62, 58, 58);
+	/**
+	 * What the world drifts towards: cold, dark, and nearly colourless.
+	 *
+	 * ONE colour, used for the sky and the fog and the clouds alike, and that
+	 * is the fix that lets the fog get heavy without looking painted on. Real
+	 * distance fog is invisible as fog — you see it as the horizon dissolving —
+	 * and that only works if the fog is the same colour as the sky it meets. The
+	 * first version blended them toward different colours at different rates, so
+	 * a seam appeared where the fogged ground met the sky, and a seam is exactly
+	 * what the eye reads as fake.
+	 *
+	 * Converged like this, the far plane can come a long way in and still look
+	 * like weather, because there is nothing to see except a world quietly
+	 * running out.
+	 */
+	private static final int PALL = ARGB.color(255, 58, 60, 66);
 
 	public static void addLayers(EnvironmentAttributeSystem.Builder builder) {
+		// Same target, same strength, all three. They must agree.
 		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_COLOR,
-			(colour, tick) -> ARGB.srgbLerp(pall() * 0.85F, colour, PALL));
+			(colour, tick) -> ARGB.srgbLerp(pall(), colour, PALL));
 		builder.addTimeBasedLayer(EnvironmentAttributes.FOG_COLOR,
-			(colour, tick) -> ARGB.srgbLerp(pall() * 0.7F, colour, HAZE));
+			(colour, tick) -> ARGB.srgbLerp(pall(), colour, PALL));
 		builder.addTimeBasedLayer(EnvironmentAttributes.CLOUD_COLOR,
 			(colour, tick) -> ARGB.srgbLerp(pall(), colour, PALL));
 		builder.addTimeBasedLayer(EnvironmentAttributes.STAR_BRIGHTNESS,
 			(brightness, tick) -> brightness * (1.0F - pall()));
 
-		// Distance, gently, and all three together so nothing is left sharp
-		// while the rest of the world hazes.
+		// Now the distance can do real work, because there is no longer a seam
+		// for it to expose. All three move together — terrain, sky and cloud —
+		// so nothing stays sharp while the rest goes soft.
 		builder.addTimeBasedLayer(EnvironmentAttributes.FOG_END_DISTANCE,
 			(distance, tick) -> distance * closeness());
 		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_FOG_END_DISTANCE,
@@ -62,8 +77,34 @@ public final class Atmosphere {
 		builder.addTimeBasedLayer(EnvironmentAttributes.CLOUD_FOG_END_DISTANCE,
 			(distance, tick) -> distance * closeness());
 
+		// Something in the air, in every biome, which is the part vanilla
+		// weather cannot do — snow falls where it is cold and rain where it is
+		// not, and neither asks how bad things have got. Ash does.
+		builder.addTimeBasedLayer(EnvironmentAttributes.AMBIENT_PARTICLES,
+			(particles, tick) -> fall() <= 0.0F ? particles
+				: AmbientParticle.of(ParticleTypes.WHITE_ASH, fall()));
+
 		builder.addTimeBasedLayer(EnvironmentAttributes.MUSIC_VOLUME,
 			(volume, tick) -> volume * loudness());
+	}
+
+	/**
+	 * How much is in the air.
+	 *
+	 * White ash rather than snow, and it is the only thing here that is not a
+	 * recolour of something the world already had. It falls in a desert and a
+	 * jungle and a snowfield alike, which is precisely the point: weather has
+	 * rules and this does not obey them, so a player standing in warm rain
+	 * watching pale flecks come down has seen something the game cannot
+	 * explain to them.
+	 */
+	private static float fall() {
+		return switch (phase()) {
+			case RUMOUR, WATCHER, TRESPASSER -> 0.0F;
+			case MIMIC -> 0.02F;
+			case HUNTER -> 0.06F;
+			case SIEGE -> 0.12F;
+		};
 	}
 
 	/**
@@ -88,17 +129,19 @@ public final class Atmosphere {
 	/**
 	 * And how much is left of the distance.
 	 *
-	 * Deliberately timid next to the colour. Two thirds at SIEGE is a hazy day,
-	 * not a wall thirty blocks off — the previous third-of-normal was the part
-	 * that gave the game away, because no weather in Minecraft has ever done
-	 * that and the eye knows it.
+	 * Allowed to be heavy, now that the fog and the sky it meets are the same
+	 * colour. Forty per cent at SIEGE is a genuine whiteout and it holds up,
+	 * because the horizon dissolving into a sky of its own colour is what real
+	 * distance fog looks like. It was never the amount that gave it away — it
+	 * was the seam.
 	 */
 	private static float closeness() {
 		return switch (phase()) {
-			case RUMOUR, WATCHER, TRESPASSER -> 1.0F;
-			case MIMIC -> 0.92F;
-			case HUNTER -> 0.8F;
-			case SIEGE -> 0.66F;
+			case RUMOUR, WATCHER -> 1.0F;
+			case TRESPASSER -> 0.85F;
+			case MIMIC -> 0.7F;
+			case HUNTER -> 0.52F;
+			case SIEGE -> 0.4F;
 		};
 	}
 

@@ -816,8 +816,12 @@ change the moment the phase does.
       less coloured, clouds toward slate, stars dimmer
 - [ ] It should look like **weather**, not like a filter. If you can tell a mod
       is doing it, that is the bug
-- [ ] Distance barely moves — two thirds at SIEGE, a hazy day rather than a
-      wall thirty blocks off
+- [ ] The fog gets **heavy** — 40% of normal sight at SIEGE, a real whiteout
+- [ ] Look at the horizon. The fogged ground should **dissolve into the sky**
+      with no visible seam between them. The seam is the fake tell — if you can
+      see where fog ends and sky begins, that is the bug
+- [ ] **Ash falls from MIMIC**, in every biome. In a desert, in a jungle, in
+      warm rain. Weather has rules and this does not obey them
 - [ ] Clouds, sky and terrain all haze **together**. Nothing stays sharp while
       the rest goes soft
 - [ ] Biome still reads: a swamp still looks like a swamp, a desert like a
