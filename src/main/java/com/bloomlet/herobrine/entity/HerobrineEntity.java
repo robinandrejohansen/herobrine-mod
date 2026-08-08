@@ -956,7 +956,16 @@ public class HerobrineEntity extends PathfinderMob {
 	 * never gets a turn.
 	 */
 	private void scorch(ServerLevel level) {
-		int wanted = 4 + this.random.nextInt(3);
+		this.scorch(level, 4 + this.random.nextInt(3));
+	}
+
+	/**
+	 * @param wanted how many to try for. Every one of them still has to pass
+	 *               safeToBurn, so this is an intention rather than a promise —
+	 *               swinging at him inside a wooden house leaves nothing at all,
+	 *               which is exactly right.
+	 */
+	private void scorch(ServerLevel level, int wanted) {
 		int lit = 0;
 
 		for (int attempt = 0; attempt < 24 && lit < wanted; attempt++) {
@@ -1820,8 +1829,22 @@ public class HerobrineEntity extends PathfinderMob {
 		if (source.getEntity() instanceof ServerPlayer attacker) {
 			// Swinging at him is the loudest possible defiance.
 			WrathTriggers.defiance(attacker, DEFIANCE_STRUCK);
-			// Whoever swung is not necessarily the only one here, so the same
-			// all-players check applies before he reappears anywhere.
+			// Something is left standing where he was.
+			//
+			// Swinging at him and having him simply not be there is the correct
+			// answer and a slightly empty one — the player gets no
+			// acknowledgement that anything happened, and a hit that reads as
+			// nothing reads as a bug. Three fires on the spot he was occupying
+			// says the swing landed on something, without conceding that it
+			// hurt him.
+			//
+			// Same safeguards as the trespasser scorch, which is why it reuses
+			// it rather than lighting its own: never within two blocks of
+			// anything flammable, never on burnable ground, and gone after six
+			// seconds whatever happens. Take a swing at him indoors and there
+			// will be no fire at all, which is the right outcome.
+			this.scorch(level, 3);
+
 			// Mid-hunt he does not leave, he only gets out of reach.
 			//
 			// Fleeing on a hit would hand the player a way to end a hunt with
@@ -1832,6 +1855,8 @@ public class HerobrineEntity extends PathfinderMob {
 				this.reappearNear(attacker);
 				return false;
 			}
+			// Whoever swung is not necessarily the only one here, so the same
+			// all-players check applies before he reappears anywhere.
 			if (!relocateBehind(level.getEntitiesOfClass(Player.class,
 					this.getBoundingBox().inflate(WATCH_RANGE)))) {
 				// Struck rather than merely approached: he leaves the same way,

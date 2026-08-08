@@ -115,6 +115,8 @@ much faster and is the intended route.
       is not an escape; hiding is. Digging through your wall does not count as
       losing you
 - [x] Still invulnerable — there is no killing him until the ending exists
+- [x] Swing at him and three fires are left on the ground he was standing on.
+      Same safeguards as the trespasser scorch, so indoors you get none
 - [x] He breaks off three times — 26–46 blocks away, standing, watching — and
       each return comes in closer and gives you less room than the last
 - [x] It ends where you can see it: he stops dead in the open, looks at you
