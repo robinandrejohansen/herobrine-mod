@@ -1,7 +1,10 @@
 package com.bloomlet.herobrine.entity;
 
 import com.bloomlet.herobrine.HerobrineMod;
+import com.bloomlet.herobrine.manifest.Cadence;
 import com.bloomlet.herobrine.manifest.ManifestationDirector;
+import com.bloomlet.herobrine.wrath.Phase;
+import com.bloomlet.herobrine.wrath.Wrath;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -54,6 +57,44 @@ public final class HauntingSpawner {
 	 * figure is a worse version of the event. No figure is not the event.
 	 */
 	private static final double CLOSE_RADIUS = 26.0;
+
+	/**
+	 * At SIEGE he does not simply be there. The sky comes with him.
+	 *
+	 * Every appearance before this one is built on him never being seen to
+	 * arrive — you look up and he is already standing there, and the whole
+	 * effect depends on there having been no moment of arrival to point at.
+	 * This is the phase that abandons it, and it should be the loudest possible
+	 * abandonment: three bolts on the ground he is standing on, so the player
+	 * does not find him, they are TOLD where he is from across the valley.
+	 *
+	 * Visual-only, like everything else that throws lightning here. It cannot
+	 * burn anything down, which is the only reason it is allowed to happen in a
+	 * player's field at all.
+	 */
+	private static void arrival(ServerLevel level, BlockPos pos) {
+		if (Wrath.phase(level.getServer()) != Phase.SIEGE) {
+			return;
+		}
+		RandomSource random = level.getRandom();
+		for (int i = 0; i < 3; i++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = random.nextDouble() * 3.5;
+			final double x = pos.getX() + 0.5 + Math.cos(angle) * range;
+			final double z = pos.getZ() + 0.5 + Math.sin(angle) * range;
+			Cadence.in(level.getServer(), i * (3 + random.nextInt(5)), () -> {
+				net.minecraft.world.entity.LightningBolt bolt =
+					net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
+						.create(level, EntitySpawnReason.EVENT);
+				if (bolt == null) {
+					return;
+				}
+				bolt.setVisualOnly(true);
+				bolt.snapTo(x, pos.getY(), z, 0.0F, 0.0F);
+				level.addFreshEntity(bolt);
+			});
+		}
+	}
 
 	// ---- DEBUG AID, DELETE WHEN DONE -------------------------------------
 	// A visual-only bolt on every placement, so a tester can see where he
@@ -389,6 +430,7 @@ public final class HauntingSpawner {
 		// otherwise. Of all the ways to lose a week, being confidently told
 		// the wrong coordinates is the worst.
 		ManifestationDirector.noteLocation(pos);
+		arrival(level, pos);
 		strike(level, pos);   // DEBUG AID — see markSpawns above
 		// A reason to turn around — sometimes. He is still never SEEN
 		// arriving; you turn and find him already standing there.

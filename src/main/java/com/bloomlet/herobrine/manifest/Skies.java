@@ -60,6 +60,21 @@ public final class Skies {
 		Phase phase = Wrath.phase(server);
 		RandomSource random = server.overworld().getRandom();
 
+		// AT SIEGE IT DOES NOT STOP RAINING.
+		//
+		// Every other phase rolls dice for it, because weather that always
+		// does the same thing is not weather. This one is not weather. The
+		// storm is simply the condition now, renewed before it can run out, so
+		// a player never gets the twenty quiet minutes that would let them
+		// believe it had passed.
+		if (phase == Phase.SIEGE) {
+			if (!server.overworld().isThundering()) {
+				server.setWeatherParameters(0, RAIN_MIN, true, true);
+				HerobrineMod.LOGGER.info("the storm does not stop: SIEGE");
+			}
+			return;
+		}
+
 		if (server.overworld().isRaining()) {
 			// Already wet. The only thing left to add is teeth.
 			if (!server.overworld().isThundering() && random.nextFloat() < thunderChance(phase)) {

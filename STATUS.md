@@ -34,7 +34,7 @@ are the next slice.
 | TRESPASSER | 200 | signs, ruins, journal pages | ✅ |
 | MIMIC | 500 | possessed mobs | ✅ |
 | HUNTER | 1000 | the hunt, the dark | ✅ |
-| SIEGE | 1800 | **none** | ❌ |
+| SIEGE | 1800 | the world turns — night stops, storm never ends, animals turn | ✅ |
 
 Roughly 2½–3 hours of normal play from MIMIC to HUNTER. Culling his animals is
 much faster and is the intended route.
@@ -152,6 +152,16 @@ much faster and is the intended route.
 - [x] It reaches you indoors — the room goes dark and the field outside lights up
 - [x] Rain turns red at HUNTER, fully red at SIEGE
 
+### SIEGE — the world turns
+- [x] The night does not end. Not a slower clock, a stopped one
+- [x] Sleeping still works, and is now the most expensive bargain in the game:
+      the only way to see the sun is to bring him closer
+- [x] The storm never stops — renewed before it can run out
+- [x] Every untamed animal turns on you. Half a heart, every two seconds,
+      forever. Nothing to beat, which is the point
+- [x] He arrives with three bolts on the ground he lands on — the one phase
+      that abandons "never seen arriving", and loudly
+
 ### Atmosphere
 - [x] Rain and thunder scale with wrath
 - [x] Nights get longer, days do not get shorter
@@ -191,8 +201,11 @@ ending now exists, so they can be filled in whenever.
 - [ ] **Village names and signposts**, and roads between villages
 - [ ] **The fight** — he flies, throws fire, looses arrows. Deliberately held
       for the ending rather than spent at HUNTER, or SIEGE has nowhere to go
-- [ ] **SIEGE content** — same
-- [ ] **An ending** — no fight, no Effigy, no way to kill anything
+- [ ] **SIEGE: the caves and long paths near him** — still to build
+- [ ] **THE RECKONING (the ending)** — he becomes damageable at SIEGE and only
+      there, and the player starts it by swinging. Every hit angers him; at ten
+      hits the church, the grave, the signs; then fireballs, arrows, lightning
+      on your builds. Kill him and it is over
 - [ ] **A config** — nothing can be switched off. Blocks anyone else playing it
 - [ ] **Nothing points at the houses** — findable only by command or luck
 - [ ] The stranger — an NPC who arrives before him

@@ -52,7 +52,12 @@ public final class Nights {
 		// world left at half speed would stay that way after the mod was
 		// removed, and the player would have no idea why their nights were
 		// wrong and nothing to blame.
-		ServerLifecycleEvents.SERVER_STOPPING.register(server -> apply(server, 1.0F));
+		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+			apply(server, 1.0F);
+			// A paused clock is saved data too. Leaving one behind would give
+			// somebody a world with no sunrise and nothing to blame for it.
+			hold(server, false);
+		});
 	}
 
 	private static void onTick(MinecraftServer server) {
@@ -61,7 +66,44 @@ public final class Nights {
 		}
 		long hour = server.overworld().getOverworldClockTime() % 24000L;
 		boolean dark = hour >= NIGHT_FROM && hour < NIGHT_TO;
-		apply(server, dark ? rateFor(Wrath.phase(server)) : 1.0F);
+		Phase phase = Wrath.phase(server);
+
+		// AT SIEGE THE NIGHT SIMPLY DOES NOT END.
+		//
+		// Not a slower clock — a stopped one. Slowing it further was the
+		// obvious next step off the existing curve and it is the wrong shape:
+		// a night at a third speed is a night that still ends, so a player
+		// waits it out and the phase is something to be endured for twenty
+		// minutes rather than a world they now live in.
+		//
+		// The sun not coming up at all is a different sentence. It is also
+		// completely unambiguous, which matters for the LAST phase — every
+		// other atmosphere effect here is deniable on purpose, and this one
+		// must not be.
+		//
+		// Sleeping still works and is still the way out, which is the trade the
+		// whole mod is built on. It costs wrath every time, and at SIEGE that
+		// is the most expensive bargain in the game: the only way to see the
+		// sun is to bring him closer.
+		hold(server, phase == Phase.SIEGE && dark);
+		apply(server, dark ? rateFor(phase) : 1.0F);
+	}
+
+	/** What we last asked for, so the clock is only ever paused once. */
+	private static boolean held;
+
+	private static void hold(MinecraftServer server, boolean stop) {
+		if (stop == held) {
+			return;
+		}
+		Optional<? extends Holder<WorldClock>> clock =
+			server.overworld().registryAccess().get(WorldClocks.OVERWORLD);
+		if (clock.isEmpty()) {
+			return;
+		}
+		server.clockManager().setPaused(clock.get(), stop);
+		held = stop;
+		HerobrineMod.LOGGER.info(stop ? "the night stops" : "the clock runs again");
 	}
 
 	private static void apply(MinecraftServer server, float rate) {
