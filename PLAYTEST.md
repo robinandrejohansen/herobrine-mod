@@ -271,6 +271,18 @@ The command prints which animal and where. Now go and look at it.
 - [ ] It never attacks you
 - [ ] Walk 40 blocks away and back — it is still there, still watching, and it
       does not despawn
+
+**Then walk away and keep walking.** This is the real test:
+
+- [ ] It **comes after you**, on foot, slower than you walk
+- [ ] Sprint 200 blocks across open ground to your base. Wait. It arrives —
+      it does not give up and it does not get stuck a chunk behind you
+- [ ] It never arrives *in front of* you or while you are looking at the spot
+- [ ] Do the same underground: run out of a cave and along a tunnel. It
+      appears **in your passage, behind you** — never embedded in stone or
+      stranded on the mountainside above the cave
+- [ ] Kill it. Run `/herobrine status` before and after: wrath goes up by 25,
+      as **defiance**, not as an ordinary mob kill
 - [ ] Only adults, never babies
 - [ ] It is never taken while you are looking at it
 
