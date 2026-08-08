@@ -575,8 +575,11 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 
 - [ ] Each branch ends in a small **built** room: right angles and brick
       inside a cave that has none
-- [ ] An **iron door** with barred slots either side, so you can see in before
-      you decide anything
+- [ ] The **whole front is iron bars** with an iron door in the middle — it
+      reads as a cell, not a shed
+- [ ] The door **faces the passage** you arrived down, in both cells. This was
+      hardcoded south, so half of them opened into solid rock
+- [ ] A redstone lamp outside each one, where somebody stood to look in
 - [ ] A villager inside. Through the bars its head **sweeps slowly side to
       side**, over and over
 - [ ] Both of them sweep **in step** with each other
@@ -586,6 +589,12 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 - [ ] It hits for about a heart and a half, on a cooldown
 - [ ] **Ordinary villager health.** You can kill it, and you will have to
 - [ ] It has **red** eyes, not white. White is his; this is what he leaves
+- [ ] It wears a **different skin** from a villager — drained grey-green,
+      sunken, with dark patches. Recognisably the same shape, plainly not well
+- [ ] It still wears its **profession clothes**. An infected librarian is
+      still dressed as a librarian
+- [ ] **Ordinary villagers everywhere else are completely untouched.** Check a
+      real village
 - [ ] Leave the door shut and nothing ever happens. They cannot open iron
       doors — every one of these is loose because you let it out
 - [ ] Timber props shored into the passages at intervals: somebody cut this

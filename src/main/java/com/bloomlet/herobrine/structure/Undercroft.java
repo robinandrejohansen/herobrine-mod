@@ -86,8 +86,10 @@ public final class Undercroft {
 		// the lab's cells, which is the point — the farmhouse cellar is where
 		// he tried it first, and the complex under the hill is what he learned
 		// to build afterwards.
-		cell(level, left, random);
-		cell(level, right, random);
+		// Each cell fronts the way you came, so the bars are the first thing
+		// the passage shows you.
+		cell(level, left, Direction.EAST, random);
+		cell(level, right, Direction.SOUTH, random);
 
 		crate(level, chamber.offset(2, 0, 0), HouseBooks.brother(), random);
 		Digging.props(level, chamber, 4, random);
@@ -110,48 +112,72 @@ public final class Undercroft {
 	 * reads as somewhere someone was kept; one you can barely turn round in
 	 * reads as somewhere something was put.
 	 */
-	private static void cell(ServerLevel level, BlockPos at, RandomSource random) {
+	private static void cell(ServerLevel level, BlockPos at, Direction front,
+	                         RandomSource random) {
 		BlockPos floor = Digging.groundUnder(level, at);
 		if (floor == null) {
 			return;
 		}
-		BlockPos corner = floor.offset(-2, 0, -2);
+		BlockPos middle = floor.above();
+		Direction across = front.getClockWise();
 
-		for (int dx = 0; dx < 5; dx++) {
-			for (int dz = 0; dz < 5; dz++) {
+		for (int out = -2; out <= 2; out++) {
+			for (int side = -2; side <= 2; side++) {
 				for (int dy = 0; dy <= 4; dy++) {
-					boolean shell = dx == 0 || dx == 4 || dz == 0 || dz == 4
+					BlockPos pos = middle.relative(front, out).relative(across, side).above(dy - 1);
+					boolean shell = out == -2 || out == 2 || side == -2 || side == 2
 						|| dy == 0 || dy == 4;
-					BlockPos pos = corner.offset(dx, dy, dz);
 					level.setBlock(pos, shell ? brick(random)
 						: Blocks.CAVE_AIR.defaultBlockState(), 2);
 				}
 			}
 		}
 
-		// The door, in the middle of one wall, and a barred slot beside it so
-		// the player sees what is inside before they decide anything.
-		BlockPos door = corner.offset(2, 1, 0);
+		// The whole front is bars, not a wall with a door in it.
+		//
+		// This is what makes it read as a cell rather than as a shed. A door in
+		// masonry is a room; a barred frontage with a door in the middle is a
+		// thing built so that whoever is outside can watch whoever is inside,
+		// and the player understands that in about half a second without being
+		// told. It also means they see what is in there BEFORE they are close
+		// enough to be committed.
+		for (int side = -1; side <= 1; side++) {
+			for (int dy = 1; dy <= 3; dy++) {
+				BlockPos pos = middle.relative(front, 2).relative(across, side).above(dy - 1);
+				level.setBlock(pos, Blocks.IRON_BARS.defaultBlockState(), 2);
+			}
+		}
+
+		// And the door faces the passage, which it did not before — it was
+		// hardcoded south, so half of these opened into solid rock.
+		BlockPos door = middle.relative(front, 2);
 		BlockState iron = Blocks.IRON_DOOR.defaultBlockState()
-			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH);
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, front);
 		level.setBlock(door, iron.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
 			DoubleBlockHalf.LOWER), 2);
 		level.setBlock(door.above(), iron.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
 			DoubleBlockHalf.UPPER), 2);
-		level.setBlock(corner.offset(1, 2, 0), Blocks.IRON_BARS.defaultBlockState(), 2);
-		level.setBlock(corner.offset(3, 2, 0), Blocks.IRON_BARS.defaultBlockState(), 2);
 
-		// Nothing in it but the floor and the marks of a long wait.
+		// A lamp outside it, because somebody used to stand here and look in.
+		BlockPos lamp = middle.relative(front, 3).above(2);
+		if (level.getBlockState(lamp).isAir()) {
+			level.setBlock(lamp, Blocks.REDSTONE_WALL_TORCH.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, front)
+				.setValue(BlockStateProperties.LIT, random.nextBoolean()), 2);
+		}
+
 		for (int i = 0; i < 5; i++) {
-			BlockPos spot = corner.offset(1 + random.nextInt(3), 1, 1 + random.nextInt(3));
-			if (random.nextBoolean()) {
+			BlockPos spot = middle.relative(front, -random.nextInt(2))
+				.relative(across, random.nextInt(3) - 1);
+			if (level.getBlockState(spot).isAir() && random.nextBoolean()) {
 				level.setBlock(spot, Blocks.COBWEB.defaultBlockState(), 2);
 			}
 		}
 
 		Mob kept = EntityTypes.VILLAGER.create(level, EntitySpawnReason.STRUCTURE);
 		if (kept != null) {
-			kept.snapTo(corner.getX() + 2.5, corner.getY() + 1, corner.getZ() + 2.5, 0.0F, 0.0F);
+			BlockPos stand = middle.relative(front, -1);
+			kept.snapTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, 0.0F, 0.0F);
 			Feral.shutIn(kept);
 			level.addFreshEntity(kept);
 		}

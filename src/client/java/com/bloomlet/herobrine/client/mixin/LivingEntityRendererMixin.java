@@ -3,6 +3,7 @@ package com.bloomlet.herobrine.client.mixin;
 import com.bloomlet.herobrine.client.PossessedEyes;
 import com.bloomlet.herobrine.client.PossessedEyesLayer;
 import com.bloomlet.herobrine.client.PossessedEyesTextures;
+import com.bloomlet.herobrine.manifest.Feral;
 import com.bloomlet.herobrine.manifest.Possession;
 
 import net.minecraft.client.model.EntityModel;
@@ -59,5 +60,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity,
 			entity instanceof Mob mob
 				? PossessedEyesTextures.forType(mob.getType(), Possession.menace(mob))
 				: null);
+		((PossessedEyes)state).herobrine$infected(
+			entity instanceof Mob mob && Feral.isFeral(mob));
 	}
 }

@@ -14,4 +14,15 @@ public interface PossessedEyes {
 	@org.jspecify.annotations.Nullable Identifier herobrine$eyes();
 
 	void herobrine$eyes(@org.jspecify.annotations.Nullable Identifier texture);
+
+	/**
+	 * Whether this one wears the infected skin instead of its own.
+	 *
+	 * Separate from the eyes because they answer different questions. The eyes
+	 * say it has turned on you; this says what it IS, and a villager shut in a
+	 * cell for years is infected whether or not it has noticed you yet.
+	 */
+	boolean herobrine$infected();
+
+	void herobrine$infected(boolean infected);
 }
