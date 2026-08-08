@@ -502,6 +502,9 @@ public class HerobrineEntity extends PathfinderMob {
 		// swimming instead of sinking, and zeroing the malus stops the path
 		// finder pricing water as a thing to avoid in the first place.
 		this.getNavigation().setCanFloat(true);
+		// And the pathfinder routes THROUGH doorways rather than treating them
+		// as wall, so he walks in rather than only ever arriving at one.
+		this.getNavigation().setCanOpenDoors(true);
 		this.setPathfindingMalus(net.minecraft.world.level.pathfinder.PathType.WATER, 0.0F);
 		this.setPathfindingMalus(
 			net.minecraft.world.level.pathfinder.PathType.WATER_BORDER, 0.0F);
@@ -1225,6 +1228,15 @@ public class HerobrineEntity extends PathfinderMob {
 		if (!(this.level() instanceof ServerLevel here)) {
 			return;
 		}
+		// If it opens, he opens it. Chopping through a door he could have
+		// simply pushed is the sort of thing that makes a frightening thing
+		// look stupid, and a door swinging open on its own is worse than a door
+		// being destroyed anyway — one of those is somebody coming in, and the
+		// other is only weather with an axe.
+		if (this.openInstead(here, pos)) {
+			this.stopBreaking(here);
+			return;
+		}
 		if (!pos.equals(this.breaking)) {
 			this.stopBreaking(here);
 			this.breaking = pos;
@@ -1253,6 +1265,59 @@ public class HerobrineEntity extends PathfinderMob {
 			here.destroyBlock(pos, true, this);
 			this.stopBreaking(here);
 		}
+	}
+
+	/**
+	 * Push it, if it is the kind of thing that pushes.
+	 *
+	 * Iron is the exception on purpose, and it is the same sentence the cells
+	 * downstairs are written in: iron is what holds. canOpenByHand comes off
+	 * the block's own BlockSetType rather than a hardcoded list, so it is right
+	 * for every wood in the game and for any a mod adds. An iron door still
+	 * stops him — he has to cut it, which at hardness five is three seconds of
+	 * standing there doing it. That is not an obstacle so much as a receipt for
+	 * having built properly.
+	 *
+	 * @return true if it is open, or has just been opened, and there is nothing
+	 *         left here to break
+	 */
+	private boolean openInstead(ServerLevel here, BlockPos pos) {
+		net.minecraft.world.level.block.state.BlockState state = here.getBlockState(pos);
+		if (state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock door) {
+			if (!door.type().canOpenByHand()) {
+				return false;   // iron. He cuts it instead.
+			}
+			if (!state.getValue(net.minecraft.world.level.block.DoorBlock.OPEN)) {
+				door.setOpen(this, here, state, pos, true);
+			}
+			return true;
+		}
+		// Trapdoors and gates have no accessible type() from outside, so the
+		// tags carry it instead. WOODEN_TRAPDOORS excludes the iron one by
+		// construction, which is the same iron rule the doors follow.
+		if (state.is(net.minecraft.tags.BlockTags.WOODEN_TRAPDOORS)) {
+			return this.swingOpen(here, state, pos,
+				net.minecraft.world.level.block.TrapDoorBlock.OPEN,
+				SoundEvents.WOODEN_TRAPDOOR_OPEN);
+		}
+		if (state.is(net.minecraft.tags.BlockTags.FENCE_GATES)) {
+			return this.swingOpen(here, state, pos,
+				net.minecraft.world.level.block.FenceGateBlock.OPEN,
+				SoundEvents.FENCE_GATE_OPEN);
+		}
+		return false;
+	}
+
+	private boolean swingOpen(ServerLevel here,
+			net.minecraft.world.level.block.state.BlockState state, BlockPos pos,
+			net.minecraft.world.level.block.state.properties.BooleanProperty open,
+			net.minecraft.sounds.SoundEvent sound) {
+		if (!state.getValue(open)) {
+			here.setBlock(pos, state.setValue(open, true), 10);
+			here.playSound(null, pos, sound, net.minecraft.sounds.SoundSource.BLOCKS,
+				1.0F, here.getRandom().nextFloat() * 0.1F + 0.9F);
+		}
+		return true;
 	}
 
 	private void stopBreaking(ServerLevel here) {

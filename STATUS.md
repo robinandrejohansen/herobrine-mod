@@ -115,9 +115,13 @@ much faster and is the intended route.
 - [x] Swims at walking speed; a lake is not a moat
 - [x] Ends after 100 seconds, or when you put 52 blocks between you
 - [x] Blocked by a ravine, he stops trying and reappears closer, behind you
-- [x] Shut a door on him and he comes through it — diamond axe for wood,
-      pickaxe for stone, cracking overlay, one visible swing at a time. Every
-      block DROPS, so you lose the wall and nothing else
+- [x] Wooden doors, gates and trapdoors simply open for him — he does not chop
+      what he can push
+- [x] Iron holds. He has to cut an iron door, and that is three seconds you
+      bought by building properly
+- [x] Anything else he mines through — diamond axe for wood, pickaxe for stone,
+      cracking overlay, one visible swing at a time. Every block DROPS, so you
+      lose the wall and nothing else
 - [x] The standoff breaks: 17 blocks becomes 7, and he no longer leaves
 - [x] Walk into the last of it and he closes it himself, then goes — and the
       torches go with him
