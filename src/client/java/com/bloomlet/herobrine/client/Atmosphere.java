@@ -4,63 +4,101 @@ import com.bloomlet.herobrine.wrath.Phase;
 import com.bloomlet.herobrine.wrath.Wrath;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.attribute.EnvironmentAttributeSystem;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 
 /**
- * The world closes in.
+ * The world goes wrong, in the way Minecraft's own weather goes wrong.
  *
- * Two effects, and between them they do something nothing else in the mod can:
- * they change the world itself rather than putting something in it. Every other
- * manifestation is an event a player could have missed. These are conditions
- * they are inside, all the time, with no moment they could point at.
+ * The first attempt at this led with fog DISTANCE — shrink the far plane, watch
+ * the horizon close in — and it read as a filter switched on over the top of
+ * the game rather than as weather. Checking what vanilla actually does explains
+ * why: its rain and thunder layers never touch a fog distance at all. Not once.
+ * What they change is COLOUR and LIGHT — sky blended toward grey, fog
+ * multiplied darker, clouds greyed, sky light dimmed, stars put out.
  *
- * FOG is the only thing available that makes the world SMALLER. Rain you look
- * through; fog takes the render distance away and turns the horizon into
- * whatever is thirty blocks off. A player at SIEGE is walking around a world
- * the size of a room, and everything the mod does at a distance — the figure at
- * the treeline, the animal that stopped — now happens at the edge of what they
- * can see instead of comfortably beyond it.
+ * So distance was never the game's vocabulary for this, and using it meant
+ * speaking with an accent no player has ever heard from Minecraft. The rewrite
+ * says the same thing in the language the game already uses: a sky that greys
+ * off, fog that darkens and loses its colour, clouds that go to slate, stars
+ * that stop. Vanilla thunder is exactly this and nobody has ever called a
+ * thunderstorm fake.
  *
- * THE MUSIC STOPS, and it is the cheapest frightening thing in the entire
- * project: one number, falling to nothing. Minecraft's ambient music is so
- * constant that players stop hearing it, which is exactly why taking it away
- * works. Nobody notices silence arriving. They notice, an hour later, that they
- * have been tense for a while and cannot say why.
+ * Distance survives only in a much smaller role, at the top two phases, as a
+ * gentle pull rather than the main event — and every distance moves together
+ * with the clouds and the sky, because the previous version scaled terrain fog
+ * without them and left crisp clouds hanging over a fogged world, which is its
+ * own kind of wrong.
  *
- * Nothing happens before TRESPASSER. The early phases have to be an ordinary
+ * Nothing at all before TRESPASSER. The early phases have to be an ordinary
  * world with a few things wrong in it, and a world that had visibly changed
- * would be answering the question the whole first act is built on.
+ * would answer the question the whole first act is built on.
  */
 public final class Atmosphere {
 	private Atmosphere() {}
 
+	/** What everything drifts towards: cold, dark, and nearly colourless. */
+	private static final int PALL = ARGB.color(255, 54, 56, 62);
+	/** Fog goes slightly warmer than the sky, so the two do not flatten together. */
+	private static final int HAZE = ARGB.color(255, 62, 58, 58);
+
 	public static void addLayers(EnvironmentAttributeSystem.Builder builder) {
+		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_COLOR,
+			(colour, tick) -> ARGB.srgbLerp(pall() * 0.85F, colour, PALL));
+		builder.addTimeBasedLayer(EnvironmentAttributes.FOG_COLOR,
+			(colour, tick) -> ARGB.srgbLerp(pall() * 0.7F, colour, HAZE));
+		builder.addTimeBasedLayer(EnvironmentAttributes.CLOUD_COLOR,
+			(colour, tick) -> ARGB.srgbLerp(pall(), colour, PALL));
+		builder.addTimeBasedLayer(EnvironmentAttributes.STAR_BRIGHTNESS,
+			(brightness, tick) -> brightness * (1.0F - pall()));
+
+		// Distance, gently, and all three together so nothing is left sharp
+		// while the rest of the world hazes.
 		builder.addTimeBasedLayer(EnvironmentAttributes.FOG_END_DISTANCE,
 			(distance, tick) -> distance * closeness());
 		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_FOG_END_DISTANCE,
 			(distance, tick) -> distance * closeness());
-		builder.addTimeBasedLayer(EnvironmentAttributes.FOG_START_DISTANCE,
+		builder.addTimeBasedLayer(EnvironmentAttributes.CLOUD_FOG_END_DISTANCE,
 			(distance, tick) -> distance * closeness());
+
 		builder.addTimeBasedLayer(EnvironmentAttributes.MUSIC_VOLUME,
 			(volume, tick) -> volume * loudness());
 	}
 
 	/**
-	 * How much of the world is left, as a fraction of what it should be.
+	 * How far the colour has gone over, 0 to 1.
 	 *
-	 * Applied to the distances rather than set outright, so biome and weather
-	 * keep their say. A foggy swamp in a storm at SIEGE is still fogger than a
-	 * clear desert at SIEGE, which is what stops this reading as a filter
-	 * switched on over the top of the game.
+	 * Blended toward rather than set, so biome and weather keep their say. A
+	 * swamp still looks like a swamp and a storm still darkens it further; this
+	 * only ever pulls whatever the world already decided a bit closer to grey.
+	 * The moment it overrides instead of tinting, every biome starts looking
+	 * the same and the world stops being a place.
+	 */
+	private static float pall() {
+		return switch (phase()) {
+			case RUMOUR, WATCHER -> 0.0F;
+			case TRESPASSER -> 0.15F;
+			case MIMIC -> 0.32F;
+			case HUNTER -> 0.5F;
+			case SIEGE -> 0.68F;
+		};
+	}
+
+	/**
+	 * And how much is left of the distance.
+	 *
+	 * Deliberately timid next to the colour. Two thirds at SIEGE is a hazy day,
+	 * not a wall thirty blocks off — the previous third-of-normal was the part
+	 * that gave the game away, because no weather in Minecraft has ever done
+	 * that and the eye knows it.
 	 */
 	private static float closeness() {
 		return switch (phase()) {
-			case RUMOUR, WATCHER -> 1.0F;
-			case TRESPASSER -> 0.85F;
-			case MIMIC -> 0.7F;
-			case HUNTER -> 0.5F;
-			case SIEGE -> 0.35F;
+			case RUMOUR, WATCHER, TRESPASSER -> 1.0F;
+			case MIMIC -> 0.92F;
+			case HUNTER -> 0.8F;
+			case SIEGE -> 0.66F;
 		};
 	}
 

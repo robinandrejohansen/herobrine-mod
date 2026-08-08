@@ -811,14 +811,19 @@ and watch the sky. The log prints `the weather turns` whenever the mod does it.
 Set a phase and look at the horizon. Both effects are client-side, so they
 change the moment the phase does.
 
-- [ ] At **RUMOUR** and **WATCHER** nothing is different. Normal fog, normal
-      music
-- [ ] From **TRESPASSER** the horizon starts closing in
-- [ ] At **SIEGE** the world is about a third the size it should be — thick
-      fog, the treeline gone
-- [ ] Biome still matters: a swamp is foggier than a desert at the same phase.
-      This scales vanilla fog, it does not replace it
-- [ ] Weather still stacks on top — a storm at SIEGE should be very close
+- [ ] At **RUMOUR** and **WATCHER** nothing is different at all
+- [ ] From **TRESPASSER** the **colour** goes: sky greying off, fog darker and
+      less coloured, clouds toward slate, stars dimmer
+- [ ] It should look like **weather**, not like a filter. If you can tell a mod
+      is doing it, that is the bug
+- [ ] Distance barely moves — two thirds at SIEGE, a hazy day rather than a
+      wall thirty blocks off
+- [ ] Clouds, sky and terrain all haze **together**. Nothing stays sharp while
+      the rest goes soft
+- [ ] Biome still reads: a swamp still looks like a swamp, a desert like a
+      desert. This tints what the world already decided
+- [ ] Weather still stacks on top — a thunderstorm at SIEGE is the worst it
+      gets
 - [ ] The **music fades**: full until MIMIC, quieter, then **gone at SIEGE**
 - [ ] Drop back to `/herobrine wrath 0` and both return to normal at once
 - [ ] Other dimensions are unaffected in any way that looks wrong
