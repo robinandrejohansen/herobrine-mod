@@ -232,15 +232,21 @@ much faster and is the intended route.
 | # | Name | What it is | Status |
 |---|---|---|---|
 | 1 | The homestead | A home with the furniture still in it | ✅ |
-| 2 | The second house | Same plan, buried, every window bricked | ✅ |
-| 3 | The dig | A bed on bare rock, four tunnels that stop | ✅ |
-| 4 | The shrine | No bed. Standing stones, signs, his kit in a chest | ✅ |
+| 2 | The tower | Stair up the outside, the buried house underneath | ✅ |
+| 3 | The gaol | Fourteen cells. Thirteen open, one shut | ✅ |
+| 4 | The open church | Walls, pillars, an altar, and no roof | ✅ |
 | 5 | The threshold | Not a house. The lab and the seal | ✅ |
 
 Built the two ends first on purpose: the first had to establish what a home of
 his looks like and the last had to establish where it was going, and the middle
 is only legible once both exist. Each of 2–4 is defined by what the one before
-it still had and this one does not — the windows, then the walls, then the bed.
+it still had and this one does not — the windows, then the domesticity, then the
+roof and the bed together.
+
+Every one of them has ground around it to explore and a passage leaving it that
+goes somewhere: the tower's cellar bores east, the gaol's warder's room opens on
+three unlit workings, and the church has a shaft under the chancel heading
+toward the threshold.
 
 Sited in strictly ordered bands (1950–2200, 2250–2450, 2500–2700) that do not
 overlap, so whichever you stumble on first, the next one out is always the next

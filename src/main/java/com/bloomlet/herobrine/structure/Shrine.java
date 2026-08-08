@@ -7,6 +7,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
@@ -14,81 +15,79 @@ import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.Vec3;
 
 /**
- * HOUSE FOUR. Nobody sleeps here.
+ * HOUSE FOUR. A church with no roof, and nobody sleeps here.
+ *
+ * Open to the sky on purpose, and it is the whole design. Every other building
+ * in this sequence is about being enclosed — a farmhouse, then the same
+ * farmhouse buried, then a hall of cells sixteen blocks underground. This one
+ * has walls and pillars and an aisle and a chancel and NO ROOF, so a player
+ * walks in out of the weather into more weather.
+ *
+ * That reversal is what makes it frightening rather than restful. Three
+ * buildings have taught them that his places close over the top of you; this
+ * one is a room built to be seen INTO, which is a much worse thought and takes
+ * no blocks at all to say. It is not shelter. It is a stage.
  *
  * THERE IS NO BED, and after three buildings that each had one that is the
- * loudest thing this mod ever says without a word. One was a home. Two was the
- * same home with the windows filled in. Three had given up everything except a
- * bed, because a person still has to sleep. Four has given up the bed.
- *
- * The player will notice. They have been trained to look for it by the three
- * before this, and they will walk the whole building checking — which is
- * exactly the walk this place is designed to be found on.
- *
- * What is here instead is a room built to STAND IN. A ring of standing stones,
- * a lamp at the centre of it, and the floor worn down to bare rock in a circle
- * where somebody stood for a very long time. No altar in the religious sense,
- * nothing to worship, no idol — a place to be looked at from, which is a much
- * worse idea and takes fewer blocks.
+ * loudest thing this mod ever says without a word. One was a home. Two put the
+ * home underground and built somewhere to watch from on top. Three had no bed
+ * for HIM because it was built to hold other people. Four has none because he
+ * has stopped.
  *
  * The signs are the first writing in the sequence that is not a diary. He has
  * stopped recording and started instructing, and instructions have a reader.
  * That change of address is the content: somebody is being spoken to, and it is
  * not the player, and it may not be a person.
- *
- * One chest, and what is in it is worse than an empty one: everything he was
- * carrying. He put it down before he stood in the circle, because the book says
- * to bring nothing.
  */
 public final class Shrine {
 	private Shrine() {}
 
-	private static final int RADIUS = 7;
+	private static final int WIDTH = 13;
+	private static final int LENGTH = 23;
 
 	public static void build(ServerLevel level, BlockPos origin, RandomSource random) {
-		BlockPos centre = new BlockPos(origin.getX(),
-			Ground.topOf(level, origin.getX(), origin.getZ()) + 1, origin.getZ());
+		BlockPos corner = new BlockPos(origin.getX() - WIDTH / 2,
+			Ground.topOf(level, origin.getX(), origin.getZ()) + 1, origin.getZ() - LENGTH / 2);
 
-		clearing(level, centre, random);
-		stones(level, centre, random);
-		middle(level, centre, random);
-		instructions(level, centre, random);
-		belongings(level, centre, random);
+		clearing(level, corner, random);
+		nave(level, corner, random);
+		colonnade(level, corner, random);
+		chancel(level, corner, random);
+		instructions(level, corner, random);
+		belongings(level, corner, random);
+		graves(level, corner, random);
+		crypt(level, corner, random);
 
-		HerobrineMod.LOGGER.info("the shrine stands at [{}, {}, {}]",
-			centre.getX(), centre.getY(), centre.getZ());
+		HerobrineMod.LOGGER.info("the open church stands at [{}, {}, {}]",
+			corner.getX(), corner.getY(), corner.getZ());
 	}
 
 	/**
-	 * Ground worn down to rock, in a circle, and nothing growing on it.
+	 * Ground worn to rock, well past the walls.
 	 *
-	 * The single cheapest way to say "somebody was here every day for years".
-	 * A building says somebody built something once; bare earth in a ring says
-	 * somebody walked it into that state.
+	 * The cheapest way to say somebody was here every day for years. A building
+	 * says somebody built something once; bare earth around it says somebody
+	 * walked it into that state.
 	 */
-	private static void clearing(ServerLevel level, BlockPos centre, RandomSource random) {
-		for (int dx = -RADIUS - 1; dx <= RADIUS + 1; dx++) {
-			for (int dz = -RADIUS - 1; dz <= RADIUS + 1; dz++) {
-				double reach = Math.hypot(dx, dz);
-				if (reach > RADIUS + 1) {
-					continue;
-				}
-				int x = centre.getX() + dx;
-				int z = centre.getZ() + dz;
+	private static void clearing(ServerLevel level, BlockPos corner, RandomSource random) {
+		for (int dx = -6; dx < WIDTH + 6; dx++) {
+			for (int dz = -6; dz < LENGTH + 6; dz++) {
+				int x = corner.getX() + dx;
+				int z = corner.getZ() + dz;
 				BlockPos ground = new BlockPos(x, Ground.topOf(level, x, z), z);
 
-				// Anything standing on it goes: grass, flowers, saplings. Not
-				// the trees — a felled wood would look like a building site.
 				BlockPos above = ground.above();
 				if (!level.getBlockState(above).isAir()
 					&& !level.getBlockState(above).isSolid()) {
 					level.setBlock(above, Blocks.AIR.defaultBlockState(), 2);
 				}
-				level.setBlock(ground, reach < 2.6
-					? Blocks.STONE.defaultBlockState()
-					: random.nextInt(4) == 0
+				boolean inside = dx >= 0 && dx < WIDTH && dz >= 0 && dz < LENGTH;
+				level.setBlock(ground, inside
+					? paving(random, dx)
+					: random.nextInt(3) == 0
 						? Blocks.PODZOL.defaultBlockState()
 						: Blocks.COARSE_DIRT.defaultBlockState(), 2);
 			}
@@ -96,57 +95,109 @@ public final class Shrine {
 	}
 
 	/**
-	 * A ring of them, uneven, and not one is straight.
+	 * Walls, and they stop where a roof would start.
 	 *
-	 * Deliberately crude. Dressed stone would read as a monument somebody was
-	 * proud of; rough pillars of different heights leaning at different angles
-	 * read as something raised by one person over a long time with no help and
-	 * no plan, which is what happened.
+	 * Chest-high to head-high and no higher, uneven along the top. A wall that
+	 * ends in a straight line reads as unfinished; one that ends raggedly reads
+	 * as a wall that was never going to be finished, which is a different and
+	 * much better sentence.
 	 */
-	private static void stones(ServerLevel level, BlockPos centre, RandomSource random) {
-		int count = 9;
-		for (int i = 0; i < count; i++) {
-			double angle = i * (Math.PI * 2.0 / count) + random.nextDouble() * 0.12;
-			int x = centre.getX() + (int)Math.round(Math.cos(angle) * (RADIUS - 1));
-			int z = centre.getZ() + (int)Math.round(Math.sin(angle) * (RADIUS - 1));
-			int base = Ground.topOf(level, x, z) + 1;
-			int height = 3 + random.nextInt(3);
+	private static void nave(ServerLevel level, BlockPos corner, RandomSource random) {
+		for (int dx = 0; dx < WIDTH; dx++) {
+			for (int dz = 0; dz < LENGTH; dz++) {
+				boolean wall = dx == 0 || dx == WIDTH - 1 || dz == 0 || dz == LENGTH - 1;
+				if (!wall) {
+					continue;
+				}
+				// The doorway, dead centre of the near end.
+				if (dz == LENGTH - 1 && Math.abs(dx - WIDTH / 2) <= 1) {
+					continue;
+				}
+				int x = corner.getX() + dx;
+				int z = corner.getZ() + dz;
+				int y = Ground.topOf(level, x, z) + 1;
+				int height = 3 + random.nextInt(3);
 
-			for (int up = 0; up < height; up++) {
-				// A lean: every second or third course steps a block sideways,
-				// so no two stones are the same silhouette.
-				int lean = up >= height - 1 && random.nextInt(3) == 0 ? 1 : 0;
-				BlockPos at = new BlockPos(x + lean, base + up, z);
-				level.setBlock(at, rough(random), 2);
+				for (int up = 0; up < height; up++) {
+					level.setBlock(new BlockPos(x, y + up, z), rough(random), 2);
+				}
+				// A course of wall blocks along the top, so the edge is a
+				// parapet rather than a cut.
+				level.setBlock(new BlockPos(x, y + height, z),
+					Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
 			}
 		}
 	}
 
-	/** The middle: a lamp, and the ground around it worn to nothing. */
-	private static void middle(ServerLevel level, BlockPos centre, RandomSource random) {
-		BlockPos plinth = new BlockPos(centre.getX(),
-			Ground.topOf(level, centre.getX(), centre.getZ()) + 1, centre.getZ());
-		level.setBlock(plinth, Blocks.CHISELED_STONE_BRICKS.defaultBlockState(), 2);
-		level.setBlock(plinth.above(), Blocks.SOUL_LANTERN.defaultBlockState(), 2);
+	/**
+	 * Two rows of pillars holding nothing up.
+	 *
+	 * They carry no roof — there is no roof. They are here because a roofless
+	 * hall with bare walls is a yard, and the moment there are columns down
+	 * both sides it is unmistakably a nave, and the player understands they are
+	 * standing in a church rather than a ruin.
+	 */
+	private static void colonnade(ServerLevel level, BlockPos corner, RandomSource random) {
+		for (int dz = 4; dz < LENGTH - 4; dz += 3) {
+			for (int dx : new int[] { 3, WIDTH - 4 }) {
+				int x = corner.getX() + dx;
+				int z = corner.getZ() + dz;
+				int y = Ground.topOf(level, x, z) + 1;
+				int height = 5 + random.nextInt(2);
 
-		// Four candles, and they are lit. Somebody has been back recently.
-		for (Direction side : Direction.Plane.HORIZONTAL) {
-			BlockPos at = plinth.relative(side, 2);
-			BlockPos ground = new BlockPos(at.getX(),
-				Ground.topOf(level, at.getX(), at.getZ()) + 1, at.getZ());
-			level.setBlock(ground, Blocks.CANDLE.defaultBlockState()
-				.setValue(BlockStateProperties.LIT, true), 2);
+				for (int up = 0; up < height; up++) {
+					level.setBlock(new BlockPos(x, y + up, z),
+						Blocks.STONE_BRICKS.defaultBlockState(), 2);
+				}
+				level.setBlock(new BlockPos(x, y + height, z),
+					Blocks.CHISELED_STONE_BRICKS.defaultBlockState(), 2);
+				// Half of them have come down. A perfect colonnade is a temple;
+				// a broken one is somewhere that has been standing a while.
+				if (random.nextInt(3) == 0) {
+					for (int up = height - 2; up <= height; up++) {
+						level.setBlock(new BlockPos(x, y + up, z),
+							Blocks.AIR.defaultBlockState(), 2);
+					}
+				}
+			}
 		}
 	}
 
-	/**
-	 * The signs, and one book on the plinth.
-	 *
-	 * The signs are terse because he has stopped explaining himself. The book
-	 * carries the reasoning, and the reasoning is the frightening part — every
-	 * line of it is a sane sentence and the paragraph they make is not.
-	 */
-	private static void instructions(ServerLevel level, BlockPos centre, RandomSource random) {
+	/** The far end: a raised chancel, an altar, and candles somebody lit. */
+	private static void chancel(ServerLevel level, BlockPos corner, RandomSource random) {
+		for (int dx = 2; dx < WIDTH - 2; dx++) {
+			for (int dz = 1; dz <= 5; dz++) {
+				int x = corner.getX() + dx;
+				int z = corner.getZ() + dz;
+				int y = Ground.topOf(level, x, z) + 1;
+				level.setBlock(new BlockPos(x, y, z),
+					Blocks.POLISHED_ANDESITE.defaultBlockState(), 2);
+			}
+		}
+		int mx = corner.getX() + WIDTH / 2;
+		int mz = corner.getZ() + 3;
+		int my = Ground.topOf(level, mx, mz) + 2;
+
+		BlockPos altar = new BlockPos(mx, my, mz);
+		level.setBlock(altar, Blocks.CHISELED_DEEPSLATE.defaultBlockState(), 2);
+		level.setBlock(altar.west(), Blocks.CHISELED_DEEPSLATE.defaultBlockState(), 2);
+		level.setBlock(altar.east(), Blocks.CHISELED_DEEPSLATE.defaultBlockState(), 2);
+		level.setBlock(altar.above(), Blocks.SOUL_LANTERN.defaultBlockState(), 2);
+
+		for (BlockPos at : new BlockPos[] { altar.west(2), altar.east(2) }) {
+			level.setBlock(at, Blocks.CANDLE.defaultBlockState()
+				.setValue(BlockStateProperties.LIT, true), 2);
+		}
+		// Banners behind it, in the only colours the place could make.
+		for (int dx = -2; dx <= 2; dx += 4) {
+			level.setBlock(altar.offset(dx, 1, -1), Blocks.WOOL
+				.pick(random.nextBoolean() ? DyeColor.RED : DyeColor.BROWN)
+				.defaultBlockState(), 2);
+		}
+	}
+
+	/** Pews, of a sort: two rows of stone benches facing the altar. */
+	private static void instructions(ServerLevel level, BlockPos corner, RandomSource random) {
 		String[][] lines = {
 			{ "DO NOT", "SLEEP" },
 			{ "BRING", "NOTHING" },
@@ -155,9 +206,13 @@ public final class Shrine {
 			{ "IT TAKES", "AS LONG", "AS IT TAKES" },
 		};
 		for (int i = 0; i < lines.length; i++) {
-			double angle = i * (Math.PI * 2.0 / lines.length) + 0.35;
-			int x = centre.getX() + (int)Math.round(Math.cos(angle) * (RADIUS - 3));
-			int z = centre.getZ() + (int)Math.round(Math.sin(angle) * (RADIUS - 3));
+			int dx = i % 2 == 0 ? 2 : WIDTH - 3;
+			int dz = 7 + i * 3;
+			if (dz >= LENGTH - 2) {
+				continue;
+			}
+			int x = corner.getX() + dx;
+			int z = corner.getZ() + dz;
 			BlockPos at = new BlockPos(x, Ground.topOf(level, x, z) + 1, z);
 			if (!level.getBlockState(at).isAir()) {
 				continue;
@@ -177,20 +232,20 @@ public final class Shrine {
 	}
 
 	/**
-	 * Everything he was carrying, in a chest at the edge.
+	 * Everything he was carrying, in a chest by the door.
 	 *
-	 * This is the detail the whole building turns on. An empty chest is a place
-	 * somebody left; a chest with a good pickaxe, food, a bed roll and a flint
-	 * and steel in it is a place somebody walked away from ON PURPOSE, having
-	 * first put down every single thing that would have helped them.
+	 * The detail the whole building turns on. An empty chest is a place
+	 * somebody left; a chest with a good pickaxe, food, a flint and steel and a
+	 * bed in it is a place somebody walked into ON PURPOSE having first put
+	 * down every single thing that would have helped them.
 	 */
-	private static void belongings(ServerLevel level, BlockPos centre, RandomSource random) {
-		int x = centre.getX() + RADIUS - 2;
-		int z = centre.getZ();
+	private static void belongings(ServerLevel level, BlockPos corner, RandomSource random) {
+		int x = corner.getX() + 2;
+		int z = corner.getZ() + LENGTH - 3;
 		BlockPos at = new BlockPos(x, Ground.topOf(level, x, z) + 1, z);
 
 		level.setBlock(at, Blocks.CHEST.defaultBlockState()
-			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
 		if (!(level.getBlockEntity(at) instanceof ChestBlockEntity chest)) {
 			return;
 		}
@@ -201,8 +256,71 @@ public final class Shrine {
 		chest.setItem(1, new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE));
 		chest.setItem(2, new ItemStack(net.minecraft.world.item.Items.FLINT_AND_STEEL));
 		chest.setItem(3, new ItemStack(net.minecraft.world.item.Items.BREAD, 9));
-		chest.setItem(4, new ItemStack(net.minecraft.world.item.Items.BED.pick(net.minecraft.world.item.DyeColor.WHITE)));
+		chest.setItem(4, new ItemStack(
+			net.minecraft.world.item.Items.BED.pick(DyeColor.WHITE)));
 		Loot.scatter(chest, random, Loot.Tier.HOMESTEAD);
+	}
+
+	/**
+	 * A graveyard outside the wall, and every stone is blank.
+	 *
+	 * Not a single name. A churchyard with names is a place people were buried
+	 * by somebody who knew them; a churchyard of blank stones is one where
+	 * somebody kept digging and stopped bothering to record who, and it needs
+	 * no sign to say so.
+	 */
+	private static void graves(ServerLevel level, BlockPos corner, RandomSource random) {
+		for (int i = 0; i < 14; i++) {
+			int dx = -5 + random.nextInt(4);
+			int dz = 3 + random.nextInt(LENGTH - 6);
+			int x = corner.getX() + dx;
+			int z = corner.getZ() + dz;
+			int y = Ground.topOf(level, x, z) + 1;
+
+			level.setBlock(new BlockPos(x, y, z),
+				Blocks.STONE_BRICK_WALL.defaultBlockState(), 2);
+			level.setBlock(new BlockPos(x, y - 1, z), Blocks.PODZOL.defaultBlockState(), 2);
+			if (random.nextInt(3) == 0) {
+				level.setBlock(new BlockPos(x, y + 1, z),
+					Blocks.STONE_BRICK_SLAB.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	/**
+	 * And a way down under the chancel, because the sequence does not stop
+	 * here.
+	 *
+	 * Short, unlit, and it goes toward the threshold rather than nowhere. The
+	 * fifth building is the only one of these with an answer in it, and a
+	 * passage leaving the fourth in its direction is the closest this mod comes
+	 * to pointing at anything.
+	 */
+	private static void crypt(ServerLevel level, BlockPos corner, RandomSource random) {
+		BlockPos under = new BlockPos(corner.getX() + WIDTH / 2,
+			Ground.topOf(level, corner.getX() + WIDTH / 2, corner.getZ() + 6) + 1,
+			corner.getZ() + 6);
+
+		BlockPos landing = Descent.shaft(level, under, 11, rough(random));
+		Descent.hatch(level, under.above(), Direction.SOUTH);
+
+		BlockPos end = Digging.bore(level, landing, new Vec3(0.2, -0.3, -1.0), 30, 1.6, random);
+		Digging.hollow(level, end, 3.4, random);
+		Digging.props(level, end, 4, random);
+	}
+
+	private static BlockState paving(RandomSource random, int dx) {
+		if (dx == WIDTH / 2) {
+			return Blocks.POLISHED_ANDESITE.defaultBlockState();
+		}
+		int roll = random.nextInt(10);
+		if (roll < 3) {
+			return Blocks.COBBLESTONE.defaultBlockState();
+		}
+		if (roll < 6) {
+			return Blocks.ANDESITE.defaultBlockState();
+		}
+		return Blocks.STONE_BRICKS.defaultBlockState();
 	}
 
 	private static BlockState rough(RandomSource random) {
@@ -211,10 +329,10 @@ public final class Shrine {
 			return Blocks.MOSSY_COBBLESTONE.defaultBlockState();
 		}
 		if (roll < 7) {
-			return Blocks.ANDESITE.defaultBlockState();
+			return Blocks.COBBLESTONE.defaultBlockState();
 		}
 		if (roll < 10) {
-			return Blocks.COBBLESTONE.defaultBlockState();
+			return Blocks.MOSSY_STONE_BRICKS.defaultBlockState();
 		}
 		return Blocks.CRACKED_STONE_BRICKS.defaultBlockState();
 	}
