@@ -57,6 +57,31 @@ public final class Homestead {
 	/** Where the front door sits in the maps, for facing the path. */
 	private static final int DOOR_X = 6;
 
+	/** The building itself. Everything outside this follows the ground. */
+	private static final int HOUSE_X0 = 2;
+	private static final int HOUSE_X1 = 18;
+	private static final int HOUSE_Z0 = 2;
+	private static final int HOUSE_Z1 = 14;
+
+	/**
+	 * Yard pieces that sit on the ground rather than on the building's floor.
+	 *
+	 * This is the same split vanilla makes. A village house is projected onto
+	 * the heightmap as one rigid block and the terrain is bent to meet it, but
+	 * village ROADS use terrain_matching and follow the ground per column —
+	 * which is why a village on a hillside has level houses and paths that run
+	 * up the slope, instead of one enormous flat platform.
+	 *
+	 * Flattening the whole 29x23 map was the single worst thing about how this
+	 * sat in the world. A rectangle of level ground that size reads as a
+	 * building site from three hundred blocks away, and no amount of moss on
+	 * the walls recovers from it.
+	 */
+	private static final String FOLLOWS_GROUND = "~,-O*fGkmnp";
+
+	/** How far a following block may stray from the floor before it is dropped. */
+	private static final int MAX_DRIFT = 7;
+
 	private static final String[] GROUND = {
 		"                             ",
 		"                             ",
@@ -259,7 +284,18 @@ public final class Homestead {
 					if (c == ' ') {
 						continue;
 					}
-					place(level, origin.offset(x, layer, z), c, x, z, layer, random);
+					BlockPos at;
+					if (FOLLOWS_GROUND.indexOf(c) >= 0) {
+						int ground = groundTop(level, origin.getX() + x, origin.getZ() + z);
+						if (Math.abs(ground - origin.getY()) > MAX_DRIFT) {
+							continue;   // a cliff. Do not build a fence into it
+						}
+						at = new BlockPos(origin.getX() + x, ground + layer, origin.getZ() + z);
+						clearAbove(level, at);
+					} else {
+						at = origin.offset(x, layer, z);
+					}
+					place(level, at, c, x, z, layer, random);
 				}
 			}
 		}
@@ -278,22 +314,44 @@ public final class Homestead {
 	 * tree.
 	 */
 	private static void levelGround(ServerLevel level, BlockPos origin) {
-		for (int z = 0; z < depth(); z++) {
-			for (int x = 0; x < width(); x++) {
+		for (int z = HOUSE_Z0 - 1; z <= HOUSE_Z1 + 1; z++) {
+			for (int x = HOUSE_X0 - 1; x <= HOUSE_X1 + 1; x++) {
 				BlockPos floor = origin.offset(x, 0, z);
-				for (int down = 1; down <= 4; down++) {
+
+				// Down to whatever the ground actually was, in cobblestone.
+				// This is the beard: a house on a slope gets a stone footing
+				// under its low side, which is what a real one would have, and
+				// it reads as part of the building rather than as a lump of
+				// dirt somebody dumped there.
+				for (int down = 1; down <= 10; down++) {
 					BlockPos below = floor.below(down);
-					if (level.getBlockState(below).isAir()
-						|| !level.getFluidState(below).isEmpty()) {
-						level.setBlockAndUpdate(below, Blocks.DIRT.defaultBlockState());
+					if (!level.getBlockState(below).isAir()
+						&& level.getFluidState(below).isEmpty()) {
+						break;
 					}
+					set(level, below, Blocks.COBBLESTONE.defaultBlockState());
 				}
 				for (int up = 0; up < LAYERS.length + 2; up++) {
 					BlockPos above = floor.above(up);
 					if (!level.getBlockState(above).isAir()) {
-						level.setBlockAndUpdate(above, Blocks.AIR.defaultBlockState());
+						set(level, above, Blocks.AIR.defaultBlockState());
 					}
 				}
+			}
+		}
+	}
+
+	/** The top solid block of the natural ground in this column. */
+	private static int groundTop(ServerLevel level, int x, int z) {
+		return level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+	}
+
+	/** Take the grass and flowers off, so nothing is buried in a bush. */
+	private static void clearAbove(ServerLevel level, BlockPos pos) {
+		for (int up = 1; up <= 2; up++) {
+			BlockState state = level.getBlockState(pos.above(up));
+			if (!state.isAir() && !state.isSolid()) {
+				set(level, pos.above(up), Blocks.AIR.defaultBlockState());
 			}
 		}
 	}
@@ -309,7 +367,10 @@ public final class Homestead {
 			case 'M' -> set(level, pos, Blocks.MOSSY_COBBLESTONE.defaultBlockState());
 			case '.' -> set(level, pos, Blocks.SPRUCE_PLANKS.defaultBlockState());
 			case ',' -> set(level, pos, Blocks.COARSE_DIRT.defaultBlockState());
-			case '~' -> set(level, pos, Blocks.GRASS_BLOCK.defaultBlockState());
+			// Nothing. Just the clearing already done above it — so the yard
+			// keeps its own podzol, sand or snow instead of having a patch of
+			// plains grass stamped over it.
+			case '~' -> { }
 			case '-' -> field(level, pos, random);
 			case 'O' -> set(level, pos, Blocks.COBBLESTONE.defaultBlockState());
 			case 'o' -> set(level, pos, Blocks.WATER.defaultBlockState());
@@ -602,12 +663,18 @@ public final class Homestead {
 		set(level, origin.offset(9, -3, 10), Blocks.COBWEB.defaultBlockState());
 	}
 
-	/** Where the ground actually is, averaged so a slope does not tilt it. */
+	/**
+	 * Where the floor goes.
+	 *
+	 * Averaged over the BUILDING's columns only, not the whole map, so the
+	 * house is not lifted or sunk by whatever the ground does out where the
+	 * graves are.
+	 */
 	public static int floorHeightAt(ServerLevel level, int originX, int originZ) {
 		long total = 0;
 		int count = 0;
-		for (int z = 0; z < depth(); z += 4) {
-			for (int x = 0; x < width(); x += 4) {
+		for (int z = HOUSE_Z0; z <= HOUSE_Z1; z += 3) {
+			for (int x = HOUSE_X0; x <= HOUSE_X1; x += 3) {
 				total += level.getHeight(
 					Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, originX + x, originZ + z);
 				count++;

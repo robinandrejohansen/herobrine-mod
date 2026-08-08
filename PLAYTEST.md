@@ -434,7 +434,16 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 
 **Outside:**
 
-- [ ] It sits flat on the ground. No corner floating, no corner buried
+- [ ] The **building** sits flat and level. No corner floating, no corner
+      buried
+- [ ] On a slope it gets a **cobblestone footing** under its low side, like a
+      real house would — not a lump of dirt
+- [ ] The **yard follows the ground.** The fence, the field, the path, the
+      well and the graves run up and down the slope. There is no giant flat
+      rectangle around it
+- [ ] The yard keeps its own ground: podzol in a taiga, sand near a beach. No
+      patch of plains grass stamped over it
+- [ ] Nothing in the yard is buried in a bush or left floating over a dip
 - [ ] A path leads to the door, a dead wheat field, a well
 - [ ] A sheep pen with the **gate shut** and bones inside it
 - [ ] **Three** graves. Count them, then count the names in the books

@@ -145,8 +145,12 @@ public final class Dwellings {
 	private static boolean buildable(ServerLevel level, int x, int z) {
 		int low = Integer.MAX_VALUE;
 		int high = Integer.MIN_VALUE;
-		for (int dz = 0; dz <= Homestead.depth(); dz += Homestead.depth() / 2) {
-			for (int dx = 0; dx <= Homestead.width(); dx += Homestead.width() / 2) {
+		// Only the building has to be level. The yard follows the ground now,
+		// so a site is judged on the ground under the HOUSE rather than on the
+		// whole map — which was rejecting perfectly good spots because a
+		// grave marker forty blocks away would have been on a hill.
+		for (int dz = 2; dz <= 14; dz += 4) {
+			for (int dx = 2; dx <= 18; dx += 4) {
 				BlockPos column = new BlockPos(x + dx, 0, z + dz);
 				if (!level.isLoaded(column.atY(level.getSeaLevel()))) {
 					return false;
@@ -163,6 +167,6 @@ public final class Dwellings {
 				high = Math.max(high, height);
 			}
 		}
-		return high - low <= 4;
+		return high - low <= 3;
 	}
 }
