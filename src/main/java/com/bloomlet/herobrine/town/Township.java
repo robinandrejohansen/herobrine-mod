@@ -92,8 +92,12 @@ public final class Township {
 			// Houses go up now; the rest keep their marked ground until their
 			// own building exists, so the town is walkable at every stage
 			// rather than only at the end.
-			if (plot.kind().equals("house")
-				&& Lodge.build(level, plot.corner(), plot.facing(), random)) {
+			boolean up = switch (plot.kind()) {
+				case "house" -> Lodge.build(level, plot.corner(), plot.facing(), random);
+				case "hall" -> Hall.build(level, plot.corner(), plot.facing(), random);
+				default -> false;
+			};
+			if (up) {
 				built++;
 			}
 		}

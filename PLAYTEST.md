@@ -935,6 +935,29 @@ Find a village. `/locate structure minecraft:village_plains` works.
       rotten flesh and a poisonous potato. Somebody shopped here and stopped
 - [ ] The chest upstairs is ordinary household stuff
 
+### A7r — The hall
+
+```
+/herobrine town here
+```
+
+Nearest the square, on one of the lanes.
+
+- [ ] **Double doors** at the front
+- [ ] Two long tables with benches down both sides
+- [ ] A **hearth** at the head of the room — the only real fire in the town
+- [ ] A counter with a slab top and barrels behind it
+- [ ] **The middle is open to the roof.** Stand between the tables and look up:
+      two storeys of nothing, with a hanging lantern
+- [ ] Stairs up to a **gallery** running round that opening, railed in fences,
+      so you can look down into the room from above
+- [ ] Two guest rooms off the gallery, each with a bed and a chest
+- [ ] Same framing, roof, shutters and windows as the houses — it should look
+      like the same people built it
+
+> The open middle is the whole point. Houses have ceilings because heat is
+> expensive; a room that spends its warmth on height was built to hold a crowd.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the
