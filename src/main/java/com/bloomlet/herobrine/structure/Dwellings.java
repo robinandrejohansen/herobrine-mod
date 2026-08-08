@@ -241,6 +241,9 @@ public final class Dwellings {
 				high = Math.max(high, height);
 			}
 		}
-		return high - low <= 3;
+		// Two, not three. The footing is only three deep now, so a site that
+		// varies more than this cannot be built on without a visible plinth —
+		// better to walk on and find flatter ground.
+		return high - low <= 2;
 	}
 }

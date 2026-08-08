@@ -2,6 +2,9 @@ package com.bloomlet.herobrine.structure;
 
 import com.bloomlet.herobrine.HerobrineMod;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -211,38 +214,15 @@ public final class Homestead {
 		"                             ",
 	};
 
-	private static final String[] ROOF = {
-		"                             ",
-		" ///////////////////         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" /_________________/         ",
-		" ///////////////////         ",
-		"                             ",
-		"                             ",
-		"                             ",
-		"                             ",
-		"                             ",
-		"                             ",
-		"                             ",
-	};
 
 	private static final String[][] LAYERS = {
-		GROUND, COURSE_ONE, COURSE_TWO, COURSE_THREE, COURSE_FOUR, ROOF
+		GROUND, COURSE_ONE, COURSE_TWO, COURSE_THREE, COURSE_FOUR
 	};
 
-	/** Which layer index the roof deck sits on, for the eaves. */
-	private static final int ROOF_LAYER = 5;
+	/** The roof is built rather than mapped — see gable(). */
+	private static final int EAVE = 5;
+	/** The ridge runs along the middle of the depth. */
+	private static final int RIDGE_Z = (HOUSE_Z0 + HOUSE_Z1) / 2;
 
 	static {
 		int width = GROUND[0].length();
@@ -298,6 +278,9 @@ public final class Homestead {
 				}
 			}
 		}
+		gable(level, origin, random);
+		chimney(level, origin, random);
+		porch(level, origin, random);
 		cellar(level, origin, random);
 		HerobrineMod.LOGGER.info("homestead raised at [{}, {}, {}]",
 			origin.getX(), origin.getY(), origin.getZ());
@@ -322,7 +305,11 @@ public final class Homestead {
 				// under its low side, which is what a real one would have, and
 				// it reads as part of the building rather than as a lump of
 				// dirt somebody dumped there.
-				for (int down = 1; down <= 10; down++) {
+				// Three at most. A footing is a course of stone under the low
+				// corner of a building; anything deeper is a plinth, and a
+				// plinth means the site was wrong and should have been
+				// refused rather than propped up.
+				for (int down = 1; down <= 3; down++) {
 					BlockPos below = floor.below(down);
 					if (!level.getBlockState(below).isAir()
 						&& level.getFluidState(below).isEmpty()) {
@@ -330,7 +317,9 @@ public final class Homestead {
 					}
 					set(level, below, Blocks.COBBLESTONE.defaultBlockState());
 				}
-				for (int up = 0; up < LAYERS.length + 2; up++) {
+				// Up past the ridge, so the roof is never built through a tree
+				// that was standing where the gable now is.
+				for (int up = 0; up <= EAVE + 6; up++) {
 					BlockPos above = floor.above(up);
 					if (!level.getBlockState(above).isAir()) {
 						set(level, above, Blocks.AIR.defaultBlockState());
@@ -411,8 +400,6 @@ public final class Homestead {
 			case 'n' -> sign(level, pos, "R.");
 			// Three markers. Four names in the books. Nobody comments on it.
 			case 'p' -> sign(level, pos, "the little one");
-			case '_' -> roofDeck(level, pos, random);
-			case '/' -> eave(level, pos, x, z);
 			default -> { }
 		}
 	}
@@ -556,40 +543,104 @@ public final class Homestead {
 	}
 
 	/**
-	 * The roof, with weather in it.
+	 * A pitched roof, which is most of what makes it look like a house.
 	 *
-	 * Holes rather than a clean deck, because a sound roof on a house nobody
-	 * has lived in for years is the detail that would undo all the others. The
-	 * gaps are what let daylight into the main room in stripes, which is the
-	 * only lighting effect in the building and it is free.
+	 * The first version was a flat deck of planks and it was the single most
+	 * generated-looking thing in the building — nobody has ever built a flat
+	 * roof on a farmhouse, and a box with a lid on it reads as a box. This is a
+	 * proper gable: two slopes stepping up two rows at a time to a ridge down
+	 * the middle, with the ends filled in as triangles and an overhang past the
+	 * walls.
+	 *
+	 * Holes still, roughly one panel in ten. Daylight coming into the main room
+	 * in stripes is the only lighting effect the building has and it is free.
 	 */
-	private static void roofDeck(ServerLevel level, BlockPos pos, RandomSource random) {
-		if (random.nextInt(9) == 0) {
+	private static void gable(ServerLevel level, BlockPos origin, RandomSource random) {
+		for (int h = 0; h <= 3; h++) {
+			int y = EAVE + h;
+			int near = HOUSE_Z0 - 1 + h * 2;
+			int far = HOUSE_Z1 + 1 - h * 2;
+
+			for (int x = HOUSE_X0 - 1; x <= HOUSE_X1 + 1; x++) {
+				// Two rows a side per level: a stair on the low edge so the
+				// slope actually steps, a full course behind it.
+				slate(level, origin.offset(x, y, near), Direction.NORTH, true, random);
+				slate(level, origin.offset(x, y, near + 1), Direction.NORTH, false, random);
+				slate(level, origin.offset(x, y, far), Direction.SOUTH, true, random);
+				slate(level, origin.offset(x, y, far - 1), Direction.SOUTH, false, random);
+			}
+
+			// The gable ends: the triangle of wall left between the two slopes.
+			for (int z = near + 2; z <= far - 2; z++) {
+				set(level, origin.offset(HOUSE_X0, y, z), Blocks.SPRUCE_PLANKS.defaultBlockState());
+				set(level, origin.offset(HOUSE_X1, y, z), Blocks.SPRUCE_PLANKS.defaultBlockState());
+			}
+		}
+		// The ridge itself, capping where the two slopes meet.
+		for (int x = HOUSE_X0 - 1; x <= HOUSE_X1 + 1; x++) {
+			slate(level, origin.offset(x, EAVE + 3, RIDGE_Z), Direction.NORTH, false, random);
+		}
+	}
+
+	private static void slate(ServerLevel level, BlockPos at, Direction fall,
+	                          boolean stepped, RandomSource random) {
+		if (random.nextInt(10) == 0) {
 			return;   // fallen in
 		}
-		set(level, pos, Blocks.SPRUCE_PLANKS.defaultBlockState());
+		set(level, at, stepped
+			? Blocks.SPRUCE_STAIRS.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, fall.getOpposite())
+			: Blocks.SPRUCE_PLANKS.defaultBlockState());
 	}
 
 	/**
-	 * The overhang, one block out from the wall all the way round.
+	 * A chimney, up the outside of the north wall.
 	 *
-	 * Facing is worked out from which side the deck is on rather than written
-	 * into the map, so the eave stays correct if the footprint ever changes.
-	 * Without it the roof meets the walls flush and the whole thing reads as a
-	 * box with a lid.
+	 * Rises from the hearth inside and stands a good way clear of the ridge,
+	 * because that is where the smoke has to get to. It is also the only part
+	 * of the building visible over a hedge, which makes it the thing a player
+	 * sees first — a house you spot by its chimney has been found rather than
+	 * placed in front of you.
 	 */
-	private static void eave(ServerLevel level, BlockPos pos, int x, int z) {
-		for (Direction facing : Direction.Plane.HORIZONTAL) {
-			int nx = x + facing.getStepX();
-			int nz = z + facing.getStepZ();
-			if (nz < 0 || nz >= depth() || nx < 0 || nx >= width()) {
-				continue;
+	private static void chimney(ServerLevel level, BlockPos origin, RandomSource random) {
+		int x = 4;
+		for (int y = 1; y <= EAVE + 5; y++) {
+			for (int dx = 0; dx <= 1; dx++) {
+				set(level, origin.offset(x + dx, y, HOUSE_Z0),
+					y > EAVE + 4 ? Blocks.COBBLESTONE_SLAB.defaultBlockState()
+						: weathered(random));
 			}
-			if (LAYERS[ROOF_LAYER][nz].charAt(nx) == '_') {
-				set(level, pos, Blocks.SPRUCE_STAIRS.defaultBlockState()
-					.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
-				return;
+		}
+		// Hollow, so it reads as a flue rather than a buttress.
+		for (int y = 2; y <= EAVE + 4; y++) {
+			set(level, origin.offset(x, y, HOUSE_Z0 - 1), Blocks.AIR.defaultBlockState());
+		}
+	}
+
+	/**
+	 * A porch over the door.
+	 *
+	 * Two posts and a lean-to, and it does more for the front of the building
+	 * than anything else its size. A door in a flat wall is an opening; a door
+	 * under a porch is an entrance somebody stood in out of the rain.
+	 */
+	private static void porch(ServerLevel level, BlockPos origin, RandomSource random) {
+		int z = HOUSE_Z1 + 1;
+		for (int side = -1; side <= 1; side += 2) {
+			BlockPos post = origin.offset(DOOR_X + side * 2, 0, z + 1);
+			for (int y = 1; y <= 3; y++) {
+				set(level, post.above(y), Blocks.SPRUCE_FENCE.defaultBlockState());
 			}
+		}
+		for (int dx = -2; dx <= 2; dx++) {
+			set(level, origin.offset(DOOR_X + dx, 4, z), Blocks.SPRUCE_PLANKS.defaultBlockState());
+			set(level, origin.offset(DOOR_X + dx, 4, z + 1), Blocks.SPRUCE_STAIRS.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
+		}
+		// A worn step, because the ground in front of a door always is.
+		for (int dx = -1; dx <= 1; dx++) {
+			BlockPos step = origin.offset(DOOR_X + dx, 0, z);
+			set(level, step, Blocks.COBBLESTONE_SLAB.defaultBlockState());
 		}
 	}
 
@@ -650,15 +701,24 @@ public final class Homestead {
 	 * graves are.
 	 */
 	public static int floorHeightAt(ServerLevel level, int originX, int originZ) {
-		long total = 0;
-		int count = 0;
-		for (int z = HOUSE_Z0; z <= HOUSE_Z1; z += 3) {
-			for (int x = HOUSE_X0; x <= HOUSE_X1; x += 3) {
-				total += Ground.floorOver(level, originX + x, originZ + z);
-				count++;
+		List<Integer> heights = new ArrayList<>();
+		for (int z = HOUSE_Z0; z <= HOUSE_Z1; z += 2) {
+			for (int x = HOUSE_X0; x <= HOUSE_X1; x += 2) {
+				heights.add(Ground.topOf(level, originX + x, originZ + z));
 			}
 		}
-		return (int)(total / count);
+		java.util.Collections.sort(heights);
+		// Median rather than mean, because one boulder or one dip should not
+		// lift or drop the whole building — and the median of a lumpy field is
+		// the height most of the house is actually standing on.
+		//
+		// And ON that block rather than above it, which is the bug this fixes.
+		// Averaging ground-plus-one put the floor a block over the average, so
+		// on any slope the low half of the house hung in the air and got a
+		// ten-deep cobblestone plinth to stand on. A house should be bedded
+		// INTO a hill and have the high side dug out, not perched on top of it
+		// on a pillar of stone.
+		return heights.get(heights.size() / 2);
 	}
 
 	public static int doorX() {

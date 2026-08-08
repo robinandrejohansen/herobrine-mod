@@ -515,8 +515,9 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 - [ ] **Raise it in a dense forest.** It sits on the ground, not above the
       canopy. This is the case that was broken — every Minecraft heightmap
       counts a tree trunk as terrain
-- [ ] On a slope it gets a **cobblestone footing** under its low side, like a
-      real house would — not a lump of dirt
+- [ ] On a slope it is **bedded into the hill** — dug out on the high side,
+      with at most a three-block footing on the low side. Never a tall pillar
+      of stone underneath it, and never perched above the grass
 - [ ] The **yard follows the ground.** The fence, the field, the path, the
       well and the graves run up and down the slope. There is no giant flat
       rectangle around it
@@ -536,8 +537,12 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 - [ ] A store room at the back with barrels and the cellar hatch
 - [ ] Interior is **four blocks high** everywhere, and the rooms are big
       enough to move around furniture in
-- [ ] There is a **roof**, with holes in it letting daylight through in
-      stripes, and an overhanging eave all the way round
+- [ ] A **pitched gable roof** stepping up to a ridge down the middle, with
+      triangular gable ends and an overhang past the walls. Not a flat deck
+- [ ] Holes in it, roughly one panel in ten, letting daylight in in stripes
+- [ ] A **stone chimney** up the north wall, standing clear of the ridge —
+      it should be the first thing you see over a hedge
+- [ ] A **porch** over the front door: two posts, a lean-to, a worn step
 
 **The bedroom:**
 
