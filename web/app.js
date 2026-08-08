@@ -160,6 +160,15 @@ document.querySelectorAll('.copy').forEach((btn) => {
   })
     .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
     .then((rel) => {
+      // The modpack, for anyone joining a server rather than playing alone.
+      const pack = (rel.assets || []).find((a) => a.name.endsWith('.mrpack'));
+      const packLink = document.getElementById('pack');
+      const packMeta = document.getElementById('pack-meta');
+      if (pack && packLink) {
+        packLink.href = pack.browser_download_url;
+        if (packMeta) packMeta.textContent = `${rel.tag_name} · .mrpack`;
+      }
+
       const jar = (rel.assets || []).find((a) => a.name.endsWith('.jar'));
       if (jar) {
         link.href = jar.browser_download_url;

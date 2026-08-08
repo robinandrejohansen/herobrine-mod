@@ -353,6 +353,14 @@ section { padding: clamp(72px, 12vw, 150px) var(--pad); }
   color: var(--dim);
 }
 
+/* The server block sits above the updates one and carries a little more
+   weight, because "I cannot join my friend" is the single most common way
+   somebody arrives at this page. */
+.updates.server { border-color: #2c2c36; background: #ffffff05; margin-top: 36px; }
+.updates.server em { color: var(--white); font-style: normal; }
+.updates.server a { color: var(--text); }
+.updates.server .cta .btn.primary { padding: 13px 26px; }
+
 /* -------------------------------------------------------------- footer --- */
 
 footer {

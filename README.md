@@ -15,6 +15,23 @@ and what comes next.
 3. Play normally. Don't go looking — the first hour is meant to feel like
    nothing is installed.
 
+### Joining a server
+
+Use the `.mrpack` on the [release](https://github.com/robinandrejohansen/herobrine-mod/releases/latest)
+instead, imported into [Modrinth App](https://modrinth.com/app) or
+[Prism](https://prismlauncher.org/). It pins Fabric Loader, Fabric API and this
+mod to the versions the server expects.
+
+Minecraft can push a joining client a resource pack and nothing else — it has
+never installed mods on connect and should not. This mod registers a custom
+entity and a custom block, so a vanilla client cannot be allowed to connect and
+then be told about them; that is why the join is refused rather than degraded.
+The pack is how a player arrives already holding it.
+
+Build one with the server preloaded:
+
+    python3 tools/mkpack.py play.example.com
+
 Everything is switchable in `config/herobrine.json`, which writes itself on
 first run.
 

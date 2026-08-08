@@ -29,6 +29,13 @@ sed -i '' "s/^mod_version=.*/mod_version=${version}/" gradle.properties
 jar="build/libs/herobrine-${version}.jar"
 [ -f "$jar" ] || { echo "expected $jar and it is not there"; exit 1; }
 
+# And the modpack, which is how anybody joining a server actually gets this.
+# Built after the jar because it hashes it, and it references the release URL
+# for a tag that does not exist yet — which is fine, the file lands seconds
+# later and launchers only resolve it when somebody imports the pack.
+python3 tools/mkpack.py
+pack="build/libs/Herobrine-${version}.mrpack"
+
 git add -A
 # Only commit if there is something to commit. With set -e, a clean tree would
 # otherwise abort the release between the build and the tag — which is the
@@ -36,7 +43,7 @@ git add -A
 git diff --cached --quiet || git commit -m "Release ${version}"
 git push origin main
 
-gh release create "v${version}" "$jar" \
+gh release create "v${version}" "$jar" "$pack" \
   --title "v${version}" \
   --generate-notes
 
