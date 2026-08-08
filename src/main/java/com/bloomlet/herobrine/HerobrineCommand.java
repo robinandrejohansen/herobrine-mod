@@ -3,6 +3,8 @@ package com.bloomlet.herobrine;
 import com.bloomlet.herobrine.entity.HauntingSpawner;
 import com.bloomlet.herobrine.entity.HerobrineEntity;
 import com.bloomlet.herobrine.manifest.Manifestation;
+import com.bloomlet.herobrine.structure.Dwellings;
+import com.bloomlet.herobrine.structure.Homestead;
 import com.bloomlet.herobrine.manifest.ManifestationDirector;
 import com.bloomlet.herobrine.wrath.Phase;
 import com.bloomlet.herobrine.wrath.Wrath;
@@ -37,6 +39,13 @@ public final class HerobrineCommand {
 				.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
 
 				.then(Commands.literal("status").executes(HerobrineCommand::status))
+
+				.then(Commands.literal("house")
+					.executes(HerobrineCommand::house)
+					// Raises it at your feet instead of a thousand blocks out.
+					// The only sane way to look at a building while working on
+					// it; the real one needs a long walk.
+					.then(Commands.literal("here").executes(HerobrineCommand::houseHere)))
 
 				.then(Commands.literal("provoke")
 					.executes(ctx -> provoke(ctx, false))
@@ -182,6 +191,40 @@ public final class HerobrineCommand {
 				: chosen.name() + " could not run here — "
 					+ (refusal == null ? "wrong surroundings for it" : refusal)), false);
 		return ran ? 1 : 0;
+	}
+
+	/**
+	 * Where the homestead is, and whether it has been built yet.
+	 *
+	 * Reports the seeded site even before anything stands there, because the
+	 * position is the real thing and the blocks are only what happens when
+	 * somebody arrives.
+	 */
+	private static int house(CommandContext<CommandSourceStack> ctx)
+			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		ServerLevel level = (ServerLevel)player.level();
+		net.minecraft.core.BlockPos origin = Dwellings.origin(level);
+		net.minecraft.core.BlockPos site = origin != null ? origin : Dwellings.siteFor(level);
+		int distance = (int)Math.sqrt(site.distSqr(player.blockPosition()));
+		String line = (origin != null ? "homestead standing at " : "homestead will stand near ")
+			+ site.getX() + " " + site.getY() + " " + site.getZ()
+			+ "  |  " + distance + " blocks away";
+		ctx.getSource().sendSuccess(() -> Component.literal(line), false);
+		return 1;
+	}
+
+	private static int houseHere(CommandContext<CommandSourceStack> ctx)
+			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		ServerLevel level = (ServerLevel)player.level();
+		net.minecraft.core.BlockPos origin = player.blockPosition()
+			.offset(-Homestead.doorX(), 0, 6);
+		Homestead.build(level, origin, level.getRandom());
+		ctx.getSource().sendSuccess(() -> Component.literal(
+			"homestead raised at " + origin.getX() + " " + origin.getY() + " " + origin.getZ()
+				+ "  |  the door faces you"), false);
+		return 1;
 	}
 
 	/**

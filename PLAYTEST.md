@@ -413,6 +413,60 @@ and let zombies find you.
 > is why it is glass only and the final phase only. A pane costs a shovelful of
 > sand; losing one is a fright rather than a loss.
 
+### A7h — The homestead
+
+```
+/herobrine house
+```
+
+Reports where it is. It is 1100–1900 blocks from world spawn and it does not
+move — the seed decides, not your position. Walk there, or to look at it now:
+
+```
+/herobrine house here
+```
+
+**Outside:**
+
+- [ ] It sits flat on the ground. No corner floating, no corner buried
+- [ ] A path leads to the door, a dead wheat field, a well
+- [ ] A sheep pen with the **gate shut** and bones inside it
+- [ ] **Three** graves. Count them, then count the names in the books
+
+**Inside — the main room:**
+
+- [ ] A hearth wall, a table with chairs, a lectern with a book on it
+- [ ] The lectern book (`the house book`) reads as an ordinary household
+      diary until its last line
+- [ ] Chests hold `my book` and `the small room`
+- [ ] Interior is **three blocks high** everywhere
+
+**The bedroom:**
+
+- [ ] **Two** beds
+- [ ] The chest holds `ledger`
+- [ ] The back wall is **mossy cobblestone** where everything else is planks —
+      it should be obviously a different job
+
+**Behind that wall:**
+
+- [ ] There is **no door**. You have to break in
+- [ ] Inside: one bed, cobwebs, and two signs in **his** handwriting —
+      lowercase, no full stops, unlike every other word in the building
+- [ ] A chest with `tally`. Read all five pages
+
+**The cellar:**
+
+- [ ] A hole in the floor of the main room with a ladder down
+- [ ] A room, a chest with `about my brother`, an iron pickaxe
+- [ ] A tunnel heading north lit with **redstone** torches that stops in the
+      middle of the stone without reaching anything
+- [ ] No ore, no rails, no branch mining. Nobody dug this **for** anything
+
+> The test is not whether it is scary. Nothing in it moves. The test is
+> whether you come out having worked out what happened without being told —
+> and whether you counted the beds and the graves.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the
