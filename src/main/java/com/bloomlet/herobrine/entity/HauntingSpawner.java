@@ -1,5 +1,7 @@
 package com.bloomlet.herobrine.entity;
 
+import com.bloomlet.herobrine.HerobrineMod;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -162,13 +164,45 @@ public final class HauntingSpawner {
 		int hidden = 0;
 		int noFooting = 0;
 
-		for (int attempt = 0; attempt < 20; attempt++) {
+				// Forty rather than twenty. Two real filters were added above and each
+		// one legitimately throws away candidates, so the old budget ran out
+		// before it had found the clearing it was looking for.
+		for (int attempt = 0; attempt < 40; attempt++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
 			double radius = MIN_RADIUS + random.nextDouble() * (MAX_RADIUS - MIN_RADIUS);
 			int x = Mth.floor(player.getX() + Math.cos(angle) * radius);
 			int z = Mth.floor(player.getZ() + Math.sin(angle) * radius);
 			int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
 			BlockPos pos = new BlockPos(x, y, z);
+
+			// GROUND THAT WOULD ACTUALLY HOLD HIM, and this is where he was
+			// standing on the sea.
+			//
+			// Every Minecraft heightmap counts fluid as surface — the real
+			// predicate is `blocksMotion() || !getFluidState().isEmpty()` — so
+			// over an ocean this returns the top of the water, and nothing
+			// downstream ever asked whether that was a floor. He was placed on
+			// the waves, and because open water has no trees, no ridge and no
+			// canopy, that was ALSO the only place the sightline test could
+			// pass. So the one bug produced the other: the sea was not merely
+			// where he was visible, it was very nearly the only place he was
+			// ever successfully put.
+			if (!ConfinedPlacement.canStand(level, pos)) {
+				noFooting++;
+				continue;
+			}
+			// And he stands in the open.
+			//
+			// A spot under a forest canopy satisfies every other rule and is
+			// unlookable-at from fifty blocks, because leaves are colliders and
+			// the ray dies in them. Requiring sky above him costs nothing, puts
+			// him on ridges and in clearings and at treelines where the whole
+			// image belongs, and stops the placement loop burning all twenty
+			// attempts inside a wood and reporting NOTHING_VISIBLE.
+			if (!level.canSeeSky(pos)) {
+				hidden++;
+				continue;
+			}
 
 			if (!ignoreLight && level.getMaxLocalRawBrightness(pos) > MAX_LIGHT) {
 				tooBright++;
@@ -196,7 +230,12 @@ public final class HauntingSpawner {
 				return result;
 			}
 			noFooting++;
+			HerobrineMod.LOGGER.info("stare: could not create at [{}, {}, {}]",
+				pos.getX(), pos.getY(), pos.getZ());
 		}
+		HerobrineMod.LOGGER.info(
+			"stare refused after 40 tries: {} lit, {} in front, {} unseeable, {} no footing",
+			tooBright, inFront, hidden, noFooting);
 		if (tooBright >= inFront && tooBright >= hidden && tooBright >= noFooting) {
 			return Outcome.TOO_BRIGHT;
 		}
