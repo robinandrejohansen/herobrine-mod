@@ -634,33 +634,13 @@ public final class Homestead {
 				.setValue(LadderBlock.FACING, Direction.SOUTH));
 		}
 
-		// The tunnel. It goes out from under the house, and it stops.
-		for (int run = 1; run <= 13; run++) {
-			BlockPos at = origin.offset(6, -3, 14 + run);
-			set(level, at, Blocks.AIR.defaultBlockState());
-			set(level, at.below(), Blocks.AIR.defaultBlockState());
-			set(level, at.below(2), Blocks.COBBLESTONE.defaultBlockState());
-			if (run % 4 == 0) {
-				// Inside the tunnel, hung on its west wall — so it faces east.
-				// Put in the wall itself it would have had nothing behind it.
-				set(level, at, Blocks.REDSTONE_WALL_TORCH.defaultBlockState()
-					.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST));
-			}
-			if (random.nextInt(4) == 0) {
-				set(level, at.below(), Blocks.COBWEB.defaultBlockState());
-			}
-		}
-
-		BlockPos crate = origin.offset(8, -3, 13);
-		set(level, crate, Blocks.CHEST.defaultBlockState()
-			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST));
-		if (level.getBlockEntity(crate) instanceof ChestBlockEntity chest) {
-			chest.setItem(0, HouseBooks.brother());
-			chest.setItem(1, new ItemStack(Items.IRON_PICKAXE));
-			Loot.scatter(chest, random, Loot.Tier.HOMESTEAD);
-		}
-		set(level, origin.offset(3, -3, 13), Blocks.COBWEB.defaultBlockState());
-		set(level, origin.offset(9, -3, 10), Blocks.COBWEB.defaultBlockState());
+		// And then it stops being a cellar.
+		//
+		// Everything past this point is carved rather than built, and there is
+		// a great deal more of it than the house above needs. That contrast is
+		// the whole point of the building: a farmhouse with a hole in the floor
+		// and sixty blocks of dig under it. The house is the smaller half.
+		Undercroft.dig(level, origin.offset(6, -3, 14), random);
 	}
 
 	/**

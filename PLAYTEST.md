@@ -550,13 +550,25 @@ move — the seed decides, not your position. Walk there, or to look at it now:
       lowercase, no full stops, unlike every other word in the building
 - [ ] A chest with `tally`. Read all five pages
 
-**The cellar:**
+**Under the floor — this is the bigger half of the building:**
 
-- [ ] A hole in the floor of the main room with a ladder down
-- [ ] A room, a chest with `about my brother`, an iron pickaxe
-- [ ] A tunnel heading north lit with **redstone** torches that stops in the
-      middle of the stone without reaching anything
+- [ ] A hole in the store room floor with a ladder down to a small cellar
+- [ ] Past the cellar it stops being built and starts being **dug**. No
+      corners, no courses, no right angles — uneven ceilings, passages that
+      wander and change width
+- [ ] It is **big**. Sixty-odd blocks of tunnel and three chambers, far more
+      than any farm needed
+- [ ] A long dull stretch between the first chamber and the big one. That is
+      deliberate — walk it
+- [ ] Timber props shored into the passages at intervals: somebody cut this
+- [ ] Red torches only. Never a normal torch
+- [ ] Cobwebs, gravel underfoot, dripstone. Nothing valuable
+- [ ] Two ways on from the big chamber. One is a short dead end
+- [ ] The real one goes deeper and **stops mid-stone**. No wall, no door,
+      nothing at the end
 - [ ] No ore, no rails, no branch mining. Nobody dug this **for** anything
+- [ ] It never breaks the surface — you cannot walk out of a hillside
+- [ ] It never floods. If it cuts a water or lava pocket, that is sealed
 
 **The loot:**
 
