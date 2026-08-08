@@ -185,6 +185,11 @@ public final class Possession {
 	/** How long the rest of them stare afterwards. Six seconds is plenty. */
 	private static final int WITNESS_TICKS = 120;
 
+	/** What the first one costs the player, and how fast that falls away. */
+	private static final int KILL_PRICE_FIRST = 25;
+	private static final int KILL_PRICE_DECAY = 3;
+	private static final int KILL_PRICE_FLOOR = 4;
+
 	/** How many of the watchers he takes each time you put one down. */
 	private static final int SPREAD_PER_KILL = 2;
 	/** Ceiling on how many can be his at once near you. Sanity, not design. */
@@ -503,8 +508,13 @@ public final class Possession {
 		}
 
 		ServerLevel overworld = level.getServer().overworld();
-		int killed = toll(level) + 1;
+		int before = toll(level);
+		int killed = before + 1;
 		overworld.setAttached(TOLL, killed);
+
+		if (killer instanceof ServerPlayer scorer) {
+			com.bloomlet.herobrine.wrath.WrathTriggers.defiance(scorer, killPrice(before));
+		}
 
 		List<Mob> watchers = new ArrayList<>();
 		int live = 0;
@@ -551,6 +561,30 @@ public final class Possession {
 		for (int i = 0; i < room && i < watchers.size(); i++) {
 			claim(watchers.get(i), player);
 		}
+	}
+
+	/**
+	 * What putting one down is worth, and why it stops being worth much.
+	 *
+	 * A flat price was a hole straight through the pacing. Twenty-five each
+	 * across the hundred-kill cap is two and a half thousand wrath, and the
+	 * whole ladder to SIEGE is eighteen hundred — seventy-two animals took a
+	 * player from nothing to the final phase, skipping every hour of slow burn
+	 * the rest of the mod is built out of. The loop was self-feeding too, since
+	 * each kill makes two more, so it was not even a grind.
+	 *
+	 * It decays instead. The first ten are worth about two hundred and forty
+	 * between them and still land as the heaviest thing a player can do; by the
+	 * sixty-third it has bottomed out at four. Culling the whole hundred comes
+	 * to a bit under eleven hundred, which is a major route through the game
+	 * and not the entire game.
+	 *
+	 * It is also the honest reading of the fiction. The first animal you put
+	 * down is a person defying him. The eightieth is somebody clearing a field,
+	 * and he has stopped being surprised by it.
+	 */
+	private static int killPrice(int alreadyKilled) {
+		return Math.max(KILL_PRICE_FLOOR, KILL_PRICE_FIRST - alreadyKilled / KILL_PRICE_DECAY);
 	}
 
 	private static void claim(Mob mob, ServerPlayer owner) {

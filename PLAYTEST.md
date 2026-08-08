@@ -316,6 +316,9 @@ The command prints which animal and where. Now go and look at it.
       stranded on the mountainside above the cave
 - [ ] Kill it. Run `/herobrine status` before and after: wrath goes up by 25,
       as **defiance**, not as an ordinary mob kill
+- [ ] Keep culling and watch the price fall. Around the 30th kill it is worth
+      about 15; by the 63rd it bottoms out at 4 and stays there
+- [ ] `/herobrine status` shows the toll, so you can check the price against it
 
 **When you kill it:**
 

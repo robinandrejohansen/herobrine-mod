@@ -29,8 +29,6 @@ public final class WrathTriggers {
 	private static final int KILL_AMOUNT = 1;
 	private static final int SLEEP_AMOUNT = 12;
 	/** Dying to him bleeds pressure off, or phase 5 becomes a death spiral. */
-	/** Putting down one of his. Costly, but never forbidden. */
-	private static final int POSSESSED_KILL = 25;
 	private static final int DEATH_RELIEF = -40;
 
 	private static int tickCounter;
@@ -53,10 +51,12 @@ public final class WrathTriggers {
 				// stops being a choice at all.
 				if (entity instanceof net.minecraft.world.entity.Mob mob
 					&& com.bloomlet.herobrine.manifest.Possession.isPossessed(mob)) {
-					Wrath.add(serverOf(killer), killer, POSSESSED_KILL, Wrath.Reason.DEFIANCE);
-				} else {
-					Wrath.add(serverOf(killer), killer, KILL_AMOUNT, Wrath.Reason.KILL);
+					// Awarded by Possession itself, which is the only place
+					// that knows how many have been put down already — and the
+					// value depends entirely on that.
+					return;
 				}
+				Wrath.add(serverOf(killer), killer, KILL_AMOUNT, Wrath.Reason.KILL);
 			}
 		});
 
