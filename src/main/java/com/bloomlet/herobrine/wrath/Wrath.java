@@ -37,6 +37,31 @@ public final class Wrath {
 		AttachmentRegistry.createPersistent(HerobrineMod.id("wrath_share"), Codec.INT);
 
 	/**
+	 * The phase, told to the client.
+	 *
+	 * Wrath lives on the server and the client has no way to ask. Everything
+	 * atmospheric — fog, the music, the colour of the sky — is drawn on the
+	 * client and has to know how bad things have got, so the number is pushed
+	 * out to each player and read back from there.
+	 *
+	 * The ordinal rather than the wrath total, deliberately. The client has no
+	 * business knowing the exact figure — it would be one tooltip away from
+	 * turning a thing the player feels into a number they optimise — and the
+	 * phase is all the atmosphere needs.
+	 */
+	public static final AttachmentType<Integer> SHOWN_PHASE = AttachmentRegistry
+		.<Integer>builder()
+		.persistent(Codec.INT)
+		.syncWith(net.minecraft.network.codec.ByteBufCodecs.VAR_INT.cast(),
+			net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.targetOnly())
+		.buildAndRegister(HerobrineMod.id("shown_phase"));
+
+	/** Ticks between checks that every player has been told. Cheap, and covers joins. */
+	private static final int TELL_INTERVAL = 40;
+
+	private static int tickCounter;
+
+	/**
 	 * Forces this class to initialise during mod setup.
 	 *
 	 * The AttachmentTypes above are created by the static initialiser, which
@@ -48,7 +73,35 @@ public final class Wrath {
 	 *
 	 * Called from the mod initialiser purely for this side effect.
 	 */
+	/**
+	 * @return the phase this player has been told about, for client-side use
+	 */
+	public static Phase shownTo(net.minecraft.world.entity.player.Player player) {
+		Integer ordinal = player.getAttached(SHOWN_PHASE);
+		if (ordinal == null || ordinal < 0 || ordinal >= Phase.values().length) {
+			return Phase.RUMOUR;
+		}
+		return Phase.values()[ordinal];
+	}
+
+	private static void tell(MinecraftServer server) {
+		if (++tickCounter % TELL_INTERVAL != 0) {
+			return;
+		}
+		int ordinal = phase(server).ordinal();
+		for (net.minecraft.server.level.ServerLevel level : server.getAllLevels()) {
+			for (ServerPlayer player : level.players()) {
+				Integer known = player.getAttached(SHOWN_PHASE);
+				if (known == null || known != ordinal) {
+					player.setAttached(SHOWN_PHASE, ordinal);
+				}
+			}
+		}
+	}
+
 	public static void register() {
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK
+			.register(Wrath::tell);
 		HerobrineMod.LOGGER.debug("wrath attachments registered");
 	}
 

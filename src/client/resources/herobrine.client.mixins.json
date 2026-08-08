@@ -5,7 +5,8 @@
 	"client": [
 		"ExampleClientMixin",
 		"LivingEntityRenderStateMixin",
-		"LivingEntityRendererMixin"
+		"LivingEntityRendererMixin",
+		"ClientLevelMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

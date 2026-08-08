@@ -806,6 +806,26 @@ and watch the sky. The log prints `the weather turns` whenever the mod does it.
 > the floor I would go to — a third would be atmospheric once and unplayable
 > by the third night.
 
+### A7o — Fog, and the music going
+
+Set a phase and look at the horizon. Both effects are client-side, so they
+change the moment the phase does.
+
+- [ ] At **RUMOUR** and **WATCHER** nothing is different. Normal fog, normal
+      music
+- [ ] From **TRESPASSER** the horizon starts closing in
+- [ ] At **SIEGE** the world is about a third the size it should be — thick
+      fog, the treeline gone
+- [ ] Biome still matters: a swamp is foggier than a desert at the same phase.
+      This scales vanilla fog, it does not replace it
+- [ ] Weather still stacks on top — a storm at SIEGE should be very close
+- [ ] The **music fades**: full until MIMIC, quieter, then **gone at SIEGE**
+- [ ] Drop back to `/herobrine wrath 0` and both return to normal at once
+- [ ] Other dimensions are unaffected in any way that looks wrong
+
+> Say if the fog at SIEGE is too thick to play in. It is the one setting here
+> that could cross from atmosphere into a handicap.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the
