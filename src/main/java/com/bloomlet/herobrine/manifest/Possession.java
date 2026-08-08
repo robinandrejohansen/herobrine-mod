@@ -175,8 +175,6 @@ public final class Possession {
 	private static final double CATCHUP_RADIUS = 44.0;
 	/** How far out we look for followers that need moving. */
 	private static final double SWEEP_RADIUS = 110.0;
-	/** Deliberately slower than a walking player. It never has to be fast. */
-	private static final double FOLLOW_SPEED = 0.55;
 	/** Catch-up runs on this cadence, not every tick. */
 	private static final int SWEEP_INTERVAL = 40;
 
@@ -210,8 +208,34 @@ public final class Possession {
 	private static final int PURSUIT_TO_REVEAL = 14;
 	/** How many you may put down before it stops spreading. */
 	private static final int TOLL_LIMIT = 100;
-	/** Where they stand once they have caught you up. */
-	private static final double RING_RADIUS = 9.0;
+	/**
+	 * How far out each one stops, once it has caught you up.
+	 *
+	 * A range rather than a number. Every one of them standing at exactly nine
+	 * blocks drew a perfect circle, and a perfect circle is a diagram — it
+	 * reads as one thing arranging itself rather than as several things that
+	 * each happen to want to be near you. Now one is almost in the doorway and
+	 * another is a shape at the treeline, and the player has to look around to
+	 * find them all.
+	 *
+	 * The far end is inside a default render distance on purpose: a follower
+	 * you cannot see is not a follower, it is nothing.
+	 */
+	private static final double RING_MIN = 5.0;
+	private static final double RING_MAX = 19.0;
+
+	/** Slowest and fastest each one walks. Ordinary animals are 1.0. */
+	private static final double FOLLOW_SLOWEST = 0.42;
+	private static final double FOLLOW_FASTEST = 0.72;
+
+	/**
+	 * How far out the per-tick pass looks.
+	 *
+	 * Has to cover the whole ring or the ones that stop furthest away are
+	 * never held — they would reach their place, drop out of range of this
+	 * pass, and quietly go back to grazing at the edge of view.
+	 */
+	private static final double TEND_RADIUS = 24.0;
 	/** Close enough to its place in the ring to stop walking. */
 	private static final double SLOT_TOLERANCE = 3.0;
 	/** Walk right up to one and it holds its ground rather than backing off. */
@@ -635,7 +659,7 @@ public final class Possession {
 
 		for (ServerLevel level : server.getAllLevels()) {
 			for (ServerPlayer player : level.players()) {
-				AABB close = player.getBoundingBox().inflate(WITNESS_RADIUS);
+				AABB close = player.getBoundingBox().inflate(TEND_RADIUS);
 				for (Mob mob : level.getEntitiesOfClass(Mob.class, close)) {
 					if (isPossessed(mob)) {
 						ServerPlayer owner = ownerOf(level, mob);
@@ -659,7 +683,7 @@ public final class Possession {
 							&& settled(mob, player)) {
 							hold(mob, player, knowsWhereYouAre(mob, player));
 						}
-					} else {
+					} else if (mob.distanceTo(player) <= WITNESS_RADIUS) {
 						ServerPlayer saw = sawIt(level, mob);
 						if (saw == player) {
 							hold(mob, player, mob.hasLineOfSight(player));
@@ -718,7 +742,35 @@ public final class Possession {
 		disarm(mob);
 		pursued(mob, false);
 		Vec3 slot = slotOf(mob, player);
-		mob.getNavigation().moveTo(slot.x, slot.y, slot.z, FOLLOW_SPEED);
+		mob.getNavigation().moveTo(slot.x, slot.y, slot.z, paceOf(mob));
+	}
+
+	/**
+	 * How fast this particular one walks.
+	 *
+	 * All of them at one speed meant they arrived as a group, which undoes the
+	 * work the varied distances do — four things setting off from different
+	 * places and reaching you at the same moment is more obviously coordinated
+	 * than four things setting off together. A slow one hanging behind a fast
+	 * one is what makes them read as separate animals.
+	 *
+	 * Every one of them is still slower than a walking player. None of them has
+	 * to be fast; they only have to not stop.
+	 */
+	private static double paceOf(Mob mob) {
+		return FOLLOW_SLOWEST + trait(mob, 24) * (FOLLOW_FASTEST - FOLLOW_SLOWEST);
+	}
+
+	/**
+	 * A stable 0-to-1 taken from the mob's own id.
+	 *
+	 * Fixed per animal rather than rolled, so the one that keeps its distance
+	 * always keeps its distance and the slow one is always the slow one. The
+	 * player starts recognising them, which is only possible if they are
+	 * consistent.
+	 */
+	private static double trait(Mob mob, int shift) {
+		return ((mob.getUUID().hashCode() >>> shift) & 0xFF) / 255.0;
 	}
 
 	/**
@@ -738,10 +790,11 @@ public final class Possession {
 	 */
 	private static Vec3 slotOf(Mob mob, ServerPlayer player) {
 		double angle = (mob.getUUID().hashCode() & 0xFFFF) / 65536.0 * Math.PI * 2.0;
+		double radius = RING_MIN + trait(mob, 16) * (RING_MAX - RING_MIN);
 		return new Vec3(
-			player.getX() + Math.cos(angle) * RING_RADIUS,
+			player.getX() + Math.cos(angle) * radius,
 			player.getY(),
-			player.getZ() + Math.sin(angle) * RING_RADIUS);
+			player.getZ() + Math.sin(angle) * radius);
 	}
 
 	/**

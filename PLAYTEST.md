@@ -405,7 +405,15 @@ The command prints which animal and where. Now go and look at it.
 - [ ] Drop back to `/herobrine wrath 500` and they go back to stalking, eyes
       off
 - [ ] They **ring** you rather than piling up on one side. Stand still in a
-      field with six of his and they spread out around you at about 9 blocks
+      field with six of his and they spread out around you
+- [ ] They stop at **different distances**. One is almost in the doorway,
+      another is a shape at the treeline twenty blocks out. You should have to
+      look around to find them all
+- [ ] They **arrive at different times**, not as a group — some walk noticeably
+      slower than others
+- [ ] The same animal always keeps the same distance and the same pace. The one
+      that hangs back always hangs back
+- [ ] The far ones still stop and stare rather than drifting back to grazing
 - [ ] Each keeps its own side as you walk about — they do not reshuffle
 - [ ] Go into your base and stay a while. They gather around **the building**,
       spread out, all facing it
