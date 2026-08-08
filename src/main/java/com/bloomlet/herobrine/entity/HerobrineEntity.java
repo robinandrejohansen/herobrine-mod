@@ -1699,13 +1699,33 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 		this.lastStruck = now;
-		// The vanilla path, the same one an iron golem and a wither skeleton
-		// take. doHurtTarget reads ATTACK_DAMAGE, applies the knockback, plays
-		// the sound and runs the post-attack effects — all of which the
-		// hand-rolled hurtServer call skipped, so even once the cooldown was
-		// fixed he would have been hitting for damage with no shove behind it.
-		boolean landed = this.doHurtTarget(here, player);
 		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+
+		// ONE SWING, AND EVERYBODY IT REACHES.
+		//
+		// Hitting only the player he happened to be chasing let a group defeat
+		// the whole phase by standing together: one of them wears the blow, the
+		// rest are three blocks away and untouched, and it costs the party two
+		// hearts between them. Worse, it makes the sensible play "put the
+		// tankiest person in front", which is a raid boss and not this.
+		//
+		// So the swing is the swing. Anyone inside arm's length with a clear
+		// line to him takes it, and standing shoulder to shoulder becomes the
+		// worst possible arrangement rather than the best.
+		boolean landed = false;
+		for (ServerPlayer caught : here.getEntitiesOfClass(ServerPlayer.class,
+				this.getBoundingBox().inflate(ARMS_LENGTH),
+				other -> other.isAlive() && !other.isSpectator())) {
+			// The vanilla path, the same one an iron golem and a wither
+			// skeleton take. doHurtTarget reads ATTACK_DAMAGE, applies the
+			// knockback, plays the sound and runs the post-attack effects — all
+			// of which the hand-rolled hurtServer call skipped, so even once
+			// the cooldown was fixed he would have been hitting for damage with
+			// no shove behind it.
+			if (this.hasLineOfSight(caught) && this.doHurtTarget(here, caught)) {
+				landed = true;
+			}
+		}
 
 		// AND THEN HE IS NOT THERE. He does not stand and trade.
 		//
@@ -1729,9 +1749,9 @@ public class HerobrineEntity extends PathfinderMob {
 		// has two completely different causes — he never got in range, or he
 		// swung and the damage was refused (creative, invulnerable, a totem) —
 		// and they are indistinguishable from the outside.
-		HerobrineMod.LOGGER.info("hunt: struck {} at {} blocks, landed={}",
-			player.getName().getString(),
-			String.format("%.1f", this.distanceTo(player)), landed);
+		HerobrineMod.LOGGER.info("hunt: swung at {} blocks from {}, landed={}",
+			String.format("%.1f", this.distanceTo(player)),
+			player.getName().getString(), landed);
 	}
 
 	private void vanish(String why) {

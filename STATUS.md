@@ -109,6 +109,8 @@ much faster and is the intended route.
 - [x] He hits and IS GONE — two hearts, then straight out of sight and back in
       from somewhere else. He never stands and trades, which is the only reason
       the phase is survivable at all given he is faster than a sprint
+- [x] One swing catches everyone within reach of it, so a group cannot put one
+      body in front and take two hearts between them
 - [x] Break his line of sight for eight seconds and he loses the trail. Running
       is not an escape; hiding is. Digging through your wall does not count as
       losing you
