@@ -314,6 +314,14 @@ The command prints which animal and where. Now go and look at it.
 - [ ] Do the same underground: run out of a cave and along a tunnel. It
       appears **in your passage, behind you** — never embedded in stone or
       stranded on the mountainside above the cave
+- [ ] **Go down a cave mouth twenty blocks and wait.** They come. Vanilla
+      pathfinding will not walk an animal down a drop, so this is the case
+      that used to fail silently — the flock milled about on the surface and
+      it looked like the mod had stopped
+- [ ] Same again behind a **closed door**, across **water**, or up a
+      one-block ledge. Roughly eight seconds of getting nowhere and they
+      arrive anyway
+- [ ] They never arrive inside solid rock, and never on the surface above you
 - [ ] Kill it. Run `/herobrine status` before and after: wrath goes up by 25,
       as **defiance**, not as an ordinary mob kill
 - [ ] Keep culling and watch the price fall. Around the 30th kill it is worth

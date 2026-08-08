@@ -204,6 +204,11 @@ public final class Possession {
 	private static final int STRIKE_COOLDOWN = 20;
 	private static final float STRIKE_DAMAGE = 3.0F;
 
+	/** Sweeps of getting nowhere before he stops making it walk. Eight seconds. */
+	private static final int STALL_LIMIT = 4;
+	/** Under this in a sweep and it has not really moved. */
+	private static final double PROGRESS = 0.5;
+
 	/** Sweeps of real pursuit before it stops pretending. Roughly half a minute. */
 	private static final int PURSUIT_TO_REVEAL = 14;
 	/** How many you may put down before it stops spreading. */
@@ -265,6 +270,10 @@ public final class Possession {
 
 	/** When each hunting mob last landed a blow. Transient by design. */
 	private static final Map<UUID, Long> lastStruck = new HashMap<>();
+
+	/** Where each follower was last sweep, and how long it has got nowhere. */
+	private static final Map<UUID, Vec3> progress = new HashMap<>();
+	private static final Map<UUID, Integer> stalls = new HashMap<>();
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Possession::onTick);
@@ -723,6 +732,11 @@ public final class Possession {
 						continue;
 					}
 					if (settled(mob, player) || lulled(level, mob)) {
+						progress.remove(mob.getUUID());
+						stalls.remove(mob.getUUID());
+						continue;
+					}
+					if (stuck(level, mob, player)) {
 						continue;
 					}
 					follow(mob, player);
@@ -730,6 +744,44 @@ public final class Possession {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Has it stopped getting anywhere? Then it stops walking.
+	 *
+	 * The one thing a cow cannot do is follow you down a ravine. Vanilla
+	 * pathfinding will not take an animal off a drop it cannot survive, through
+	 * water, or down a one-block shaft — so a player who went underground
+	 * twenty blocks below their flock was safe from it, and safe is the one
+	 * thing they are not supposed to be. Nothing was visibly broken either,
+	 * which is worse: the animals simply milled about on the surface and the
+	 * player concluded the mod had stopped.
+	 *
+	 * The distance rule could not cover it, because twenty blocks straight down
+	 * is well inside the catch-up radius. So this watches whether the thing is
+	 * actually making ground, and after eight seconds of getting nowhere it is
+	 * brought instead — through the same flood-fill the entity uses underground,
+	 * so it arrives in the player's own passage rather than in the rock.
+	 *
+	 * Measured as real movement rather than by asking the navigator, because
+	 * "has a path" and "is getting closer" are different questions and it is the
+	 * second one that matters. This catches a fence, a closed door, a boat and a
+	 * one-block ledge as readily as it catches a cave.
+	 */
+	private static boolean stuck(ServerLevel level, Mob mob, ServerPlayer player) {
+		UUID id = mob.getUUID();
+		Vec3 before = progress.put(id, mob.position());
+		if (before == null || before.distanceToSqr(mob.position()) >= PROGRESS * PROGRESS) {
+			stalls.remove(id);
+			return false;
+		}
+		if (stalls.merge(id, 1, Integer::sum) < STALL_LIMIT) {
+			return false;
+		}
+		stalls.remove(id);
+		progress.remove(id);
+		catchUp(level, mob, player);
+		return true;
 	}
 
 	/**
