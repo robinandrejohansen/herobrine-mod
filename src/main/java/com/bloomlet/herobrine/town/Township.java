@@ -43,10 +43,23 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 public final class Township {
 	private Township() {}
 
-	/** How far the wall stands from the middle. Big enough to live in. */
-	private static final int WALL_RADIUS = 30;
+	/**
+	 * How far the wall stands from the middle.
+	 *
+	 * Forty, and it was arrived at by counting rather than by eye. Thirteen
+	 * buildings — a church, a hall, two shops, a smithy, six houses and two
+	 * pens — come to about 1,700 blocks of footprint. A wall at thirty
+	 * encloses 2,400 usable blocks once the square and the lanes are taken out,
+	 * which fits them only if they touch, and a town where the buildings touch
+	 * is a terrace. Forty gives 4,400, which leaves room for gardens, gaps and
+	 * the space between a house and its neighbour that makes it a house.
+	 *
+	 * Sized before the buildings rather than after, because a wall is the one
+	 * thing here that cannot be adjusted later without moving everything.
+	 */
+	private static final int WALL_RADIUS = 40;
 	/** The open ground at the centre, where the well is. */
-	private static final int SQUARE = 5;
+	private static final int SQUARE = 7;
 	private static final int WALL_HEIGHT = 4;
 
 	public static void raise(ServerLevel level, BlockPos site, RandomSource random) {
@@ -72,8 +85,99 @@ public final class Township {
 		wall(level, centre, approach, random);
 		fields(level, centre, approach, random);
 
-		HerobrineMod.LOGGER.info("township laid out at [{}, {}, {}], gate facing {}",
-			centre.getX(), centre.getY(), centre.getZ(), approach.getName());
+		List<Plot> plots = allot(level, centre, lanes, random);
+		for (Plot plot : plots) {
+			mark(level, plot, random);
+		}
+
+		HerobrineMod.LOGGER.info("township laid out at [{}, {}, {}], gate facing {}, {} plots",
+			centre.getX(), centre.getY(), centre.getZ(), approach.getName(), plots.size());
+	}
+
+	/**
+	 * A place a building will stand, and which way it will face.
+	 *
+	 * @param facing the way its front points, which is always at the lane
+	 */
+	public record Plot(BlockPos corner, int width, int depth, Direction facing, String kind) {}
+
+	/**
+	 * Hand out the ground.
+	 *
+	 * Buildings stand along the lanes rather than anywhere they fit, because
+	 * that is how a settlement grows: somebody builds by the road, then
+	 * somebody builds next to them. The big civic pieces take the plots nearest
+	 * the square, since a church at the far end behind a barn is not how
+	 * anybody has ever arranged a town.
+	 *
+	 * Both sides of every lane, alternating, so the road has two frontages and
+	 * the town reads as a street rather than as a row.
+	 */
+	private static List<Plot> allot(ServerLevel level, BlockPos centre,
+	                                List<Direction> lanes, RandomSource random) {
+		String[] order = {
+			"church", "hall", "shop", "house", "house", "shop",
+			"house", "house", "smithy", "house", "house", "pen",
+		};
+		int[][] size = {
+			{15, 25}, {15, 13}, {9, 9}, {11, 9}, {11, 9}, {9, 9},
+			{11, 9}, {11, 9}, {11, 9}, {11, 9}, {11, 9}, {12, 12},
+		};
+
+		List<Plot> plots = new ArrayList<>();
+		int taken = 0;
+		int along = SQUARE + 4;
+
+		while (taken < order.length && along < WALL_RADIUS - 14) {
+			for (Direction lane : lanes) {
+				for (int side = -1; side <= 1 && taken < order.length; side += 2) {
+					int w = size[taken][0];
+					int d = size[taken][1];
+					Direction across = lane.getClockWise();
+
+					// Set back from the road by three, so there is a doorstep
+					// and a bit of garden rather than a wall on the verge.
+					int offset = 3 + d / 2;
+					int cx = centre.getX() + lane.getStepX() * (along + w / 2)
+						+ across.getStepX() * side * offset;
+					int cz = centre.getZ() + lane.getStepZ() * (along + w / 2)
+						+ across.getStepZ() * side * offset;
+
+					BlockPos corner = new BlockPos(cx - w / 2,
+						Ground.topOf(level, cx, cz) + 1, cz - d / 2);
+					// Facing the lane it stands on, which is the whole reason
+					// plots carry a direction at all.
+					Direction facing = side < 0 ? across : across.getOpposite();
+					plots.add(new Plot(corner, w, d, facing, order[taken]));
+					taken++;
+				}
+			}
+			along += 18;
+		}
+		return plots;
+	}
+
+	/**
+	 * Level the plot and lay its footprint, so the space is visible.
+	 *
+	 * Buildings come next; this is the ground they will stand on, cleared and
+	 * paved to its outline. Walking a town of marked plots is the only way to
+	 * find out whether thirteen buildings actually fit before building
+	 * thirteen buildings.
+	 */
+	private static void mark(ServerLevel level, Plot plot, RandomSource random) {
+		for (int dx = 0; dx < plot.width(); dx++) {
+			for (int dz = 0; dz < plot.depth(); dz++) {
+				BlockPos at = new BlockPos(plot.corner().getX() + dx,
+					Ground.topOf(level, plot.corner().getX() + dx,
+						plot.corner().getZ() + dz), plot.corner().getZ() + dz);
+				boolean edge = dx == 0 || dz == 0
+					|| dx == plot.width() - 1 || dz == plot.depth() - 1;
+				fill(level, at, edge ? Blocks.COBBLESTONE.defaultBlockState()
+					: paving(random));
+				clearAbove(level, at.above(), 6);
+			}
+		}
 	}
 
 	/**
