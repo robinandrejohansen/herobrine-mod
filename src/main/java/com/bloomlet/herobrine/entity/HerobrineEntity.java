@@ -24,7 +24,6 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
-import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -96,6 +95,20 @@ public class HerobrineEntity extends PathfinderMob {
 	 * through leaves does not fire it by accident.
 	 */
 	private static final int UNSEEN_GRACE = 16;
+
+	/**
+	 * Two cones, because "on screen" and "being looked at" are different
+	 * questions and sharing one answer between them broke the timer.
+	 *
+	 * SEEN_CONE is wide — over a hundred degrees — and decides whether the
+	 * visit counted and whether everybody has lost him.
+	 *
+	 * HELD_CONE is narrow, about twenty degrees, and is the only thing that
+	 * runs the countdown. He is near the middle of your view and you have him,
+	 * which is what the allowance was always meant to be measuring.
+	 */
+	private static final double SEEN_CONE = 0.55;
+	private static final double HELD_CONE = 0.93;
 
 	/**
 	 * Faster than a sprinting player, and by a margin.
@@ -228,7 +241,9 @@ public class HerobrineEntity extends PathfinderMob {
 		// something you have caught sight of. He is placed where he is placed
 		// and he stays there: the whole event is a figure at a distance that
 		// was already standing there when you looked up.
-		this.goalSelector.addGoal(2, new LookAtPlayerGoal(this, Player.class, 96.0F));
+		// No LookAtPlayerGoal. Facing the player is not something to leave to a
+		// probability, so tick() drives the rotation directly — and two things
+		// both writing yaw is how most of the bugs in this repo started.
 	}
 
 	@Override
@@ -259,10 +274,16 @@ public class HerobrineEntity extends PathfinderMob {
 		// somebody's view, unobstructed. A visit nobody perceived should not
 		// count against the pacing budget (see ManifestationDirector).
 		boolean seen = false;
+		// And separately: has anybody actually got him, rather than merely
+		// having him somewhere on their screen? Only that runs the countdown.
+		boolean held = false;
 		for (Player watcher : watchers) {
 			if (inViewOf(watcher)) {
 				seen = true;
-				break;
+				if (beingLookedAt(watcher)) {
+					held = true;
+					break;
+				}
 			}
 		}
 		if (seen) {
@@ -314,13 +335,28 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
+		// AND HE IS FACING YOU. Not "usually", not "after a moment".
+		//
+		// This was left to LookAtPlayerGoal, which is the wrong tool: that goal
+		// picks a target on a probability, holds it for a random number of
+		// ticks and then lets go, because it exists to make idle villagers
+		// glance at passers-by. Applied here it meant he was often standing at
+		// three-quarters profile staring off at a hillside, and a figure that
+		// is not looking at you is a figure that has not noticed you — which is
+		// the exact opposite of the only thing this event says.
+		//
+		// Driven straight from the geometry every tick instead, so there is
+		// nothing to be probabilistic about. Body and head both, or the head
+		// swivels on a body still facing wherever he was put.
+		this.faceOneOf(watchers);
+
 		if (seen) {
 			this.unseenTicks = 0;
 			// EARLY ON, BEING LOOKED AT IS ENOUGH TO END IT.
 			//
-			// At WATCHER he is gone a second and a half after the first pair of
-			// eyes lands on him — enough to find a shape, nowhere near enough to
-			// be sure of anything. That is the correct first encounter: the
+			// At WATCHER he is gone three and a half seconds after somebody
+			// actually has him — enough to find a shape and start walking
+			// toward it, nowhere near enough to be sure of anything. That is the correct first encounter: the
 			// player has seen something and has nothing to show for it, and
 			// every later sighting is measured against a memory they do not
 			// trust.
@@ -336,7 +372,10 @@ public class HerobrineEntity extends PathfinderMob {
 			// to allow it.
 			int allowed = this.level() instanceof ServerLevel here
 				? staredDown(Wrath.phase(here.getServer())) : 0;
-			if (allowed > 0 && ++this.watchedTicks > allowed) {
+			// `held`, not `seen`. Being on somebody's screen is not being
+			// looked at, and spending the allowance on the first is what left
+			// nothing for the second.
+			if (allowed > 0 && held && ++this.watchedTicks > allowed) {
 				this.vanish("stared down");
 			}
 		} else if (this.witnessed && ++this.unseenTicks > UNSEEN_GRACE) {
@@ -372,9 +411,9 @@ public class HerobrineEntity extends PathfinderMob {
 			// Thirty is a second and a half: enough to turn your head and find
 			// a shape, nowhere near enough to study it. That gap is where the
 			// doubt lives.
-			case RUMOUR, WATCHER -> 30;
-			case TRESPASSER -> 50;
-			case MIMIC -> 120;
+			case RUMOUR, WATCHER -> 70;
+			case TRESPASSER -> 110;
+			case MIMIC -> 200;
 			case HUNTER, SIEGE -> 0;
 		};
 	}
@@ -476,7 +515,60 @@ public class HerobrineEntity extends PathfinderMob {
 			this.getEyeY() - player.getEyeY(),
 			this.getZ() - player.getZ()
 		).normalize();
-		return look.dot(toMe) > 0.55 && player.hasLineOfSight(this);
+		return look.dot(toMe) > SEEN_CONE && player.hasLineOfSight(this);
+	}
+
+	/**
+	 * Not "he is on screen" — "you are looking at him".
+	 *
+	 * These were one test and that is why the timer felt broken. The wide cone
+	 * is over a hundred degrees across, so the clock started the instant he
+	 * entered the far corner of the player's vision, at fifty blocks, as a
+	 * two-pixel smudge. Most of the allowance was spent before anybody had
+	 * found him, and what was left was the tail end — which is precisely the
+	 * "no time to see it" being reported.
+	 *
+	 * The wide cone still decides whether he counts as witnessed and whether
+	 * everyone has lost him. Only the countdown uses this one, and it means
+	 * what it says: he is near the middle of your view and you have him.
+	 */
+	private boolean beingLookedAt(Player player) {
+		Vec3 look = player.getViewVector(1.0F).normalize();
+		Vec3 toMe = new Vec3(
+			this.getX() - player.getX(),
+			this.getEyeY() - player.getEyeY(),
+			this.getZ() - player.getZ()
+		).normalize();
+		return look.dot(toMe) > HELD_CONE && player.hasLineOfSight(this);
+	}
+
+	/**
+	 * Turn and face whoever has him, or the nearest person if nobody does.
+	 */
+	private void faceOneOf(List<Player> watchers) {
+		Player face = null;
+		double nearest = Double.MAX_VALUE;
+		for (Player watcher : watchers) {
+			if (this.beingLookedAt(watcher)) {
+				face = watcher;
+				break;
+			}
+			double distance = this.distanceTo(watcher);
+			if (distance < nearest) {
+				nearest = distance;
+				face = watcher;
+			}
+		}
+		if (face == null) {
+			return;
+		}
+		float yaw = (float)(net.minecraft.util.Mth.atan2(
+			face.getZ() - this.getZ(), face.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
+		this.setYRot(yaw);
+		this.yHeadRot = yaw;
+		this.yHeadRotO = yaw;
+		this.setYBodyRot(yaw);
+		this.getLookControl().setLookAt(face.getX(), face.getEyeY(), face.getZ(), 90.0F, 90.0F);
 	}
 
 	/**
