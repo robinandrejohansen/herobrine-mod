@@ -102,7 +102,10 @@ much faster and is the intended route.
 - [x] No eyes — white is his, and this is what is left when he has finished
 
 ### The hunt (HUNTER)
-- [x] He follows — faster than your walk, slower than your sprint
+- [x] He follows, faster than you, and he does not stop for water
+- [x] The head stays locked on you while the body walks wherever it is going
+- [x] He hits — two hearts, once a second. Still invulnerable; hit him and he
+      reappears behind you and keeps coming
 - [x] Outrun him by 52 blocks and he stops; walking home does not work
 - [x] Blocked by a ravine, he stops trying and reappears closer, behind you
 - [x] The standoff breaks: 17 blocks becomes 7, and he no longer leaves

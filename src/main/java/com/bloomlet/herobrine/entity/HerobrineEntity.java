@@ -130,7 +130,7 @@ public class HerobrineEntity extends PathfinderMob {
 	 * hunger, or they have to hide, and both of those are decisions. A pursuer
 	 * you can outwalk is scenery; one you cannot outrun is unfair.
 	 */
-	private static final double HUNT_SPEED = 0.92;
+	private static final double HUNT_SPEED = 1.32;
 	/** Break this far away and he stops. Far enough that it costs something. */
 	private static final double OUTRUN = 52.0;
 	/** A hunt runs longer than a sighting, and is the only thing that does. */
@@ -144,6 +144,11 @@ public class HerobrineEntity extends PathfinderMob {
 	 * more, and then he is somewhere closer, behind them. Which is worse.
 	 */
 	private static final int STUCK_LIMIT = 70;
+
+	/** Two hearts, and not oftener than once a second. */
+	private static final float STRIKE_DAMAGE = 4.0F;
+	private static final int STRIKE_COOLDOWN = 22;
+	private long lastStruck = Long.MIN_VALUE;
 
 	private boolean hunting;
 	private int stuckTicks;
@@ -293,6 +298,34 @@ public class HerobrineEntity extends PathfinderMob {
 			step, this.getSoundSource(), 0.5F, 0.9F + this.random.nextFloat() * 0.1F);
 	}
 
+	/**
+	 * The head does not obey the neck.
+	 *
+	 * Seventy-five degrees is the vanilla limit and it is a limit about
+	 * anatomy — past it, a mob's head snaps back to the body. That is correct
+	 * for a cow and wrong for this: the image the whole hunt is built around is
+	 * a figure walking one way with its face still pointed at you, and at
+	 * seventy-five it gives up and looks where it is going like anything else.
+	 *
+	 * A hundred and fifty is well past where a neck stops. It is meant to be.
+	 */
+	@Override
+	public int getMaxHeadYRot() {
+		return 150;
+	}
+
+	/**
+	 * And it tracks fast enough to stay there.
+	 *
+	 * Ten degrees a tick is a slow, natural swivel that visibly lags behind a
+	 * player circling him, which reads as him losing track. Forty keeps him
+	 * locked on through anything short of a sprint around him.
+	 */
+	@Override
+	public int getHeadRotSpeed() {
+		return 40;
+	}
+
 	public static AttributeSupplier.Builder createAttributes() {
 		return Mob.createMobAttributes()
 			.add(Attributes.MAX_HEALTH, 40.0)
@@ -305,6 +338,17 @@ public class HerobrineEntity extends PathfinderMob {
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new FloatGoal(this));
+		// Water does not stop him.
+		//
+		// Ground navigation treats it as something to path AROUND, so a river
+		// between him and the player turned a pursuit into a figure jogging up
+		// and down the bank. Both halves are needed: setCanFloat keeps him
+		// swimming instead of sinking, and zeroing the malus stops the path
+		// finder pricing water as a thing to avoid in the first place.
+		this.getNavigation().setCanFloat(true);
+		this.setPathfindingMalus(net.minecraft.world.level.pathfinder.PathType.WATER, 0.0F);
+		this.setPathfindingMalus(
+			net.minecraft.world.level.pathfinder.PathType.WATER_BORDER, 0.0F);
 		// No approach goal, deliberately. He used to close to a standoff
 		// distance, which meant the player watched him WALK, and something you
 		// watch cross a field is something you are studying rather than
@@ -793,11 +837,15 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
-		float yaw = (float)(net.minecraft.util.Mth.atan2(
-			quarry.getZ() - this.getZ(), quarry.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
-		this.setYRot(yaw);
-		this.yHeadRot = yaw;
-		this.setYBodyRot(yaw);
+		// ONLY the head. Setting yRot and yBodyRot as well was what made him
+		// crab sideways across the field: the body was pinned at the player
+		// while the navigation pushed him along a path going somewhere else,
+		// so he slid rather than walked and every step animated wrong.
+		//
+		// Left alone, LivingEntity turns the body to follow the path by itself,
+		// which is what a walk cycle needs. The head is the only thing that has
+		// to disobey — and getMaxHeadYRot below is what lets it keep you while
+		// the body goes past.
 		this.getLookControl().setLookAt(quarry, 90.0F, 90.0F);
 		this.getNavigation().moveTo(quarry, HUNT_SPEED);
 
@@ -868,14 +916,21 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private void closeOn(ServerPlayer player, double distance) {
 		this.getLookControl().setLookAt(player, 90.0F, 90.0F);
-		float yaw = (float)(net.minecraft.util.Mth.atan2(
-			player.getZ() - this.getZ(), player.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
-		this.setYRot(yaw);
-		this.yHeadRot = yaw;
-		this.setYBodyRot(yaw);
 
 		if (distance > ARMS_LENGTH) {
-			this.getNavigation().moveTo(player, ADVANCE_SPEED);
+			this.getNavigation().moveTo(player, this.hunting ? HUNT_SPEED : ADVANCE_SPEED);
+			return;
+		}
+
+		// A hunt does not end politely.
+		//
+		// Vanishing at arm's length is the right ending for a STARE — the
+		// player walked him down and he refused them. It is the wrong ending
+		// for something that has chased them across a field: a pursuer that
+		// arrives and then tactfully disappears was never a pursuer, and reads
+		// as the mod losing its nerve at the last moment.
+		if (this.hunting) {
+			this.strike(player);
 			return;
 		}
 
@@ -890,6 +945,28 @@ public class HerobrineEntity extends PathfinderMob {
 			takeTheLight(here, player);
 		}
 		this.vanish("closed to arm's length");
+	}
+
+	/**
+	 * He reaches you.
+	 *
+	 * He is still invulnerable and still relocates the moment anybody swings
+	 * back, so this does not make him a mob to be killed — the ending has to
+	 * keep that. What it makes him is something with a cost attached, so
+	 * standing your ground stops being free and running becomes a decision
+	 * rather than a preference.
+	 */
+	private void strike(ServerPlayer player) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		long now = here.getGameTime();
+		if (now - this.lastStruck < STRIKE_COOLDOWN) {
+			return;
+		}
+		this.lastStruck = now;
+		player.hurtServer(here, here.damageSources().mobAttack(this), STRIKE_DAMAGE);
+		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
 	}
 
 	private void vanish(String why) {
@@ -955,6 +1032,16 @@ public class HerobrineEntity extends PathfinderMob {
 			WrathTriggers.defiance(attacker, DEFIANCE_STRUCK);
 			// Whoever swung is not necessarily the only one here, so the same
 			// all-players check applies before he reappears anywhere.
+			// Mid-hunt he does not leave, he only gets out of reach.
+			//
+			// Fleeing on a hit would hand the player a way to end a hunt with
+			// one swing, and would undo the entire point of the phase: the
+			// thing that will not stop turning out to stop the moment you show
+			// it a sword. He reappears behind them and keeps coming.
+			if (this.hunting) {
+				this.reappearNear(attacker);
+				return false;
+			}
 			if (!relocateBehind(level.getEntitiesOfClass(Player.class,
 					this.getBoundingBox().inflate(WATCH_RANGE)))) {
 				// Struck rather than merely approached: he leaves the same way,
