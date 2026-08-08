@@ -1,3 +1,6 @@
 {
-  "entity.herobrine.herobrine": "Herobrine"
+  "entity.herobrine.herobrine": "Herobrine",
+  "entity.herobrine.infected": "Infected",
+  "death.attack.herobrine.reckoning": "%1$s should not have done that",
+  "death.attack.herobrine.reckoning.player": "%1$s should not have done that"
 }

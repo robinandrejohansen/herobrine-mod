@@ -279,6 +279,29 @@ public class HerobrineEntity extends PathfinderMob {
 
 	/** Two hearts, and not oftener than once a second. */
 	private static final float STRIKE_DAMAGE = 4.0F;
+	/**
+	 * What he hits for once he can be hit back, and it goes THROUGH armour.
+	 *
+	 * Four damage is two hearts to somebody in a shirt and about half of one to
+	 * somebody in enchanted netherite, which would have made the last fight in
+	 * the mod the easiest thing in it: the player who did the work to get here
+	 * is precisely the player it stops threatening. Scaling the number instead
+	 * only moves the problem — it would then flatten anyone who arrived in iron.
+	 *
+	 * So the damage type ignores armour AND enchantments, declared properly in
+	 * data/minecraft/tags/damage_type rather than borrowed from magic(). Eight
+	 * is eight whatever they are wearing, which makes the fight about the same
+	 * thing for everybody: not being hit. Break his line, use the gaps, do not
+	 * stand there. Armour buys nothing here and it is not supposed to.
+	 */
+	private static final float RECKONING_DAMAGE = 8.0F;
+
+	/** Declared in data/herobrine/damage_type/reckoning.json. */
+	private static final net.minecraft.resources.ResourceKey<
+			net.minecraft.world.damagesource.DamageType> RECKONING =
+		net.minecraft.resources.ResourceKey.create(
+			net.minecraft.core.registries.Registries.DAMAGE_TYPE,
+			HerobrineMod.id("reckoning"));
 	private static final int STRIKE_COOLDOWN = 30;
 	/** Where he goes the instant a blow lands. Out of sight, not far. */
 	private static final double HIT_BACKOFF_NEAR = 12.0;
@@ -1859,7 +1882,18 @@ public class HerobrineEntity extends PathfinderMob {
 		// the sound and runs the post-attack effects — all of which the
 		// hand-rolled hurtServer call skipped, so even once the cooldown was
 		// fixed he would have been hitting for damage with no shove behind it.
-		boolean landed = this.doHurtTarget(here, player);
+		// At SIEGE he stops caring what they are wearing.
+		boolean landed;
+		if (Wrath.phase(here.getServer()) == Phase.SIEGE) {
+			landed = player.hurtServer(here,
+				new net.minecraft.world.damagesource.DamageSource(
+					here.registryAccess()
+						.lookupOrThrow(net.minecraft.core.registries.Registries.DAMAGE_TYPE)
+						.getOrThrow(RECKONING), this),
+				RECKONING_DAMAGE);
+		} else {
+			landed = this.doHurtTarget(here, player);
+		}
 
 		// AND THEN HE IS NOT THERE. He does not stand and trade.
 		//
