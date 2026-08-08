@@ -151,10 +151,20 @@ public final class Ruins {
 			level.setBlockAndUpdate(signPos, Blocks.OAK_WALL_SIGN.defaultBlockState()
 				.setValue(WallSignBlock.FACING, facing));
 			if (level.getBlockEntity(signPos) instanceof SignBlockEntity sign) {
+				String[] lines = SignLines.grave(
+					com.bloomlet.herobrine.wrath.Wrath.phase(level.getServer()),
+					player, someoneElse(level, player), random);
 				sign.setAttached(Signs.HIS, true);
-				sign.updateText(text -> text
-					.setMessage(1, Component.literal("- - - - -"))
-					.setMessage(2, Component.literal("and his family")), true);
+				sign.updateText(text -> {
+					net.minecraft.world.level.block.entity.SignText updated = text;
+					// Offset by one so short markers sit centred on the board
+					// rather than jammed against the top edge.
+					int offset = lines.length < 3 ? 1 : 0;
+					for (int i = 0; i < lines.length && i + offset < 4; i++) {
+						updated = updated.setMessage(i + offset, Component.literal(lines[i]));
+					}
+					return updated;
+				}, true);
 			}
 		}
 		stain(level, base, random, 4);
@@ -191,6 +201,25 @@ public final class Ruins {
 		stain(level, base, random, 5);
 		scatter(level, base, random);
 		return true;
+	}
+
+	/**
+	 * Another player in this world, if there is one.
+	 *
+	 * A grave bearing a friend's name is worse than one bearing your own,
+	 * because you cannot tell whether it is a threat or a report.
+	 */
+	private static String someoneElse(ServerLevel level, ServerPlayer player) {
+		List<ServerPlayer> others = new ArrayList<>();
+		for (ServerPlayer candidate : level.getServer().getPlayerList().getPlayers()) {
+			if (!candidate.getUUID().equals(player.getUUID())) {
+				others.add(candidate);
+			}
+		}
+		if (others.isEmpty()) {
+			return null;
+		}
+		return others.get(level.getRandom().nextInt(others.size())).getName().getString();
 	}
 
 	/** Mossy, cracked, old. Never fresh — fresh reads as construction. */

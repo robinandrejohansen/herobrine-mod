@@ -120,6 +120,89 @@ public final class SignLines {
 	private static final int MANY_KILLS = 60;
 	private static final int MANY_DEATHS = 3;
 
+	// ------------------------------------------------------------- graves
+	/**
+	 * Whose grave it is.
+	 *
+	 * Early ones are anonymous, and the anonymity is the point: per LORE.md
+	 * the name has been scratched out so long that the scratching is the only
+	 * legible part. A worn marker asks a question; a named one answers it.
+	 *
+	 * The family are here rather than invented strangers. Random names would
+	 * read as filler — "she was first" is four words and tells you there was a
+	 * household, and an order to what happened to it.
+	 */
+	private static final String[][] GRAVE_WORN = {
+		{"- - - - -", "and his family"},
+		{"- - - -", "who dug"},
+		{"- - - - -", "she was first"},
+		{"- - -", "the youngest"},
+		{"- - - - -", "he did not", "know either"},
+		{"- - - -", "and the others"},
+		{"- - - - -", "one of them", "got out"},
+	};
+
+	/**
+	 * Yours.
+	 *
+	 * Held back to MIMIC because a grave with your own name on it is the
+	 * heaviest single image available here and it only works once. Spending it
+	 * at TRESPASSER would burn it before the player knows enough for it to
+	 * mean anything.
+	 */
+	private static final String[][] GRAVE_NAMED = {
+		{"%s"},
+		{"%s", "not the first"},
+		{"%s", "and his family"},
+	};
+
+	/** Someone else who is in this world with you. */
+	private static final String[][] GRAVE_OTHER = {
+		{"%o"},
+		{"%o", "and the others"},
+	};
+
+	/**
+	 * @param other another player's name, or null when alone
+	 */
+	public static String[] grave(Phase phase, ServerPlayer player, String other,
+	                             RandomSource random) {
+		List<String[]> pool = new ArrayList<>();
+		java.util.Collections.addAll(pool, GRAVE_WORN);
+		if (phase.atLeast(Phase.MIMIC)) {
+			java.util.Collections.addAll(pool, GRAVE_NAMED);
+			if (other != null) {
+				java.util.Collections.addAll(pool, GRAVE_OTHER);
+			}
+		}
+
+		List<String[]> fresh = new ArrayList<>();
+		for (String[] lines : pool) {
+			if (!recent.contains(key(lines))) {
+				fresh.add(lines);
+			}
+		}
+		// A blank marker would look broken, so unlike wall signs a grave
+		// falls back to repeating rather than saying nothing.
+		if (fresh.isEmpty()) {
+			fresh = pool;
+		}
+
+		String[] chosen = fresh.get(random.nextInt(fresh.size()));
+		recent.addLast(key(chosen));
+		while (recent.size() > NO_REPEAT_FOR) {
+			recent.removeFirst();
+		}
+
+		String[] out = new String[chosen.length];
+		for (int i = 0; i < chosen.length; i++) {
+			out[i] = chosen[i]
+				.replace("%s", player.getName().getString())
+				.replace("%o", other == null ? player.getName().getString() : other);
+		}
+		return out;
+	}
+
 	private static String key(String[] lines) {
 		return String.join("|", lines);
 	}

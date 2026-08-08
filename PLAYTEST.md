@@ -224,8 +224,13 @@ where it went** — `ran THE_RUIN | at -113 79 2 (41 blocks away)` — so you ca
 walk to it rather than hunting. Signs and pages report their position too.
 
 - [ ] One of three appears: a **doorway** standing alone with nothing behind
-      it, a **cairn** with a sign whose name is worn off, or the **footprint**
-      of a house that is no longer there
+      it, a **cairn** with a grave marker, or the **footprint** of a house
+      that is no longer there
+- [ ] Provoke several cairns: the **grave never says the same thing twice** —
+      `and his family`, `she was first`, `the youngest`, `who dug`
+- [ ] At TRESPASSER the name is always **worn away**
+- [ ] `/herobrine wrath 500` (MIMIC) and provoke cairns: **your own name**
+      starts appearing on graves. In multiplayer, sometimes another player's
 - [ ] Everything is **mossy, cracked, weathered** — never fresh stone
 - [ ] **Redstone dust** on the ground around it, like a stain
 - [ ] Cobwebs and dead bushes
