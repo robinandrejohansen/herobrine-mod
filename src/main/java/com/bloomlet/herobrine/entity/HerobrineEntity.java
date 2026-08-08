@@ -38,6 +38,7 @@ import net.minecraft.world.phys.Vec3;
 public class HerobrineEntity extends PathfinderMob {
 	/** Ticks a player has held their gaze on him before he leaves. */
 	private int unseenTicks;
+	private int watchedTicks;
 	private int fleeTicks;
 	private boolean fleeing;
 	/** Ticks since he arrived. */
@@ -286,6 +287,24 @@ public class HerobrineEntity extends PathfinderMob {
 
 		if (seen) {
 			this.unseenTicks = 0;
+			// EARLY ON, BEING LOOKED AT IS ENOUGH TO END IT.
+			//
+			// At WATCHER he is gone almost the instant a player's eyes land on
+			// him — half a second, not enough to be sure of anything. That is
+			// the correct first encounter: the player has seen something and
+			// has nothing to show for it, and every later sighting is measured
+			// against a memory they do not trust.
+			//
+			// The limit stretches with the phases until it stops existing, so
+			// the same act of looking at him gets a longer and longer answer.
+			// By HUNTER he simply looks back for as long as you care to stand
+			// there, which is only frightening because of how briefly he used
+			// to allow it.
+			int allowed = this.level() instanceof ServerLevel here
+				? staredDown(Wrath.phase(here.getServer())) : 0;
+			if (allowed > 0 && ++this.watchedTicks > allowed) {
+				this.vanish();
+			}
 		} else if (this.witnessed && ++this.unseenTicks > UNSEEN_GRACE) {
 			// Seen, then not seen, then not there. Nobody watches him go; they
 			// simply find that he has gone, which is the one version of this
@@ -297,6 +316,22 @@ public class HerobrineEntity extends PathfinderMob {
 			// FLEE_LIMIT still stops it becoming a stalemate.
 			this.vanish();
 		}
+	}
+
+	/**
+	 * How long he will let himself be looked at.
+	 *
+	 * Zero means indefinitely. The curve is the whole arc of the mod in one
+	 * method: at first he cannot be held in the eye at all, and by the end he
+	 * does not mind being seen.
+	 */
+	private static int staredDown(Phase phase) {
+		return switch (phase) {
+			case RUMOUR, WATCHER -> 12;
+			case TRESPASSER -> 50;
+			case MIMIC -> 120;
+			case HUNTER, SIEGE -> 0;
+		};
 	}
 
 	/**
@@ -434,7 +469,79 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 	}
 
+	/**
+	 * What is left where he was standing.
+	 *
+	 * From TRESPASSER he leaves a few small fires behind him, which is the
+	 * first thing in the mod that says outright that something was there —
+	 * every trace before this could be argued with, and a ring of fire on the
+	 * grass cannot be.
+	 *
+	 * FIRE IS THE MOST DANGEROUS BLOCK IN THIS MOD and it gets three separate
+	 * safeguards, because burning down somebody's base or their forest by
+	 * accident is not a scare, it is the end of their save. It is never placed
+	 * where anything nearby can catch; it is never placed on anything that
+	 * burns; and every one of them is put out after six seconds whether or not
+	 * a player is there to see it.
+	 *
+	 * Six seconds is long enough to walk back and find it burning, and short
+	 * enough that fire spread — which needs random ticks and time — almost
+	 * never gets a turn.
+	 */
+	private void scorch(ServerLevel level) {
+		int wanted = 4 + this.random.nextInt(3);
+		int lit = 0;
+
+		for (int attempt = 0; attempt < 24 && lit < wanted; attempt++) {
+			double angle = this.random.nextDouble() * Math.PI * 2.0;
+			double range = 1.2 + this.random.nextDouble() * 2.4;
+			BlockPos at = BlockPos.containing(
+				this.getX() + Math.cos(angle) * range,
+				this.getY(),
+				this.getZ() + Math.sin(angle) * range);
+
+			BlockPos ground = null;
+			for (int down = 0; down <= 3; down++) {
+				if (level.getBlockState(at.below(down)).isSolid()) {
+					ground = at.below(down);
+					break;
+				}
+			}
+			if (ground == null || !level.getBlockState(ground.above()).isAir()) {
+				continue;
+			}
+			if (!safeToBurn(level, ground)) {
+				continue;
+			}
+
+			BlockPos flame = ground.above();
+			level.setBlock(flame, Blocks.FIRE.defaultBlockState(), 2);
+			com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), 120, () -> {
+				if (level.getBlockState(flame).is(Blocks.FIRE)) {
+					level.setBlock(flame, Blocks.AIR.defaultBlockState(), 2);
+				}
+			});
+			lit++;
+		}
+	}
+
+	/** Nothing within reach may be able to catch, including the floor itself. */
+	private static boolean safeToBurn(ServerLevel level, BlockPos ground) {
+		for (BlockPos near : BlockPos.betweenClosed(ground.offset(-2, -1, -2),
+				ground.offset(2, 3, 2))) {
+			if (level.getBlockState(near).ignitedByLava()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	private void vanish() {
+		if (this.witnessed && this.level() instanceof ServerLevel burning
+			&& Wrath.phase(burning.getServer()).atLeast(Phase.TRESPASSER)) {
+			this.scorch(burning);
+		}
+
 		// One visit in three takes the light with it, so the departure is not
 		// one memorised beat.
 		if (this.witnessed && this.random.nextInt(3) == 0

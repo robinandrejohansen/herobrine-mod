@@ -693,8 +693,19 @@ Needs darkness. It reports where he is — turn and look.
       blocks. Far enough that you have to decide whether it is even him
 - [ ] He never walks up to you and you never watch him arrive
 - [ ] He does **not** approach. Stand still and he stays where he is
+- [ ] **You can actually see him.** He is never placed behind a hill or a
+      stand of trees — if there is nowhere visible, the command says so
+- [ ] **At WATCHER he is gone the moment you look at him** — about half a
+      second, not long enough to be sure of anything
+- [ ] At TRESPASSER you get a couple of seconds, at MIMIC about six
+- [ ] From HUNTER he does not leave at all while you watch
 - [ ] **Look away for a second** — turn round, step behind a tree, glance at
       your hotbar. When you look back he is gone
+- [ ] From TRESPASSER, **four to six small fires** are left where he stood
+- [ ] Those fires **go out on their own after six seconds**
+- [ ] They are never lit near anything that burns. Provoke him beside a forest
+      and in a wooden house — nothing catches, ever. If anything does, tell me
+      immediately
 - [ ] Nothing announced it. No sound, no particles, no teleport effect
 - [ ] Walk at him. Inside about seventeen blocks he leaves, and **much faster
       than you can sprint** — you should never be almost catching him

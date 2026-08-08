@@ -87,6 +87,8 @@ public final class HauntingSpawner {
 		TOO_BRIGHT,
 		/** Dark enough, but every option was in front of the player. */
 		NOTHING_BEHIND,
+		/** Behind and dark, but nothing the player could actually see. */
+		NOTHING_VISIBLE,
 		/** Ground would not take him. */
 		NO_FOOTING,
 		BAD_PLAYER;
@@ -102,6 +104,8 @@ public final class HauntingSpawner {
 					+ "Try at night, or use 'provoke force'";
 				case NOTHING_BEHIND -> "everywhere dark enough was in front of you — "
 					+ "turn around and try again";
+				case NOTHING_VISIBLE -> "every dark spot behind you is hidden by terrain — "
+					+ "he would have been standing somewhere you could never see";
 				case NO_FOOTING -> "no solid ground to stand on in the ring behind you";
 				case BAD_PLAYER -> "you are dead or spectating";
 			};
@@ -155,6 +159,7 @@ public final class HauntingSpawner {
 		// out.
 		int tooBright = 0;
 		int inFront = 0;
+		int hidden = 0;
 		int noFooting = 0;
 
 		for (int attempt = 0; attempt < 20; attempt++) {
@@ -173,6 +178,18 @@ public final class HauntingSpawner {
 				inFront++;
 				continue;
 			}
+			// And the player must actually be able to SEE the spot.
+			//
+			// Behind them and dark enough was not sufficient: a hill, a stand
+			// of trees or the far side of a ridge would satisfy both and put
+			// him somewhere nobody could ever look at. The whole event is
+			// being seen, so a placement that cannot be seen is not a quiet
+			// night — it is a wasted one, and the player is left turning on the
+			// spot wondering what the command did.
+			if (!visibleFrom(level, player, pos)) {
+				hidden++;
+				continue;
+			}
 
 			Outcome result = spawnAt(level, player, pos);
 			if (result == Outcome.PLACED) {
@@ -180,8 +197,11 @@ public final class HauntingSpawner {
 			}
 			noFooting++;
 		}
-		if (tooBright >= inFront && tooBright >= noFooting) {
+		if (tooBright >= inFront && tooBright >= hidden && tooBright >= noFooting) {
 			return Outcome.TOO_BRIGHT;
+		}
+		if (hidden >= inFront && hidden >= noFooting) {
+			return Outcome.NOTHING_VISIBLE;
 		}
 		return inFront >= noFooting ? Outcome.NOTHING_BEHIND : Outcome.NO_FOOTING;
 	}
@@ -209,6 +229,23 @@ public final class HauntingSpawner {
 	}
 
 	/** True if the position falls inside the player's rough view cone. */
+	/**
+	 * Could the player see that spot if they turned round?
+	 *
+	 * Aimed a little above the block, because he stands ON it and it is his
+	 * head and shoulders that have to clear the ridge, not his feet. Checking
+	 * the ground itself would reject a perfectly good spot just over the brow
+	 * of a hill — which is one of the better places for him to be.
+	 */
+	private static boolean visibleFrom(ServerLevel level, ServerPlayer player, BlockPos pos) {
+		Vec3 eye = player.getEyePosition();
+		Vec3 head = new Vec3(pos.getX() + 0.5, pos.getY() + 1.7, pos.getZ() + 0.5);
+		return level.clip(new net.minecraft.world.level.ClipContext(eye, head,
+			net.minecraft.world.level.ClipContext.Block.COLLIDER,
+			net.minecraft.world.level.ClipContext.Fluid.NONE, player))
+			.getType() == net.minecraft.world.phys.HitResult.Type.MISS;
+	}
+
 	private static boolean isInFrontOf(ServerPlayer player, BlockPos pos) {
 		Vec3 look = player.getViewVector(1.0F).normalize();
 		Vec3 toPos = new Vec3(
