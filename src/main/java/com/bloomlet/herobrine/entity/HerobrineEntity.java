@@ -1072,7 +1072,33 @@ public class HerobrineEntity extends PathfinderMob {
 		this.getLookControl().setLookAt(player, 90.0F, 90.0F);
 
 		if (distance > ARMS_LENGTH) {
-			this.getNavigation().moveTo(player, this.hunting ? HUNT_SPEED : ADVANCE_SPEED);
+			boolean routed = this.getNavigation()
+				.moveTo(player, this.hunting ? HUNT_SPEED : ADVANCE_SPEED);
+
+			// AND IF THE NAVIGATOR WILL NOT TAKE HIM, HE WALKS.
+			//
+			// This is why he stood at four blocks and never landed a blow.
+			// moveTo returns false whenever createPath cannot route — the
+			// player up a ladder, on a slab, over a fence, one block into a
+			// doorway, standing anywhere the node graph does not like — and the
+			// old code ignored the return value entirely. He would arrive
+			// inside the standoff, the path would fail, and he would simply
+			// stop: close enough to look menacing, never close enough to reach.
+			//
+			// At melee range pathfinding earns nothing anyway. There is no
+			// route to plan across three blocks, so when it fails he is pushed
+			// straight at the player instead. move() rather than setPos, so
+			// walls still stop him and the raised STEP_HEIGHT still carries him
+			// up a kerb — he closes the gap, he does not slide through the
+			// world to do it.
+			if (this.hunting && (!routed || this.getNavigation().isDone())) {
+				Vec3 step = new Vec3(player.getX() - this.getX(), 0.0,
+					player.getZ() - this.getZ());
+				if (step.lengthSqr() > 1.0E-4) {
+					this.move(net.minecraft.world.entity.MoverType.SELF,
+						step.normalize().scale(0.16));
+				}
+			}
 			return;
 		}
 
@@ -1119,8 +1145,16 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 		this.lastStruck = now;
-		player.hurtServer(here, here.damageSources().mobAttack(this), STRIKE_DAMAGE);
+		boolean landed = player.hurtServer(here,
+			here.damageSources().mobAttack(this), STRIKE_DAMAGE);
 		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+		// Logged with the answer, not just the attempt. "He is not hitting me"
+		// has two completely different causes — he never got in range, or he
+		// swung and the damage was refused (creative, invulnerable, a totem) —
+		// and they are indistinguishable from the outside.
+		HerobrineMod.LOGGER.info("hunt: struck {} at {} blocks, landed={}",
+			player.getName().getString(),
+			String.format("%.1f", this.distanceTo(player)), landed);
 	}
 
 	private void vanish(String why) {
