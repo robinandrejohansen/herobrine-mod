@@ -10,5 +10,6 @@ public class HerobrineModClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		EntityRenderers.register(ModEntities.HEROBRINE, HerobrineRenderer::new);
+		EntityRenderers.register(ModEntities.INFECTED, InfectedRenderer::new);
 	}
 }

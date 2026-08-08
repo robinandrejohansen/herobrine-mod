@@ -31,6 +31,19 @@ public final class ModEntities {
 			.clientTrackingRange(16)
 	);
 
+	/**
+	 * The thing in the cells.
+	 *
+	 * Tracked further out than he is, because unlike him it is meant to be
+	 * seen coming.
+	 */
+	public static final EntityType<InfectedEntity> INFECTED = register(
+		"infected",
+		EntityType.Builder.of(InfectedEntity::new, MobCategory.MONSTER)
+			.sized(0.6F, 1.95F)
+			.clientTrackingRange(8)
+	);
+
 	private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HerobrineMod.id(name));
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
@@ -39,5 +52,6 @@ public final class ModEntities {
 	/** Called from the mod initialiser; attributes must be registered separately from the type. */
 	public static void register() {
 		FabricDefaultAttributeRegistry.register(HEROBRINE, HerobrineEntity.createAttributes());
+		FabricDefaultAttributeRegistry.register(INFECTED, InfectedEntity.createAttributes());
 	}
 }

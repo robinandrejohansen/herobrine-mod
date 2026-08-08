@@ -87,10 +87,7 @@ public final class Feral {
 	 *
 	 * Silent, because the thing that makes these land is finding one already
 	 * there rather than hearing it first. Persistent, because it has to still
-	 * be behind that door in fifty hours' time. Red-eyed through the same
-	 * attachment the possessed animals use, so it needs no rendering of its
-	 * own — and red rather than white is exactly right here: white is his, and
-	 * this is not him, it is what he leaves behind.
+	 * be behind that door in fifty hours' time.
 	 */
 	public static void shutIn(Mob mob) {
 		// Nothing it used to want. A villager brain keeps a job site, a bed and
@@ -98,8 +95,8 @@ public final class Feral {
 		// which is not what something that has been in a cell for years does.
 		mob.getBrain().clearMemories();
 		mob.setAttached(FERAL, true);
-		mob.setAttached(Possession.POSSESSED, true);
-		mob.setAttached(Possession.MENACE, 2);
+		// No eyes. Those are his, and the animals he is wearing — this is not
+		// being worn by anything, it is what is left when he has finished.
 		mob.setSilent(true);
 		mob.setPersistenceRequired();
 
@@ -107,9 +104,8 @@ public final class Feral {
 		// problem is the write; if it can and the client still draws a plain
 		// villager, the problem is the sync. Two guesses have already been
 		// spent on this, so the next run says which.
-		HerobrineMod.LOGGER.info("marked {}: feral={} menace={} silent={}",
-			mob.getType().toShortString(), isFeral(mob),
-			Possession.menace(mob), mob.isSilent());
+		HerobrineMod.LOGGER.info("shut in a {}: feral={} silent={}",
+			mob.getType().toShortString(), isFeral(mob), mob.isSilent());
 	}
 
 	private static void onTick(MinecraftServer server) {

@@ -23,17 +23,4 @@ public class LivingEntityRenderStateMixin implements PossessedEyes {
 	public void herobrine$eyes(@org.jspecify.annotations.Nullable Identifier texture) {
 		this.herobrine$eyesTexture = texture;
 	}
-
-	@Unique
-	private boolean herobrine$isInfected;
-
-	@Override
-	public boolean herobrine$infected() {
-		return this.herobrine$isInfected;
-	}
-
-	@Override
-	public void herobrine$infected(boolean infected) {
-		this.herobrine$isInfected = infected;
-	}
 }

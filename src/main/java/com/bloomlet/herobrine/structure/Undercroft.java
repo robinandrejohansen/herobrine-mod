@@ -174,7 +174,8 @@ public final class Undercroft {
 			}
 		}
 
-		Mob kept = EntityTypes.VILLAGER.create(level, EntitySpawnReason.STRUCTURE);
+		Mob kept = com.bloomlet.herobrine.entity.ModEntities.INFECTED
+			.create(level, EntitySpawnReason.STRUCTURE);
 		if (kept != null) {
 			BlockPos stand = middle.relative(front, -1);
 			kept.snapTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, 0.0F, 0.0F);
