@@ -115,6 +115,9 @@ much faster and is the intended route.
 - [x] Swims at walking speed; a lake is not a moat
 - [x] Ends after 100 seconds, or when you put 52 blocks between you
 - [x] Blocked by a ravine, he stops trying and reappears closer, behind you
+- [x] He always has a diamond axe in hand — cosmetic, so it cannot change what
+      he hits for; swaps to pickaxe or shovel while mining, then back
+- [x] He cannot hit through a wall. No line of sight, no blow — he digs instead
 - [x] Wooden doors, gates and trapdoors simply open for him — he does not chop
       what he can push
 - [x] Iron holds. He has to cut an iron door, and that is three seconds you

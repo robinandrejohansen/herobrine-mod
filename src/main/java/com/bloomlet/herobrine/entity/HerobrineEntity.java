@@ -494,6 +494,12 @@ public class HerobrineEntity extends PathfinderMob {
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new FloatGoal(this));
+		this.carry(Items.DIAMOND_AXE);
+		// Nothing he carries is ever left on the ground. He does not die — he
+		// is invulnerable and discards himself — but a guaranteed-drop slot
+		// would hand a player a free diamond axe the first time anything else
+		// managed to remove him.
+		this.setDropChance(net.minecraft.world.entity.EquipmentSlot.MAINHAND, 0.0F);
 		// Water does not stop him.
 		//
 		// Ground navigation treats it as something to path AROUND, so a river
@@ -1244,8 +1250,7 @@ public class HerobrineEntity extends PathfinderMob {
 			float hardness = here.getBlockState(pos).getDestroySpeed(here, pos);
 			this.breakNeeds = net.minecraft.util.Mth.clamp(
 				Math.round(hardness * HARDNESS_TICKS), BREAK_MIN, BREAK_MAX);
-			this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
-				new ItemStack(toolFor(here.getBlockState(pos))));
+			this.carry(toolFor(here.getBlockState(pos)));
 		}
 
 		this.getNavigation().stop();
@@ -1324,8 +1329,31 @@ public class HerobrineEntity extends PathfinderMob {
 		if (this.breaking != null) {
 			here.destroyBlockProgress(this.getId(), this.breaking, -1);
 			this.breaking = null;
+			// Back to the axe, so he is never seen walking about with a shovel.
+			this.carry(Items.DIAMOND_AXE);
 		}
 		this.breakTicks = 0;
+	}
+
+	/**
+	 * What he is carrying, and it is never nothing.
+	 *
+	 * Empty hands make him look like he is out for a walk. The axe is the
+	 * default because it reads as a weapon at a distance and as a tool up
+	 * close, which is exactly what he uses it for.
+	 *
+	 * COSMETIC, DELIBERATELY. An item in a mob's main hand applies its own
+	 * attribute modifiers, so handing him a diamond axe would silently take him
+	 * from four damage to thirteen and every number tuned above would be a
+	 * lie — and it would move again the moment the tool swapped to a pickaxe.
+	 * Clearing ATTRIBUTE_MODIFIERS makes the thing purely something he is
+	 * holding, so what he hits for is what STRIKE_DAMAGE says and nothing else.
+	 */
+	private void carry(net.minecraft.world.item.Item item) {
+		ItemStack stack = new ItemStack(item);
+		stack.set(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS,
+			net.minecraft.world.item.component.ItemAttributeModifiers.EMPTY);
+		this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, stack);
 	}
 
 	private static net.minecraft.world.item.Item toolFor(
@@ -1536,6 +1564,29 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 		this.getLookControl().setLookAt(player, 90.0F, 90.0F);
 
+		// AND HERE IS WHERE HE DIGS, which is why he never did.
+		//
+		// The breaking check lived in pursue() and pursue only runs beyond the
+		// standoff. A player behind a wall two blocks away puts him INSIDE the
+		// standoff, so he went to closeOn instead, where there was no breaking
+		// code at all — and stuckTicks, which was the trigger, is only counted
+		// in pursue and so never moved either. He shuffled at the wall for the
+		// whole hunt.
+		//
+		// No line of sight at this range means a wall, not distance. That is a
+		// better trigger than the stall was: it is the actual condition, rather
+		// than a symptom of it.
+		if (this.hunting && !this.hasLineOfSight(player)
+			&& this.level() instanceof ServerLevel here) {
+			BlockPos wall = this.breaking != null && breakable(here, this.breaking)
+				? this.breaking : blockingBetween(player);
+			if (wall != null) {
+				this.breakThrough(wall);
+				return;
+			}
+			this.stopBreaking(here);
+		}
+
 		if (distance > ARMS_LENGTH) {
 			boolean routed = this.getNavigation()
 				.moveTo(player, this.hunting ? HUNT_SPEED : ADVANCE_SPEED);
@@ -1603,6 +1654,17 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private void strike(ServerPlayer player) {
 		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		// NOT THROUGH A WALL.
+		//
+		// doHurtTarget does not test this and neither did anything here, so
+		// standing on the far side of two blocks of stone was close enough to
+		// be hit — which is the one thing guaranteed to read as broken rather
+		// than as frightening. Vanilla melee goals check the same thing before
+		// swinging; the difference is that they own the check and this had to
+		// be given one.
+		if (!this.hasLineOfSight(player)) {
 			return;
 		}
 		long now = here.getGameTime();
