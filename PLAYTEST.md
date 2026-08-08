@@ -688,20 +688,42 @@ To look at it now:
 /herobrine threshold here
 ```
 
-**Above ground — there should be almost nothing:**
+**Above ground — a compound, abandoned where it stood:**
 
-- [ ] A doorframe standing in the grass with **no house behind it**
-- [ ] A hole beside it with steps going down
-- [ ] No path, no field, no fence, no graves. Nothing says anybody lived here
-- [ ] You could walk past it at twenty blocks and not look twice
+- [ ] **Two roofless outbuildings**, walls collapsed to uneven heights, a gap
+      where each door was
+- [ ] A **dead field** — farmland with nothing on it but dead bushes
+- [ ] A fence line that is mostly gaps
+- [ ] Barrels, a cauldron, slabs and dirt patches left lying about
+- [ ] A collapsed opening in the ground with steps down
+- [ ] **Not one sign anywhere on the surface.** Every word in this place is
+      underground, in a book
 
 **Going down:**
 
 - [ ] A cut stair, about 34 steps, walled in brick
 - [ ] The stonework gets **rougher the deeper it goes** — the workmanship
       gives out on the way down
-- [ ] Then it stops being built and starts being dug: a long, empty, wandering
-      passage into a big hall
+- [ ] The lights are **mostly dead**. Redstone brackets still on the wall but
+      unlit, a fifth missing altogether, and only some still burning
+- [ ] Then it stops being built and starts being dug
+
+**Finding your way — this should take a while:**
+
+- [ ] Three separate runs of passage, not one corridor
+- [ ] **Cave-ins.** One you can crawl over the top of, one you have to mine
+      through
+- [ ] **Two branches that go nowhere** and end in collapse. You cannot tell
+      which is the way on until you have walked it
+- [ ] Getting briefly lost is the intended experience. Say if it is tedious
+      rather than tense
+
+**The records room, before the cells:**
+
+- [ ] Bookshelves along both walls with **gaps** where an armful was taken
+- [ ] Two lecterns: `intake` and `on the door`
+- [ ] A chest with `plainly, once`
+- [ ] Read `intake` **before** you walk into the cells. It changes what they are
 
 **The cells — this is the moment:**
 
@@ -714,6 +736,17 @@ To look at it now:
 - [ ] Exactly **one** cell has its bars pushed **outward** into the corridor,
       with two bars left standing in the walkway. Not broken into. Broken out
 - [ ] A few words scratched in his hand in some cells
+
+**The office, at the far end:**
+
+- [ ] You come out of the corridor into it, then **turn round and see the
+      corridor through a wall of glass** — from the seat somebody sat in to do
+      exactly that
+- [ ] Roughly one pane in four is **out**. Something went through that glass
+- [ ] Brewing stands, a cauldron, a smithing table, a desk facing the window
+- [ ] A lectern with `nine`, a chest with `the last day`
+- [ ] Dirty and knocked-about, not strewn with debris — a room somebody left
+      quickly
 
 **The seal:**
 

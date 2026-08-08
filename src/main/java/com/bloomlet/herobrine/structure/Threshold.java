@@ -59,26 +59,52 @@ public final class Threshold {
 	private static final int CORRIDOR_Z0 = 5;
 	private static final int CORRIDOR_Z1 = 7;
 
+	/** The two built rooms either side of the cells, same depth so they line up. */
+	private static final int WING_W = 11;
+
 	public static void raise(ServerLevel level, BlockPos site, RandomSource random) {
 		int surface = Ground.topOf(level, site.getX(), site.getZ());
 		BlockPos mouth = new BlockPos(site.getX(), surface, site.getZ());
 
-		doorway(level, mouth, random);
+		compound(level, mouth, random);
 		BlockPos bottom = stair(level, mouth, random);
 
-		// The approach. Long, dug, and empty — the player needs to have gone a
-		// long way down before anything is asked of them.
-		BlockPos hall = Digging.bore(level, bottom, new Vec3(0.2, -0.5, 1.0), 26, 1.6, random);
+		// The approach, and it is meant to be work.
+		//
+		// A clean tunnel from the stair to the door would make this a corridor
+		// with rooms off it. Three separate runs with collapses in them and two
+		// branches that go nowhere make it a place the player has to find their
+		// way through, and getting lost for two minutes in the dark on the way
+		// down is worth more than anything that could be put at the end of it.
+		BlockPos leg = Digging.bore(level, bottom, new Vec3(0.2, -0.4, 1.0), 22, 1.6, random);
+		collapse(level, leg, random, true);
+		blindAlley(level, leg, new Vec3(-1.0, -0.1, 0.3), random);
+
+		leg = Digging.bore(level, leg, new Vec3(1.0, -0.3, 0.4), 24, 1.5, random);
+		collapse(level, leg, random, false);
+		blindAlley(level, leg, new Vec3(0.2, 0.1, -1.0), random);
+
+		BlockPos hall = Digging.bore(level, leg, new Vec3(0.6, -0.35, 0.8), 20, 1.7, random);
 		Digging.hollow(level, hall, 6.5, random);
 		Digging.props(level, hall, 8, random);
 
-		// Then the thing nobody dug.
-		BlockPos cells = hall.offset(4, -2, -BLOCK_D / 2);
-		cellBlock(level, cells, random);
+		// And then the part nobody dug. Records, then the cells, then the room
+		// they were watched from — in that order, because the player should
+		// read the paperwork before they understand what it was for.
+		BlockPos cells = new BlockPos(hall.getX() + 20, hall.getY() - 2, hall.getZ() - BLOCK_D / 2);
+		BlockPos records = cells.offset(-WING_W, 0, 0);
+		BlockPos office = cells.offset(BLOCK_W, 0, 0);
 
-		BlockPos beyond = new BlockPos(
-			cells.getX() + BLOCK_W + 1, cells.getY() + 1, cells.getZ() + BLOCK_D / 2);
-		BlockPos end = Digging.bore(level, beyond, new Vec3(1.0, -0.25, 0.15), 18, 1.7, random);
+		records(level, records, random);
+		cellBlock(level, cells, random);
+		office(level, office, random);
+
+		// Cut in to the records room from the hall, so the built part is
+		// reached through rock rather than opening politely off it.
+		Digging.bore(level, hall, new Vec3(1.0, -0.12, 0.0), 14, 1.6, random);
+
+		BlockPos beyond = office.offset(WING_W, 2, BLOCK_D / 2);
+		BlockPos end = Digging.bore(level, beyond, new Vec3(1.0, -0.3, 0.15), 20, 1.7, random);
 		Digging.hollow(level, end, 7.0, random);
 		seal(level, end, random);
 
@@ -87,16 +113,180 @@ public final class Threshold {
 	}
 
 	/**
-	 * What there is to find above ground: almost nothing.
+	 * The roof came in here.
 	 *
-	 * A doorframe with no house behind it and a hole beside it. Everything the
-	 * homestead does to say somebody lived somewhere is deliberately absent —
-	 * no path, no field, no fence, no graves. This is not a place anybody came
-	 * back to.
+	 * Rubble rather than gravel for the body of it — gravel falls, and a
+	 * collapse that drains away into the passage below the moment the player
+	 * touches it is a physics toy rather than an obstacle. Cobble, tuff and
+	 * deepslate hold.
+	 *
+	 * @param crawlable leave the top block open, so this one can be squeezed
+	 *                  through rather than mined. Alternating the two is what
+	 *                  stops the route feeling like a series of identical walls.
 	 */
-	private static void doorway(ServerLevel level, BlockPos at, RandomSource random) {
+	private static void collapse(ServerLevel level, BlockPos at, RandomSource random,
+	                             boolean crawlable) {
 		for (int dx = -3; dx <= 3; dx++) {
 			for (int dz = -3; dz <= 3; dz++) {
+				for (int dy = -1; dy <= (crawlable ? 1 : 3); dy++) {
+					BlockPos pos = at.offset(dx, dy, dz);
+					if (!level.getBlockState(pos).isAir()) {
+						continue;
+					}
+					if (dx * dx + dz * dz > 7) {
+						continue;
+					}
+					level.setBlock(pos, rubble(random), 2);
+				}
+			}
+		}
+		// A little loose material on top of it, because a fall leaves dust.
+		for (int i = 0; i < 8; i++) {
+			BlockPos pos = at.offset(random.nextInt(5) - 2, 2, random.nextInt(5) - 2);
+			if (level.getBlockState(pos).isAir()
+				&& level.getBlockState(pos.below()).isSolid()) {
+				level.setBlock(pos, Blocks.GRAVEL.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	/**
+	 * A passage that goes nowhere, and the player cannot know that from here.
+	 *
+	 * Two of these are the difference between a route and a place. A single
+	 * corridor is followed; a fork has to be chosen, and choosing wrong in the
+	 * dark forty blocks down is the only way to make somebody feel lost in a
+	 * structure this small.
+	 */
+	private static void blindAlley(ServerLevel level, BlockPos from, Vec3 heading,
+	                               RandomSource random) {
+		BlockPos end = Digging.bore(level, from, heading, 9 + random.nextInt(5), 1.4, random);
+		collapse(level, end, random, false);
+	}
+
+	private static BlockState rubble(RandomSource random) {
+		return switch (random.nextInt(4)) {
+			case 0 -> Blocks.COBBLESTONE.defaultBlockState();
+			case 1 -> Blocks.TUFF.defaultBlockState();
+			case 2 -> Blocks.COBBLED_DEEPSLATE.defaultBlockState();
+			default -> Blocks.STONE.defaultBlockState();
+		};
+	}
+
+	/**
+	 * The compound. Nobody has been here in a long time.
+	 *
+	 * The homestead says a family lived somewhere. This says an OPERATION was
+	 * run here and then abandoned where it stood — two roofless outbuildings, a
+	 * field nobody harvested, fence line half gone, and a stair into the ground
+	 * that is plainly the reason the rest of it exists.
+	 *
+	 * Not one sign anywhere. A sign is somebody explaining, and there is nobody
+	 * left here to explain; every word in this place is underground, written in
+	 * a book, by a man who did not expect to be read. The surface has to be
+	 * read off the shapes alone.
+	 */
+	private static void compound(ServerLevel level, BlockPos at, RandomSource random) {
+		shell(level, at.offset(-19, 0, -4), 9, 7, random);
+		shell(level, at.offset(11, 0, -13), 7, 6, random);
+
+		// A field, long dead. Farmland with nothing growing reads as a season
+		// that never got finished.
+		for (int dx = -8; dx <= 4; dx++) {
+			for (int dz = 8; dz <= 18; dz++) {
+				if (random.nextInt(7) == 0) {
+					continue;   // gone back to grass in patches
+				}
+				BlockPos soil = new BlockPos(at.getX() + dx,
+					Ground.topOf(level, at.getX() + dx, at.getZ() + dz), at.getZ() + dz);
+				level.setBlock(soil, Blocks.FARMLAND.defaultBlockState(), 2);
+				if (random.nextInt(4) == 0) {
+					level.setBlock(soil.above(), Blocks.DEAD_BUSH.defaultBlockState(), 2);
+				}
+			}
+		}
+
+		// What is left of a fence, and it is mostly gaps.
+		for (int dx = -20; dx <= 14; dx += 1) {
+			if (random.nextInt(3) != 0) {
+				continue;
+			}
+			post(level, at.getX() + dx, at.getZ() - 16, random);
+			post(level, at.getX() + dx, at.getZ() + 20, random);
+		}
+
+		scatter(level, at, random);
+		mouth(level, at, random);
+	}
+
+	/** A roofless outbuilding, walls to about chest height and no more. */
+	private static void shell(ServerLevel level, BlockPos corner, int w, int d,
+	                          RandomSource random) {
+		int base = Ground.topOf(level, corner.getX() + w / 2, corner.getZ() + d / 2) + 1;
+		for (int dx = 0; dx < w; dx++) {
+			for (int dz = 0; dz < d; dz++) {
+				boolean wall = dx == 0 || dx == w - 1 || dz == 0 || dz == d - 1;
+				BlockPos floor = new BlockPos(corner.getX() + dx, base, corner.getZ() + dz);
+				for (int up = 0; up <= 4; up++) {
+					if (!level.getBlockState(floor.above(up)).isAir()) {
+						level.setBlock(floor.above(up), Blocks.AIR.defaultBlockState(), 2);
+					}
+				}
+				level.setBlock(floor.below(), weathered(random), 2);
+				if (!wall) {
+					continue;
+				}
+				// Height falls away at random, so it reads as collapsed rather
+				// than as a wall somebody chose to build low.
+				int height = 1 + random.nextInt(3);
+				for (int up = 0; up < height; up++) {
+					level.setBlock(floor.above(up), weathered(random), 2);
+				}
+			}
+		}
+		// A gap where the door was.
+		for (int up = 0; up < 3; up++) {
+			level.setBlock(new BlockPos(corner.getX() + w / 2, base + up, corner.getZ()),
+				Blocks.AIR.defaultBlockState(), 2);
+		}
+	}
+
+	private static void post(ServerLevel level, int x, int z, RandomSource random) {
+		int y = Ground.topOf(level, x, z) + 1;
+		int height = 1 + random.nextInt(2);
+		for (int up = 0; up < height; up++) {
+			level.setBlock(new BlockPos(x, y + up, z), Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+		}
+	}
+
+	/** Things left where they were put down. */
+	private static void scatter(ServerLevel level, BlockPos at, RandomSource random) {
+		for (int i = 0; i < 26; i++) {
+			int x = at.getX() + random.nextInt(37) - 18;
+			int z = at.getZ() + random.nextInt(37) - 18;
+			BlockPos on = new BlockPos(x, Ground.topOf(level, x, z) + 1, z);
+			if (!level.getBlockState(on).isAir()) {
+				continue;
+			}
+			int roll = random.nextInt(10);
+			if (roll < 3) {
+				level.setBlock(on, Blocks.COBBLESTONE_SLAB.defaultBlockState(), 2);
+			} else if (roll < 5) {
+				level.setBlock(on.below(), Blocks.COARSE_DIRT.defaultBlockState(), 2);
+			} else if (roll < 7) {
+				level.setBlock(on, Blocks.BARREL.defaultBlockState(), 2);
+			} else if (roll == 7) {
+				level.setBlock(on, Blocks.CAULDRON.defaultBlockState(), 2);
+			} else if (roll == 8) {
+				level.setBlock(on, Blocks.DEAD_BUSH.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	/** The way in: a collapsed opening, not a built entrance. */
+	private static void mouth(ServerLevel level, BlockPos at, RandomSource random) {
+		for (int dx = -2; dx <= 2; dx++) {
+			for (int dz = -2; dz <= 1; dz++) {
 				for (int up = 1; up <= 4; up++) {
 					BlockPos clear = at.offset(dx, up, dz);
 					if (!level.getBlockState(clear).isAir()) {
@@ -105,16 +295,11 @@ public final class Threshold {
 				}
 			}
 		}
-		// Two jambs and a lintel, standing in the grass with nothing attached.
 		for (int side = -1; side <= 1; side += 2) {
-			for (int up = 1; up <= 3; up++) {
+			for (int up = 1; up <= 1 + random.nextInt(3); up++) {
 				level.setBlock(at.offset(side * 2, up, -2), weathered(random), 2);
 			}
 		}
-		for (int dx = -2; dx <= 2; dx++) {
-			level.setBlock(at.offset(dx, 4, -2), weathered(random), 2);
-		}
-		sign(level, at.offset(0, 1, -1), "there is a door", "under this");
 	}
 
 	/**
@@ -141,11 +326,210 @@ public final class Threshold {
 					step * 3 > DEPTH * 2 ? Blocks.COBBLESTONE.defaultBlockState()
 						: weathered(random), 2);
 			}
-			if (step % 6 == 0) {
-				Digging.lamp(level, at.above());
+			if (step % 4 == 0) {
+				bracket(level, at.above(), random);
 			}
 		}
 		return at;
+	}
+
+	/**
+	 * A light that mostly is not working any more.
+	 *
+	 * Redstone torches carry a LIT state, so a burnt-out one is a real block
+	 * rather than an absence — the fitting is still on the wall and it is
+	 * simply dark. That is worth far more than leaving a gap: a corridor with
+	 * no lights was never lit, and a corridor where two in five are dead was
+	 * maintained by somebody who stopped.
+	 *
+	 * A fifth are gone entirely, fallen off the wall. Nothing has replaced
+	 * them.
+	 */
+	private static void bracket(ServerLevel level, BlockPos at, RandomSource random) {
+		int roll = random.nextInt(5);
+		if (roll == 0) {
+			return;   // fell off years ago
+		}
+		for (Direction side : Direction.Plane.HORIZONTAL) {
+			if (!level.getBlockState(at.relative(side)).isSolid()
+				|| !level.getBlockState(at).isAir()) {
+				continue;
+			}
+			level.setBlock(at, Blocks.REDSTONE_WALL_TORCH.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, side.getOpposite())
+				.setValue(BlockStateProperties.LIT, roll > 2), 2);
+			return;
+		}
+	}
+
+	/**
+	 * A brick box in the middle of a cave.
+	 *
+	 * Walls, floor and ceiling and nothing else. Both wings and the cell block
+	 * share it, and share a depth, so the three line up into one straight run
+	 * the player walks end to end without ever choosing a direction.
+	 */
+	private static void room(ServerLevel level, BlockPos origin, int w, int d,
+	                         RandomSource random) {
+		for (int x = 0; x < w; x++) {
+			for (int z = 0; z < d; z++) {
+				for (int y = 0; y < BLOCK_H; y++) {
+					boolean wall = x == 0 || x == w - 1 || z == 0 || z == d - 1
+						|| y == 0 || y == BLOCK_H - 1;
+					BlockPos pos = origin.offset(x, y, z);
+					level.setBlock(pos, wall ? brick(random)
+						: Blocks.CAVE_AIR.defaultBlockState(), 2);
+					Digging.seal(level, pos);
+				}
+			}
+		}
+	}
+
+	/** Knock a hole through one wall at the corridor height. */
+	private static void doorGap(ServerLevel level, BlockPos origin, int x, int z0, int z1) {
+		for (int z = z0; z <= z1; z++) {
+			for (int y = 1; y < BLOCK_H - 1; y++) {
+				level.setBlock(origin.offset(x, y, z), Blocks.CAVE_AIR.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	/**
+	 * Records. The paperwork comes before the cells.
+	 *
+	 * Ordered on purpose: a player who walks into the cells cold sees a
+	 * dungeon, and a dungeon is a place monsters live. A player who has just
+	 * read a numbered list of villagers by trade walks into the same room and
+	 * sees where the list was kept. Same blocks, completely different building.
+	 *
+	 * Shelves with gaps in them, because somebody took an armful and left in a
+	 * hurry, and what is still here is the part that was not worth carrying.
+	 */
+	private static void records(ServerLevel level, BlockPos origin, RandomSource random) {
+		room(level, origin, WING_W, BLOCK_D, random);
+		doorGap(level, origin, WING_W - 1, CORRIDOR_Z0, CORRIDOR_Z1);
+		doorGap(level, origin, 0, CORRIDOR_Z0 + 1, CORRIDOR_Z0 + 1);
+
+		for (int x = 1; x < WING_W - 1; x++) {
+			for (int z : new int[]{1, BLOCK_D - 2}) {
+				if (random.nextInt(4) == 0) {
+					continue;   // an armful gone
+				}
+				level.setBlock(origin.offset(x, 1, z), Blocks.BOOKSHELF.defaultBlockState(), 2);
+				if (random.nextInt(3) > 0) {
+					level.setBlock(origin.offset(x, 2, z), Blocks.BOOKSHELF.defaultBlockState(), 2);
+				}
+			}
+		}
+		lectern(level, origin.offset(3, 1, 3), LabBooks.intake());
+		lectern(level, origin.offset(7, 1, 9), LabBooks.theDoor());
+		crate(level, origin.offset(2, 1, 10), LabBooks.whatIWas(), random);
+		level.setBlock(origin.offset(8, 1, 2), Blocks.BARREL.defaultBlockState(), 2);
+		level.setBlock(origin.offset(9, 1, 3), Blocks.BARREL.defaultBlockState(), 2);
+		mess(level, origin, WING_W, random);
+		for (int x = 3; x < WING_W; x += 4) {
+			bracket(level, origin.offset(x, 3, CORRIDOR_Z0), random);
+		}
+	}
+
+	/**
+	 * The room it was all watched from.
+	 *
+	 * At the far end, so the player reaches it having already walked the
+	 * corridor — and then turns round and sees the corridor again through a
+	 * wall of glass, from the seat somebody sat in to do exactly that. The view
+	 * is the whole point of the room, and it is a view the player has just been
+	 * on the wrong side of.
+	 *
+	 * Brewing stands and a cauldron because they are the only apparatus the
+	 * game has. They are doing a job no book can: work was done here, and it
+	 * was not honest work.
+	 */
+	private static void office(ServerLevel level, BlockPos origin, RandomSource random) {
+		room(level, origin, WING_W, BLOCK_D, random);
+		doorGap(level, origin, WING_W - 1, CORRIDOR_Z0 + 1, CORRIDOR_Z0 + 1);
+
+		// The observation wall: a door at the middle, glass either side of it.
+		for (int z = CORRIDOR_Z0; z <= CORRIDOR_Z1; z++) {
+			for (int y = 1; y < BLOCK_H - 1; y++) {
+				boolean door = z == CORRIDOR_Z0 + 1 && y < 3;
+				// One pane in four is out. Somebody went through this glass, or
+				// something did, and nobody put it back.
+				BlockState pane = random.nextInt(4) == 0
+					? Blocks.CAVE_AIR.defaultBlockState()
+					: Blocks.GLASS_PANE.defaultBlockState();
+				level.setBlock(origin.offset(0, y, z),
+					door ? Blocks.CAVE_AIR.defaultBlockState() : pane, 2);
+			}
+		}
+
+		level.setBlock(origin.offset(3, 1, 2), Blocks.BREWING_STAND.defaultBlockState(), 2);
+		level.setBlock(origin.offset(4, 1, 2), Blocks.BREWING_STAND.defaultBlockState(), 2);
+		level.setBlock(origin.offset(6, 1, 2), Blocks.CAULDRON.defaultBlockState(), 2);
+		level.setBlock(origin.offset(2, 1, 4), Blocks.CRAFTING_TABLE.defaultBlockState(), 2);
+		level.setBlock(origin.offset(7, 1, 4), Blocks.SMITHING_TABLE.defaultBlockState(), 2);
+
+		// A desk, facing the glass.
+		level.setBlock(origin.offset(3, 1, 6), Blocks.OAK_FENCE.defaultBlockState(), 2);
+		level.setBlock(origin.offset(3, 2, 6), Blocks.SPRUCE_PRESSURE_PLATE.defaultBlockState(), 2);
+		level.setBlock(origin.offset(4, 1, 6), Blocks.SPRUCE_STAIRS.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
+
+		lectern(level, origin.offset(5, 1, 8), LabBooks.subjectNine());
+		crate(level, origin.offset(8, 1, 9), LabBooks.lastDay(), random);
+		level.setBlock(origin.offset(2, 1, 10), Blocks.BARREL.defaultBlockState(), 2);
+		mess(level, origin, WING_W, random);
+		for (int x = 3; x < WING_W; x += 4) {
+			bracket(level, origin.offset(x, 3, CORRIDOR_Z1), random);
+		}
+	}
+
+	/**
+	 * Whatever happened here, nobody tidied up after it.
+	 *
+	 * Cobwebs, spilled redstone, a cracked floor. Restrained on purpose — a
+	 * room strewn with debris reads as a set. A room that is merely dirty, with
+	 * one or two things obviously knocked over, reads as a room somebody left
+	 * quickly, and that is a completely different feeling.
+	 */
+	private static void mess(ServerLevel level, BlockPos origin, int w, RandomSource random) {
+		for (int i = 0; i < 22; i++) {
+			BlockPos at = origin.offset(1 + random.nextInt(w - 2),
+				1 + random.nextInt(BLOCK_H - 2), 1 + random.nextInt(BLOCK_D - 2));
+			if (!level.getBlockState(at).isAir()) {
+				continue;
+			}
+			int roll = random.nextInt(8);
+			if (roll < 3 && Digging.touchesSomething(level, at)) {
+				level.setBlock(at, Blocks.COBWEB.defaultBlockState(), 2);
+			} else if (roll < 5 && level.getBlockState(at.below()).isSolid()) {
+				level.setBlock(at, Blocks.REDSTONE_WIRE.defaultBlockState(), 2);
+			} else if (roll == 5 && level.getBlockState(at.below()).isSolid()) {
+				level.setBlock(at.below(), Blocks.CRACKED_STONE_BRICKS.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	private static void lectern(ServerLevel level, BlockPos at,
+	                            net.minecraft.world.item.ItemStack book) {
+		level.setBlock(at, Blocks.LECTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH)
+			.setValue(BlockStateProperties.HAS_BOOK, true), 2);
+		if (level.getBlockEntity(at)
+				instanceof net.minecraft.world.level.block.entity.LecternBlockEntity lectern) {
+			lectern.setBook(book);
+		}
+	}
+
+	private static void crate(ServerLevel level, BlockPos at,
+	                          net.minecraft.world.item.ItemStack book, RandomSource random) {
+		level.setBlock(at, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
+		if (level.getBlockEntity(at)
+				instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+			chest.setItem(0, book);
+			Loot.scatter(chest, random, Loot.Tier.HOMESTEAD);
+		}
 	}
 
 	/**
