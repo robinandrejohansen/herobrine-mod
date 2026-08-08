@@ -32,23 +32,85 @@ public final class Traces {
 	private Traces() {}
 
 	/**
-	 * Footsteps behind you, once, with nothing there.
+	 * Somebody walks past behind you.
 	 *
-	 * Placed behind the player and close — the whole trick is that it sounds
-	 * like it is inside your personal space. Stone steps rather than the local
-	 * block's, because stone carries and reads as "someone in a cave".
+	 * The first version played four steps in a single tick, which is not four
+	 * steps — it is one loud noise, and that is what it sounded like. They are
+	 * now spread eight ticks apart, which is walking pace, and each one lands
+	 * a little further along a line that passes behind the player rather than
+	 * all at the same point.
+	 *
+	 * That second part matters as much as the timing. Repeated sound at one
+	 * fixed position reads as a machine; sound that MOVES reads as a person,
+	 * and the player turns to follow it instead of just flinching.
+	 *
+	 * Stone steps rather than the local block's, because stone carries and
+	 * reads as "someone in a cave" wherever you happen to be standing.
 	 */
 	public static boolean footsteps(ServerLevel level, ServerPlayer player) {
 		RandomSource random = level.getRandom();
-		Vec3 behind = player.position()
-			.subtract(player.getViewVector(1.0F).normalize().scale(2.5 + random.nextDouble() * 2.0));
+		Vec3 look = player.getViewVector(1.0F).normalize();
+		Vec3 behind = player.position().subtract(look.scale(3.0 + random.nextDouble() * 1.5));
 
-		// Four steps, walking pace. One footstep is a glitch; four is someone.
-		for (int i = 0; i < 4; i++) {
-			level.playSound(null, behind.x, behind.y, behind.z,
-				SoundEvents.STONE_STEP, SoundSource.HOSTILE,
-				0.28F, 0.85F + random.nextFloat() * 0.1F);
+		// Across, not towards. Something crossing behind you is a person going
+		// about its business; something walking at you is an attack, and at
+		// phase 0 he is not attacking anybody.
+		Vec3 across = new Vec3(-look.z, 0.0, look.x)
+			.scale(random.nextBoolean() ? 0.55 : -0.55);
+		Vec3 start = behind.subtract(across.scale(3.0));
+
+		int steps = 7 + random.nextInt(3);
+		for (int i = 0; i < steps; i++) {
+			Vec3 at = start.add(across.scale(i));
+			// Captured per step so each plays where that step should be.
+			final double x = at.x;
+			final double y = at.y;
+			final double z = at.z;
+			final float pitch = 0.82F + random.nextFloat() * 0.12F;
+			Cadence.in(level.getServer(), i * 8, () ->
+				level.playSound(null, x, y, z, SoundEvents.STONE_STEP,
+					SoundSource.HOSTILE, 0.34F, pitch));
 		}
+		return true;
+	}
+
+	/**
+	 * A creeper that is not there.
+	 *
+	 * The single most conditioned sound in Minecraft. Nobody thinks about it,
+	 * nobody has to see anything, and every player who has ever lost a chest
+	 * to one will spin round and sprint before they have decided to.
+	 *
+	 * The fuse is thirty ticks in vanilla and it is thirty ticks here, because
+	 * the whole effect is that the player's body counts it. What arrives at the
+	 * end is nothing at all — no explosion, no damage, no block broken. They
+	 * brace, and the world simply carries on, and then they have to decide what
+	 * they just heard.
+	 *
+	 * One footstep lands two ticks after the fuse should have run out, close
+	 * and behind. It is the only part that is not deniable as a real creeper,
+	 * and it is what turns "there must have been a creeper somewhere" into
+	 * something worse.
+	 *
+	 * Costs nothing and takes nothing, which is what keeps it inside the phase
+	 * 0 rules — but it is easily the most frightening thing available this
+	 * early, so the director's suppression matters more for this than for
+	 * anything else in the set.
+	 */
+	public static boolean fuse(ServerLevel level, ServerPlayer player) {
+		RandomSource random = level.getRandom();
+		Vec3 look = player.getViewVector(1.0F).normalize();
+		Vec3 behind = player.position().subtract(look.scale(2.0 + random.nextDouble()));
+
+		level.playSound(null, behind.x, behind.y, behind.z,
+			SoundEvents.CREEPER_PRIMED, SoundSource.HOSTILE, 1.0F, 1.0F);
+
+		final double x = behind.x;
+		final double y = behind.y;
+		final double z = behind.z;
+		Cadence.in(level.getServer(), 32, () ->
+			level.playSound(null, x, y, z, SoundEvents.STONE_STEP,
+				SoundSource.HOSTILE, 0.4F, 0.8F));
 		return true;
 	}
 

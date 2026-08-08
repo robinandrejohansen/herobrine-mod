@@ -528,6 +528,32 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 > whether you come out having worked out what happened without being told —
 > and whether you counted the beds and the graves.
 
+### A1b — Footsteps and the fuse (RUMOUR)
+
+```
+/herobrine provoke footsteps
+```
+
+- [ ] **Seven to nine separate steps**, not one noise. You can count them
+- [ ] They **move** — something crossing behind you, left to right or right to
+      left, not stamping on one spot
+- [ ] Walking pace. Not a sprint, not a stagger
+- [ ] You turn round and there is nothing there
+
+```
+/herobrine provoke the_fuse
+```
+
+- [ ] A creeper hiss **right behind you**
+- [ ] It never goes off. No explosion, no damage, no broken blocks
+- [ ] The silence lands at the moment a real creeper would have detonated —
+      about a second and a half
+- [ ] Then **one footstep**, close, just after
+
+> Say plainly if the fuse is too much this early. It is the most conditioned
+> sound in the game and it works on reflex, which is exactly why it might not
+> belong in phase 0 — it is easy to move to WATCHER.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the

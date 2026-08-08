@@ -40,6 +40,14 @@ public enum Manifestation {
 		}
 	},
 
+	/** A creeper behind you that never goes off. */
+	THE_FUSE(Phase.RUMOUR, 6) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Traces.fuse(level, player);
+		}
+	},
+
 	/** One of your animals stops being an animal. */
 	POSSESSED_MOB(Phase.MIMIC, 12) {
 		@Override

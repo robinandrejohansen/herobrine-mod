@@ -3,6 +3,7 @@ package com.bloomlet.herobrine;
 import com.bloomlet.herobrine.entity.ModEntities;
 import com.bloomlet.herobrine.manifest.ManifestationDirector;
 import com.bloomlet.herobrine.manifest.Breach;
+import com.bloomlet.herobrine.manifest.Cadence;
 import com.bloomlet.herobrine.structure.Dwellings;
 import com.bloomlet.herobrine.manifest.TheDogKnows;
 import com.bloomlet.herobrine.manifest.Journal;
@@ -35,6 +36,7 @@ public class HerobrineMod implements ModInitializer {
 		// Must come first: it registers the attachment types, and they have to
 		// exist before any world is loaded or saved wrath is discarded.
 		Wrath.register();
+		Cadence.register();
 		Signs.register();
 		Journal.register();
 		Possession.register();
