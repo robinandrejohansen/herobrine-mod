@@ -335,6 +335,15 @@ Flagged honestly, to be resolved before the relevant phase is built.
   Sign text is chosen from the reading player's own stats, so two players at
   the same base get different words.
 
+  **Tamed animals are never taken.** A wolf someone tamed, named and walked
+  halfway across a world with is the most loaded thing he could take, and
+  taking it would be the most effective scare in the mod — which is exactly
+  why it is out. §9 says he never touches what the player earned, and there is
+  no counter-play against losing a pet. A wild wolf is fair game, and one of
+  his can never then be tamed, since interaction with anything of his is
+  refused. The dog that will not become yours is available; the dog that
+  already is yours is safe.
+
   **A possessed animal belongs to one player.** It follows its owner, rings
   its owner, and walks past everyone else as though they were furniture. This
   is the clearest expression of the split anywhere in the mod: to a bystander

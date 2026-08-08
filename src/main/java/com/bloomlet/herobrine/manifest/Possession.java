@@ -24,6 +24,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.InteractionResult;
@@ -169,6 +170,32 @@ public final class Possession {
 		return TOLL_LIMIT;
 	}
 
+	/**
+	 * Whether he is allowed to take this at all.
+	 *
+	 * Tamed animals are excluded, and that is a design ruling rather than a
+	 * technical one. A wolf you tamed, named and walked halfway across a world
+	 * with is the single most loaded thing he could take, and taking it would
+	 * be the most effective scare in the mod — which is exactly why it is out.
+	 * DESIGN.md §9 says he never touches what the player has built or earned,
+	 * because a haunting you cannot opt out of stops being a horror and starts
+	 * being griefing, and the player has no counter-play against losing a pet.
+	 *
+	 * A WILD wolf is fair game, and one of his cannot then be tamed: feeding it
+	 * bones does nothing at all, because interaction with anything of his is
+	 * refused outright. So the dog that will not become your dog is available,
+	 * and the dog that already is yours is safe. That is the right way round.
+	 */
+	private static boolean eligible(Mob mob) {
+		if (!(mob instanceof Animal) && !(mob instanceof AbstractVillager)) {
+			return false;   // only things that ought to be harmless
+		}
+		if (mob.isBaby()) {
+			return false;   // a possessed lamb is comic, not frightening
+		}
+		return !(mob instanceof TamableAnimal tame) || !tame.isTame();
+	}
+
 	public static boolean isPossessed(Mob mob) {
 		return Boolean.TRUE.equals(mob.getAttached(POSSESSED));
 	}
@@ -190,11 +217,8 @@ public final class Possession {
 		int alreadyHis = 0;
 
 		for (Mob mob : level.getEntitiesOfClass(Mob.class, around)) {
-			if (!(mob instanceof Animal) && !(mob instanceof AbstractVillager)) {
-				continue;   // only things that ought to be harmless
-			}
-			if (mob.isBaby()) {
-				continue;   // a possessed lamb is comic, not frightening
+			if (!eligible(mob)) {
+				continue;
 			}
 			harmless++;
 			if (isPossessed(mob)) {
@@ -309,8 +333,10 @@ public final class Possession {
 				continue;
 			}
 			if (other instanceof Animal || other instanceof AbstractVillager) {
+				// Your dog watches it happen like everything else does. It
+				// simply never becomes one of them.
 				witnesses.put(other.getUUID(), new Witness(until, player.getUUID()));
-				if (!other.isBaby()) {
+				if (eligible(other)) {
 					watchers.add(other);
 				}
 			}
@@ -436,6 +462,7 @@ public final class Possession {
 	 * in the open — it is supposed to be there later, which is worse.
 	 */
 	private static void follow(Mob mob, ServerPlayer player) {
+		disarm(mob);
 		Vec3 slot = slotOf(mob, player);
 		mob.getNavigation().moveTo(slot.x, slot.y, slot.z, FOLLOW_SPEED);
 	}
@@ -563,6 +590,26 @@ public final class Possession {
 		mob.getNavigation().stop();
 		mob.setDeltaMovement(0.0, mob.getDeltaMovement().y, 0.0);
 		mob.setJumping(false);
+		disarm(mob);
+	}
+
+	/**
+	 * It does not fight back, ever, and that is the whole effect.
+	 *
+	 * Stopping navigation is not enough for anything that can be provoked. A
+	 * wild wolf is neutral, so hitting one of his would have it turn on the
+	 * player through the ordinary attack goal — the goals still choose a
+	 * target even when they cannot walk anywhere, and melee does not need a
+	 * path once you are stood next to it.
+	 *
+	 * A possessed animal that suddenly snarls and bites is just an angry wolf,
+	 * and the player knows what to do with an angry wolf. One that lets you
+	 * hit it and keeps looking at you is the thing they have no answer for.
+	 */
+	private static void disarm(Mob mob) {
+		if (mob.getTarget() != null) {
+			mob.setTarget(null);
+		}
 	}
 
 	private static void hold(Mob mob, Player player) {

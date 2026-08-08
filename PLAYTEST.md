@@ -306,6 +306,17 @@ The command prints which animal and where. Now go and look at it.
       villager, no breeding, no lead, no sound
 - [ ] A normal villager next to it still trades fine
 
+**Dogs:**
+
+- [ ] Tame a wolf. It can **never** be taken — not by `provoke`, not by the
+      spread when you kill one next to it
+- [ ] Your tamed dog still freezes and stares for the six seconds after a kill
+      like everything else
+- [ ] A **wild** wolf can be taken
+- [ ] Feed a possessed wild wolf bones: nothing happens. It cannot be tamed
+- [ ] Hit a possessed wild wolf. It **does not fight back** — it takes the hit
+      and goes on looking at you
+
 **At higher wrath he takes more than one:**
 
 ```
