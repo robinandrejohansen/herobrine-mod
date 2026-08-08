@@ -573,6 +573,11 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 
 **The two cells — this is new:**
 
+> Villagers are marked when they are spawned, so **an old house has ordinary
+> villagers in it**. Raise a fresh one to test any change here. The log prints
+> `shut one in at [...]` twice per house — if it does not, nothing was marked.
+
+
 - [ ] Each branch ends in a small **built** room: right angles and brick
       inside a cave that has none
 - [ ] The **whole front is iron bars** with an iron door in the middle — it

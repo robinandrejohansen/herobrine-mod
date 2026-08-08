@@ -93,6 +93,10 @@ public final class Feral {
 	 * this is not him, it is what he leaves behind.
 	 */
 	public static void shutIn(Mob mob) {
+		// Nothing it used to want. A villager brain keeps a job site, a bed and
+		// a home and will walk off to any of them the moment it is left alone,
+		// which is not what something that has been in a cell for years does.
+		mob.getBrain().clearMemories();
 		mob.setAttached(FERAL, true);
 		mob.setAttached(Possession.POSSESSED, true);
 		mob.setAttached(Possession.MENACE, 2);

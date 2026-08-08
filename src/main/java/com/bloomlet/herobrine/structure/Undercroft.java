@@ -178,8 +178,17 @@ public final class Undercroft {
 		if (kept != null) {
 			BlockPos stand = middle.relative(front, -1);
 			kept.snapTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, 0.0F, 0.0F);
-			Feral.shutIn(kept);
+			// Into the world FIRST, and only then marked.
+			//
+			// Attachments set on an entity that is not in a level yet have
+			// nowhere to be tracked from, so nothing was synced to the client
+			// and nothing was written to disk — which is why these turned up as
+			// perfectly ordinary villagers with no eyes and no interest in
+			// anybody. The order is the whole fix.
 			level.addFreshEntity(kept);
+			Feral.shutIn(kept);
+			HerobrineMod.LOGGER.info("shut one in at [{}, {}, {}]",
+				stand.getX(), stand.getY(), stand.getZ());
 		}
 	}
 
