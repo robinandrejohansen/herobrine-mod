@@ -369,6 +369,31 @@ cheats) and have someone join.
 - [ ] `/herobrine status` shows the same `his animals killed n/100` for both of
       you — the toll is the world's, not yours
 
+### A7g — They get through the window (SIEGE)
+
+```
+/herobrine wrath 1800
+```
+
+Build a small shelter with a **glass** window at eye level, go inside at night
+and let zombies find you.
+
+- [ ] A zombie that has you as its target starts on the glass. **Vanilla
+      cracks spread across the pane** as it works
+- [ ] It takes about **ten seconds**, with glass ticking under its hands
+- [ ] The pane breaks and **drops nothing**
+- [ ] Move out of reach — it stops, and the cracks **heal**
+- [ ] Kill it mid-chew: the cracks vanish rather than sticking on the block
+- [ ] Two zombies on the same window each show their own progress
+- [ ] It **only** touches glass. Stone, planks, doors, floors: untouched
+- [ ] Replace the pane with **iron bars**. They cannot touch it — that is the
+      real answer to this
+- [ ] Drop below SIEGE (`/herobrine wrath 0`) and nothing chews at all
+
+> This is the only thing in the mod that damages what the player built, which
+> is why it is glass only and the final phase only. A pane costs a shovelful of
+> sand; losing one is a fright rather than a loss.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the
