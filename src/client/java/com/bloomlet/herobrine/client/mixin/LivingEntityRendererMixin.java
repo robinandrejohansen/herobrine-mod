@@ -55,9 +55,20 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity,
 	@Inject(method = "extractRenderState", at = @At("TAIL"))
 	private void herobrine$markRevealed(T entity, S state, float partialTicks,
 	                                    CallbackInfo info) {
+		if (!(entity instanceof Mob mob)) {
+			((PossessedEyes)state).herobrine$eyes(null);
+			return;
+		}
+		// The worse of the two: what was done to this one, and what the phase
+		// has done to all of them. A possessed cow at RUMOUR still shows its
+		// eyes, and an untouched one at SIEGE shows them too.
+		net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
+		com.bloomlet.herobrine.wrath.Phase phase = client.player == null
+			? com.bloomlet.herobrine.wrath.Phase.RUMOUR
+			: com.bloomlet.herobrine.wrath.Wrath.shownTo(client.player);
+		int menace = Math.max(Possession.menace(mob),
+			PossessedEyesTextures.herdMenace(mob.getType(), phase));
 		((PossessedEyes)state).herobrine$eyes(
-			entity instanceof Mob mob
-				? PossessedEyesTextures.forType(mob.getType(), Possession.menace(mob))
-				: null);
+			PossessedEyesTextures.forType(mob.getType(), menace));
 	}
 }

@@ -184,6 +184,13 @@ much faster and is the intended route.
       wrath goes to zero — which is how the world is put back, since everything
       here reads off that one number. And then it can begin again
 
+### The herd
+- [x] By HUNTER every cow, pig and sheep has white eyes — not one taken animal,
+      all of them, which is the point: it stops being personal
+- [x] By SIEGE they are red. Decided client-side off the phase it already knows,
+      so the server never touches an entity to say it
+- [x] Villagers are exempt. They get eyes only by being taken
+
 ### Atmosphere
 - [x] Rain and thunder scale with wrath
 - [x] Nights get longer, days do not get shorter
@@ -202,7 +209,10 @@ much faster and is the intended route.
 - [x] The smithy — open-fronted forge, stone, chimney over the rooftops
 - [x] Two shops — a trade each, awnings out over the lane, family room behind
 - [x] Two pens — terrain-following fences, open shelters, real animals in them
-- [x] The church — long nave, tower, bell, spire, and the stair behind the altar
+- [x] The church — 19x31, five courses of wall and nine of roof, coloured glass
+      down both sides, wool hangings between them, timber roof and spire, and
+      the stair down is behind the altar INSIDE the building
+- [x] Villagers on their own doorsteps, one per plot, three in the hall
 - [x] **The undercity** — a vaulted chamber under the square with streets,
       houses, lantern posts and a library. Two ways in: the altar stair and a
       swim down the well. Villagers still live there

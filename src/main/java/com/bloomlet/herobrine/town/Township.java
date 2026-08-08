@@ -117,6 +117,8 @@ public final class Township {
 			}
 		}
 
+		populate(level, centre, plots, random);
+
 		HerobrineMod.LOGGER.info("township laid out at [{}, {}, {}], gate facing {}, {} plots",
 			centre.getX(), centre.getY(), centre.getZ(), approach.getName(),
 			plots.size() + " (" + built + " houses up)");
@@ -127,6 +129,50 @@ public final class Township {
 	 *
 	 * @param facing the way its front points, which is always at the lane
 	 */
+	/**
+	 * People, on their own doorsteps.
+	 *
+	 * A settlement with eight houses, a hall, a forge and two shops and NOBODY
+	 * in it is a film set, and the player reads it as one instantly — the
+	 * buildings stop being places and become props the moment it is clear that
+	 * nothing lives in them.
+	 *
+	 * Placed one to a plot rather than scattered, because somebody standing
+	 * outside a specific door reads as belonging to that house, while a dozen
+	 * milling about the square reads as a crowd waiting for something. Made
+	 * persistent, or the town empties itself the first time the chunks unload
+	 * with nobody watching.
+	 *
+	 * Ordinary villagers, and that matters. Whatever else is wrong with this
+	 * place, the people in it are just people — which is what gives the nine
+	 * more of them living forty blocks underneath somewhere to be strange.
+	 */
+	private static void populate(ServerLevel level, BlockPos centre, List<Plot> plots,
+	                             RandomSource random) {
+		for (Plot plot : plots) {
+			if (plot.kind().equals("pen")) {
+				continue;   // the pens already have their own occupants
+			}
+			int count = plot.kind().equals("hall") ? 3 : 1;
+			for (int i = 0; i < count; i++) {
+				int x = plot.corner().getX() + random.nextInt(plot.width());
+				int z = plot.corner().getZ() + random.nextInt(plot.depth());
+				int y = Ground.topOf(level, x, z) + 1;
+
+				net.minecraft.world.entity.Mob soul =
+					net.minecraft.world.entity.EntityTypes.VILLAGER
+						.create(level, net.minecraft.world.entity.EntitySpawnReason.STRUCTURE);
+				if (soul == null) {
+					continue;
+				}
+				soul.snapTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
+				soul.setPersistenceRequired();
+				level.addFreshEntity(soul);
+			}
+		}
+	}
+
+
 	public record Plot(BlockPos corner, int width, int depth, Direction facing, String kind) {}
 
 	/**
@@ -152,7 +198,7 @@ public final class Township {
 			"pen", "house", "pen",
 		};
 		int[][] size = {
-			{15, 25}, {15, 13}, {11, 9}, {9, 9}, {11, 9}, {11, 9},
+			{19, 31}, {15, 13}, {11, 9}, {9, 9}, {11, 9}, {11, 9},
 			{9, 9}, {11, 9}, {11, 9}, {11, 9}, {11, 9}, {11, 9},
 			{12, 12}, {11, 9}, {12, 12},
 		};

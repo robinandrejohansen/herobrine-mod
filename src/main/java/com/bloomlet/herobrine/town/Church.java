@@ -37,35 +37,41 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 public final class Church {
 	private Church() {}
 
-	public static final int WIDTH = 15;
-	public static final int DEPTH = 25;
+	public static final int WIDTH = 19;
+	public static final int DEPTH = 31;
 
 	private static final String[] GROUND = {
-		"               ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		" ############# ",
-		"               ",
+		"                   ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		" ################# ",
+		"                   ",
 	};
 
 	/**
@@ -73,121 +79,191 @@ public final class Church {
 	 * and the porch under the tower is the bottom three.
 	 */
 	private static final String[] NAVE = {
-		"               ",
-		" LWWWWWWWWWWWL ",
-		" W     V     W ",
-		" W    aaa    W ",
-		" W  k     k  W ",
-		" WWWWW   WWWWW ",
-		" W           W ",
-		" W ppp   ppp W ",
-		" W ppp   ppp W ",
-		" W           W ",
-		" W ppp   ppp W ",
-		" W ppp   ppp W ",
-		" W           W ",
-		" W ppp   ppp W ",
-		" W ppp   ppp W ",
-		" W           W ",
-		" W ppp   ppp W ",
-		" W ppp   ppp W ",
-		" W           W ",
-		" WWWWW   WWWWW ",
-		" W  k     k  W ",
-		" W           W ",
-		" LWWWWWDWWWWWL ",
-		"               ",
-		"               ",
+		"                   ",
+		" LWWWWWWWWWWWWWWWL ",
+		" W       V       W ",
+		" W      aaa      W ",
+		" W   c       c   W ",
+		" WWWWW       WWWWW ",
+		" W               W ",
+		" W  ppppp ppppp  W ",
+		" W  ppppp ppppp  W ",
+		" W               W ",
+		" W  ppppp ppppp  W ",
+		" W  ppppp ppppp  W ",
+		" W               W ",
+		" W  ppppp ppppp  W ",
+		" W  ppppp ppppp  W ",
+		" W               W ",
+		" W  ppppp ppppp  W ",
+		" W  ppppp ppppp  W ",
+		" W               W ",
+		" W  ppppp ppppp  W ",
+		" W  ppppp ppppp  W ",
+		" W               W ",
+		" WWWWW       WWWWW ",
+		" W   c       c   W ",
+		" W               W ",
+		" W               W ",
+		" LWWWWWW D WWWWWWL ",
+		"                   ",
+		"                   ",
+		"                   ",
+		"                   ",
 	};
 
 	private static final String[] MID = {
-		"               ",
-		" LWgWWWWWWWgWL ",
-		" W           W ",
-		" W           W ",
-		" g           g ",
-		" WWWWW   WWWWW ",
-		" W           W ",
-		" g           g ",
-		" W           W ",
-		" W           W ",
-		" g           g ",
-		" W           W ",
-		" W           W ",
-		" g           g ",
-		" W           W ",
-		" W           W ",
-		" g           g ",
-		" W           W ",
-		" W           W ",
-		" WWWWW   WWWWW ",
-		" W           W ",
-		" g           g ",
-		" LWWWWWWWWWWWL ",
-		"               ",
-		"               ",
+		"                   ",
+		" LWgWWWWWWWWWWWgWL ",
+		" W               W ",
+		" W               W ",
+		" g       m       g ",
+		" WWWWW       WWWWW ",
+		" W               W ",
+		" g       m       g ",
+		" W               W ",
+		" W               W ",
+		" g       m       g ",
+		" W               W ",
+		" W               W ",
+		" g       m       g ",
+		" W               W ",
+		" W               W ",
+		" g       m       g ",
+		" W               W ",
+		" W               W ",
+		" g       m       g ",
+		" W               W ",
+		" W               W ",
+		" WWWWW       WWWWW ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" LWWWWWWWWWWWWWWWL ",
+		"                   ",
+		"                   ",
+		"                   ",
+		"                   ",
 	};
 
 	private static final String[] UPPER = {
-		"               ",
-		" LWgWWWWWWWgWL ",
-		" W           W ",
-		" W           W ",
-		" g           g ",
-		" WWWWW   WWWWW ",
-		" W           W ",
-		" g           g ",
-		" W           W ",
-		" W           W ",
-		" g           g ",
-		" W           W ",
-		" W           W ",
-		" g           g ",
-		" W           W ",
-		" W           W ",
-		" g           g ",
-		" W           W ",
-		" W           W ",
-		" WWWWW   WWWWW ",
-		" W           W ",
-		" g           g ",
-		" LWWWWWWWWWWWL ",
-		"               ",
-		"               ",
+		"                   ",
+		" LWgWWWWWWWWWWWgWL ",
+		" W               W ",
+		" W               W ",
+		" g               g ",
+		" WWWWW       WWWWW ",
+		" W               W ",
+		" g               g ",
+		" W               W ",
+		" W               W ",
+		" g               g ",
+		" W               W ",
+		" W               W ",
+		" g               g ",
+		" W               W ",
+		" W               W ",
+		" g               g ",
+		" W               W ",
+		" W               W ",
+		" g               g ",
+		" W               W ",
+		" W               W ",
+		" WWWWW       WWWWW ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" LWWWWWWWWWWWWWWWL ",
+		"                   ",
+		"                   ",
+		"                   ",
+		"                   ",
 	};
 
 	private static final String[] EAVES = {
-		"               ",
-		" LWWWWWWWWWWWL ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWW ",
-		" LWWWWWWWWWWWL ",
-		"               ",
-		"               ",
+		"                   ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" WWWWWWWWWWWWWWWWW ",
+		" LWWWWWWWWWWWWWWWL ",
+		"                   ",
+		"                   ",
+		"                   ",
+		"                   ",
 	};
 
-	private static final String[][] LAYERS = { GROUND, NAVE, MID, UPPER, EAVES };
+	private static final String[] CROWN = {
+		"                   ",
+		" LWgWWWWWWWWWWWgWL ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" WWWWW       WWWWW ",
+		" W               W ",
+		" g               g ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" g               g ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" g               g ",
+		" W               W ",
+		" W               W ",
+		" WWWWW       WWWWW ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" LWWWWWWWWWWWWWWWL ",
+		"                   ",
+		"                   ",
+		"                   ",
+		"                   ",
+	};
 
-	/** Where the stair down starts: dead behind the altar. */
-	private static final int STAIR_X = 7;
+	private static final String[][] LAYERS = { GROUND, NAVE, MID, UPPER, CROWN, EAVES };
+
+	/**
+	 * Where the stair down starts, and it is INSIDE.
+	 *
+	 * Between the altar and the back wall of the chancel, which is the one
+	 * patch of floor in the building nobody walks over: the pews face it, the
+	 * aisle stops short of it, and everything in the room is arranged to make
+	 * you look AT the altar rather than behind it.
+	 *
+	 * It was outside before, because the shaft it fed wandered out from under
+	 * the building. That is fixed in Undercity, and this is the other half of
+	 * the same repair — a secret entrance in the churchyard is a hole in the
+	 * ground, and a secret entrance behind the altar is a secret.
+	 */
+	private static final int STAIR_X = 9;
 	private static final int STAIR_Z = 2;
 
 	public static boolean build(ServerLevel level, BlockPos corner, Direction facing,
@@ -223,6 +299,12 @@ public final class Church {
 				.setValue(BlockStateProperties.HORIZONTAL_FACING,
 					Blueprint.turned(Direction.SOUTH, facing)));
 			case 'a' -> Blueprint.put(level, at, Blocks.CHISELED_STONE_BRICKS.defaultBlockState());
+			// Hangings between the windows. Cloth is the only warm thing in a
+			// stone building and the only colour the town could actually make
+			// itself, which is why the church has wool where a richer one would
+			// have had paint.
+			case 'm' -> Blueprint.put(level, at, Blocks.WOOL.pick(cloth(random))
+				.defaultBlockState());
 			// The reredos: a wall of candles behind the altar, all unlit.
 			case 'V' -> Blueprint.put(level, at, Blocks.CHISELED_DEEPSLATE.defaultBlockState());
 			case 'k' -> Blueprint.put(level, at, Blocks.LANTERN.defaultBlockState()
@@ -239,19 +321,46 @@ public final class Church {
 	 * eye toward the altar end is doing the same job inside and out.
 	 */
 	private static void roof(ServerLevel level, BlockPos corner, Direction facing) {
-		for (int step = 0; step <= 6; step++) {
-			for (int z = 1; z <= 22; z++) {
+		// Five courses of wall now rather than three, and the pitch runs up
+		// nine more on top of that. Height is what a church has instead of
+		// space: the nave is nineteen across and twenty from floor to ridge,
+		// so a player standing in the aisle cannot see the top of the room
+		// without looking up, and looking up is the entire architectural
+		// argument of the building.
+		for (int step = 0; step <= 8; step++) {
+			for (int z = 1; z <= 26; z++) {
 				for (int x : new int[] { step + 1, WIDTH - 2 - step }) {
 					if (x < 0 || x >= WIDTH) {
 						continue;
 					}
 					BlockPos at = corner.offset(
-						Blueprint.spinX(x, z, WIDTH, DEPTH, facing), 5 + step,
+						Blueprint.spinX(x, z, WIDTH, DEPTH, facing), 6 + step,
 						Blueprint.spinZ(x, z, WIDTH, DEPTH, facing));
-					Blueprint.put(level, at, Blocks.DEEPSLATE_TILES.defaultBlockState());
+					Blueprint.put(level, at, step == 8
+						? Blocks.DARK_OAK_PLANKS.defaultBlockState()
+						: roofing(step));
 				}
 			}
 		}
+	}
+
+	/**
+	 * Timber over slate, and the timber is the point.
+	 *
+	 * A stone building with a stone roof reads as a keep. Slate on the lower
+	 * pitch with dark beams over the top is what an actual parish church looks
+	 * like, and it ties the most expensive building in the town back to the
+	 * spruce framing on every house around it — the same people built both.
+	 */
+	private static BlockState roofing(int step) {
+		if (step >= 6) {
+			return Blocks.DARK_OAK_PLANKS.defaultBlockState();
+		}
+		return step % 3 == 0
+			? Blocks.DEEPSLATE_TILE_SLAB.defaultBlockState()
+				.setValue(BlockStateProperties.SLAB_TYPE,
+					net.minecraft.world.level.block.state.properties.SlabType.TOP)
+			: Blocks.DEEPSLATE_TILES.defaultBlockState();
 	}
 
 	/**
@@ -262,47 +371,55 @@ public final class Church {
 	 */
 	private static void tower(ServerLevel level, BlockPos corner, Direction facing,
 	                          RandomSource random) {
-		for (int up = 5; up <= 17; up++) {
-			for (int x = 4; x <= 10; x++) {
-				for (int z = 19; z <= 22; z++) {
-					boolean edge = x == 4 || x == 10 || z == 19 || z == 22;
+		for (int up = 6; up <= 22; up++) {
+			for (int x = 5; x <= 13; x++) {
+				for (int z = 22; z <= 26; z++) {
+					boolean edge = x == 5 || x == 13 || z == 22 || z == 26;
 					BlockPos at = corner.offset(
 						Blueprint.spinX(x, z, WIDTH, DEPTH, facing), up,
 						Blueprint.spinZ(x, z, WIDTH, DEPTH, facing));
 					if (!edge) {
-						Blueprint.put(level, at, up == 17
-							? Blocks.DEEPSLATE_TILES.defaultBlockState()
+						Blueprint.put(level, at, up == 22
+							? Blocks.DARK_OAK_PLANKS.defaultBlockState()
 							: Blocks.AIR.defaultBlockState());
 						continue;
 					}
-					// The belfry openings, near the top.
-					boolean louvre = up >= 13 && up <= 15 && (x == 7 || z == 20 || z == 21);
+					boolean louvre = up >= 17 && up <= 19
+						&& (x == 9 || z == 24 || x == 7 || x == 11);
 					Blueprint.put(level, at, louvre
 						? Blocks.STONE_BRICK_WALL.defaultBlockState()
 						: stone(random));
 				}
 			}
 		}
-		// The bell.
+
 		BlockPos bell = corner.offset(
-			Blueprint.spinX(7, 20, WIDTH, DEPTH, facing), 15,
-			Blueprint.spinZ(7, 20, WIDTH, DEPTH, facing));
+			Blueprint.spinX(9, 24, WIDTH, DEPTH, facing), 19,
+			Blueprint.spinZ(9, 24, WIDTH, DEPTH, facing));
 		Blueprint.put(level, bell, Blocks.BELL.defaultBlockState()
 			.setValue(BlockStateProperties.BELL_ATTACHMENT,
 				net.minecraft.world.level.block.state.properties.BellAttachType.CEILING));
 
-		// And a spire, because a flat-topped tower is a keep.
-		for (int up = 18; up <= 23; up++) {
-			int inset = (up - 18) / 2;
-			for (int x = 5 + inset; x <= 9 - inset; x++) {
-				for (int z = 20 + inset; z <= 21 - inset; z++) {
+		// The spire, in timber, because a stone one this thin would look like
+		// masonry nobody could have built.
+		for (int up = 23; up <= 31; up++) {
+			int inset = (up - 23) / 2;
+			for (int x = 6 + inset; x <= 12 - inset; x++) {
+				for (int z = 23 + inset; z <= 25 - inset; z++) {
 					BlockPos at = corner.offset(
 						Blueprint.spinX(x, z, WIDTH, DEPTH, facing), up,
 						Blueprint.spinZ(x, z, WIDTH, DEPTH, facing));
-					Blueprint.put(level, at, Blocks.DEEPSLATE_TILES.defaultBlockState());
+					Blueprint.put(level, at, Blocks.DARK_OAK_PLANKS.defaultBlockState());
 				}
 			}
 		}
+	}
+
+	/** The dyes a town this size could actually make. No purple, no magenta. */
+	private static DyeColor cloth(RandomSource random) {
+		DyeColor[] made = { DyeColor.RED, DyeColor.BROWN, DyeColor.YELLOW,
+			DyeColor.WHITE, DyeColor.RED };
+		return made[random.nextInt(made.length)];
 	}
 
 	private static void door(ServerLevel level, BlockPos at, Direction facing) {
@@ -317,7 +434,7 @@ public final class Church {
 
 	/** Worn flags, with a strip of polished stone up the middle as an aisle. */
 	private static BlockState floor(RandomSource random, int x, int z) {
-		if (x == 7) {
+		if (x == 9) {
 			return Blocks.POLISHED_ANDESITE.defaultBlockState();
 		}
 		int roll = random.nextInt(10);
