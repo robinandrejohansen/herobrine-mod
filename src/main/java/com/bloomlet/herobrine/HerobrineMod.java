@@ -4,6 +4,7 @@ import com.bloomlet.herobrine.entity.ModEntities;
 import com.bloomlet.herobrine.manifest.ManifestationDirector;
 import com.bloomlet.herobrine.manifest.Breach;
 import com.bloomlet.herobrine.manifest.Cadence;
+import com.bloomlet.herobrine.manifest.Nights;
 import com.bloomlet.herobrine.manifest.Skies;
 import com.bloomlet.herobrine.structure.Dwellings;
 import com.bloomlet.herobrine.manifest.TheDogKnows;
@@ -39,6 +40,7 @@ public class HerobrineMod implements ModInitializer {
 		Wrath.register();
 		Cadence.register();
 		Skies.register();
+		Nights.register();
 		Signs.register();
 		Journal.register();
 		Possession.register();

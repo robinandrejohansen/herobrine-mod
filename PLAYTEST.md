@@ -788,6 +788,24 @@ and watch the sky. The log prints `the weather turns` whenever the mod does it.
 > easiest to overdo. Say if it feels oppressive rather than atmospheric — the
 > six numbers are all in one switch.
 
+### A7n — Longer nights
+
+- [ ] At **RUMOUR** the day/night cycle is exactly vanilla
+- [ ] From **WATCHER** on, nights run slower. The log prints
+      `the night draws out` with the rate
+- [ ] **Days are never shortened.** Time the daylight at SIEGE — it should be
+      the same length it always was
+- [ ] At SIEGE a night takes about **twice** as long
+- [ ] The sun visibly slows rather than the sky stuttering or jumping
+- [ ] Sleeping still skips the night completely
+- [ ] Quit the world at night, then reload: the rate is back to normal, not
+      stuck slow
+- [ ] Remove the mod entirely and the world runs at normal speed again
+
+> Say if the long nights are dread or just dead time. Half speed at SIEGE is
+> the floor I would go to — a third would be atmospheric once and unplayable
+> by the third night.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the
