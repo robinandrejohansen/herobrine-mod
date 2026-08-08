@@ -29,7 +29,7 @@ are the next slice.
 
 | Phase | Wrath | Its own events | Built |
 |---|---|---|---|
-| RUMOUR | 0 | footsteps, wrong sound, snuffed torch, the fuse | ✅ |
+| RUMOUR | 0 | footsteps, wrong sound, snuffed torch, the fuse, the breathing | ✅ |
 | WATCHER | 60 | the stare | ✅ |
 | TRESPASSER | 200 | signs, ruins, journal pages | ✅ |
 | MIMIC | 500 | possessed mobs | ✅ |
@@ -65,6 +65,7 @@ much faster and is the intended route.
 - [x] The fuse — a creeper that never goes off
 - [x] Wrong sound
 - [x] Snuffed torches
+- [x] The breathing — a heartbeat buried in the rock, with nothing behind it
 
 ### Writing
 - [x] Signs, written from your own stats

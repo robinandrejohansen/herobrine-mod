@@ -80,6 +80,20 @@ public enum Manifestation {
 		}
 	},
 
+	/**
+	 * Something breathing behind the rock, that is not behind the rock.
+	 *
+	 * Weighted high for a phase 0 event because it refuses itself most of the
+	 * time — it needs the player deep, roofed, and away from the real ones, so
+	 * the effective rate is far lower than the number suggests.
+	 */
+	THE_BREATHING(Phase.RUMOUR, 11) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Deeps.breathing(level, player);
+		}
+	},
+
 	/** He is simply there, at distance, and gone when you look. */
 	THE_STARE(Phase.WATCHER, 10) {
 		@Override
