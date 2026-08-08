@@ -284,9 +284,13 @@ The command prints which animal and where. Now go and look at it.
 **The eyes:**
 
 - [ ] Before it reveals, a possessed cow looks **completely normal**. No glow
-- [ ] After it reveals, its eyes are **white and glowing**
+- [ ] After it reveals, its eyes have a **pale sheen** — like something
+      catching light that is not there. Not two white lamps
 - [ ] Take it into a dark cave or wait for night: the eyes are **exactly as
       bright** as at noon. World light does not touch them
+- [ ] They still read as part of the face at ten blocks, not as a light source
+- [ ] Say if they are still too strong, or now too faint to notice at dusk —
+      the colour and opacity are two numbers in `tools/gen_possessed_eyes.py`
 - [ ] Works on cows, pigs, sheep and villagers. Anything else behaves the same
       but does not glow — that is expected, not a bug
 - [ ] Ordinary animals standing next to it never glow

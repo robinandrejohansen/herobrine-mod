@@ -27,13 +27,31 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 # name -> (vanilla texture inside the client jar, [(x, y, w, h), ...])
 MOBS = {
-	'cow':      ('cow/cow_temperate.png',         [(6, 8, 3, 2), (11, 8, 3, 2)]),
+	# Two wide rather than three: the outer column of a cow's eye is the dark
+	# patch around it, not the eye, and lighting it made the whole side of the
+	# face burn.
+	'cow':      ('cow/cow_temperate.png',         [(7, 8, 2, 2), (11, 8, 2, 2)]),
 	'pig':      ('pig/pig_temperate.png',         [(8, 11, 2, 1), (14, 11, 2, 1)]),
 	'sheep':    ('sheep/sheep.png',               [(8, 10, 2, 1), (12, 10, 2, 1)]),
 	'villager': ('villager/villager.png',         [(9, 14, 2, 1), (13, 14, 2, 1)]),
 }
 
-WHITE = (255, 255, 255, 255)
+# Not white, and not opaque.
+#
+# Pure white at full alpha rendered as two lamps bolted to the animal's face —
+# a light source rather than a pair of eyes, and it read as cartoonish the
+# moment it was on screen. The EYES pipeline blends with BlendFunction.
+# TRANSLUCENT, so alpha lets the animal's own face show through: what is left
+# is a pale sheen sitting IN the eye rather than a hole punched through it.
+#
+# Slightly cool and slightly grey rather than neutral, because a warm white
+# reads as firelight and a pure white reads as a screen. This wants to look
+# reflective — like something catching light that is not there — which is what
+# "glowing eyes" actually looks like when it is frightening rather than silly.
+#
+# Still emissive, so it holds up at midnight exactly as it does at noon. Only
+# the intensity changed, never the trick.
+EYE = (206, 210, 216, 160)
 CLEAR = (0, 0, 0, 0)
 
 
@@ -60,7 +78,7 @@ def main():
 		for x0, y0, w, h in eyes:
 			for y in range(y0, y0 + h):
 				for x in range(x0, x0 + w):
-					px[y][x] = WHITE
+					px[y][x] = EYE
 					lit += 1
 
 		# A texture that is entirely transparent renders nothing and would fail
