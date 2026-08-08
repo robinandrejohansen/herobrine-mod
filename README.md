@@ -2,6 +2,9 @@
 
 A Minecraft Java Edition mod. He was already in your world.
 
+**Where this is up to: [STATUS.md](STATUS.md)** — what is built, what is not,
+and what comes next.
+
 ## Status
 
 Scaffold only — builds and loads, no custom content yet.
