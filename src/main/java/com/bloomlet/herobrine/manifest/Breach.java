@@ -24,7 +24,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * They get through the window.
@@ -58,6 +62,10 @@ public final class Breach {
 	private static final double WITNESS_RANGE = 40.0;
 	/** How far from the glass they can reach. */
 	private static final double REACH = 2.5;
+	/** How far they will notice you through a window. */
+	private static final double SEEK_RANGE = 24.0;
+	/** A wall is a wall. Two panes and a greenhouse roof is not a sightline. */
+	private static final int PANES_SEEN_THROUGH = 3;
 
 	private record Chew(BlockPos pos, int ticks) {}
 
@@ -82,6 +90,7 @@ public final class Breach {
 			// reproduce deliberately.
 			Set<Zombie> hunting = new HashSet<>();
 			for (ServerPlayer player : level.players()) {
+				notice(level, player);
 				AABB around = player.getBoundingBox().inflate(WITNESS_RANGE);
 				for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, around)) {
 					if (zombie.getTarget() instanceof Player) {
@@ -94,6 +103,65 @@ public final class Breach {
 			}
 			forget(level, hunting);
 		}
+	}
+
+	/**
+	 * They can see you through the window.
+	 *
+	 * Without this the whole feature never fires. Glass has a collision box, so
+	 * vanilla's hasLineOfSight treats a pane as a solid wall and the targeting
+	 * goal drops the player the moment they step behind one — the zombie
+	 * forgets you exist, wanders off, and never gets near enough to chew
+	 * anything. Standing at a window watching them lose interest is exactly the
+	 * "base is a diorama" problem this was built to fix.
+	 *
+	 * Only fills in an EMPTY target rather than overwriting whatever it is
+	 * already doing, so a zombie mid-fight with an iron golem is not yanked off
+	 * it. If the goals then drop the player again for the same reason, the next
+	 * tick puts them back, which makes this self-healing rather than a fight
+	 * with the AI.
+	 */
+	private static void notice(ServerLevel level, ServerPlayer player) {
+		AABB around = player.getBoundingBox().inflate(SEEK_RANGE);
+		for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, around)) {
+			if (zombie.getTarget() != null || !zombie.isAlive()) {
+				continue;
+			}
+			if (throughGlass(level, zombie, player)) {
+				zombie.setTarget(player);
+			}
+		}
+	}
+
+	/**
+	 * Is the only thing in the way glass?
+	 *
+	 * Vanilla's own sightline check with the panes stepped over: clip, and if
+	 * what stopped the ray is something they could break, start again from just
+	 * past it. Capped at three so this stays "they can see through a window"
+	 * and never becomes "they can see through a greenhouse and four walls".
+	 */
+	private static boolean throughGlass(ServerLevel level, Zombie zombie, ServerPlayer player) {
+		Vec3 from = zombie.getEyePosition();
+		Vec3 to = player.getEyePosition();
+
+		for (int panes = 0; panes <= PANES_SEEN_THROUGH; panes++) {
+			BlockHitResult hit = level.clip(new ClipContext(
+				from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, zombie));
+			if (hit.getType() == HitResult.Type.MISS) {
+				return true;
+			}
+			if (!breakable(level.getBlockState(hit.getBlockPos()))) {
+				return false;
+			}
+			// Step just past the pane we stopped on and carry on looking.
+			Vec3 onward = hit.getLocation().add(to.subtract(from).normalize().scale(0.1));
+			if (onward.distanceToSqr(to) >= from.distanceToSqr(to)) {
+				return true;
+			}
+			from = onward;
+		}
+		return false;
 	}
 
 	private static void advance(ServerLevel level, Zombie zombie) {

@@ -397,6 +397,8 @@ cheats) and have someone join.
 Build a small shelter with a **glass** window at eye level, go inside at night
 and let zombies find you.
 
+- [ ] Stand behind the glass where they can see you. They **come for you and
+      keep coming** — they do not lose interest and wander off
 - [ ] A zombie that has you as its target starts on the glass. **Vanilla
       cracks spread across the pane** as it works
 - [ ] It takes about **ten seconds**, with glass ticking under its hands
@@ -407,6 +409,10 @@ and let zombies find you.
 - [ ] It **only** touches glass. Stone, planks, doors, floors: untouched
 - [ ] Replace the pane with **iron bars**. They cannot touch it — that is the
       real answer to this
+- [ ] Put a **stone wall** between you instead. They lose you again, as normal.
+      Only glass is see-through
+- [ ] Stand behind four or more panes stacked up: they stop noticing you. It is
+      a window, not x-ray vision
 - [ ] Drop below SIEGE (`/herobrine wrath 0`) and nothing chews at all
 
 > This is the only thing in the mod that damages what the player built, which
