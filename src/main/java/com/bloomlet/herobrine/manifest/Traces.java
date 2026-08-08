@@ -6,6 +6,7 @@ import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
@@ -13,6 +14,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -44,34 +46,68 @@ public final class Traces {
 	 * fixed position reads as a machine; sound that MOVES reads as a person,
 	 * and the player turns to follow it instead of just flinching.
 	 *
-	 * Stone steps rather than the local block's, because stone carries and
-	 * reads as "someone in a cave" wherever you happen to be standing.
+	 * Each step uses the sound of whatever it is standing on, looked up per
+	 * step. Hardcoded stone was a real mistake: in a forest it announced
+	 * itself as a sound effect rather than as somebody walking, because grass
+	 * is what the player has been hearing under their own feet for the last
+	 * hour. Whatever is underfoot is what he is walking on, and the player's
+	 * ear knows the difference without ever being asked to.
 	 */
 	public static boolean footsteps(ServerLevel level, ServerPlayer player) {
 		RandomSource random = level.getRandom();
 		Vec3 look = player.getViewVector(1.0F).normalize();
-		Vec3 behind = player.position().subtract(look.scale(3.0 + random.nextDouble() * 1.5));
+
+		// Sometimes almost on top of you, sometimes across the clearing. A
+		// fixed distance made every occurrence the same event; varying it means
+		// the player cannot learn what it is going to sound like.
+		double back = 2.5 + random.nextDouble() * 6.0;
+		Vec3 behind = player.position().subtract(look.scale(back));
 
 		// Across, not towards. Something crossing behind you is a person going
 		// about its business; something walking at you is an attack, and at
 		// phase 0 he is not attacking anybody.
+		double stride = 0.45 + random.nextDouble() * 0.3;
 		Vec3 across = new Vec3(-look.z, 0.0, look.x)
-			.scale(random.nextBoolean() ? 0.55 : -0.55);
+			.scale(random.nextBoolean() ? stride : -stride);
 		Vec3 start = behind.subtract(across.scale(3.0));
 
+		// Carries far enough to be heard from across a clearing without being
+		// loud in your ear when it is close.
+		float volume = (float)(0.30 + back * 0.045);
 		int steps = 7 + random.nextInt(3);
+
 		for (int i = 0; i < steps; i++) {
 			Vec3 at = start.add(across.scale(i));
-			// Captured per step so each plays where that step should be.
 			final double x = at.x;
 			final double y = at.y;
 			final double z = at.z;
 			final float pitch = 0.82F + random.nextFloat() * 0.12F;
 			Cadence.in(level.getServer(), i * 8, () ->
-				level.playSound(null, x, y, z, SoundEvents.STONE_STEP,
-					SoundSource.HOSTILE, 0.34F, pitch));
+				level.playSound(null, x, y, z, groundSound(level, x, y, z),
+					SoundSource.HOSTILE, volume, pitch));
 		}
 		return true;
+	}
+
+	/**
+	 * The sound of whatever is underfoot at that spot.
+	 *
+	 * Looked up when the step plays rather than when it is scheduled, so a
+	 * sequence crossing from grass onto gravel changes as it goes — which is
+	 * free, and is the sort of detail nobody notices and everybody hears.
+	 *
+	 * Searches a little way down because the step is placed at the player's
+	 * own feet height, and the ground behind them may be a step lower.
+	 */
+	private static SoundEvent groundSound(ServerLevel level, double x, double y, double z) {
+		BlockPos at = BlockPos.containing(x, y, z);
+		for (int down = 0; down <= 3; down++) {
+			BlockState state = level.getBlockState(at.below(down + 1));
+			if (!state.isAir()) {
+				return state.getSoundType().getStepSound();
+			}
+		}
+		return SoundEvents.STONE_STEP;
 	}
 
 	/**
@@ -109,8 +145,8 @@ public final class Traces {
 		final double y = behind.y;
 		final double z = behind.z;
 		Cadence.in(level.getServer(), 32, () ->
-			level.playSound(null, x, y, z, SoundEvents.STONE_STEP,
-				SoundSource.HOSTILE, 0.4F, 0.8F));
+			level.playSound(null, x, y, z, groundSound(level, x, y, z),
+				SoundSource.HOSTILE, 0.5F, 0.8F));
 		return true;
 	}
 

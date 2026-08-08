@@ -538,6 +538,13 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 - [ ] They **move** — something crossing behind you, left to right or right to
       left, not stamping on one spot
 - [ ] Walking pace. Not a sprint, not a stagger
+- [ ] **It sounds like the ground you are standing on.** Grass in a forest,
+      gravel on a shore, wood on your floorboards, stone in a cave. Run it in
+      three biomes and check
+- [ ] Stand where grass meets stone: a sequence crossing the line **changes
+      sound partway through**
+- [ ] Run it several times. Sometimes it is almost on top of you, sometimes
+      across the clearing — the distance is not always the same
 - [ ] You turn round and there is nothing there
 
 ```
