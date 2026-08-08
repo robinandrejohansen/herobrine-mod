@@ -291,6 +291,20 @@ The line between horror and an annoying mod. Non-negotiable.
 - **No irreversible destruction of player builds.** He may open doors, snuff
   torches, take one item, place blocks *nearby*. He does not burn your house
   down or break your chests.
+- **From HUNTER he will break IN, and this is the one deliberate exception.**
+  Shelter is the right answer to almost everything he does, and by the fifth
+  phase it has to stop being one — a pursuer that gives up at a wooden door is
+  not a pursuer, it is weather. So he mines through: the correct tool in his
+  hand, the cracking overlay, one visible swing at a time, slow enough that
+  the player watches it happen and has time to decide what to do about it.
+
+  The word doing the work above is *irreversible*. **Every block he takes out
+  drops**, so the cost is the wall and the evening and never an item. He
+  refuses containers outright — he is coming through the wall, not through
+  your chest — and refuses anything indestructible rather than standing at
+  bedrock swinging forever. That bargain is what keeps this the wrong side of
+  frightening instead of the wrong side of griefing, and it is the same one
+  the torches make.
 - **Everything he places is removable** and drops normally.
 - **Warning before lethality.** Phase 4+ events telegraph — weather, sound,
   a sign — so death feels earned, not arbitrary.

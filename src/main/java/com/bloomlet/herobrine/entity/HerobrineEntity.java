@@ -204,6 +204,47 @@ public class HerobrineEntity extends PathfinderMob {
 	private boolean relenting;
 	private static final int RELENT_TICKS = 50;
 
+	// ---- BREAKING IN ------------------------------------------------------
+	/**
+	 * A door is not an answer to this any more.
+	 *
+	 * This is the one place the mod knowingly breaks its own rule about never
+	 * touching a player's build (DESIGN.md §9), and the exception is narrow and
+	 * deliberate: shelter is the correct answer to almost everything he does,
+	 * and at HUNTER it has to stop being one. A pursuer that gives up at a
+	 * wooden door is not a pursuer, it is weather.
+	 *
+	 * THE RULE IS BENT, NOT ABANDONED. Every block he takes out is DROPPED, so
+	 * the player loses the wall and their evening and not one item. That is the
+	 * same bargain the torches make, and it is what keeps this the wrong side
+	 * of frightening rather than the wrong side of griefing.
+	 *
+	 * And he is slow about it on purpose. The whole value is watching it
+	 * happen — hearing the axe go into the door twice while you decide whether
+	 * the back window is a better idea. Something that deletes a wall instantly
+	 * is a cutscene; something taking eleven seconds through obsidian is a
+	 * decision you are being given time to make.
+	 */
+	private @org.jspecify.annotations.Nullable BlockPos breaking;
+	private int breakTicks;
+	private int breakNeeds;
+
+	/** Ticks per point of hardness. Wood is about a second, stone under one. */
+	private static final float HARDNESS_TICKS = 12.0F;
+	private static final int BREAK_MIN = 18;
+	private static final int BREAK_MAX = 220;
+	/**
+	 * He only reaches for a tool once walking has demonstrably failed.
+	 *
+	 * Triggering on "something is in the way" would have him mining hillsides
+	 * across the countryside, because at forty blocks there is nearly always
+	 * terrain on the sightline. Triggering on a stall means he digs exactly
+	 * when a player has done the thing this exists to answer — shut a door.
+	 */
+	private static final int BREAK_AFTER = 25;
+	private static final double BREAK_RANGE = 16.0;
+	// ---- END BREAKING IN --------------------------------------------------
+
 	/** Two hearts, and not oftener than once a second. */
 	private static final float STRIKE_DAMAGE = 4.0F;
 	private static final int STRIKE_COOLDOWN = 22;
@@ -999,6 +1040,19 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
+		// Or already through it.
+		if (this.level() instanceof ServerLevel here) {
+			boolean started = this.breaking != null && breakable(here, this.breaking);
+			if (started || (this.stuckTicks > BREAK_AFTER && distance < BREAK_RANGE)) {
+				BlockPos wall = started ? this.breaking : blockingBetween(quarry);
+				if (wall != null) {
+					this.breakThrough(wall);
+					return;
+				}
+				this.stopBreaking(here);
+			}
+		}
+
 		// What is in the way, and is it worth leaving the ground for?
 		//
 		// Measured rather than inferred from a failed path, because by the time
@@ -1112,6 +1166,112 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 		this.lastDistance = Double.MAX_VALUE;
 		this.stuckTicks = 0;
+	}
+
+	/**
+	 * The first thing between his eye and theirs, if anything is.
+	 *
+	 * Uses the sightline rather than the navigator, and that is the point: a
+	 * player standing in a sealed room produces a perfectly happy path right up
+	 * to the outside of the wall, so asking the pathfinder never reveals that
+	 * they are enclosed. Asking what is in the way does.
+	 */
+	private @org.jspecify.annotations.Nullable BlockPos blockingBetween(Player quarry) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return null;
+		}
+		net.minecraft.world.phys.HitResult hit = here.clip(
+			new net.minecraft.world.level.ClipContext(this.getEyePosition(),
+				quarry.getEyePosition(),
+				net.minecraft.world.level.ClipContext.Block.COLLIDER,
+				net.minecraft.world.level.ClipContext.Fluid.NONE, this));
+		if (!(hit instanceof net.minecraft.world.phys.BlockHitResult block)
+			|| hit.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK) {
+			return null;
+		}
+		return breakable(here, block.getBlockPos()) ? block.getBlockPos() : null;
+	}
+
+	/**
+	 * Is this something he is willing to take out?
+	 *
+	 * Indestructible blocks are refused outright rather than attempted slowly,
+	 * because a figure standing at bedrock swinging forever is the single most
+	 * ridiculous thing this mod could show anybody. Containers are refused too:
+	 * he is coming through the wall, not through the chest, and breaking one
+	 * would scatter a player's belongings across the floor — which is the exact
+	 * line the dropped blocks are drawn to avoid crossing.
+	 */
+	private static boolean breakable(ServerLevel level, BlockPos pos) {
+		net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos);
+		if (state.isAir() || state.getDestroySpeed(level, pos) < 0.0F) {
+			return false;
+		}
+		return !(level.getBlockEntity(pos)
+			instanceof net.minecraft.world.Container);
+	}
+
+	/**
+	 * Go through it, with the right tool and in full view.
+	 *
+	 * The tool is chosen from the block's own mineable tag rather than from a
+	 * list of blocks, so it is right for anything the game or another mod adds,
+	 * and it is put in his HAND — the player should be able to see the axe
+	 * before they hear it. destroyBlockProgress sends the cracking overlay to
+	 * everybody nearby, which is the whole performance: they watch the block
+	 * fail in ten visible stages and get to decide what to do about it.
+	 */
+	private void breakThrough(BlockPos pos) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		if (!pos.equals(this.breaking)) {
+			this.stopBreaking(here);
+			this.breaking = pos;
+			this.breakTicks = 0;
+			float hardness = here.getBlockState(pos).getDestroySpeed(here, pos);
+			this.breakNeeds = net.minecraft.util.Mth.clamp(
+				Math.round(hardness * HARDNESS_TICKS), BREAK_MIN, BREAK_MAX);
+			this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
+				new ItemStack(toolFor(here.getBlockState(pos))));
+		}
+
+		this.getNavigation().stop();
+		this.getLookControl().setLookAt(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+
+		this.breakTicks++;
+		if (this.breakTicks % 6 == 0) {
+			this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+			here.playSound(null, pos, here.getBlockState(pos).getSoundType().getHitSound(),
+				net.minecraft.sounds.SoundSource.HOSTILE, 0.9F, 0.85F);
+		}
+		here.destroyBlockProgress(this.getId(), pos,
+			Math.min(9, this.breakTicks * 10 / Math.max(1, this.breakNeeds)));
+
+		if (this.breakTicks >= this.breakNeeds) {
+			// Dropped, always. He takes the wall, never the materials.
+			here.destroyBlock(pos, true, this);
+			this.stopBreaking(here);
+		}
+	}
+
+	private void stopBreaking(ServerLevel here) {
+		if (this.breaking != null) {
+			here.destroyBlockProgress(this.getId(), this.breaking, -1);
+			this.breaking = null;
+		}
+		this.breakTicks = 0;
+	}
+
+	private static net.minecraft.world.item.Item toolFor(
+			net.minecraft.world.level.block.state.BlockState state) {
+		if (state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_AXE)) {
+			return Items.DIAMOND_AXE;
+		}
+		if (state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL)) {
+			return Items.DIAMOND_SHOVEL;
+		}
+		return Items.DIAMOND_PICKAXE;
 	}
 
 	/**
@@ -1236,10 +1396,12 @@ public class HerobrineEntity extends PathfinderMob {
 		if (!(this.level() instanceof ServerLevel here)) {
 			return false;
 		}
-		// Whatever he was doing, he is on the ground where he turns up.
+		// Whatever he was doing, he is on the ground where he turns up, and not
+		// still credited with a block he has walked away from.
 		if (this.flying) {
 			this.land();
 		}
+		this.stopBreaking(here);
 		for (int attempt = 0; attempt < 40; attempt++) {
 			double angle = this.random.nextDouble() * Math.PI * 2.0;
 			double range = min + this.random.nextDouble() * (max - min);
@@ -1401,6 +1563,11 @@ public class HerobrineEntity extends PathfinderMob {
 
 	private void vanish(String why) {
 		HerobrineMod.LOGGER.info("stare over after {} ticks: {}", this.age, why);
+		// Otherwise the half-cracked block keeps its overlay for as long as the
+		// chunk stays loaded, which is a very odd souvenir to leave behind.
+		if (this.level() instanceof ServerLevel clearing) {
+			this.stopBreaking(clearing);
+		}
 		if (this.witnessed && this.level() instanceof ServerLevel burning
 			&& Wrath.phase(burning.getServer()).atLeast(Phase.TRESPASSER)) {
 			this.scorch(burning);
