@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HEROBRINE — a survival horror mod for Minecraft</title>
+<meta name="description" content="He is never seen arriving. A six-phase survival horror mod for Minecraft 26.2, built on deniability: everything he does has a mundane explanation, until it doesn't.">
+<meta property="og:title" content="HEROBRINE">
+<meta property="og:description" content="He is never seen arriving.">
+<meta name="theme-color" content="#07070a">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<canvas id="rain" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="nav">
+  <a class="wordmark" href="#top">HEROBRINE</a>
+  <nav>
+    <a href="#phases">Phases</a>
+    <a href="#world">World</a>
+    <a href="#install">Install</a>
+    <a class="ghost" href="https://github.com/robinandrejohansen/herobrine-mod" target="_blank" rel="noopener">Source</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="eyes" id="eyes" aria-hidden="true">
+      <span class="eye"></span><span class="eye"></span>
+    </div>
+    <h1><span>HE IS NEVER</span><span>SEEN ARRIVING</span></h1>
+    <p class="lede">
+      A survival horror mod for Minecraft&nbsp;26.2. Six phases, and the first
+      five are deniable — a sound, a snuffed torch, a shape at the treeline you
+      could talk yourself out of. Then it stops being deniable.
+    </p>
+    <div class="cta">
+      <a class="btn primary" id="download" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">
+        <span class="btn-label">Download</span>
+        <span class="btn-meta" id="dl-meta">latest release</span>
+      </a>
+      <a class="btn" href="#install">How to install</a>
+    </div>
+    <p class="fineprint">Fabric · Minecraft 26.2 · Java 25+ · single-player &amp; servers</p>
+    <div class="scroll-hint" aria-hidden="true"><span></span></div>
+  </section>
+
+  <section class="pitch reveal">
+    <p>
+      Most horror mods answer the question. This one refuses to — for hours.
+      Every early event has a mundane explanation available, and the fear lives
+      in the gap between <em>something happened</em> and <em>I can prove it</em>.
+    </p>
+  </section>
+
+  <section id="phases" class="phases">
+    <h2 class="section-title reveal">Six phases</h2>
+    <p class="section-sub reveal">Wrath is one number per world. It only ever goes up — and the things you do to feel safer are the things that raise it.</p>
+
+    <ol class="ladder">
+      <li class="phase reveal" data-wrath="0">
+        <span class="tick"></span>
+        <h3>Rumour</h3>
+        <p>Footsteps behind you, once, with nothing there. A torch you placed, on the ground, unlit. A heartbeat buried in rock, with nothing behind it.</p>
+      </li>
+      <li class="phase reveal" data-wrath="60">
+        <span class="tick"></span>
+        <h3>Watcher</h3>
+        <p>He is simply there, at distance, and gone when you look. Whoever spots him first spends the clock — so your friend saw him and you didn't.</p>
+      </li>
+      <li class="phase reveal" data-wrath="200">
+        <span class="tick"></span>
+        <h3>Trespasser</h3>
+        <p>Four words on your wall, written from your own statistics. Pages of somebody else's account, on the floor where you will find them.</p>
+      </li>
+      <li class="phase reveal" data-wrath="500">
+        <span class="tick"></span>
+        <h3>Mimic</h3>
+        <p>One of your animals stops being an animal. It follows. It waits when you turn.</p>
+      </li>
+      <li class="phase reveal" data-wrath="1000">
+        <span class="tick"></span>
+        <h3>Hunter</h3>
+        <p>He follows — faster than your sprint. Shelter stops working: he opens what opens and mines through what doesn't. The day ends early and every torch you own goes out at once.</p>
+      </li>
+      <li class="phase reveal danger" data-wrath="1800">
+        <span class="tick"></span>
+        <h3>Siege</h3>
+        <p>The night does not end. The storm does not stop. Every animal in the field turns, and every one of them is looking at you. And for the first time in forty hours, he can be hurt.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section id="world" class="grid-section">
+    <h2 class="section-title reveal">What's in it</h2>
+    <div class="grid">
+      <article class="card reveal">
+        <h3>A town that isn't on any map</h3>
+        <p>Walled, populated, eight houses and a hall and a forge with its front wall missing. Under the square, a vaulted chamber with streets, lantern posts and a library holding more books than the whole town above it. Two ways down — and neither is a lever.</p>
+      </article>
+      <article class="card reveal">
+        <h3>Five houses, in order</h3>
+        <p>Each one less like somewhere a person lived than the last. The first has the furniture still in it. The last is not a house.</p>
+      </article>
+      <article class="card reveal">
+        <h3>Nothing irreversible</h3>
+        <p>Torches drop. Blocks he mines drop. Nothing he does costs you an item — right up until the ending, which is allowed to leave a mark, and which you can switch off.</p>
+      </article>
+      <article class="card reveal">
+        <h3>An ending you start</h3>
+        <p>Thirty blows, counted rather than measured, so a netherite axe changes how it looks and never how long it takes. At the tenth, a church goes up with your grave outside it.</p>
+      </article>
+      <article class="card reveal">
+        <h3>Built for company</h3>
+        <p>He works through a group one at a time. Standing together is the worst possible arrangement. There is only ever one of him in the world.</p>
+      </article>
+      <article class="card reveal">
+        <h3>All of it optional</h3>
+        <p>One flat config file. A master switch, a pace dial, every event individually, and separate toggles for the three things people actually argue about.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="quote reveal">
+    <blockquote>“You shouldn't have done that.”</blockquote>
+    <cite>— the tenth blow</cite>
+  </section>
+
+  <section id="install" class="install">
+    <h2 class="section-title reveal">Install</h2>
+    <ol class="steps">
+      <li class="reveal">
+        <span class="num">1</span>
+        <div>
+          <h3>Get Fabric</h3>
+          <p>Install the Fabric loader for <strong>Minecraft 26.2</strong>, then drop <strong>Fabric API</strong> into your mods folder.</p>
+          <a class="mini" href="https://fabricmc.net/use/installer/" target="_blank" rel="noopener">fabricmc.net ↗</a>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="num">2</span>
+        <div>
+          <h3>Drop in the jar</h3>
+          <p>Put <code>herobrine-<span class="ver">1.0.0</span>.jar</code> in your <code>mods</code> folder, beside Fabric API.</p>
+          <div class="paths">
+            <button class="copy" data-copy="%appdata%\.minecraft\mods">Windows</button>
+            <button class="copy" data-copy="~/Library/Application Support/minecraft/mods">macOS</button>
+            <button class="copy" data-copy="~/.minecraft/mods">Linux</button>
+          </div>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="num">3</span>
+        <div>
+          <h3>Play normally</h3>
+          <p>Don't go looking. It starts on its own, and the first hour is meant to feel like nothing is installed.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="updates reveal">
+      <h3>Updates</h3>
+      <p>Every fix ships as a new release. Watch the repository and GitHub will tell you when one lands — then swap the jar in your mods folder. Your world and your config carry over.</p>
+      <div class="cta">
+        <a class="btn" href="https://github.com/robinandrejohansen/herobrine-mod/releases" target="_blank" rel="noopener">All releases</a>
+        <a class="btn ghost" href="https://github.com/robinandrejohansen/herobrine-mod/subscription" target="_blank" rel="noopener">Watch for updates</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="closer reveal">
+    <p>Play it at night. Don't tell anyone what to look for.</p>
+  </section>
+</main>
+
+<footer>
+  <span>Herobrine — a Minecraft mod</span>
+  <span>Not affiliated with Mojang or Microsoft.</span>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
