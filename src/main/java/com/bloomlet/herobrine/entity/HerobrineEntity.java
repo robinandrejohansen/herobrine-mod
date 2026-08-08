@@ -1,5 +1,7 @@
 package com.bloomlet.herobrine.entity;
 
+import com.bloomlet.herobrine.HerobrineMod;
+
 import java.util.List;
 
 import net.minecraft.core.BlockPos;
@@ -108,7 +110,17 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final int FLEE_LIMIT = 70;
 
 	/** How far out he cares who is watching. */
-	private static final double WATCH_RANGE = 64.0;
+	/**
+	 * How far away somebody still counts as present.
+	 *
+	 * NINETY-SIX, and it has to be bigger than the furthest the spawner will
+	 * ever put him. It was 64 while HauntingSpawner.MAX_RADIUS was 68, so a
+	 * placement out at the far end had NOBODY inside its own watcher box and
+	 * hit the `watchers.isEmpty()` branch on its very first tick — placed and
+	 * discarded before a single packet reached anyone. Two numbers that had to
+	 * agree and did not, which is the shape of most of the bugs in this repo.
+	 */
+	private static final double WATCH_RANGE = 96.0;
 
 	/**
 	 * Chasing him costs you.
@@ -204,7 +216,7 @@ public class HerobrineEntity extends PathfinderMob {
 			.add(Attributes.MOVEMENT_SPEED, 0.3)
 			// He needs to be aware of you from much further than he ever
 			// approaches — the whole behaviour is about distance.
-			.add(Attributes.FOLLOW_RANGE, 64.0);
+			.add(Attributes.FOLLOW_RANGE, 96.0);
 	}
 
 	@Override
@@ -216,7 +228,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// something you have caught sight of. He is placed where he is placed
 		// and he stays there: the whole event is a figure at a distance that
 		// was already standing there when you looked up.
-		this.goalSelector.addGoal(2, new LookAtPlayerGoal(this, Player.class, 64.0F));
+		this.goalSelector.addGoal(2, new LookAtPlayerGoal(this, Player.class, 96.0F));
 	}
 
 	@Override
@@ -228,7 +240,7 @@ public class HerobrineEntity extends PathfinderMob {
 
 		// Gone on his own, before he can become furniture.
 		if (++this.age > LIFETIME) {
-			this.vanish();
+			this.vanish("aged out, nobody ever turned round");
 			return;
 		}
 
@@ -298,7 +310,7 @@ public class HerobrineEntity extends PathfinderMob {
 		this.getNavigation().stop();
 
 		if (watchers.isEmpty()) {
-			this.vanish();
+			this.vanish("no player within WATCH_RANGE");
 			return;
 		}
 
@@ -325,7 +337,7 @@ public class HerobrineEntity extends PathfinderMob {
 			int allowed = this.level() instanceof ServerLevel here
 				? staredDown(Wrath.phase(here.getServer())) : 0;
 			if (allowed > 0 && ++this.watchedTicks > allowed) {
-				this.vanish();
+				this.vanish("stared down");
 			}
 		} else if (this.witnessed && ++this.unseenTicks > UNSEEN_GRACE) {
 			// Seen, then not seen, then not there. Nobody watches him go; they
@@ -336,7 +348,7 @@ public class HerobrineEntity extends PathfinderMob {
 			// and keep him between them hold him there far longer than one
 			// person can, which is the right reward for co-ordinating — and
 			// FLEE_LIMIT still stops it becoming a stalemate.
-			this.vanish();
+			this.vanish("seen, then lost by everybody");
 		}
 	}
 
@@ -382,7 +394,7 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private void flee(List<Player> from, boolean seen) {
 		if (from.isEmpty() || ++this.fleeTicks > FLEE_LIMIT) {
-			this.vanish();
+			this.vanish("fled far enough");
 			return;
 		}
 
@@ -403,7 +415,7 @@ public class HerobrineEntity extends PathfinderMob {
 		if (away.lengthSqr() < 1.0E-4) {
 			// Surrounded, or dead centre between them. He goes now rather than
 			// picking an arbitrary direction and jittering.
-			this.vanish();
+			this.vanish("surrounded, nowhere to flee");
 			return;
 		}
 		away = away.normalize();
@@ -434,7 +446,7 @@ public class HerobrineEntity extends PathfinderMob {
 			this.getY(), this.getZ() + away.z * FLEE_SPEED);
 
 		if (!seen || this.level().getBlockState(this.blockPosition()).isSolid()) {
-			this.vanish();
+			this.vanish("broke line of sight while fleeing");
 		}
 	}
 
@@ -569,7 +581,8 @@ public class HerobrineEntity extends PathfinderMob {
 		return true;
 	}
 
-	private void vanish() {
+	private void vanish(String why) {
+		HerobrineMod.LOGGER.info("stare over after {} ticks: {}", this.age, why);
 		if (this.witnessed && this.level() instanceof ServerLevel burning
 			&& Wrath.phase(burning.getServer()).atLeast(Phase.TRESPASSER)) {
 			this.scorch(burning);

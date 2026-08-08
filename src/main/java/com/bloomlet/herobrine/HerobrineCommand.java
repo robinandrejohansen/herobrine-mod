@@ -282,7 +282,27 @@ public final class HerobrineCommand {
 		}
 		int distance = (int)Math.sqrt(pos.distSqr(player.blockPosition()));
 		return "  |  at " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
-			+ " (" + distance + " blocks away)";
+			+ " (" + distance + " blocks " + compass(player, pos) + ")";
+	}
+
+	/**
+	 * Which way to turn.
+	 *
+	 * Without this, "he was not placed" and "he was placed and you were facing
+	 * the wrong hill" produce exactly the same report from a tester — "I cannot
+	 * see him" — and there is no way to tell them apart. A bearing makes the
+	 * command falsifiable: turn that way, and either he is there or the bug is
+	 * real.
+	 */
+	private static String compass(ServerPlayer player, net.minecraft.core.BlockPos pos) {
+		double dx = pos.getX() + 0.5 - player.getX();
+		double dz = pos.getZ() + 0.5 - player.getZ();
+		// Minecraft: +Z is south, +X is east, and yaw 0 looks down +Z.
+		String[] points = { "south", "south-west", "west", "north-west",
+			"north", "north-east", "east", "south-east" };
+		double angle = Math.toDegrees(Math.atan2(-dx, dz));
+		int index = (int)Math.round(((angle % 360) + 360) % 360 / 45.0) % 8;
+		return "to the " + points[index];
 	}
 
 	private static int wrath(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {

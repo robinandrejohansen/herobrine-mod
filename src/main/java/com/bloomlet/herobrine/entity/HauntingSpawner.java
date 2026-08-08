@@ -1,6 +1,7 @@
 package com.bloomlet.herobrine.entity;
 
 import com.bloomlet.herobrine.HerobrineMod;
+import com.bloomlet.herobrine.manifest.ManifestationDirector;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -261,6 +262,17 @@ public final class HauntingSpawner {
 		// to it, so the ground you gave up is the ground he takes.
 		herobrine.setAnchor(player.blockPosition());
 		level.addFreshEntity(herobrine);
+		// Say where he is, which the stare never did.
+		//
+		// Every other manifestation reports its position and this one did not,
+		// so `/herobrine provoke` answered with the coordinates of whatever
+		// sign or page had been left last — a real place, tens or hundreds of
+		// blocks from him, with a plausible distance beside it. A tester
+		// following that number is looking at empty ground and concluding he
+		// never spawned, and there is nothing in the output to suggest
+		// otherwise. Of all the ways to lose a week, being confidently told
+		// the wrong coordinates is the worst.
+		ManifestationDirector.noteLocation(pos);
 		// A reason to turn around — sometimes. He is still never SEEN
 		// arriving; you turn and find him already standing there.
 		herobrine.announceArrival();
