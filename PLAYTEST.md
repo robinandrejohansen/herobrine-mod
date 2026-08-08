@@ -317,6 +317,21 @@ The command prints which animal and where. Now go and look at it.
 - [ ] Hit a possessed wild wolf. It **does not fight back** — it takes the hit
       and goes on looking at you
 
+**Your dog knows:**
+
+- [ ] With a tamed wolf following you, get one of his animals within 24 blocks.
+      The dog **plants itself, turns to face it, and growls** every couple of
+      seconds
+- [ ] It **refuses to follow you** while the thing is there
+- [ ] It does **not** attack it — that decision stays yours
+- [ ] The direction it faces is always right. Put two of his on opposite
+      sides: it faces the nearer one
+- [ ] `/herobrine provoke the_stare` — the dog growls at **him** from up to 40
+      blocks, through walls, before you can see him
+- [ ] With both a possessed cow and him nearby, it faces **him**
+- [ ] Tell the dog to sit. It stops warning — a sitting dog was told to stay
+- [ ] Nothing nearby: it behaves like an ordinary wolf
+
 **At higher wrath he takes more than one:**
 
 ```

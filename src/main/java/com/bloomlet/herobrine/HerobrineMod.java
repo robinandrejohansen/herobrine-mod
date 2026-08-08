@@ -3,6 +3,7 @@ package com.bloomlet.herobrine;
 import com.bloomlet.herobrine.entity.ModEntities;
 import com.bloomlet.herobrine.manifest.ManifestationDirector;
 import com.bloomlet.herobrine.manifest.Breach;
+import com.bloomlet.herobrine.manifest.TheDogKnows;
 import com.bloomlet.herobrine.manifest.Journal;
 import com.bloomlet.herobrine.manifest.Possession;
 import com.bloomlet.herobrine.manifest.Signs;
@@ -37,6 +38,7 @@ public class HerobrineMod implements ModInitializer {
 		Journal.register();
 		Possession.register();
 		Breach.register();
+		TheDogKnows.register();
 		ModEntities.register();
 		WrathTriggers.register();
 		ManifestationDirector.register();

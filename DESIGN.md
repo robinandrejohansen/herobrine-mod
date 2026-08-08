@@ -335,6 +335,20 @@ Flagged honestly, to be resolved before the relevant phase is built.
   Sign text is chosen from the reading player's own stats, so two players at
   the same base get different words.
 
+  **The dog knows.** A tamed wolf plants itself, faces and growls at one of
+  his animals within 24 blocks, or at him within 40 — through walls, before
+  the player can see anything. It never attacks; the decision stays the
+  player's.
+
+  This is the one piece of the mod that GIVES the player something. Everything
+  else works by removing what they relied on: the torch goes out, the animal
+  will not behave, the window does not hold. A player who tamed a wolf and kept
+  it alive has bought a warning system, and it pays out exactly when the rest
+  of this is at its worst. It is also why a dog that could be turned would be a
+  better single scare and a far worse mod — the reward for keeping it would be
+  that it eventually betrays you, which teaches the player that investment is
+  punished.
+
   **Tamed animals are never taken.** A wolf someone tamed, named and walked
   halfway across a world with is the most loaded thing he could take, and
   taking it would be the most effective scare in the mod — which is exactly
