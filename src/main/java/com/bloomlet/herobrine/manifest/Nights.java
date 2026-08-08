@@ -64,6 +64,10 @@ public final class Nights {
 		if (++tickCounter % CHECK_INTERVAL != 0) {
 			return;
 		}
+		if (!com.bloomlet.herobrine.Config.get().enabled
+			|| !com.bloomlet.herobrine.Config.get().longerNights) {
+			return;
+		}
 		long hour = server.overworld().getOverworldClockTime() % 24000L;
 		boolean dark = hour >= NIGHT_FROM && hour < NIGHT_TO;
 		Phase phase = Wrath.phase(server);
@@ -85,7 +89,8 @@ public final class Nights {
 		// whole mod is built on. It costs wrath every time, and at SIEGE that
 		// is the most expensive bargain in the game: the only way to see the
 		// sun is to bring him closer.
-		hold(server, phase == Phase.SIEGE && dark);
+		hold(server, com.bloomlet.herobrine.Config.get().endlessNight
+			&& phase == Phase.SIEGE && dark);
 		apply(server, dark ? rateFor(phase) : 1.0F);
 	}
 

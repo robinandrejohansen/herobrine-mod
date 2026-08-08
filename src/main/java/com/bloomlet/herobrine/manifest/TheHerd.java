@@ -68,6 +68,10 @@ public final class TheHerd {
 		if (++tickCounter % INTERVAL != 0) {
 			return;
 		}
+		if (!com.bloomlet.herobrine.Config.get().enabled
+			|| !com.bloomlet.herobrine.Config.get().hostileAnimals) {
+			return;
+		}
 		if (Wrath.phase(server) != Phase.SIEGE) {
 			return;
 		}

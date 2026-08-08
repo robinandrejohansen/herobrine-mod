@@ -38,6 +38,9 @@ public class HerobrineMod implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
+		// Before everything, because half the registrations below read it.
+		Config.load();
+
 		// Must come first: it registers the attachment types, and they have to
 		// exist before any world is loaded or saved wrath is discarded.
 		Wrath.register();

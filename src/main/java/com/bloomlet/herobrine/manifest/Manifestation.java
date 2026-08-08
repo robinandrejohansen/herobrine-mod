@@ -141,6 +141,31 @@ public enum Manifestation {
 		}
 	};
 
+	/**
+	 * Has the player switched this one off?
+	 *
+	 * Per event rather than one master toggle, because the requests DESIGN §9
+	 * anticipated are specific: people want the stare and not the theft, or the
+	 * whole thing except the part that takes a wall out. A single on/off would
+	 * answer none of them.
+	 */
+	public boolean allowed() {
+		com.bloomlet.herobrine.Config config = com.bloomlet.herobrine.Config.get();
+		if (!config.enabled) {
+			return false;
+		}
+		return switch (this) {
+			case FOOTSTEPS, WRONG_SOUND, SNUFFED_TORCH, THE_FUSE -> config.traces;
+			case THE_BREATHING -> config.theBreathing;
+			case POSSESSED_MOB -> config.possession;
+			case THE_RUIN -> config.ruins;
+			case THE_PAGE, THE_SIGN -> config.signsAndPages;
+			case THE_DARK -> config.theDark;
+			case THE_HUNT -> config.theHunt;
+			case THE_STARE -> config.theStare;
+		};
+	}
+
 	/** Earliest phase this can appear in. */
 	public final Phase minimum;
 	/** Relative likelihood among everything else eligible. */

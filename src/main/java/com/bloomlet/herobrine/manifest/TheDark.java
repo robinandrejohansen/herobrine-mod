@@ -123,6 +123,9 @@ public final class TheDark {
 	 * standing in the dark.
 	 */
 	private static int snuff(ServerLevel level, ServerPlayer player) {
+		if (!com.bloomlet.herobrine.Config.get().takeTheLight) {
+			return 0;
+		}
 		BlockPos origin = player.blockPosition();
 		int taken = 0;
 		for (BlockPos pos : BlockPos.betweenClosed(

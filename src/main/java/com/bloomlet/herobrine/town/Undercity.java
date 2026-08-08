@@ -230,33 +230,47 @@ public final class Undercity {
 	 * long enough to stop believing it is a cellar.
 	 */
 	private static void cryptStair(ServerLevel level, BlockPos crypt, BlockPos floor) {
-		int turns = 0;
+		// A TIGHT SPIRAL IN A SHAFT, not a staircase that wanders.
+		//
+		// The first version walked three blocks along its heading per level and
+		// only turned every fourth one, which over twenty-six levels of descent
+		// carries it something like seventy blocks sideways — straight out from
+		// under the church, out past the wall, and up through the hillside
+		// outside the town. The "secret way in" came out in a field.
+		//
+		// Wound round a five-by-five shaft instead, so it descends where it
+		// starts and the entrance stays inside the building it belongs to. The
+		// player is still walking for the best part of a minute, which is the
+		// only thing the length was ever for.
+		int[][] ring = { {1, 0}, {2, 0}, {3, 0}, {3, 1}, {3, 2}, {3, 3},
+			{2, 3}, {1, 3}, {0, 3}, {0, 2}, {0, 1}, {0, 0} };
+
+		BlockPos head = crypt.offset(-1, 0, -1);
+		int step = 0;
 		BlockPos at = crypt;
-		Direction heading = Direction.NORTH;
 
 		for (int y = crypt.getY(); y > floor.getY(); y--) {
-			for (int step = 0; step < 3; step++) {
-				at = at.relative(heading);
-				for (int dy = 0; dy <= 2; dy++) {
-					level.setBlock(at.above(dy), Blocks.CAVE_AIR.defaultBlockState(), 2);
-				}
-				level.setBlock(at.below(), Blocks.STONE_BRICKS.defaultBlockState(), 2);
-			}
-			at = at.below();
-			for (int dy = 0; dy <= 2; dy++) {
+			int[] cell = ring[step % ring.length];
+			at = new BlockPos(head.getX() + cell[0], y, head.getZ() + cell[1]);
+			step++;
+
+			// FOUR high, not three. The old passage was cut nought to two and
+			// then hung a lantern at two, which is the block a player's head
+			// occupies — so the light itself was the thing blocking the way
+			// down. Cutting one higher gives them two clear blocks to stand in
+			// and a ceiling to hang from.
+			for (int dy = 0; dy <= 3; dy++) {
 				level.setBlock(at.above(dy), Blocks.CAVE_AIR.defaultBlockState(), 2);
 			}
 			level.setBlock(at.below(), Blocks.STONE_BRICKS.defaultBlockState(), 2);
 
-			if (++turns % 4 == 0) {
-				heading = heading.getClockWise();
-			}
-			if (turns % 6 == 0) {
-				level.setBlock(at.above(2), Blocks.LANTERN.defaultBlockState()
+			if (step % 5 == 0) {
+				level.setBlock(at.above(3), Blocks.LANTERN.defaultBlockState()
 					.setValue(BlockStateProperties.HANGING, true), 2);
 			}
 		}
-		// Break through into the chamber wherever the stair happens to end.
+
+		// Break out into the chamber wherever the shaft bottoms out.
 		for (int dx = -2; dx <= 2; dx++) {
 			for (int dz = -2; dz <= 2; dz++) {
 				for (int dy = 0; dy <= 3; dy++) {

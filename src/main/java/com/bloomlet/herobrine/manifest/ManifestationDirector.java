@@ -121,7 +121,7 @@ public final class ManifestationDirector {
 		Deque<Manifestation> mine = recentFor(player);
 		List<Manifestation> eligible = new ArrayList<>();
 		for (Manifestation m : Manifestation.values()) {
-			if (phase.atLeast(m.minimum) && !mine.contains(m)) {
+			if (m.allowed() && phase.atLeast(m.minimum) && !mine.contains(m)) {
 				eligible.add(m);
 			}
 		}
@@ -277,7 +277,7 @@ public final class ManifestationDirector {
 		Deque<Manifestation> mine = recentFor(player);
 		List<Manifestation> out = new ArrayList<>();
 		for (Manifestation m : Manifestation.values()) {
-			if (phase.atLeast(m.minimum) && !mine.contains(m)) {
+			if (m.allowed() && phase.atLeast(m.minimum) && !mine.contains(m)) {
 				out.add(m);
 			}
 		}

@@ -1,5 +1,6 @@
 package com.bloomlet.herobrine.entity;
 
+import com.bloomlet.herobrine.Config;
 import com.bloomlet.herobrine.HerobrineMod;
 
 import java.util.List;
@@ -1083,6 +1084,9 @@ public class HerobrineEntity extends PathfinderMob {
 	 * without a pickaxe or destroys a build is out of bounds (DESIGN.md §9).
 	 */
 	private void takeTheLight(ServerLevel server, Player player) {
+		if (!Config.get().takeTheLight) {
+			return;
+		}
 		BlockPos origin = player.blockPosition();
 		int taken = 0;
 		int r = 8;
@@ -1135,6 +1139,9 @@ public class HerobrineEntity extends PathfinderMob {
 	 *               which is exactly right.
 	 */
 	private void scorch(ServerLevel level, int wanted) {
+		if (!Config.get().scorch) {
+			return;
+		}
 		int lit = 0;
 
 		for (int attempt = 0; attempt < 24 && lit < wanted; attempt++) {
@@ -1847,7 +1854,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// No line of sight at this range means a wall, not distance. That is a
 		// better trigger than the stall was: it is the actual condition, rather
 		// than a symptom of it.
-		if (this.hunting && !this.hasLineOfSight(player)
+		if (this.hunting && Config.get().breakIn && !this.hasLineOfSight(player)
 			&& this.level() instanceof ServerLevel here) {
 			BlockPos wall = this.breaking != null && breakable(here, this.breaking)
 				? this.breaking : blockingBetween(player);
@@ -2075,7 +2082,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// Environmental damage stays off permanently. He is not to be finished
 		// by a cactus, a fall or somebody's lava bucket — this ends with a
 		// player hitting him or it does not end.
-		if (!(source.getEntity() instanceof ServerPlayer)) {
+		if (!(source.getEntity() instanceof ServerPlayer) || !Config.get().theReckoning) {
 			return true;
 		}
 		return Wrath.phase(level.getServer()) != Phase.SIEGE;
@@ -2289,7 +2296,7 @@ public class HerobrineEntity extends PathfinderMob {
 		WrathTriggers.defiance(striker, DEFIANCE_STRUCK);
 		this.anger(level);
 
-		if (this.hits >= TOTAL_HITS) {
+		if (this.hits >= Config.get().blowsToKill) {
 			super.hurtServer(level, source, Float.MAX_VALUE);
 			return true;
 		}
@@ -2299,7 +2306,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// One point of the health bar per blow, which is why MAX_HEALTH is the
 		// hit count rather than a number of hearts. The bar is the honest
 		// progress meter and it is the only one the player gets.
-		this.setHealth(Math.max(1.0F, TOTAL_HITS - this.hits));
+		this.setHealth(Math.max(1.0F, Config.get().blowsToKill - this.hits));
 		this.hurtTime = 10;
 		this.hurtDuration = 10;
 		return true;

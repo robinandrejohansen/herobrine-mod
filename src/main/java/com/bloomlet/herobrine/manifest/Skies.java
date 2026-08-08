@@ -57,6 +57,10 @@ public final class Skies {
 		if (++tickCounter % CHECK_INTERVAL != 0) {
 			return;
 		}
+		if (!com.bloomlet.herobrine.Config.get().enabled
+			|| !com.bloomlet.herobrine.Config.get().weather) {
+			return;
+		}
 		Phase phase = Wrath.phase(server);
 		RandomSource random = server.overworld().getRandom();
 

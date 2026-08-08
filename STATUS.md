@@ -230,7 +230,9 @@ ending now exists, so they can be filled in whenever.
       for the ending rather than spent at HUNTER, or SIEGE has nowhere to go
 - [ ] **SIEGE: the caves and long paths near him** — still to build
 
-- [ ] **A config** — nothing can be switched off. Blocks anyone else playing it
+- [x] **A config** — `config/herobrine.json`, one flat file. A master switch, a
+      wrath rate, every event, and separate toggles for the three things people
+      actually argue about: breaking in, taking torches, leaving fires
 - [ ] **Nothing points at the houses or the town** — findable only by command
 - [ ] The stranger — an NPC who arrives before him
 - [ ] Lightning, held back until there is an event for it to belong to
