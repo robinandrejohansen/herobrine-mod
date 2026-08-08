@@ -138,16 +138,6 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private static final int CUE_CHANCE = 3;
 
-	/**
-	 * How precisely you must be looking at him for it to count.
-	 *
-	 * Vanilla's Enderman formula is 0.025/distance, which at 18 blocks is
-	 * about 3 degrees — appropriate for a mob you are meant to aggro by
-	 * accident, far too strict for one whose whole behaviour is reacting to
-	 * being seen. This is roughly 7 degrees at stalking range and still
-	 * tightens with distance, so a glance across a valley does not count.
-	 */
-	private static final double GAZE_TOLERANCE = 0.15;
 
 	public HerobrineEntity(EntityType<? extends PathfinderMob> type, Level level) {
 		super(type, level);
