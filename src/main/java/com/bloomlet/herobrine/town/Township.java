@@ -95,6 +95,21 @@ public final class Township {
 			boolean up = switch (plot.kind()) {
 				case "house" -> Lodge.build(level, plot.corner(), plot.facing(), random);
 				case "hall" -> Hall.build(level, plot.corner(), plot.facing(), random);
+				case "church" -> {
+					if (Church.build(level, plot.corner(), plot.facing(), random)) {
+						// The undercity is dug from the church's own crypt
+						// stair, so the two always meet — the alternative is
+						// two systems agreeing on a coordinate, which is how
+						// nearly every bug in this repo started.
+						Undercity.dig(level, centre,
+							Church.crypt(plot.corner(), plot.facing()), random);
+						yield true;
+					}
+					yield false;
+				}
+				case "smithy" -> Smithy.build(level, plot.corner(), plot.facing(), random);
+				case "shop" -> Shop.build(level, plot.corner(), plot.facing(), random);
+				case "pen" -> Pen.build(level, plot.corner(), plot.facing(), random);
 				default -> false;
 			};
 			if (up) {

@@ -190,8 +190,13 @@ much faster and is the intended route.
 - [x] Thirteen plots allotted along the lanes, levelled and marked
 - [x] Eight two-storey houses — timber framing, jettied upper floor
 - [x] The hall — open gallery over the tables
-- [ ] Smithy, two shops, two pens
-- [ ] The church — built last, secret passage behind the altar
+- [x] The smithy — open-fronted forge, stone, chimney over the rooftops
+- [x] Two shops — a trade each, awnings out over the lane, family room behind
+- [x] Two pens — terrain-following fences, open shelters, real animals in them
+- [x] The church — long nave, tower, bell, spire, and the stair behind the altar
+- [x] **The undercity** — a vaulted chamber under the square with streets,
+      houses, lantern posts and a library. Two ways in: the altar stair and a
+      swim down the well. Villagers still live there
 
 ---
 
@@ -210,7 +215,7 @@ Deliberately built the two ends first. 2–4 are the middle of a story whose
 ending now exists, so they can be filled in whenever.
 
 ### Everything else outstanding
-- [ ] **The town's remaining buildings** — smithy, 2 shops, 2 pens, church last
+
 - [ ] **Village names and signposts**, and roads between villages
 - [ ] **The fight** — he flies, throws fire, looses arrows. Deliberately held
       for the ending rather than spent at HUNTER, or SIEGE has nowhere to go
@@ -218,7 +223,7 @@ ending now exists, so they can be filled in whenever.
 - [ ] **THE RECKONING, act two and three** — fireballs, arrows, lightning on
       your builds, flight in combat. The frame is in; the arsenal is not
 - [ ] **A config** — nothing can be switched off. Blocks anyone else playing it
-- [ ] **Nothing points at the houses** — findable only by command or luck
+- [ ] **Nothing points at the houses or the town** — findable only by command
 - [ ] The stranger — an NPC who arrives before him
 - [ ] Lightning, held back until there is an event for it to belong to
 - [ ] Wind — Minecraft has none; would have to be faked with sound
