@@ -102,6 +102,14 @@ public final class Feral {
 		mob.setAttached(Possession.MENACE, 2);
 		mob.setSilent(true);
 		mob.setPersistenceRequired();
+
+		// Read straight back. If the server cannot see what it just wrote, the
+		// problem is the write; if it can and the client still draws a plain
+		// villager, the problem is the sync. Two guesses have already been
+		// spent on this, so the next run says which.
+		HerobrineMod.LOGGER.info("marked {}: feral={} menace={} silent={}",
+			mob.getType().toShortString(), isFeral(mob),
+			Possession.menace(mob), mob.isSilent());
 	}
 
 	private static void onTick(MinecraftServer server) {

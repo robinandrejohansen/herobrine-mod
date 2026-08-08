@@ -3,6 +3,7 @@ package com.bloomlet.herobrine.client.mixin;
 import com.bloomlet.herobrine.client.PossessedEyes;
 import com.bloomlet.herobrine.client.PossessedEyesLayer;
 import com.bloomlet.herobrine.client.PossessedEyesTextures;
+import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.manifest.Feral;
 import com.bloomlet.herobrine.manifest.Possession;
 
@@ -13,6 +14,7 @@ import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,6 +41,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class LivingEntityRendererMixin<T extends LivingEntity,
 		S extends LivingEntityRenderState, M extends EntityModel<? super S>> {
 
+	@org.spongepowered.asm.mixin.Unique
+	private static final java.util.Set<Integer> herobrine$told =
+		java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
 	@Shadow
 	protected abstract boolean addLayer(RenderLayer<S, M> layer);
 
@@ -62,5 +68,14 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity,
 				: null);
 		((PossessedEyes)state).herobrine$infected(
 			entity instanceof Mob mob && Feral.isFeral(mob));
+
+		// Client-side counterpart to the log in Feral.shutIn. Says once per
+		// villager what THIS side can see, so the two lines can be compared and
+		// the break located rather than guessed at.
+		if (entity instanceof Mob mob && mob.getType() == EntityTypes.VILLAGER
+			&& herobrine$told.add(mob.getId())) {
+			HerobrineMod.LOGGER.info("client sees villager {}: feral={} menace={} silent={}",
+				mob.getId(), Feral.isFeral(mob), Possession.menace(mob), mob.isSilent());
+		}
 	}
 }
