@@ -1,5 +1,6 @@
 package com.bloomlet.herobrine.wrath;
 
+import com.bloomlet.herobrine.Config;
 import com.bloomlet.herobrine.HerobrineMod;
 
 import com.mojang.serialization.Codec;
@@ -123,6 +124,22 @@ public final class Wrath {
 	public static void add(MinecraftServer server, ServerPlayer player, int amount, Reason reason) {
 		if (amount == 0) {
 			return;
+		}
+		// The pace dial, and this is the only place it can go.
+		//
+		// Every single thing that moves wrath comes through here, so scaling it
+		// once at the door means the whole arc stretches or compresses evenly —
+		// sleeping, killing, defiance, the drift, all of it. Scaling at the call
+		// sites would have meant thirty separate multiplications and one of them
+		// forgotten.
+		//
+		// GAINS ONLY. The ending subtracts the entire total to put the world
+		// back, and scaling that would leave a remainder behind — a world that
+		// had been at 0.5 pace would come out of its ending still half way to
+		// WATCHER, which is not an ending.
+		double rate = Config.get().wrathRate;
+		if (amount > 0 && rate != 1.0) {
+			amount = Math.max(1, (int)Math.round(amount * rate));
 		}
 		Phase before = phase(server);
 

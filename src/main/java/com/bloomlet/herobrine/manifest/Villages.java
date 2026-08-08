@@ -85,6 +85,9 @@ public final class Villages {
 		if (++tickCounter % CHECK_INTERVAL != 0) {
 			return;
 		}
+		if (!com.bloomlet.herobrine.Config.get().enabled || !com.bloomlet.herobrine.Config.get().villageDecay) {
+			return;
+		}
 		Phase phase = Wrath.phase(server);
 		if (!phase.atLeast(Phase.TRESPASSER)) {
 			return;   // the world is still ordinary

@@ -262,7 +262,8 @@ one along. Distance is the only thing telling you they are a sequence.
 - [x] **A config** — `config/herobrine.json`, one flat file. A master switch, a
       wrath rate, every event, and separate toggles for the three things people
       actually argue about: breaking in, taking torches, leaving fires
-- [ ] **Nothing points at the houses or the town** — findable only by command
+- [ ] **Nothing points at the houses or the town** — they generate now, but
+      there are still no signposts or roads leading to them
 - [ ] The stranger — an NPC who arrives before him
 - [ ] Lightning, held back until there is an event for it to belong to
 - [ ] Wind — Minecraft has none; would have to be faked with sound

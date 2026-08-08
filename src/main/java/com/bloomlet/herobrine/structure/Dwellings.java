@@ -96,6 +96,24 @@ public final class Dwellings {
 	 * you can tell apart at a glance — but a long is eight bytes, and the first
 	 * attempt spelled longer words than that and would not compile.
 	 */
+	/**
+	 * The town, and it had no way of existing until now.
+	 *
+	 * Township.raise was only ever called from /herobrine town here, so on an
+	 * ordinary world the whole settlement — walls, hall, forge, church and the
+	 * chamber under the square — simply never appeared. It was advertised and
+	 * unreachable, which is the worst of both.
+	 *
+	 * Sited nearer than any of the houses, because it is the one thing here
+	 * that is meant to be FOUND rather than sought: a walled town with people
+	 * in it, at the edge of where somebody's first world reaches, and then
+	 * everything wrong with it discovered afterwards.
+	 */
+	private static final AttachmentType<Boolean> TOWN_RAISED =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("town_raised"), Codec.BOOL);
+	private static final int TOWN_MIN = 720;
+	private static final int TOWN_MAX = 1250;
+
 	private static final long[] MIDDLE_SALTS = {
 		0x486F757365325F5FL,   // House2__
 		0x4469675F5F5F5F33L,   // Dig____3
@@ -130,7 +148,26 @@ public final class Dwellings {
 		if (++tickCounter % CHECK_INTERVAL != 0) {
 			return;
 		}
+		if (!com.bloomlet.herobrine.Config.get().enabled || !com.bloomlet.herobrine.Config.get().houses) {
+			return;
+		}
 		ServerLevel overworld = server.overworld();
+
+		if (com.bloomlet.herobrine.Config.get().town
+			&& !Boolean.TRUE.equals(overworld.getAttached(TOWN_RAISED))) {
+			BlockPos site = townSiteFor(overworld);
+			for (ServerPlayer player : overworld.players()) {
+				if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
+					com.bloomlet.herobrine.town.Township.raise(overworld, site,
+						overworld.getRandom());
+					overworld.setAttached(TOWN_RAISED, true);
+					HerobrineMod.LOGGER.info("the town went up at [{}, {}]",
+						site.getX(), site.getZ());
+					break;
+				}
+			}
+		}
+
 		if (!Boolean.TRUE.equals(overworld.getAttached(RAISED))) {
 			BlockPos site = siteFor(overworld);
 			for (ServerPlayer player : overworld.players()) {
@@ -162,6 +199,17 @@ public final class Dwellings {
 				}
 			}
 		}
+	}
+
+	/** Where the town is, fixed by the seed like everything else here. */
+	public static BlockPos townSiteFor(ServerLevel level) {
+		RandomSource random = RandomSource.create(level.getSeed() ^ 0x546F776E53697465L);
+		double angle = random.nextDouble() * Math.PI * 2.0;
+		double range = TOWN_MIN + random.nextDouble() * (TOWN_MAX - TOWN_MIN);
+		BlockPos spawn = level.getLevelData().getRespawnData().pos();
+		return new BlockPos(
+			spawn.getX() + (int)Math.round(Math.cos(angle) * range), 0,
+			spawn.getZ() + (int)Math.round(Math.sin(angle) * range));
 	}
 
 	/** Seeded like the other two, so it is in the same place in every copy. */

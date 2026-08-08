@@ -241,6 +241,14 @@ public final class Atmosphere {
 	 * anything having to notice and rebuild.
 	 */
 	private static Phase phase() {
+		// Switched off reports RUMOUR rather than being checked in six places.
+		// Every layer here is already neutral at RUMOUR — that is the phase
+		// whose whole job is to look like an ordinary world — so one gate at
+		// the source turns the lot off and cannot be forgotten in one of them.
+		if (!com.bloomlet.herobrine.Config.get().enabled
+			|| !com.bloomlet.herobrine.Config.get().atmosphere) {
+			return Phase.RUMOUR;
+		}
 		Minecraft client = Minecraft.getInstance();
 		return client.player == null ? Phase.RUMOUR : Wrath.shownTo(client.player);
 	}
