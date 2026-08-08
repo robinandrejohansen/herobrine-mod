@@ -306,6 +306,13 @@ The line between horror and an annoying mod. Non-negotiable.
   frightening instead of the wrong side of griefing, and it is the same one
   the torches make.
 - **Everything he places is removable** and drops normally.
+- **THE ENDING IS EXEMPT, and knowingly.** Act three of the Reckoning throws
+  real lightning that burns and hurts, and his death leaves a scorched ring,
+  a failed portal and a half-built ruin. Defeating him is meant to cost the
+  world something visible — a last act that cannot break anything is a
+  fireworks display. The permanent SIEGE storm works against the fire the
+  whole time, and `realLightning` in the config turns every bolt back to
+  cosmetic for anybody who would rather keep their forest.
 - **Warning before lethality.** Phase 4+ events telegraph — weather, sound,
   a sign — so death feels earned, not arbitrary.
 - **Death lowers pressure**, so a bad run recovers.

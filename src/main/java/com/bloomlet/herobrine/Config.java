@@ -59,6 +59,15 @@ public final class Config {
 	public boolean takeTheLight = true;
 	/** He leaves fires. Already refuses to light near anything flammable. */
 	public boolean scorch = true;
+	/**
+	 * Act three lightning is REAL: it burns and it hurts.
+	 *
+	 * The one setting here that can cost somebody a build, and it is on by
+	 * design — the ending is meant to leave a mark on the world. Off makes
+	 * every bolt cosmetic, which is what it was before, and the fight is still
+	 * a fight.
+	 */
+	public boolean realLightning = true;
 
 	// ---- the world ---------------------------------------------------------
 	public boolean weather = true;

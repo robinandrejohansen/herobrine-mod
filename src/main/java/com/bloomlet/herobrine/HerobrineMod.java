@@ -57,6 +57,7 @@ public class HerobrineMod implements ModInitializer {
 		Dwellings.register();
 		TheDogKnows.register();
 		ModEntities.register();
+		com.bloomlet.herobrine.block.ModBlocks.register();
 		WrathTriggers.register();
 		ManifestationDirector.register();
 		HerobrineCommand.register();

@@ -1606,6 +1606,15 @@ public class HerobrineEntity extends PathfinderMob {
 		server.setWeatherParameters(6000, 0, false, false);
 		Wrath.add(server, null, -Wrath.get(server), Wrath.Reason.DEATH);
 
+		// And something to walk back to in the morning.
+		ServerPlayer killer = source.getEntity() instanceof ServerPlayer who
+			? who : here.getNearestPlayer(this, 64.0) instanceof ServerPlayer near
+				? near : null;
+		if (killer != null) {
+			com.bloomlet.herobrine.manifest.Reckoning.aftermath(here,
+				this.blockPosition(), killer);
+		}
+
 		for (ServerPlayer survivor : here.players()) {
 			survivor.sendSystemMessage(net.minecraft.network.chat.Component.literal(
 				"§7The rain stops."));
@@ -2253,23 +2262,49 @@ public class HerobrineEntity extends PathfinderMob {
 	 * The fire it leaves is the threat. The rain is already taking it back out.
 	 */
 	private void callDown(ServerLevel here, ServerPlayer target) {
-		for (int i = 0; i < 3; i++) {
+		// REAL, at act three. It burns and it hurts.
+		//
+		// Everything else in this mod that throws lightning is visual-only,
+		// because a bolt that sets a wood costs a player their world rather
+		// than the fight. The ending is the deliberate exception: defeating him
+		// is supposed to leave a mark, and a last act that cannot break
+		// anything is a fireworks display.
+		//
+		// The permanent SIEGE storm is doing real work against it the whole
+		// time, which is why this is survivable at all — and Config.realLightning
+		// turns the whole thing back to cosmetic for anybody who would rather
+		// keep their forest.
+		boolean real = Config.get().realLightning;
+
+		// The volley VARIES rather than repeating one beat: a scatter of
+		// distant flashes with one or two that actually land near them. A
+		// uniform burst reads as an effect; an uneven one reads as weather that
+		// has taken an interest.
+		int bolts = 3 + this.random.nextInt(3);
+		for (int i = 0; i < bolts; i++) {
+			boolean near = this.random.nextInt(3) == 0;
 			double angle = this.random.nextDouble() * Math.PI * 2.0;
-			double range = 2.0 + this.random.nextDouble() * 6.0;
+			double range = near
+				? 2.0 + this.random.nextDouble() * 4.0
+				: 9.0 + this.random.nextDouble() * 14.0;
 			final double x = target.getX() + Math.cos(angle) * range;
 			final double z = target.getZ() + Math.sin(angle) * range;
 			final int y = here.getHeight(
 				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
 				net.minecraft.util.Mth.floor(x), net.minecraft.util.Mth.floor(z));
+			// The far ones are flashes; only the close ones bite. It keeps the
+			// spectacle wide and the danger where the player can see it coming.
+			final boolean bites = real && near;
 
-			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), i * 7, () -> {
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(),
+					i * (4 + this.random.nextInt(9)), () -> {
 				net.minecraft.world.entity.LightningBolt bolt =
 					net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
 						.create(here, net.minecraft.world.entity.EntitySpawnReason.EVENT);
 				if (bolt == null) {
 					return;
 				}
-				bolt.setVisualOnly(true);
+				bolt.setVisualOnly(!bites);
 				bolt.snapTo(x, y, z, 0.0F, 0.0F);
 				here.addFreshEntity(bolt);
 			});

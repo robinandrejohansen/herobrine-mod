@@ -180,6 +180,13 @@ much faster and is the intended route.
       coming and get behind something
 - [x] Act three (20–29): three fireballs at once, four-arrow volleys, lightning
       around you, and he stops staying on the ground
+- [x] Act three lightning is real — it burns and it hurts, and the volley
+      varies: distant flashes with one or two that actually land near you
+- [x] **What he leaves.** A nether portal stands for six seconds and then
+      FAILS — never usable, which is the point. A burnt ring, a half-built
+      ruin, signs still threatening you in the present tense, and 2600 xp
+- [x] **The Effigy** — a carved head on a plinth in the ruin. Break it, take it
+      home, keep it. The only object this mod ever lets anybody keep
 - [x] **He dies.** The storm breaks, the clock starts, the sun comes up, and
       wrath goes to zero — which is how the world is put back, since everything
       here reads off that one number. And then it can begin again

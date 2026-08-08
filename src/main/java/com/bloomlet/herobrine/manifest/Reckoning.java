@@ -75,6 +75,192 @@ public final class Reckoning {
 	}
 
 	/**
+	 * WHAT IS LEFT WHERE HE DIED.
+	 *
+	 * The ending had a good beat — the rain stopping — and nothing you could
+	 * walk back to the next morning. This is the rest of it, and it is
+	 * deliberately staged in two parts rather than dumped at once.
+	 *
+	 * FIRST, for six seconds, a portal. Obsidian and the purple of it, standing
+	 * in a ring of fire, and the player has just long enough to look at it and
+	 * work out what it means: he was going somewhere, and he was almost there.
+	 *
+	 * THEN IT COLLAPSES. Not opened, not entered, not usable — broken. That is
+	 * the whole sentence the ending needs to say: this was stopped, and it was
+	 * only just stopped. A portal the player can walk through is a new
+	 * dimension and an entirely different mod; a portal that fails in front of
+	 * them is the thing they beat.
+	 *
+	 * And then the ruin stays. A burnt ring, the shell of a small house, signs
+	 * that are still threatening somebody who is no longer in a position to do
+	 * anything about it, and the Effigy on a plinth in the middle to be prised
+	 * out and taken home.
+	 */
+	public static void aftermath(ServerLevel level, BlockPos where, ServerPlayer killer) {
+		RandomSource random = level.getRandom();
+		BlockPos site = new BlockPos(where.getX(),
+			Ground.topOf(level, where.getX(), where.getZ()) + 1, where.getZ());
+
+		portal(level, site);
+		burning(level, site, random);
+
+		// Experience, and a great deal of it. The one straightforwardly
+		// generous thing in the entire mod, on the grounds that thirty
+		// exchanges with something that ignores armour has earned it.
+		net.minecraft.world.entity.ExperienceOrb.award(level,
+			new net.minecraft.world.phys.Vec3(site.getX() + 0.5, site.getY() + 1.0,
+				site.getZ() + 0.5), 2600);
+
+		Cadence.in(level.getServer(), 120, () -> {
+			collapse(level, site);
+			memorial(level, site, random, killer);
+			warnings(level, site, random);
+			HerobrineMod.LOGGER.info("the portal failed at [{}, {}, {}]",
+				site.getX(), site.getY(), site.getZ());
+		});
+	}
+
+	/** Four by five of obsidian, lit. It stands for six seconds. */
+	private static void portal(ServerLevel level, BlockPos site) {
+		for (int dx = -2; dx <= 2; dx++) {
+			for (int dy = 0; dy <= 4; dy++) {
+				boolean frame = dx == -2 || dx == 2 || dy == 0 || dy == 4;
+				BlockPos at = site.offset(dx, dy, 0);
+				level.setBlock(at, frame
+					? Blocks.OBSIDIAN.defaultBlockState()
+					: Blocks.NETHER_PORTAL.defaultBlockState()
+						.setValue(BlockStateProperties.HORIZONTAL_AXIS,
+							Direction.Axis.X), 2);
+			}
+		}
+		level.playSound(null, site, SoundEvents.PORTAL_TRIGGER, SoundSource.HOSTILE, 3.0F, 0.6F);
+	}
+
+	/** And it fails. Loudly, and without ever having been usable. */
+	private static void collapse(ServerLevel level, BlockPos site) {
+		for (int dx = -2; dx <= 2; dx++) {
+			for (int dy = 0; dy <= 4; dy++) {
+				BlockPos at = site.offset(dx, dy, 0);
+				if (level.getBlockState(at).is(Blocks.NETHER_PORTAL)) {
+					level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+				} else if (level.getBlockState(at).is(Blocks.OBSIDIAN)
+					&& level.getRandom().nextInt(3) != 0) {
+					// Most of the frame goes; a few stones are left standing,
+					// which says "this was here" far better than a clean site.
+					level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+				}
+			}
+		}
+		level.playSound(null, site, SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(),
+			SoundSource.HOSTILE, 4.0F, 0.5F);
+		level.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL,
+			site.getX() + 0.5, site.getY() + 2.0, site.getZ() + 0.5, 200, 2.0, 2.0, 2.0, 0.6);
+	}
+
+	/** A burnt ring. It is a storm; most of it will be out before long. */
+	private static void burning(ServerLevel level, BlockPos site, RandomSource random) {
+		for (int i = 0; i < 22; i++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = 2.0 + random.nextDouble() * 7.0;
+			int x = site.getX() + (int)Math.round(Math.cos(angle) * range);
+			int z = site.getZ() + (int)Math.round(Math.sin(angle) * range);
+			BlockPos ground = new BlockPos(x, Ground.topOf(level, x, z), z);
+			if (!level.getBlockState(ground.above()).isAir()) {
+				continue;
+			}
+			level.setBlock(ground, random.nextInt(3) == 0
+				? Blocks.BASALT.defaultBlockState()
+				: Blocks.BLACKSTONE.defaultBlockState(), 2);
+			if (random.nextInt(2) == 0) {
+				level.setBlock(ground.above(), Blocks.FIRE.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	/**
+	 * A small shell of a house, and the Effigy in the middle of it.
+	 *
+	 * Roofless and half-built on purpose. A finished building would read as
+	 * somebody's memorial to the fight; an unfinished one reads as the thing he
+	 * was in the middle of when it stopped, which is a far worse note to leave
+	 * a player standing in.
+	 */
+	private static void memorial(ServerLevel level, BlockPos site, RandomSource random,
+	                             ServerPlayer killer) {
+		BlockPos at = site.offset(6, 0, 4);
+		BlockPos base = new BlockPos(at.getX(),
+			Ground.topOf(level, at.getX(), at.getZ()) + 1, at.getZ());
+
+		for (int dx = -3; dx <= 3; dx++) {
+			for (int dz = -3; dz <= 3; dz++) {
+				boolean wall = Math.abs(dx) == 3 || Math.abs(dz) == 3;
+				level.setBlock(base.offset(dx, -1, dz),
+					Blocks.POLISHED_BLACKSTONE.defaultBlockState(), 2);
+				if (!wall) {
+					continue;
+				}
+				// Ragged. Each course of each column stops at its own height.
+				int up = 1 + random.nextInt(3);
+				for (int dy = 0; dy < up; dy++) {
+					level.setBlock(base.offset(dx, dy, dz), random.nextInt(4) == 0
+						? Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.defaultBlockState()
+						: Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState(), 2);
+				}
+			}
+		}
+		// The doorway, such as it is.
+		for (int dy = 0; dy <= 2; dy++) {
+			level.setBlock(base.offset(0, dy, 3), Blocks.AIR.defaultBlockState(), 2);
+		}
+
+		level.setBlock(base, Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState(), 2);
+		level.setBlock(base.above(), com.bloomlet.herobrine.block.ModBlocks.EFFIGY
+			.defaultBlockState(), 2);
+		for (int dx : new int[] { -1, 1 }) {
+			level.setBlock(base.offset(dx, 0, 0), Blocks.CANDLE.defaultBlockState()
+				.setValue(BlockStateProperties.LIT, true), 2);
+		}
+	}
+
+	/**
+	 * Signs, still threatening somebody who cannot do anything about it.
+	 *
+	 * That gap is the whole reason they are here rather than a "you win". They
+	 * are in the present tense and they are wrong, and the player standing in
+	 * the wreckage reading them gets to notice that for themselves.
+	 */
+	private static void warnings(ServerLevel level, BlockPos site, RandomSource random) {
+		String[][] said = {
+			{ "YOU ARE", "GOING TO", "DIE" },
+			{ "I WAS", "ALMOST", "THROUGH" },
+			{ "THIS IS NOT", "THE END", "OF IT" },
+			{ "COUNT", "THE DAYS" },
+			{ "I KNOW", "WHERE", "YOU SLEEP" },
+		};
+		for (int i = 0; i < said.length; i++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = 3.0 + random.nextDouble() * 6.0;
+			int x = site.getX() + (int)Math.round(Math.cos(angle) * range);
+			int z = site.getZ() + (int)Math.round(Math.sin(angle) * range);
+			BlockPos ground = new BlockPos(x, Ground.topOf(level, x, z) + 1, z);
+			if (!level.getBlockState(ground).isAir()
+				|| !level.getBlockState(ground.below()).isSolid()) {
+				continue;
+			}
+			level.setBlock(ground, Blocks.OAK_SIGN.defaultBlockState()
+				.setValue(BlockStateProperties.ROTATION_16, random.nextInt(16)), 2);
+			if (level.getBlockEntity(ground) instanceof SignBlockEntity sign) {
+				String[] lines = said[i];
+				sign.setText(new SignText()
+					.setMessage(0, Component.literal(lines[0]))
+					.setMessage(1, Component.literal(lines.length > 1 ? lines[1] : ""))
+					.setMessage(2, Component.literal(lines.length > 2 ? lines[2] : ""))
+					.setMessage(3, Component.literal("")), true);
+			}
+		}
+	}
+
+	/**
 	 * Somewhere with room for it, and never on top of anything.
 	 *
 	 * Refuses rather than clears. A player who turns round to find their

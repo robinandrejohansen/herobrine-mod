@@ -79,6 +79,16 @@ public final class HerobrineCommand {
 				// The tenth-blow church, on demand. Reaching it honestly needs
 				// SIEGE and ten connected swings, which is a long way to walk
 				// to check whether a doorway is in the right wall.
+				// The death aftermath, without the thirty swings in front of it.
+				.then(Commands.literal("aftermath").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					com.bloomlet.herobrine.manifest.Reckoning.aftermath(
+						(ServerLevel)p.level(), p.blockPosition(), p);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						"the portal is up — it fails in six seconds"), false);
+					return 1;
+				}))
+
 				.then(Commands.literal("warning").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
 					com.bloomlet.herobrine.manifest.Reckoning.theWarning(
