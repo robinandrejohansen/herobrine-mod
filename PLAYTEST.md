@@ -248,6 +248,40 @@ walk to it rather than hunting. Signs and pages report their position too.
 > vocabulary of something that has stood for centuries, and it was not there
 > an hour ago.
 
+### A7e — Possessed mobs (MIMIC)
+
+```
+/herobrine wrath 500
+```
+
+Get some animals around you — a few cows or pigs, at least 6 blocks away — or
+stand near a village. Then look away from them and:
+
+```
+/herobrine provoke possessed_mob
+```
+
+The command prints which animal and where. Now go and look at it.
+
+- [ ] It **stops moving entirely**. No wandering, no grazing
+- [ ] It **turns its whole body to face you**, and keeps facing you as you
+      walk around it
+- [ ] It makes **no sound at all** — no moo, no oink, nothing
+- [ ] It does **not flee** when you approach, or when you hit it
+- [ ] It never attacks you
+- [ ] Walk 40 blocks away and back — it is still there, still watching, and it
+      does not despawn
+- [ ] Only adults, never babies
+- [ ] It is never taken while you are looking at it
+
+> The behaviour is the whole scare and it should not need explaining. A
+> vanilla animal is never still. If a stopped, silent cow tracking you across
+> a field does not feel wrong, then something is not working — check it is
+> actually facing you rather than just aiming its head.
+>
+> Known gap: **the eyes do not glow yet.** That needs a separate texture per
+> mob type aligned to each one's UV map, and is a follow-up.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the

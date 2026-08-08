@@ -40,6 +40,14 @@ public enum Manifestation {
 		}
 	},
 
+	/** One of your animals stops being an animal. */
+	POSSESSED_MOB(Phase.MIMIC, 12) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Possession.take(level, player);
+		}
+	},
+
 	/** Something old, at the edge of your world, that was not there yesterday. */
 	THE_RUIN(Phase.TRESPASSER, 8) {
 		@Override
