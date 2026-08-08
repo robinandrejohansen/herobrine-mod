@@ -918,6 +918,9 @@ Find a village. `/locate structure minecraft:village_plains` works.
 - [ ] The **upper floor juts out** a block either side over the ground floor
 - [ ] **Shutters** beside the windows, and different potted plants in each
       house rather than the same one six times
+- [ ] Windows read as **glass**, not as thin posts. Every shuttered window is
+      two panes wide so the pair connects to itself — a single pane beside a
+      trapdoor has nothing to reach for
 - [ ] A scruffy strip of flowers, grass and worn path in front of each door —
       sitting on the **ground**, not on the building's floor level
 - [ ] **A stair run up the west wall** to the first floor, with the deck opened

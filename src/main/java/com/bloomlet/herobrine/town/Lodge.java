@@ -68,13 +68,13 @@ public final class Lodge {
 
 	private static final String[] FLOOR_TWO = {
 		"           ",
-		" LbgbWbgbL ",
+		" LbggbggbL ",
 		" W       W ",
 		" g       g ",
 		" W       W ",
 		" gs      g ",
 		" W       W ",
-		" LbgWDEeEL ",
+		" LbggDEeEL ",
 		"           ",
 	};
 
@@ -116,13 +116,13 @@ public final class Lodge {
 
 	private static final String[] UPPER_TWO = {
 		"           ",
-		"LWWgWWWgWWL",
+		"LWWggWggWWL",
 		"W    W    W",
 		"g    W    g",
 		"W         W",
 		"g    W    g",
 		"W    W    W",
-		"LWWgWWWgWWL",
+		"LWWggWWgWWL",
 		"           ",
 	};
 
@@ -230,6 +230,11 @@ public final class Lodge {
 				.setValue(BlockStateProperties.HALF, Half.TOP));
 			case '.', '_' -> put(level, at, Blocks.SPRUCE_PLANKS.defaultBlockState());
 			case 'o' -> put(level, at, Blocks.AIR.defaultBlockState());
+			// Panes connect to solid blocks and to each other, and to nothing
+			// else. A single pane with a trapdoor shutter beside it has nothing
+			// to reach for and renders as a thin post in the middle of a hole —
+			// so every shuttered window is two panes wide, and the pair reads
+			// as glass because it is connected to itself.
 			case 'g' -> put(level, at, Blocks.GLASS_PANE.defaultBlockState());
 			case 'D' -> door(level, at, facing);
 			case 'd' -> bed(level, at, facing, random);
