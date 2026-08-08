@@ -1,5 +1,6 @@
 package com.bloomlet.herobrine.town;
 
+import com.bloomlet.herobrine.structure.Ground;
 import com.bloomlet.herobrine.structure.Loot;
 
 import net.minecraft.core.BlockPos;
@@ -13,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.block.state.properties.Half;
 
 /**
  * A family house, and the most-built thing in the town.
@@ -41,99 +43,99 @@ public final class Lodge {
 	private static final int RIDGE_Z = 4;
 
 	private static final String[] GROUND = {
-		"###########",
-		"#.........#",
-		"#.........#",
-		"#.........#",
-		"#.........#",
-		"#.........#",
-		"#.........#",
-		"#.........#",
-		"###########",
+		"           ",
+		" ######### ",
+		" #.......# ",
+		" #.......# ",
+		" #.......# ",
+		" #.......# ",
+		" #.......# ",
+		" ######### ",
+		"           ",
 	};
 
 	private static final String[] FLOOR_ONE = {
-		"###########",
-		"#  Fc CA  #",
-		"#        S#",
-		"#    h    #",
-		"# A hTh   #",
-		"#         #",
-		"#s       P#",
-		"#         #",
-		"#####D#EEE#",
+		"           ",
+		" LWFcWCAWL ",
+		" W      PW ",
+		" W       W ",
+		" W  hTh  W ",
+		" W      SW ",
+		" Ws      W ",
+		" LWWWDEEEL ",
+		"           ",
 	};
 
 	private static final String[] FLOOR_TWO = {
-		"WWgWWWWWgWW",
-		"W         W",
-		"W         W",
-		"g         g",
-		"W         W",
-		"Ws        W",
-		"g         g",
-		"W         W",
-		"WWgWWDWEeEW",
+		"           ",
+		" LbgbWbgbL ",
+		" W       W ",
+		" g       g ",
+		" W       W ",
+		" gs      g ",
+		" W       W ",
+		" LbgWDEeEL ",
+		"           ",
 	};
 
 	private static final String[] FLOOR_THREE = {
-		"WWWWWWWWWWW",
-		"W         W",
-		"W         W",
-		"W         W",
-		"Ws        W",
-		"W         W",
-		"W         W",
-		"W         W",
-		"WWWWWWWEEEW",
+		"           ",
+		" LHHHHHHHL ",
+		" H       H ",
+		" H       H ",
+		" Hs      H ",
+		" H       H ",
+		" H       H ",
+		" LHHHHEEEL ",
+		"           ",
 	};
 
 	private static final String[] DECK = {
-		"WWWWWWWWWWW",
-		"W_________W",
-		"W_________W",
-		"W_________W",
-		"Wo________W",
-		"Wo________W",
-		"Wo________W",
-		"W_________W",
-		"WWWWWWWWWWW",
+		"           ",
+		"HHHHHHHHHHH",
+		"H_________H",
+		"H_________H",
+		"H_o_______H",
+		"H_o_______H",
+		"H_o_______H",
+		"HHHHHHHHHHH",
+		"           ",
 	};
 
 	private static final String[] UPPER_ONE = {
-		"WWWWWWWWWWW",
-		"W B  W  B W",
-		"W    W    W",
+		"           ",
+		"LWWWWWWWWWL",
+		"W d  W  d W",
 		"W    W    W",
 		"W         W",
 		"W    W    W",
-		"W xK W   AW",
-		"W    W    W",
-		"WWWWWWWWWWW",
+		"W  K W x AW",
+		"LWWWWWWWWWL",
+		"           ",
 	};
 
 	private static final String[] UPPER_TWO = {
-		"WWgWWWWWgWW",
+		"           ",
+		"LWWgWWWgWWL",
 		"W    W    W",
 		"g    W    g",
-		"W    W    W",
 		"W         W",
-		"W    W    W",
 		"g    W    g",
 		"W    W    W",
-		"WWgWWWWWgWW",
+		"LWWgWWWgWWL",
+		"           ",
 	};
 
 	private static final String[] UPPER_THREE = {
-		"WWWWWWWWWWW",
-		"W    W    W",
-		"W    W    W",
-		"W    W    W",
-		"W    W    W",
-		"W    W    W",
-		"W    W    W",
-		"W    W    W",
-		"WWWWWWWWWWW",
+		"           ",
+		"LHHHHHHHHHL",
+		"H    W    H",
+		"H    W    H",
+		"H    W    H",
+		"H    W    H",
+		"H    W    H",
+		"LHHHHHHHHHL",
+		"           ",
 	};
 
 	private static final String[][] LAYERS = {
@@ -150,7 +152,54 @@ public final class Lodge {
 			return false;
 		}
 		gable(level, corner, facing, random);
+		garden(level, corner, facing, random);
 		return true;
+	}
+
+	/**
+	 * The strip in front of the door.
+	 *
+	 * Placed against the ground rather than the building's floor, because it is
+	 * outside and the ground out there does whatever it likes. A house on a
+	 * slight rise with its flowers hovering a block over the grass is worse than
+	 * no flowers.
+	 *
+	 * Deliberately scruffy: a few flowers, a bit of tall grass, some path worn
+	 * to the door and one fence post. A neat garden reads as landscaping; a
+	 * patchy one reads as somewhere people walk in and out of.
+	 */
+	private static void garden(ServerLevel level, BlockPos corner, Direction facing,
+	                           RandomSource random) {
+		for (int x = 0; x < WIDTH; x++) {
+			for (int z = DEPTH - 1; z <= DEPTH; z++) {
+				int mx = Blueprint.spinX(x, z, WIDTH, DEPTH, facing);
+				int mz = Blueprint.spinZ(x, z, WIDTH, DEPTH, facing);
+				int gx = corner.getX() + mx;
+				int gz = corner.getZ() + mz;
+				BlockPos on = new BlockPos(gx, Ground.topOf(level, gx, gz) + 1, gz);
+				if (!level.getBlockState(on).isAir()) {
+					continue;
+				}
+				int roll = random.nextInt(12);
+				if (roll < 2) {
+					put(level, on, flower(random));
+				} else if (roll < 4) {
+					put(level, on, Blocks.SHORT_GRASS.defaultBlockState());
+				} else if (roll == 4) {
+					put(level, on.below(), Blocks.DIRT_PATH.defaultBlockState());
+				}
+			}
+		}
+	}
+
+	private static BlockState flower(RandomSource random) {
+		return switch (random.nextInt(5)) {
+			case 0 -> Blocks.OXEYE_DAISY.defaultBlockState();
+			case 1 -> Blocks.CORNFLOWER.defaultBlockState();
+			case 2 -> Blocks.AZURE_BLUET.defaultBlockState();
+			case 3 -> Blocks.POPPY.defaultBlockState();
+			default -> Blocks.DANDELION.defaultBlockState();
+		};
 	}
 
 	/**
@@ -165,11 +214,25 @@ public final class Lodge {
 		switch (c) {
 			case '#' -> put(level, at, weathered(random));
 			case 'W' -> put(level, at, Blocks.SPRUCE_PLANKS.defaultBlockState());
+			// Timber framing. Upright posts at every corner and a beam course
+			// between the floors, and it is the single thing that separates a
+			// house somebody designed from a box with windows in it. Stripped
+			// log against plank gives two tones and a visible structure, which
+			// is what the eye reads as "built" rather than "generated".
+			case 'L' -> put(level, at, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
+				.setValue(BlockStateProperties.AXIS, Direction.Axis.Y));
+			case 'H' -> put(level, at, Blocks.STRIPPED_SPRUCE_WOOD.defaultBlockState());
+			// Shutters, open, either side of a window. Free depth on a flat
+			// wall and the cheapest detail in the building.
+			case 'b' -> put(level, at, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing)
+				.setValue(BlockStateProperties.OPEN, true)
+				.setValue(BlockStateProperties.HALF, Half.TOP));
 			case '.', '_' -> put(level, at, Blocks.SPRUCE_PLANKS.defaultBlockState());
 			case 'o' -> put(level, at, Blocks.AIR.defaultBlockState());
 			case 'g' -> put(level, at, Blocks.GLASS_PANE.defaultBlockState());
 			case 'D' -> door(level, at, facing);
-			case 'B' -> bed(level, at, facing, random);
+			case 'd' -> bed(level, at, facing, random);
 			case 'C' -> chest(level, at, facing, random, Loot.Tier.LARDER);
 			case 'K' -> chest(level, at, facing, random, Loot.Tier.HOMESTEAD);
 			case 'c' -> put(level, at, Blocks.CRAFTING_TABLE.defaultBlockState());
@@ -177,7 +240,7 @@ public final class Lodge {
 				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
 			case 'A' -> put(level, at, Blocks.BARREL.defaultBlockState());
 			case 'S' -> put(level, at, Blocks.BOOKSHELF.defaultBlockState());
-			case 'P' -> put(level, at, Blocks.POTTED_FERN.defaultBlockState());
+			case 'P' -> put(level, at, potted(random));
 			case 'T' -> table(level, at);
 			case 'h' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
@@ -276,6 +339,23 @@ public final class Lodge {
 	private static void table(ServerLevel level, BlockPos at) {
 		put(level, at, Blocks.OAK_FENCE.defaultBlockState());
 		put(level, at.above(), Blocks.SPRUCE_PRESSURE_PLATE.defaultBlockState());
+	}
+
+	/**
+	 * Something growing indoors.
+	 *
+	 * Varied per pot rather than one plant everywhere, because six identical
+	 * ferns in six identical windows is worse than no ferns at all — it is the
+	 * detail that proves the houses were stamped.
+	 */
+	private static BlockState potted(RandomSource random) {
+		return switch (random.nextInt(5)) {
+			case 0 -> Blocks.POTTED_FERN.defaultBlockState();
+			case 1 -> Blocks.POTTED_RED_TULIP.defaultBlockState();
+			case 2 -> Blocks.POTTED_OXEYE_DAISY.defaultBlockState();
+			case 3 -> Blocks.POTTED_AZURE_BLUET.defaultBlockState();
+			default -> Blocks.POTTED_CORNFLOWER.defaultBlockState();
+		};
 	}
 
 	private static BlockState weathered(RandomSource random) {

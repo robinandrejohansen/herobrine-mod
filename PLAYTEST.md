@@ -911,8 +911,15 @@ Find a village. `/locate structure minecraft:village_plains` works.
 /herobrine town here
 ```
 
-- [ ] Six two-storey houses along the lanes, each **fronting the lane** it
+- [ ] Eight two-storey houses along the lanes, each **fronting the lane** it
       stands on — doors, beds, stairs and roof slopes all turned with it
+- [ ] **Timber framing**: stripped-log corner posts on both floors and a beam
+      course between them. Two tones, visible structure
+- [ ] The **upper floor juts out** a block either side over the ground floor
+- [ ] **Shutters** beside the windows, and different potted plants in each
+      house rather than the same one six times
+- [ ] A scruffy strip of flowers, grass and worn path in front of each door —
+      sitting on the **ground**, not on the building's floor level
 - [ ] **A stair run up the west wall** to the first floor, with the deck opened
       above it. You can actually get upstairs — the first version had a single
       ladder at one height facing the wrong wall and the whole floor was

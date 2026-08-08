@@ -124,18 +124,23 @@ public final class Township {
 	 */
 	private static List<Plot> allot(ServerLevel level, BlockPos centre,
 	                                List<Direction> lanes, RandomSource random) {
+		// The house shrank when its ground floor was inset, so more of them fit
+		// in the same wall. Eight now rather than six, which is the difference
+		// between a hamlet and somewhere with neighbours.
 		String[] order = {
-			"church", "hall", "shop", "house", "house", "shop",
-			"house", "house", "smithy", "house", "house", "pen",
+			"church", "hall", "house", "shop", "house", "house",
+			"shop", "house", "house", "smithy", "house", "house",
+			"pen", "house", "pen",
 		};
 		int[][] size = {
-			{15, 25}, {15, 13}, {9, 9}, {11, 9}, {11, 9}, {9, 9},
-			{11, 9}, {11, 9}, {11, 9}, {11, 9}, {11, 9}, {12, 12},
+			{15, 25}, {15, 13}, {11, 9}, {9, 9}, {11, 9}, {11, 9},
+			{9, 9}, {11, 9}, {11, 9}, {11, 9}, {11, 9}, {11, 9},
+			{12, 12}, {11, 9}, {12, 12},
 		};
 
 		List<Plot> plots = new ArrayList<>();
 		int taken = 0;
-		int along = SQUARE + 4;
+		int along = SQUARE + 3;
 
 		while (taken < order.length && along < WALL_RADIUS - 14) {
 			for (Direction lane : lanes) {
@@ -161,7 +166,7 @@ public final class Township {
 					taken++;
 				}
 			}
-			along += 18;
+			along += 15;
 		}
 		return plots;
 	}
