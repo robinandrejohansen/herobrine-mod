@@ -94,9 +94,12 @@ much faster and is the intended route.
 - [x] Zombies break glass at SIEGE, and can see you through it
 
 ### The infected
-- [x] Villagers shut in behind iron doors, sweeping their heads in step
+- [x] Its own mob, its own skin — not a modded villager, so villagers stay normal
+- [x] Torn-open torso, missing arm, ribs through the shirt, open bleeding mouth
+- [x] Shut in behind iron doors, sweeping their heads in step
+- [x] A heartbeat through the door, staggered per creature so two never overlap
 - [x] Let one out and it charges, head locked, ordinary health
-- [x] Red eyes — white is his, red is what he leaves behind
+- [x] No eyes — white is his, and this is what is left when he has finished
 
 ### Atmosphere
 - [x] Rain and thunder scale with wrath
@@ -111,7 +114,10 @@ much faster and is the intended route.
 - [x] Sited, walled, one gate, two towers, terrain-following
 - [x] Square with a well, lanes that wander, fields outside the wall
 - [x] Thirteen plots allotted along the lanes, levelled and marked
-- [ ] The buildings themselves — next up
+- [x] Eight two-storey houses — timber framing, jettied upper floor
+- [x] The hall — open gallery over the tables
+- [ ] Smithy, two shops, two pens
+- [ ] The church — built last, secret passage behind the altar
 
 ---
 
@@ -130,11 +136,8 @@ Deliberately built the two ends first. 2–4 are the middle of a story whose
 ending now exists, so they can be filled in whenever.
 
 ### Everything else outstanding
-- [ ] **The town's buildings** — 6 two-storey houses, church, hall, 2 shops,
-      smithy, 2 pens
+- [ ] **The town's remaining buildings** — smithy, 2 shops, 2 pens, church last
 - [ ] **Village names and signposts**, and roads between villages
-- [ ] **Infected villager skins** — red eyes carry it for now, but the Last of
-      Us look needs a villager-variant renderer
 - [ ] **HUNTER content** — the phase has nothing of its own
 - [ ] **SIEGE content** — same
 - [ ] **An ending** — no fight, no Effigy, no way to kill anything
@@ -143,6 +146,8 @@ ending now exists, so they can be filled in whenever.
 - [ ] The stranger — an NPC who arrives before him
 - [ ] Lightning, held back until there is an event for it to belong to
 - [ ] Wind — Minecraft has none; would have to be faked with sound
+- [ ] Remove the spawn-marker lightning (`/herobrine mark`) before release —
+      it is fenced in HauntingSpawner and the command, and nothing else uses it
 
 ---
 
