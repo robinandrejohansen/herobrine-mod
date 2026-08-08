@@ -162,7 +162,8 @@ public final class HauntingSpawner {
 		// out.
 		int tooBright = 0;
 		int inFront = 0;
-		int hidden = 0;
+		int roofed = 0;
+		int blocked = 0;
 		int noFooting = 0;
 
 				// Forty rather than twenty. Two real filters were added above and each
@@ -188,10 +189,26 @@ public final class HauntingSpawner {
 			// pass. So the one bug produced the other: the sea was not merely
 			// where he was visible, it was very nearly the only place he was
 			// ever successfully put.
-			if (!ConfinedPlacement.canStand(level, pos)) {
+			// Down through anything he could stand ON but not on TOP of.
+			//
+			// The heightmap stops above a snow layer, a carpet or a bottom
+			// slab, and none of those has a sturdy top face — so a whole
+			// mountainside came back "no footing" when a mob would happily
+			// stand there. Four blocks is enough for any stack of those and
+			// nowhere near enough to reach the seabed, so water still refuses
+			// at every level and he never ends up on the waves again.
+			BlockPos stand = null;
+			for (int down = 0; down <= 4 && stand == null; down++) {
+				BlockPos maybe = pos.below(down);
+				if (ConfinedPlacement.canStand(level, maybe)) {
+					stand = maybe;
+				}
+			}
+			if (stand == null) {
 				noFooting++;
 				continue;
 			}
+			pos = stand;
 			// And he stands in the open.
 			//
 			// A spot under a forest canopy satisfies every other rule and is
@@ -201,7 +218,7 @@ public final class HauntingSpawner {
 			// image belongs, and stops the placement loop burning all twenty
 			// attempts inside a wood and reporting NOTHING_VISIBLE.
 			if (!level.canSeeSky(pos)) {
-				hidden++;
+				roofed++;
 				continue;
 			}
 
@@ -222,7 +239,7 @@ public final class HauntingSpawner {
 			// night — it is a wasted one, and the player is left turning on the
 			// spot wondering what the command did.
 			if (!visibleFrom(level, player, pos)) {
-				hidden++;
+				blocked++;
 				continue;
 			}
 
@@ -234,9 +251,14 @@ public final class HauntingSpawner {
 			HerobrineMod.LOGGER.info("stare: could not create at [{}, {}, {}]",
 				pos.getX(), pos.getY(), pos.getZ());
 		}
+		// Roofed and blocked are counted apart on purpose: "under a canopy" and
+		// "behind the brow of the hill" are the same refusal to the player and
+		// completely different things to fix.
+		int hidden = roofed + blocked;
 		HerobrineMod.LOGGER.info(
-			"stare refused after 40 tries: {} lit, {} in front, {} unseeable, {} no footing",
-			tooBright, inFront, hidden, noFooting);
+			"stare refused after 40 tries from y={}: {} lit, {} in front, "
+				+ "{} roofed, {} behind terrain, {} no footing",
+			player.blockPosition().getY(), tooBright, inFront, roofed, blocked, noFooting);
 		if (tooBright >= inFront && tooBright >= hidden && tooBright >= noFooting) {
 			return Outcome.TOO_BRIGHT;
 		}
