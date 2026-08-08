@@ -44,6 +44,20 @@ public final class HauntingSpawner {
 	 */
 	private static final double MIN_RADIUS = 42.0;
 	private static final double MAX_RADIUS = 68.0;
+	/**
+	 * The fallback ring, tried only when the whole of the proper one failed.
+	 *
+	 * Standing well back is the intent and it is still what gets tried first.
+	 * But in broken country -- a peak, a ravine, a coastline -- there may be
+	 * no visible standable ground at all between forty and seventy blocks, and
+	 * the choice is then between a closer figure and no figure. A closer
+	 * figure is a worse version of the event. No figure is not the event.
+	 */
+	private static final double CLOSE_RADIUS = 26.0;
+
+	/** How the sweep is spread: every bearing, a few distances down each. */
+	private static final int BEARINGS = 32;
+	private static final int DISTANCES = 3;
 	/** 0-15. 7 and below is "dark enough for monsters". */
 	private static final int MAX_LIGHT = 7;
 	/**
@@ -166,99 +180,126 @@ public final class HauntingSpawner {
 		int blocked = 0;
 		int noFooting = 0;
 
-				// Forty rather than twenty. Two real filters were added above and each
-		// one legitimately throws away candidates, so the old budget ran out
-		// before it had found the clearing it was looking for.
-		for (int attempt = 0; attempt < 40; attempt++) {
-			double angle = random.nextDouble() * Math.PI * 2.0;
-			double radius = MIN_RADIUS + random.nextDouble() * (MAX_RADIUS - MIN_RADIUS);
-			int x = Mth.floor(player.getX() + Math.cos(angle) * radius);
-			int z = Mth.floor(player.getZ() + Math.sin(angle) * radius);
-			int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-			BlockPos pos = new BlockPos(x, y, z);
+		// SWEEP THE CIRCLE, do not sample it.
+		//
+		// Forty independent random angles sound like good coverage and are
+		// not: they clump, and they leave wedges of the horizon untried. From
+		// a mountaintop that is fatal, because the player can see an enormous
+		// amount of ground and the one direction that was never tested is
+		// exactly the one with a visible ridge in it.
+		//
+		// So every direction gets looked at. Thirty-two evenly spaced
+		// bearings, offset by a random amount so he does not favour the
+		// compass points, three distances down each one. Ninety-six candidates
+		// covering the whole horizon instead of forty landing wherever they
+		// fell.
+		//
+		// Then, only if the whole ring failed, the same sweep again closer in.
+		// He is meant to stand well back and that is still tried first, but a
+		// player who never sees him has lost the event entirely, and thirty
+		// blocks away is a great deal better than nothing at all.
+		double[][] rings = {
+			{ MIN_RADIUS, MAX_RADIUS },
+			{ CLOSE_RADIUS, MIN_RADIUS },
+		};
+		for (double[] ring : rings) {
+			double spin = random.nextDouble() * Math.PI * 2.0;
+			for (int attempt = 0; attempt < BEARINGS * DISTANCES; attempt++) {
+				double angle = spin + (attempt % BEARINGS) * (Math.PI * 2.0 / BEARINGS);
+				double step = (attempt / BEARINGS) + random.nextDouble();
+				double radius = ring[0] + (ring[1] - ring[0]) * (step / DISTANCES);
+				int x = Mth.floor(player.getX() + Math.cos(angle) * radius);
+				int z = Mth.floor(player.getZ() + Math.sin(angle) * radius);
+				int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+				BlockPos pos = new BlockPos(x, y, z);
 
-			// GROUND THAT WOULD ACTUALLY HOLD HIM, and this is where he was
-			// standing on the sea.
-			//
-			// Every Minecraft heightmap counts fluid as surface — the real
-			// predicate is `blocksMotion() || !getFluidState().isEmpty()` — so
-			// over an ocean this returns the top of the water, and nothing
-			// downstream ever asked whether that was a floor. He was placed on
-			// the waves, and because open water has no trees, no ridge and no
-			// canopy, that was ALSO the only place the sightline test could
-			// pass. So the one bug produced the other: the sea was not merely
-			// where he was visible, it was very nearly the only place he was
-			// ever successfully put.
-			// Down through anything he could stand ON but not on TOP of.
-			//
-			// The heightmap stops above a snow layer, a carpet or a bottom
-			// slab, and none of those has a sturdy top face — so a whole
-			// mountainside came back "no footing" when a mob would happily
-			// stand there. Four blocks is enough for any stack of those and
-			// nowhere near enough to reach the seabed, so water still refuses
-			// at every level and he never ends up on the waves again.
-			BlockPos stand = null;
-			for (int down = 0; down <= 4 && stand == null; down++) {
-				BlockPos maybe = pos.below(down);
-				if (ConfinedPlacement.canStand(level, maybe)) {
-					stand = maybe;
+				// Cheapest test first. This is pure arithmetic on two vectors and
+				// it throws away roughly a third of every sweep, so running it
+				// after two chunk lookups and a raycast was simply paying for
+				// answers about candidates that were never going to be used.
+				if (isInFrontOf(player, pos)) {
+					inFront++;
+					continue;
 				}
-			}
-			if (stand == null) {
+
+				// GROUND THAT WOULD ACTUALLY HOLD HIM, and this is where he was
+				// standing on the sea.
+				//
+				// Every Minecraft heightmap counts fluid as surface — the real
+				// predicate is `blocksMotion() || !getFluidState().isEmpty()` —
+				// so over an ocean this returns the top of the water, and
+				// nothing downstream ever asked whether that was a floor. He
+				// was placed on the waves; and because open water has no trees,
+				// no ridge and no canopy, that was ALSO the only place the
+				// sightline test could pass. One bug produced the other, and
+				// the sea was very nearly the only place he was ever put.
+				//
+				// It walks DOWN as well, because the heightmap stops above a
+				// snow layer, a carpet or a bottom slab and none of those has a
+				// sturdy top face — which failed an entire mountainside for
+				// ground a mob stands on quite happily. Four blocks clears any
+				// stack of those and cannot reach a seabed, so water still
+				// refuses at every level.
+				BlockPos stand = null;
+				for (int down = 0; down <= 4 && stand == null; down++) {
+					BlockPos maybe = pos.below(down);
+					if (ConfinedPlacement.canStand(level, maybe)) {
+						stand = maybe;
+					}
+				}
+				if (stand == null) {
+					noFooting++;
+					continue;
+				}
+				pos = stand;
+				// And he stands in the open.
+				//
+				// A spot under a forest canopy satisfies every other rule and is
+				// unlookable-at from fifty blocks, because leaves are colliders and
+				// the ray dies in them. Requiring sky above him costs nothing, puts
+				// him on ridges and in clearings and at treelines where the whole
+				// image belongs, and stops the placement loop burning all twenty
+				// attempts inside a wood and reporting NOTHING_VISIBLE.
+				if (!level.canSeeSky(pos)) {
+					roofed++;
+					continue;
+				}
+
+				if (!ignoreLight && level.getMaxLocalRawBrightness(pos) > MAX_LIGHT) {
+					tooBright++;
+					continue;
+				}
+				// And the player must actually be able to SEE the spot.
+				//
+				// Behind them and dark enough was not sufficient: a hill, a stand
+				// of trees or the far side of a ridge would satisfy both and put
+				// him somewhere nobody could ever look at. The whole event is
+				// being seen, so a placement that cannot be seen is not a quiet
+				// night — it is a wasted one, and the player is left turning on the
+				// spot wondering what the command did.
+				if (!visibleFrom(level, player, pos)) {
+					blocked++;
+					continue;
+				}
+
+				Outcome result = spawnAt(level, player, pos);
+				if (result == Outcome.PLACED) {
+					return result;
+				}
 				noFooting++;
-				continue;
+				HerobrineMod.LOGGER.info("stare: could not create at [{}, {}, {}]",
+					pos.getX(), pos.getY(), pos.getZ());
 			}
-			pos = stand;
-			// And he stands in the open.
-			//
-			// A spot under a forest canopy satisfies every other rule and is
-			// unlookable-at from fifty blocks, because leaves are colliders and
-			// the ray dies in them. Requiring sky above him costs nothing, puts
-			// him on ridges and in clearings and at treelines where the whole
-			// image belongs, and stops the placement loop burning all twenty
-			// attempts inside a wood and reporting NOTHING_VISIBLE.
-			if (!level.canSeeSky(pos)) {
-				roofed++;
-				continue;
-			}
-
-			if (!ignoreLight && level.getMaxLocalRawBrightness(pos) > MAX_LIGHT) {
-				tooBright++;
-				continue;
-			}
-			if (isInFrontOf(player, pos)) {
-				inFront++;
-				continue;
-			}
-			// And the player must actually be able to SEE the spot.
-			//
-			// Behind them and dark enough was not sufficient: a hill, a stand
-			// of trees or the far side of a ridge would satisfy both and put
-			// him somewhere nobody could ever look at. The whole event is
-			// being seen, so a placement that cannot be seen is not a quiet
-			// night — it is a wasted one, and the player is left turning on the
-			// spot wondering what the command did.
-			if (!visibleFrom(level, player, pos)) {
-				blocked++;
-				continue;
-			}
-
-			Outcome result = spawnAt(level, player, pos);
-			if (result == Outcome.PLACED) {
-				return result;
-			}
-			noFooting++;
-			HerobrineMod.LOGGER.info("stare: could not create at [{}, {}, {}]",
-				pos.getX(), pos.getY(), pos.getZ());
 		}
 		// Roofed and blocked are counted apart on purpose: "under a canopy" and
 		// "behind the brow of the hill" are the same refusal to the player and
 		// completely different things to fix.
 		int hidden = roofed + blocked;
 		HerobrineMod.LOGGER.info(
-			"stare refused after 40 tries from y={}: {} lit, {} in front, "
+			"stare refused after {} tries from y={}: {} lit, {} in front, "
 				+ "{} roofed, {} behind terrain, {} no footing",
-			player.blockPosition().getY(), tooBright, inFront, roofed, blocked, noFooting);
+			BEARINGS * DISTANCES * rings.length, player.blockPosition().getY(),
+			tooBright, inFront, roofed, blocked, noFooting);
 		if (tooBright >= inFront && tooBright >= hidden && tooBright >= noFooting) {
 			return Outcome.TOO_BRIGHT;
 		}
