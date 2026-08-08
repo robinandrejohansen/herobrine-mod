@@ -200,6 +200,23 @@ public class HerobrineEntity extends PathfinderMob {
 	private int breakOffs;
 	private static final int MAX_BREAK_OFFS = 3;
 
+	/**
+	 * How long he has been unable to see them, and why hiding has to work.
+	 *
+	 * He is faster than a sprint, so running is not an escape and was never
+	 * going to be. That leaves exactly one thing the player can do, and it had
+	 * better be a real answer: get out of sight and stay out of it. Eight
+	 * seconds blind and he loses the trail.
+	 *
+	 * Ticked only while he is NOT digging. A player sealed behind stone has not
+	 * escaped him, they have delayed him, and the difference matters — the wall
+	 * coming apart is him still on you. But a player who went round a corner,
+	 * or underwater, or down a hole, has actually broken it, and that deserves
+	 * to work.
+	 */
+	private int blindTicks;
+	private static final int LOSE_TRAIL = 160;
+
 	/** He stops, and lets them watch him stop. */
 	private boolean relenting;
 	private static final int RELENT_TICKS = 50;
@@ -247,7 +264,10 @@ public class HerobrineEntity extends PathfinderMob {
 
 	/** Two hearts, and not oftener than once a second. */
 	private static final float STRIKE_DAMAGE = 4.0F;
-	private static final int STRIKE_COOLDOWN = 22;
+	private static final int STRIKE_COOLDOWN = 30;
+	/** Where he goes the instant a blow lands. Out of sight, not far. */
+	private static final double HIT_BACKOFF_NEAR = 12.0;
+	private static final double HIT_BACKOFF_FAR = 22.0;
 	/**
 	 * Never Long.MIN_VALUE, and this is why he never once hit anybody.
 	 *
@@ -1005,6 +1025,13 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
+		// Has he lost them?
+		if (this.hasLineOfSight(quarry) || this.breaking != null) {
+			this.blindTicks = 0;
+		} else if (++this.blindTicks > LOSE_TRAIL) {
+			this.relent(quarry);
+		}
+
 		if (this.relenting) {
 			this.getNavigation().stop();
 			this.setDeltaMovement(Vec3.ZERO);
@@ -1679,6 +1706,25 @@ public class HerobrineEntity extends PathfinderMob {
 		// fixed he would have been hitting for damage with no shove behind it.
 		boolean landed = this.doHurtTarget(here, player);
 		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+
+		// AND THEN HE IS NOT THERE. He does not stand and trade.
+		//
+		// This is what makes the phase survivable without slowing him down. He
+		// is faster than a sprint by design, so once he arrives the player
+		// cannot leave — and a thing that is faster than you AND stays on you
+		// is not frightening, it is arithmetic, and the arithmetic says you die
+		// in nine seconds every time.
+		//
+		// So each blow is its own event. He hits once, he is gone before the
+		// screen has stopped shaking, and he comes back from somewhere else.
+		// The player takes four or five hits across a whole hunt instead of
+		// twelve in a row, every one of them lands as a scare rather than as a
+		// tick of damage, and the gaps are where they get to do something about
+		// it: run, eat, climb, shut a door.
+		if (landed && reappearAt(player, HIT_BACKOFF_NEAR, HIT_BACKOFF_FAR, false)) {
+			this.watching = true;
+			this.moodTicks = 30 + this.random.nextInt(25);
+		}
 		// Logged with the answer, not just the attempt. "He is not hitting me"
 		// has two completely different causes — he never got in range, or he
 		// swung and the damage was refused (creative, invulnerable, a totem) —

@@ -106,8 +106,13 @@ much faster and is the intended route.
 - [x] Steps a full block without breaking pace; vaults 2–4; flies over
       anything bigger and comes down the far side
 - [x] The head stays locked on you while the body walks wherever it is going
-- [x] He hits — two hearts, once a second. Still invulnerable; hit him and he
-      reappears behind you and keeps coming
+- [x] He hits and IS GONE — two hearts, then straight out of sight and back in
+      from somewhere else. He never stands and trades, which is the only reason
+      the phase is survivable at all given he is faster than a sprint
+- [x] Break his line of sight for eight seconds and he loses the trail. Running
+      is not an escape; hiding is. Digging through your wall does not count as
+      losing you
+- [x] Still invulnerable — there is no killing him until the ending exists
 - [x] He breaks off three times — 26–46 blocks away, standing, watching — and
       each return comes in closer and gives you less room than the last
 - [x] It ends where you can see it: he stops dead in the open, looks at you
