@@ -40,6 +40,9 @@ public final class HerobrineCommand {
 
 				.then(Commands.literal("status").executes(HerobrineCommand::status))
 
+				.then(Commands.literal("town")
+					.then(Commands.literal("here").executes(HerobrineCommand::townHere)))
+
 				.then(Commands.literal("threshold")
 					.executes(HerobrineCommand::threshold)
 					.then(Commands.literal("here").executes(HerobrineCommand::thresholdHere)))
@@ -213,6 +216,18 @@ public final class HerobrineCommand {
 			+ site.getX() + " " + site.getY() + " " + site.getZ()
 			+ "  |  " + distance + " blocks away";
 		ctx.getSource().sendSuccess(() -> Component.literal(line), false);
+		return 1;
+	}
+
+	private static int townHere(CommandContext<CommandSourceStack> ctx)
+			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		ServerLevel level = (ServerLevel)player.level();
+		net.minecraft.core.BlockPos at = player.blockPosition();
+		com.bloomlet.herobrine.town.Township.raise(level, at, level.getRandom());
+		ctx.getSource().sendSuccess(() -> Component.literal(
+			"township laid out around you at " + at.getX() + " " + at.getY() + " " + at.getZ()
+				+ "  |  wall, lanes and square only so far"), false);
 		return 1;
 	}
 
