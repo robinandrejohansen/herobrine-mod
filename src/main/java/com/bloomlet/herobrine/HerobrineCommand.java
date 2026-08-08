@@ -70,7 +70,7 @@ public final class HerobrineCommand {
 							ServerPlayer p = ctx.getSource().getPlayerOrException();
 							int which = IntegerArgumentType.getInteger(ctx, "number");
 							ServerLevel level = (ServerLevel)p.level();
-							BlockPos at = p.blockPosition();
+							net.minecraft.core.BlockPos at = p.blockPosition();
 							switch (which) {
 								case 2 -> com.bloomlet.herobrine.structure.SecondHouse
 									.build(level, at, level.getRandom());

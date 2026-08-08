@@ -89,8 +89,17 @@ public final class Dwellings {
 		{ 2500, 2700 },
 	};
 
+	/**
+	 * Eight bytes each, and not nine.
+	 *
+	 * These are spelled-out words in hex because a salt you can read is a salt
+	 * you can tell apart at a glance — but a long is eight bytes, and the first
+	 * attempt spelled longer words than that and would not compile.
+	 */
 	private static final long[] MIDDLE_SALTS = {
-		0x486F7573653254776FL, 0x446967546872656533L, 0x536872696E65463472L,
+		0x486F757365325F5FL,   // House2__
+		0x4469675F5F5F5F33L,   // Dig____3
+		0x536872696E653401L,   // Shrine4
 	};
 
 	/** Far enough to be a journey, near enough to be reachable on foot. */
