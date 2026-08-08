@@ -63,10 +63,10 @@ public final class Hall {
 		" LWWWWWWWWWWWL ",
 		" WA   #Q# NNNW ",
 		" W          AW ",
-		" WPhTh   hThAW ",
-		" W hTh   hTh W ",
-		" W hTh   hTh W ",
-		" W hTh   hThPW ",
+		" WPhTj   hTjAW ",
+		" W hTj   hTj W ",
+		" W hTj   hTj W ",
+		" W hTj   hTjPW ",
 		" W           W ",
 		" W          CW ",
 		" Ws          W ",
@@ -203,8 +203,16 @@ public final class Hall {
 			case 'C' -> chest(level, at, facing, random, Loot.Tier.LARDER);
 			case 'A' -> put(level, at, Blocks.BARREL.defaultBlockState());
 			case 'T' -> table(level, at);
+			// Benches look AT the table, not all one way. A stair chair seats
+			// you facing where its step points, so the one west of a table
+			// faces east and the one east of it faces west — otherwise a row
+			// of diners all sit staring at the same wall.
 			case 'h' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
-				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
+				.setValue(BlockStateProperties.HORIZONTAL_FACING,
+					Blueprint.turned(Direction.EAST, facing)));
+			case 'j' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING,
+					Blueprint.turned(Direction.WEST, facing)));
 			case 's' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING,
 					Blueprint.turned(Direction.NORTH, facing)));

@@ -81,13 +81,23 @@ public final class Blueprint {
 	 * Written out rather than done with a matrix because the off-by-one at the
 	 * far edge of a rotation is the kind of bug that shifts a whole wall by a
 	 * block and is then invisible in the source.
+	 *
+	 * The WEST and EAST cases were swapped in the first version, which is a
+	 * mistake worth recording because of how it presented: half the buildings
+	 * faced AWAY from their lane, and every door, bed and stair on those two
+	 * orientations pointed the wrong way — so it turned up as "a bed is hanging
+	 * out of the wall" rather than as anything to do with rotation.
+	 *
+	 * The invariant, and it is worth testing whenever this is touched: the
+	 * map's front row must end up on the side of the building that `facing`
+	 * points to.
 	 */
 	private static int turn(int x, int z, int width, int depth, Direction facing, boolean wantX) {
 		return switch (facing) {
 			case SOUTH -> wantX ? x : z;
-			case WEST -> wantX ? z : depth - 1 - x;
+			case WEST -> wantX ? depth - 1 - z : x;
 			case NORTH -> wantX ? width - 1 - x : depth - 1 - z;
-			case EAST -> wantX ? width - 1 - z : x;
+			case EAST -> wantX ? z : width - 1 - x;
 			default -> wantX ? x : z;
 		};
 	}
@@ -117,9 +127,9 @@ public final class Blueprint {
 		int nx;
 		int nz;
 		switch (facing) {
-			case WEST -> { nx = dz; nz = -dx; }
+			case WEST -> { nx = -dz; nz = dx; }
 			case NORTH -> { nx = -dx; nz = -dz; }
-			case EAST -> { nx = -dz; nz = dx; }
+			case EAST -> { nx = dz; nz = -dx; }
 			default -> { nx = dx; nz = dz; }
 		}
 		if (nx > 0) {

@@ -915,6 +915,9 @@ Find a village. `/locate structure minecraft:village_plains` works.
 
 - [ ] Eight two-storey houses along the lanes, each **fronting the lane** it
       stands on — doors, beds, stairs and roof slopes all turned with it
+- [ ] Walk every lane and check **all four orientations**. Buildings on the
+      east and west sides used to face away from the road with their beds
+      through the wall
 - [ ] **Timber framing**: stripped-log corner posts on both floors and a beam
       course between them. Two tones, visible structure
 - [ ] The **upper floor juts out** a block either side over the ground floor
@@ -946,14 +949,16 @@ Find a village. `/locate structure minecraft:village_plains` works.
 Nearest the square, on one of the lanes.
 
 - [ ] **Double doors** at the front
-- [ ] Two long tables with benches down both sides
+- [ ] Two long tables with benches down both sides, and **every bench faces
+      its table** — nobody is sitting staring at a wall
 - [ ] A **hearth** at the head of the room — the only real fire in the town
 - [ ] A counter with a slab top and barrels behind it
 - [ ] **The middle is open to the roof.** Stand between the tables and look up:
       two storeys of nothing, with a hanging lantern
 - [ ] Stairs up to a **gallery** running round that opening, railed in fences,
       so you can look down into the room from above
-- [ ] Two guest rooms off the gallery, each with a bed and a chest
+- [ ] Two guest rooms off the gallery, each with a bed **fully inside the
+      room** and a chest
 - [ ] Same framing, roof, shutters and windows as the houses — it should look
       like the same people built it
 

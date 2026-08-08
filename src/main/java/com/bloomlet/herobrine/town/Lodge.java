@@ -59,7 +59,7 @@ public final class Lodge {
 		" LWFcWCAWL ",
 		" W      PW ",
 		" W       W ",
-		" W  hTh  W ",
+		" W  hTj  W ",
 		" W      SW ",
 		" Ws      W ",
 		" LWWWDEEEL ",
@@ -247,8 +247,14 @@ public final class Lodge {
 			case 'S' -> put(level, at, Blocks.BOOKSHELF.defaultBlockState());
 			case 'P' -> put(level, at, potted(random));
 			case 'T' -> table(level, at);
+			// Benches look AT the table. West of it faces east, east of it
+			// faces west — otherwise everyone sits staring at the same wall.
 			case 'h' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
-				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
+				.setValue(BlockStateProperties.HORIZONTAL_FACING,
+					Blueprint.turned(Direction.EAST, facing)));
+			case 'j' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING,
+					Blueprint.turned(Direction.WEST, facing)));
 			// The way upstairs. A three-block run against the west wall with
 			// the deck opened above it — the first version was a single ladder
 			// at one height facing the wrong wall, so there was no way up at
