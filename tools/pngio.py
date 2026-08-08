@@ -20,10 +20,13 @@ def read(path):
 		elif kind == b'IDAT':
 			idat += body
 		pos += 12 + length
-	assert depth == 8, 'only 8-bit PNGs'
+	assert depth in (4, 8), 'only 4- and 8-bit PNGs'
 	channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[ctype]
 	raw = zlib.decompress(idat)
-	stride = w * channels
+	# Several vanilla mob textures are 4-bit paletted (two pixels per byte),
+	# so the scanline is packed and has to be widened before unfiltering —
+	# filtering in PNG operates on bytes, and at 4 bits a "byte" is two pixels.
+	stride = (w * channels * depth + 7) // 8
 	rows, prev, at = [], bytearray(stride), 0
 	for _ in range(h):
 		f = raw[at]; at += 1
@@ -43,6 +46,12 @@ def read(path):
 	px = [[(0, 0, 0, 0)] * w for _ in range(h)]
 	for y in range(h):
 		line = rows[y]
+		if depth == 4:
+			wide = bytearray()
+			for byte in line:
+				wide.append(byte >> 4)
+				wide.append(byte & 15)
+			line = wide[:w * channels]
 		for x in range(w):
 			o = x * channels
 			if ctype == 6: px[y][x] = tuple(line[o:o + 4])

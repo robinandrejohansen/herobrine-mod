@@ -281,6 +281,17 @@ The command prints which animal and where. Now go and look at it.
 - [ ] Or outrun it entirely so it has to catch up: that reveals it at once
 - [ ] Kill it and let it spread. The two new ones start over — unrevealed
 
+**The eyes:**
+
+- [ ] Before it reveals, a possessed cow looks **completely normal**. No glow
+- [ ] After it reveals, its eyes are **white and glowing**
+- [ ] Take it into a dark cave or wait for night: the eyes are **exactly as
+      bright** as at noon. World light does not touch them
+- [ ] Works on cows, pigs, sheep and villagers. Anything else behaves the same
+      but does not glow — that is expected, not a bug
+- [ ] Ordinary animals standing next to it never glow
+- [ ] The eyes are in the right place on the face for each of the four
+
 - [ ] It **comes after you**, on foot, slower than you walk
 - [ ] Sprint 200 blocks across open ground to your base. Wait. It arrives —
       it does not give up and it does not get stuck a chunk behind you
