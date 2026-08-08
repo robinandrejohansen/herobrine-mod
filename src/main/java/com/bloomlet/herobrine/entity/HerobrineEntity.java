@@ -3,6 +3,7 @@ package com.bloomlet.herobrine.entity;
 import com.bloomlet.herobrine.HerobrineMod;
 
 import java.util.List;
+import java.util.UUID;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -201,6 +202,20 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final int MAX_BREAK_OFFS = 3;
 
 	/**
+	 * Who he has already reached this round.
+	 *
+	 * A hunt is not a brawl and it is not a chase after whoever happens to be
+	 * nearest. He picks one, he gets to them, and then he is finished with them
+	 * and turns to somebody who has not been reached yet — round by round,
+	 * until everybody has.
+	 *
+	 * Keyed on UUID rather than holding the entity, so somebody logging out or
+	 * dying mid-round cannot pin a reference or block the round from ever
+	 * completing.
+	 */
+	private final java.util.Set<UUID> struck = new java.util.HashSet<>();
+
+	/**
 	 * How long he has been unable to see them, and why hiding has to work.
 	 *
 	 * He is faster than a sprint, so running is not an escape and was never
@@ -293,6 +308,60 @@ public class HerobrineEntity extends PathfinderMob {
 	public void beginHunt() {
 		this.hunting = true;
 		this.moodTicks = chaseSpell();
+	}
+
+	/**
+	 * Who he is going for, out of everyone in range.
+	 *
+	 * Nearest of the ones he has NOT reached yet. Nearest matters because he
+	 * should not walk past somebody to get to a person on the far hill;
+	 * not-yet-reached matters because otherwise the fastest player in a group
+	 * could keep drawing him off and nobody else would ever be touched.
+	 *
+	 * @return null when everyone present has been reached, which ends the round
+	 */
+	private @org.jspecify.annotations.Nullable Player pickQuarry(List<Player> watchers) {
+		Player best = null;
+		double nearest = Double.MAX_VALUE;
+		for (Player watcher : watchers) {
+			if (this.struck.contains(watcher.getUUID())) {
+				continue;
+			}
+			double distance = this.distanceTo(watcher);
+			if (distance < nearest) {
+				nearest = distance;
+				best = watcher;
+			}
+		}
+		return best;
+	}
+
+	/**
+	 * Everybody here has been reached. That is one round.
+	 *
+	 * The round is the unit the hunt is counted in rather than the individual
+	 * blow, and that is what makes it scale: alone you are reached three times
+	 * across a hunt, and in a party of four everybody is reached three times.
+	 * The pressure per person is the same either way, so a group cannot dilute
+	 * him simply by being a group.
+	 */
+	private void roundOver(@org.jspecify.annotations.Nullable Player anybody) {
+		this.struck.clear();
+		this.breakOffs++;
+		HerobrineMod.LOGGER.info("hunt: round {} of {} — everyone here has been reached",
+			this.breakOffs, MAX_BREAK_OFFS);
+		if (anybody == null) {
+			this.vanish("hunt: nobody left to follow");
+			return;
+		}
+		if (this.breakOffs >= MAX_BREAK_OFFS) {
+			this.relent(anybody);
+			return;
+		}
+		if (reappearAt(anybody, WATCH_NEAR, WATCH_FAR, true)) {
+			this.watching = true;
+			this.moodTicks = watchSpell();
+		}
 	}
 
 	/**
@@ -603,6 +672,19 @@ public class HerobrineEntity extends PathfinderMob {
 				closestDistance = distance;
 				closest = watcher;
 			}
+		}
+
+		// On a hunt he is not simply going for whoever is closest. He has
+		// somebody in mind, and he keeps them in mind until he has reached
+		// them.
+		if (this.hunting && !this.relenting) {
+			Player next = this.pickQuarry(watchers);
+			if (next == null) {
+				this.roundOver(closest);
+				return;
+			}
+			closest = next;
+			closestDistance = this.distanceTo(next);
 		}
 
 		Phase phase = this.level() instanceof ServerLevel now
@@ -1133,16 +1215,18 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 		this.lastDistance = distance;
 
-		// Long enough. He stops coming, and is somewhere else entirely.
+		// Long enough at this one. He gives them a moment, and it costs him
+		// nothing — this is a BREATHER, not a round.
+		//
+		// Rounds are counted by roundOver, when everybody present has actually
+		// been reached, and only there. Counting them here as well meant a
+		// chase that never landed a blow could still burn through all three and
+		// end a hunt in which nothing had happened to anybody.
 		if (--this.moodTicks <= 0) {
-			if (this.breakOffs >= MAX_BREAK_OFFS) {
-				this.relent(quarry);
-			} else if (reappearAt(quarry, WATCH_NEAR, WATCH_FAR, true)) {
+			if (reappearAt(quarry, WATCH_NEAR, WATCH_FAR, true)) {
 				this.watching = true;
-				this.breakOffs++;
 				this.moodTicks = watchSpell();
-				HerobrineMod.LOGGER.info("hunt: broke off ({}/{}) to watch from {} blocks",
-					this.breakOffs, MAX_BREAK_OFFS,
+				HerobrineMod.LOGGER.info("hunt: paused, watching from {} blocks",
 					String.format("%.0f", this.distanceTo(quarry)));
 			} else {
 				// Nowhere to stand and be seen from. He simply keeps coming,
@@ -1710,31 +1794,14 @@ public class HerobrineEntity extends PathfinderMob {
 		this.lastStruck = now;
 		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
 
-		// ONE SWING, AND EVERYBODY IT REACHES.
+		// ONE PERSON. Not a swipe that catches whoever is standing about.
 		//
-		// Hitting only the player he happened to be chasing let a group defeat
-		// the whole phase by standing together: one of them wears the blow, the
-		// rest are three blocks away and untouched, and it costs the party two
-		// hearts between them. Worse, it makes the sensible play "put the
-		// tankiest person in front", which is a raid boss and not this.
-		//
-		// So the swing is the swing. Anyone inside arm's length with a clear
-		// line to him takes it, and standing shoulder to shoulder becomes the
-		// worst possible arrangement rather than the best.
-		boolean landed = false;
-		for (ServerPlayer caught : here.getEntitiesOfClass(ServerPlayer.class,
-				this.getBoundingBox().inflate(ARMS_LENGTH),
-				other -> other.isAlive() && !other.isSpectator())) {
-			// The vanilla path, the same one an iron golem and a wither
-			// skeleton take. doHurtTarget reads ATTACK_DAMAGE, applies the
-			// knockback, plays the sound and runs the post-attack effects — all
-			// of which the hand-rolled hurtServer call skipped, so even once
-			// the cooldown was fixed he would have been hitting for damage with
-			// no shove behind it.
-			if (this.hasLineOfSight(caught) && this.doHurtTarget(here, caught)) {
-				landed = true;
-			}
-		}
+		// The vanilla path, the same one an iron golem and a wither skeleton
+		// take. doHurtTarget reads ATTACK_DAMAGE, applies the knockback, plays
+		// the sound and runs the post-attack effects — all of which the
+		// hand-rolled hurtServer call skipped, so even once the cooldown was
+		// fixed he would have been hitting for damage with no shove behind it.
+		boolean landed = this.doHurtTarget(here, player);
 
 		// AND THEN HE IS NOT THERE. He does not stand and trade.
 		//
@@ -1750,9 +1817,24 @@ public class HerobrineEntity extends PathfinderMob {
 		// twelve in a row, every one of them lands as a scare rather than as a
 		// tick of damage, and the gaps are where they get to do something about
 		// it: run, eat, climb, shut a door.
-		if (landed && reappearAt(player, HIT_BACKOFF_NEAR, HIT_BACKOFF_FAR, false)) {
-			this.watching = true;
-			this.moodTicks = 30 + this.random.nextInt(25);
+		if (landed) {
+			// AND NOW IT IS SOMEBODY ELSE'S TURN.
+			//
+			// He is finished with this one. Marking them means the next quarry
+			// is chosen from whoever has NOT been reached yet, so he works
+			// through a group deliberately rather than staying on whoever
+			// happens to be nearest — which would let a fast player draw him
+			// off their whole party indefinitely.
+			//
+			// It is also much worse to be on the receiving end of. Being chased
+			// is frightening; watching him finish with your friend and turn
+			// toward you, and knowing he is going to get to everybody, is a
+			// different thing entirely.
+			this.struck.add(player.getUUID());
+			if (reappearAt(player, HIT_BACKOFF_NEAR, HIT_BACKOFF_FAR, false)) {
+				this.watching = true;
+				this.moodTicks = 30 + this.random.nextInt(25);
+			}
 		}
 		// Logged with the answer, not just the attempt. "He is not hitting me"
 		// has two completely different causes — he never got in range, or he
