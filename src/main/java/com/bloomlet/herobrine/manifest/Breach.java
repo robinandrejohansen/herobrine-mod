@@ -61,13 +61,16 @@ public final class Breach {
 	/** They only do it where someone is there to see it. */
 	private static final double WITNESS_RANGE = 40.0;
 	/** How far from the glass they can reach. */
-	private static final double REACH = 2.5;
+	private static final double REACH = 3.2;
 	/** How far they will notice you through a window. */
 	private static final double SEEK_RANGE = 24.0;
 	/** A wall is a wall. Two panes and a greenhouse roof is not a sightline. */
 	private static final int PANES_SEEN_THROUGH = 3;
 
-	private record Chew(BlockPos pos, int ticks) {}
+	private record Chew(BlockPos pos, int ticks, int away) {}
+
+	/** Ticks a zombie may be off the pane before its progress is given up. */
+	private static final int GRACE = 60;
 
 	private static final Map<UUID, Chew> chewing = new HashMap<>();
 
@@ -98,10 +101,12 @@ public final class Breach {
 					}
 				}
 			}
+			Set<UUID> touched = new HashSet<>();
 			for (Zombie zombie : hunting) {
 				advance(level, zombie);
+				touched.add(zombie.getUUID());
 			}
-			forget(level, hunting);
+			forget(level, touched);
 		}
 	}
 
@@ -154,8 +159,23 @@ public final class Breach {
 			if (!breakable(level.getBlockState(hit.getBlockPos()))) {
 				return false;
 			}
-			// Step just past the pane we stopped on and carry on looking.
-			Vec3 onward = hit.getLocation().add(to.subtract(from).normalize().scale(0.1));
+			// Step out of the pane we stopped on and carry on looking.
+			//
+			// This has to walk right out of the block. Nudging a tenth of a
+			// block past the hit point lands INSIDE the glass, and clipping
+			// from inside a block hits that same block again — so the loop
+			// spent all its attempts on one pane and reported that the player
+			// could not be seen. That was the whole bug: no zombie ever took a
+			// target through a window, so nothing sustained a chew.
+			Vec3 direction = to.subtract(from).normalize();
+			BlockPos pane = hit.getBlockPos();
+			Vec3 onward = hit.getLocation();
+			for (int step = 1; step <= 24; step++) {
+				onward = hit.getLocation().add(direction.scale(0.1 * step));
+				if (!BlockPos.containing(onward).equals(pane)) {
+					break;
+				}
+			}
 			if (onward.distanceToSqr(to) >= from.distanceToSqr(to)) {
 				return true;
 			}
@@ -164,24 +184,35 @@ public final class Breach {
 		return false;
 	}
 
+	/**
+	 * One tick of work on one pane.
+	 *
+	 * It STAYS on the pane it started, and that is the important part. The
+	 * first version re-chose a pane every tick and reset the moment the choice
+	 * came out differently — which it did constantly, because a zombie shuffling
+	 * against a wall changes block position and the scan then found a different
+	 * neighbouring pane. The result was a window that took one crack and never
+	 * took a second.
+	 */
 	private static void advance(ServerLevel level, Zombie zombie) {
-		BlockPos target = glassInReach(level, zombie);
 		Chew chew = chewing.get(zombie.getUUID());
+		BlockPos target;
 
-		if (target == null) {
+		if (chew != null && stillWorth(level, zombie, chew.pos())) {
+			target = chew.pos();
+		} else {
 			if (chew != null) {
 				clear(level, zombie, chew.pos());
 			}
-			return;
-		}
-		// Moved on to a different pane — the old one heals.
-		if (chew != null && !chew.pos().equals(target)) {
-			clear(level, zombie, chew.pos());
 			chew = null;
+			target = glassInReach(level, zombie);
+		}
+		if (target == null) {
+			return;
 		}
 
 		int ticks = (chew == null ? 0 : chew.ticks()) + 1;
-		chewing.put(zombie.getUUID(), new Chew(target, ticks));
+		chewing.put(zombie.getUUID(), new Chew(target, ticks, 0));
 
 		BlockState state = level.getBlockState(target);
 		// The vanilla crack overlay, keyed to this zombie so two of them on
@@ -199,6 +230,16 @@ public final class Breach {
 		}
 	}
 
+	/** Still glass, and still close enough to keep working on. */
+	private static boolean stillWorth(ServerLevel level, Zombie zombie, BlockPos pos) {
+		return breakable(level.getBlockState(pos)) && inReach(zombie, pos);
+	}
+
+	private static boolean inReach(Zombie zombie, BlockPos pos) {
+		return zombie.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5)
+			<= REACH * REACH;
+	}
+
 	/**
 	 * A pane it can actually reach, at a height it could climb through.
 	 *
@@ -209,19 +250,29 @@ public final class Breach {
 	private static @org.jspecify.annotations.Nullable BlockPos glassInReach(
 			ServerLevel level, Zombie zombie) {
 		BlockPos feet = zombie.blockPosition();
+		BlockPos best = null;
+		double nearest = Double.MAX_VALUE;
+
 		for (int dy = 0; dy <= 1; dy++) {
-			for (Direction facing : Direction.Plane.HORIZONTAL) {
-				BlockPos pos = feet.above(dy).relative(facing);
-				if (!breakable(level.getBlockState(pos))) {
-					continue;
-				}
-				if (zombie.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5)
-					<= REACH * REACH) {
-					return pos;
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dz = -1; dz <= 1; dz++) {
+					if (dx == 0 && dz == 0) {
+						continue;
+					}
+					BlockPos pos = feet.offset(dx, dy, dz);
+					if (!breakable(level.getBlockState(pos)) || !inReach(zombie, pos)) {
+						continue;
+					}
+					double distance = zombie.distanceToSqr(
+						pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+					if (distance < nearest) {
+						nearest = distance;
+						best = pos;
+					}
 				}
 			}
 		}
-		return null;
+		return best;
 	}
 
 	/**
@@ -244,25 +295,32 @@ public final class Breach {
 		chewing.remove(zombie.getUUID());
 	}
 
-	/** Drop anything whose zombie has wandered off, died or unloaded. */
-	private static void forget(ServerLevel level, Set<Zombie> hunting) {
-		Set<UUID> live = new HashSet<>();
-		for (Zombie zombie : hunting) {
-			live.add(zombie.getUUID());
-		}
+	/**
+	 * Give up on anything that has stopped working, but not immediately.
+	 *
+	 * The grace period exists because a zombie's target flickers: the goals
+	 * drop the player for a tick, this misses it for that tick, and without a
+	 * grace period its progress was thrown away and started again from nothing
+	 * every couple of seconds. Sixty ticks is long enough to ride out the
+	 * wobble and far shorter than a pane takes to break.
+	 */
+	private static void forget(ServerLevel level, Set<UUID> touched) {
 		Iterator<Map.Entry<UUID, Chew>> it = chewing.entrySet().iterator();
 		while (it.hasNext()) {
 			Map.Entry<UUID, Chew> entry = it.next();
-			if (live.contains(entry.getKey())) {
+			if (touched.contains(entry.getKey())) {
+				continue;
+			}
+			Chew chew = entry.getValue();
+			if (chew.away() < GRACE) {
+				entry.setValue(new Chew(chew.pos(), chew.ticks(), chew.away() + 1));
 				continue;
 			}
 			// Heal the pane if the zombie is still around to key the overlay
-			// to. If it is not — dead, despawned, unloaded — the overlay is
-			// already gone with it and only the entry needs dropping. That
-			// entry must go either way, or the map grows for the rest of the
-			// session with one leak per zombie that ever touched a window.
+			// to. If it is not — dead, despawned, unloaded — the overlay went
+			// with it and only the entry needs dropping.
 			if (level.getEntity(entry.getKey()) instanceof Zombie gone) {
-				level.destroyBlockProgress(gone.getId(), entry.getValue().pos(), -1);
+				level.destroyBlockProgress(gone.getId(), chew.pos(), -1);
 			}
 			it.remove();
 		}
