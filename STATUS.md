@@ -33,7 +33,7 @@ are the next slice.
 | WATCHER | 60 | the stare | ✅ |
 | TRESPASSER | 200 | signs, ruins, journal pages | ✅ |
 | MIMIC | 500 | possessed mobs | ✅ |
-| HUNTER | 1000 | **none** | ❌ |
+| HUNTER | 1000 | the hunt — he follows, and stands his ground | ✅ |
 | SIEGE | 1800 | **none** | ❌ |
 
 Roughly 2½–3 hours of normal play from MIMIC to HUNTER. Culling his animals is
@@ -101,6 +101,14 @@ much faster and is the intended route.
 - [x] Let one out and it charges, head locked, ordinary health
 - [x] No eyes — white is his, and this is what is left when he has finished
 
+### The hunt (HUNTER)
+- [x] He follows — faster than your walk, slower than your sprint
+- [x] Outrun him by 52 blocks and he stops; walking home does not work
+- [x] Blocked by a ravine, he stops trying and reappears closer, behind you
+- [x] The standoff breaks: 17 blocks becomes 7, and he no longer leaves
+- [x] Walk into the last of it and he closes it himself, then goes — and the
+      torches go with him
+
 ### Atmosphere
 - [x] Rain and thunder scale with wrath
 - [x] Nights get longer, days do not get shorter
@@ -138,7 +146,8 @@ ending now exists, so they can be filled in whenever.
 ### Everything else outstanding
 - [ ] **The town's remaining buildings** — smithy, 2 shops, 2 pens, church last
 - [ ] **Village names and signposts**, and roads between villages
-- [ ] **HUNTER content** — the phase has nothing of its own
+- [ ] **HUNTER content** — the hunt is in; the dark (every torch near you goes
+      out at once) is still to build
 - [ ] **SIEGE content** — same
 - [ ] **An ending** — no fight, no Effigy, no way to kill anything
 - [ ] **A config** — nothing can be switched off. Blocks anyone else playing it

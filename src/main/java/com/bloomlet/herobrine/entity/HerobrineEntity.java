@@ -85,6 +85,76 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final double TOO_CLOSE = 17.0;
 
 	/**
+	 * How close he lets anybody get before he reacts, by phase.
+	 *
+	 * Seventeen for most of the mod. At HUNTER it collapses to seven, and the
+	 * collapse is the content: a player who has spent hours learning that
+	 * seventeen blocks is the wall walks straight through it and keeps going,
+	 * and nothing happens. That is a far louder change than any new sound.
+	 */
+	private double standoff(Phase phase) {
+		return holdsGround(phase) ? 7.0 : TOO_CLOSE;
+	}
+
+	/**
+	 * Does he refuse to give the ground up?
+	 *
+	 * The phase, OR the fact that he is currently hunting. The second half is
+	 * not a testing convenience: something that has been following you for a
+	 * minute and then backs away the moment you turn on it was never hunting
+	 * you in the first place, and a player would read that as the mod losing
+	 * its nerve. If he came for you, he does not retreat.
+	 */
+	private boolean holdsGround(Phase phase) {
+		return phase.atLeast(Phase.HUNTER) || this.hunting;
+	}
+
+	/** Arm's length. He is gone before anybody finds out what is here. */
+	private static final double ARMS_LENGTH = 3.2;
+	/**
+	 * Walking pace, and walking is the point.
+	 *
+	 * He must be SEEN to come. A figure that closes instantly is a jump scare
+	 * and the player learns nothing from it; a figure that takes four unhurried
+	 * steps toward you is one you watched decide.
+	 */
+	private static final double ADVANCE_SPEED = 0.85;
+
+	// ---- THE HUNT --------------------------------------------------------
+	/**
+	 * Slower than your sprint, faster than your walk, and that gap is the
+	 * whole design.
+	 *
+	 * Sprinting gets away from him. Walking does not. So the player cannot
+	 * ignore him and cannot casually stroll home either — they have to spend
+	 * hunger, or they have to hide, and both of those are decisions. A pursuer
+	 * you can outwalk is scenery; one you cannot outrun is unfair.
+	 */
+	private static final double HUNT_SPEED = 0.92;
+	/** Break this far away and he stops. Far enough that it costs something. */
+	private static final double OUTRUN = 52.0;
+	/** A hunt runs longer than a sighting, and is the only thing that does. */
+	private static final int HUNT_LIFETIME = 1400;
+	/**
+	 * Stuck for this long and he stops trying to walk it.
+	 *
+	 * Pathfinding around a lake or a ravine is exactly the sort of thing that
+	 * turns a pursuer into a joke — the player watches him jog into a wall and
+	 * the spell is finished. When the route fails he simply is not there any
+	 * more, and then he is somewhere closer, behind them. Which is worse.
+	 */
+	private static final int STUCK_LIMIT = 70;
+
+	private boolean hunting;
+	private int stuckTicks;
+	private double lastDistance = Double.MAX_VALUE;
+
+	public void beginHunt() {
+		this.hunting = true;
+	}
+	// ---- END THE HUNT ----------------------------------------------------
+
+	/**
 	 * How long he stays once you have stopped looking.
 	 *
 	 * The single best moment available: the player breaks line of sight for a
@@ -254,7 +324,7 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 
 		// Gone on his own, before he can become furniture.
-		if (++this.age > LIFETIME) {
+		if (++this.age > (this.hunting ? HUNT_LIFETIME : LIFETIME)) {
 			this.vanish("aged out, nobody ever turned round");
 			return;
 		}
@@ -306,14 +376,37 @@ public class HerobrineEntity extends PathfinderMob {
 			}
 		}
 
-		if (closest != null && closestDistance < TOO_CLOSE) {
+		Phase phase = this.level() instanceof ServerLevel now
+			? Wrath.phase(now.getServer()) : Phase.RUMOUR;
+		double standoff = standoff(phase);
+
+		if (closest != null && closestDistance < standoff) {
 			// Everyone who closed in paid for it, not only the one who got
 			// there first. Two people walking him down is twice the defiance,
 			// which is the correct price for twice the pressure.
 			for (Player watcher : watchers) {
-				if (this.distanceTo(watcher) < TOO_CLOSE && watcher instanceof ServerPlayer chaser) {
+				if (this.distanceTo(watcher) < standoff && watcher instanceof ServerPlayer chaser) {
 					WrathTriggers.defiance(chaser, DEFIANCE_APPROACHED);
 				}
+			}
+			// AT HUNTER HE DOES NOT GIVE THE GROUND UP.
+			//
+			// Everything before this taught one rule and taught it for hours:
+			// walk at him and he leaves. It is the only power the player has
+			// over him and they will have used it a dozen times. So this is
+			// where it stops working, and it has to stop working by being
+			// broken rather than by being tightened — he does not flee further
+			// or sooner, he simply does not flee, and then he closes the last
+			// of the distance himself.
+			//
+			// He is never reached, and that is not a detail. The moment a
+			// player can touch him the mod has to answer whether he is a mob
+			// with a hitbox, and every restraint in here exists so that
+			// question never comes up. He goes at arm's length, and what is
+			// left behind is the answer instead.
+			if (holdsGround(phase) && closest instanceof ServerPlayer near) {
+				this.closeOn(near, closestDistance);
+				return;
 			}
 			if (!relocateBehind(watchers)) {
 				// He does not pop out of existence in your face. He turns and
@@ -323,6 +416,14 @@ public class HerobrineEntity extends PathfinderMob {
 				// them; the other is a special effect.
 				this.fleeing = true;
 			}
+			return;
+		}
+
+		// THE HUNT. He does not wait to be looked at and he does not leave
+		// because you stopped looking — the whole point is that none of the
+		// rules you learned about him apply any more.
+		if (this.hunting) {
+			this.pursue(closest, closestDistance);
 			return;
 		}
 
@@ -671,6 +772,124 @@ public class HerobrineEntity extends PathfinderMob {
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * He follows. That is all he does, and it is enough.
+	 *
+	 * No lunge, no shortcut, no line of sight required. A player who breaks
+	 * away and keeps breaking away is rid of him; a player who stops to fight
+	 * or to build finds him arriving. The only way to end it early is distance
+	 * that costs hunger, and that is the point — this is the phase where he is
+	 * no longer something that happens to you while you get on with your day.
+	 */
+	private void pursue(@org.jspecify.annotations.Nullable Player quarry, double distance) {
+		if (quarry == null) {
+			this.vanish("hunt: nobody left to follow");
+			return;
+		}
+		if (distance > OUTRUN) {
+			this.vanish("hunt: outrun");
+			return;
+		}
+
+		float yaw = (float)(net.minecraft.util.Mth.atan2(
+			quarry.getZ() - this.getZ(), quarry.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
+		this.setYRot(yaw);
+		this.yHeadRot = yaw;
+		this.setYBodyRot(yaw);
+		this.getLookControl().setLookAt(quarry, 90.0F, 90.0F);
+		this.getNavigation().moveTo(quarry, HUNT_SPEED);
+
+		// Is he actually getting anywhere? Measured on distance to the player
+		// rather than on distance travelled, because a mob happily jogging back
+		// and forth along the near side of a ravine is moving the whole time
+		// and getting nowhere, and only one of those two numbers notices.
+		if (distance < this.lastDistance - 0.05) {
+			this.stuckTicks = 0;
+		} else if (++this.stuckTicks > STUCK_LIMIT) {
+			this.stuckTicks = 0;
+			if (!this.reappearNear(quarry)) {
+				this.vanish("hunt: no way through and nowhere to reappear");
+			}
+		}
+		this.lastDistance = distance;
+	}
+
+	/**
+	 * Give up on the route and simply be closer, out of sight.
+	 *
+	 * Behind them and unseen, never in front and never where they are looking,
+	 * so it still obeys the oldest rule in the mod: he is not seen arriving.
+	 * The player loses him behind a hill, and the next time they check over
+	 * their shoulder the gap has halved.
+	 */
+	private boolean reappearNear(Player quarry) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return false;
+		}
+		for (int attempt = 0; attempt < 24; attempt++) {
+			double angle = this.random.nextDouble() * Math.PI * 2.0;
+			double range = 12.0 + this.random.nextDouble() * 12.0;
+			int x = net.minecraft.util.Mth.floor(quarry.getX() + Math.cos(angle) * range);
+			int z = net.minecraft.util.Mth.floor(quarry.getZ() + Math.sin(angle) * range);
+			int y = here.getHeight(
+				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+			BlockPos at = null;
+			for (int down = 0; down <= 4 && at == null; down++) {
+				BlockPos maybe = new BlockPos(x, y - down, z);
+				if (ConfinedPlacement.canStand(here, maybe)) {
+					at = maybe;
+				}
+			}
+			if (at == null) {
+				continue;
+			}
+			Vec3 look = quarry.getViewVector(1.0F).normalize();
+			Vec3 toSpot = new Vec3(at.getX() + 0.5 - quarry.getX(),
+				at.getY() - quarry.getEyeY(), at.getZ() + 0.5 - quarry.getZ()).normalize();
+			if (look.dot(toSpot) > 0.1) {
+				continue;   // in front of them; he would be seen arriving
+			}
+			this.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, this.getYRot(), 0.0F);
+			this.lastDistance = Double.MAX_VALUE;
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * The last few blocks, taken by him.
+	 *
+	 * Deliberately not a lunge. He walks, at less than your own pace, so there
+	 * is time to understand what is happening and time to decide to run — and
+	 * running is the correct answer, which is why he must never be so fast that
+	 * it stops being a choice.
+	 */
+	private void closeOn(ServerPlayer player, double distance) {
+		this.getLookControl().setLookAt(player, 90.0F, 90.0F);
+		float yaw = (float)(net.minecraft.util.Mth.atan2(
+			player.getZ() - this.getZ(), player.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
+		this.setYRot(yaw);
+		this.yHeadRot = yaw;
+		this.setYBodyRot(yaw);
+
+		if (distance > ARMS_LENGTH) {
+			this.getNavigation().moveTo(player, ADVANCE_SPEED);
+			return;
+		}
+
+		// And then he is not there, and the room is dark.
+		//
+		// takeTheLight is normally one visit in three. Here it is every time,
+		// because this is the one moment that has to leave a mark: a player who
+		// walked him down and got nothing would conclude the standoff was a
+		// bug. Torches are dropped rather than destroyed, so it costs them
+		// nothing they cannot pick back up (DESIGN.md §9).
+		if (this.level() instanceof ServerLevel here) {
+			takeTheLight(here, player);
+		}
+		this.vanish("closed to arm's length");
 	}
 
 	private void vanish(String why) {

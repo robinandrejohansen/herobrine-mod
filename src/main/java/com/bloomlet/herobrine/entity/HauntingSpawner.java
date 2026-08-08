@@ -179,6 +179,16 @@ public final class HauntingSpawner {
 	 *                    be placed in daylight for appearance testing.
 	 */
 	public static Outcome place(ServerLevel level, ServerPlayer player, boolean ignoreLight) {
+		return place(level, player, ignoreLight, false);
+	}
+
+	/**
+	 * @param hunting he follows instead of standing. HUNTER and up only — the
+	 *                caller decides, because the spawner has no business
+	 *                knowing which manifestation asked for him.
+	 */
+	public static Outcome place(ServerLevel level, ServerPlayer player, boolean ignoreLight,
+	                            boolean hunting) {
 		if (player.isSpectator() || !player.isAlive()) {
 			return Outcome.BAD_PLAYER;
 		}
@@ -198,7 +208,7 @@ public final class HauntingSpawner {
 			if (!ignoreLight && level.getMaxLocalRawBrightness(spot) > MAX_LIGHT) {
 				return Outcome.TOO_BRIGHT;
 			}
-			return spawnAt(level, player, spot);
+			return spawnAt(level, player, spot, hunting);
 		}
 
 		RandomSource random = level.getRandom();
@@ -317,7 +327,7 @@ public final class HauntingSpawner {
 					continue;
 				}
 
-				Outcome result = spawnAt(level, player, pos);
+				Outcome result = spawnAt(level, player, pos, hunting);
 				if (result == Outcome.PLACED) {
 					return result;
 				}
@@ -346,6 +356,11 @@ public final class HauntingSpawner {
 
 	/** Puts him at a chosen spot, already facing the player. */
 	private static Outcome spawnAt(ServerLevel level, ServerPlayer player, BlockPos pos) {
+		return spawnAt(level, player, pos, false);
+	}
+
+	private static Outcome spawnAt(ServerLevel level, ServerPlayer player, BlockPos pos,
+	                               boolean hunting) {
 		HerobrineEntity herobrine = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
 		if (herobrine == null) {
 			return Outcome.NO_FOOTING;
@@ -359,6 +374,9 @@ public final class HauntingSpawner {
 		// Where the player is standing right now. Chase him and he comes back
 		// to it, so the ground you gave up is the ground he takes.
 		herobrine.setAnchor(player.blockPosition());
+		if (hunting) {
+			herobrine.beginHunt();
+		}
 		level.addFreshEntity(herobrine);
 		// Say where he is, which the stare never did.
 		//

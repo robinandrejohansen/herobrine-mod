@@ -63,6 +63,19 @@ public final class HerobrineCommand {
 					// it; the real one needs a long walk.
 					.then(Commands.literal("here").executes(HerobrineCommand::houseHere)))
 
+				// Starts a hunt regardless of phase, so it can be tested without
+				// grinding to a thousand wrath first.
+				.then(Commands.literal("hunt").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					HauntingSpawner.Outcome outcome = HauntingSpawner.place(
+						(ServerLevel)p.level(), p, true, true);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						outcome == HauntingSpawner.Outcome.PLACED
+							? "the hunt is on" + where(p)
+							: "could not start it — " + outcome.reason()), false);
+					return outcome == HauntingSpawner.Outcome.PLACED ? 1 : 0;
+				}))
+
 				.then(Commands.literal("provoke")
 					.executes(ctx -> provoke(ctx, false))
 					// Ignores the darkness requirement. For checking how he

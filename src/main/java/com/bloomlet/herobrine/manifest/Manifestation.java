@@ -94,6 +94,26 @@ public enum Manifestation {
 		}
 	},
 
+	/**
+	 * He follows, and none of the rules you learned about him apply.
+	 *
+	 * The only manifestation that does not end when the player stops paying
+	 * attention, which is the entire reason HUNTER needed something of its
+	 * own: every event before this one is something that happens to you while
+	 * you get on with your day, and this is the one that will not let you.
+	 */
+	THE_HUNT(Phase.HUNTER, 14) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			HauntingSpawner.Outcome outcome = HauntingSpawner.place(level, player, false, true);
+			if (outcome == HauntingSpawner.Outcome.PLACED) {
+				return true;
+			}
+			ManifestationDirector.refused(outcome.reason());
+			return false;
+		}
+	},
+
 	/** He is simply there, at distance, and gone when you look. */
 	THE_STARE(Phase.WATCHER, 10) {
 		@Override
