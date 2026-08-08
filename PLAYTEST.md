@@ -375,6 +375,18 @@ The command prints which animal and where. Now go and look at it.
 ```
 
 - [ ] **Two** animals are taken (four at `/herobrine wrath 1800`)
+- [ ] They do **not** move as one. With four of his, some set off at once,
+      one hangs back, and a couple give up halfway
+- [ ] One that gives up goes back to **behaving like an animal** — grazing,
+      wandering, moving on its own. Still silent
+- [ ] It starts coming again on its own after fifteen to forty-five seconds
+- [ ] The same individual behaves the same way each time. One sheep is always
+      the flighty one; another never stops
+- [ ] **Stay in one place long enough and all of them arrive.** Nobody is ever
+      permanently lost
+- [ ] Run 60+ blocks away: even the ones that had lost interest come. Distance
+      overrules it
+- [ ] Once one has **revealed**, it never loses interest again
 - [ ] They **ring** you rather than piling up on one side. Stand still in a
       field with six of his and they spread out around you at about 9 blocks
 - [ ] Each keeps its own side as you walk about — they do not reshuffle

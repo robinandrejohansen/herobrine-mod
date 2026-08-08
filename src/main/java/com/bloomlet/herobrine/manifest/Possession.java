@@ -120,6 +120,25 @@ public final class Possession {
 		AttachmentRegistry.createPersistent(HerobrineMod.id("possessed_pursuit"), Codec.INT);
 
 	/**
+	 * The game time until which this one has lost interest.
+	 *
+	 * A flock that all sets off together, walks at one speed and stops in one
+	 * ring is obviously ONE thing wearing four animals. Real pursuit is ragged:
+	 * some come immediately, one hangs back, a couple give up halfway and go
+	 * back to grazing as though nothing happened, and then later they are
+	 * coming again.
+	 *
+	 * While lulled a mob is released entirely — no held navigation, no staring,
+	 * nothing. Its own goals run and it behaves like the animal it is pretending
+	 * to be. That is the whole value: the horror is not the following, it is
+	 * that the following STOPS and then resumes, because an animal that goes
+	 * back to eating grass is one the player has to talk themselves out of all
+	 * over again.
+	 */
+	public static final AttachmentType<Long> LULL =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("possessed_lull"), Codec.LONG);
+
+	/**
 	 * How far he will reach for something to take.
 	 *
 	 * Generous on purpose. Animals spawn in scattered herds rather than evenly,
@@ -147,6 +166,11 @@ public final class Possession {
 	private static final int SPREAD_PER_KILL = 2;
 	/** Ceiling on how many can be his at once near you. Sanity, not design. */
 	private static final int LIVE_CAP = 16;
+	/** Roughly a one-in-twenty-five chance per sweep, before temperament. */
+	private static final int LULL_ODDS = 25;
+	private static final int LULL_MIN_TICKS = 300;    // fifteen seconds
+	private static final int LULL_MAX_TICKS = 900;    // forty-five
+
 	/** Sweeps of real pursuit before it stops pretending. Roughly half a minute. */
 	private static final int PURSUIT_TO_REVEAL = 14;
 	/** How many you may put down before it stops spreading. */
@@ -233,6 +257,46 @@ public final class Possession {
 			return false;   // a possessed lamb is comic, not frightening
 		}
 		return !(mob instanceof TamableAnimal tame) || !tame.isTame();
+	}
+
+	/** Has this one gone back to being an animal for a while? */
+	private static boolean lulled(ServerLevel level, Mob mob) {
+		Long until = mob.getAttached(LULL);
+		return until != null && level.getGameTime() < until;
+	}
+
+	private static void wake(Mob mob) {
+		if (mob.getAttached(LULL) != null) {
+			mob.setAttached(LULL, 0L);
+		}
+	}
+
+	/**
+	 * It might just stop bothering.
+	 *
+	 * Never once it has revealed itself. Losing interest is part of the
+	 * pretence — an animal that wanders off to graze is one the player can
+	 * still explain — and something that has already shown them what it is has
+	 * nothing left to pretend with. After that it simply keeps coming, which is
+	 * the escalation the reveal is for.
+	 *
+	 * How likely it is comes from the mob's own id, so it is a fixed trait
+	 * rather than a dice roll: the same sheep is always the flighty one and the
+	 * same one is always the one that never stops. A flock where every member
+	 * behaves identically on average is still a flock that behaves identically,
+	 * and the point of this is that the player starts recognising individuals.
+	 */
+	private static void maybeLose(ServerLevel level, Mob mob) {
+		if (isRevealed(mob)) {
+			return;
+		}
+		int resolve = Math.floorMod(mob.getUUID().hashCode() >> 8, 4);   // 0 flighty, 3 dogged
+		if (level.getRandom().nextInt(LULL_ODDS + resolve * 20) != 0) {
+			return;
+		}
+		int length = LULL_MIN_TICKS
+			+ level.getRandom().nextInt(LULL_MAX_TICKS - LULL_MIN_TICKS + 1);
+		mob.setAttached(LULL, level.getGameTime() + length);
 	}
 
 	/** True once it has followed you far enough to stop pretending. */
@@ -436,6 +500,7 @@ public final class Possession {
 		mob.setAttached(POSSESSED, true);
 		mob.setAttached(REVEALED, false);
 		mob.setAttached(PURSUIT, 0);
+		mob.setAttached(LULL, 0L);
 		mob.setAttached(OWNER, owner.getUUID().toString());
 		mob.setSilent(true);
 		mob.setPersistenceRequired();
@@ -491,7 +556,8 @@ public final class Possession {
 							// the most unsettling thing in this file and costs
 							// nothing to produce.
 							stop(mob);
-						} else if (owner == player && settled(mob, player)) {
+						} else if (owner == player && !lulled(level, mob)
+							&& settled(mob, player)) {
 							hold(mob, player, knowsWhereYouAre(mob, player));
 						}
 					} else {
@@ -508,15 +574,24 @@ public final class Possession {
 				for (Mob mob : level.getEntitiesOfClass(Mob.class, far)) {
 					// Only its owner moves it. Anyone else it is standing near
 					// is scenery as far as it is concerned.
-					if (!isPossessed(mob) || ownerOf(level, mob) != player
-						|| settled(mob, player)) {
+					if (!isPossessed(mob) || ownerOf(level, mob) != player) {
 						continue;
 					}
 					if (mob.distanceTo(player) > CATCHUP_RADIUS) {
+						// Distance overrules everything, including having lost
+						// interest. This is what keeps the guarantee: whatever
+						// any individual is doing, none of them is ever
+						// actually left behind, so a player who settles
+						// somewhere is eventually joined by all of them.
+						wake(mob);
 						catchUp(level, mob, player);
-					} else {
-						follow(mob, player);
+						continue;
 					}
+					if (settled(mob, player) || lulled(level, mob)) {
+						continue;
+					}
+					follow(mob, player);
+					maybeLose(level, mob);
 				}
 			}
 		}
