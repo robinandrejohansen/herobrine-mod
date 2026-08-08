@@ -190,7 +190,23 @@ public class HerobrineEntity extends PathfinderMob {
 	/** Two hearts, and not oftener than once a second. */
 	private static final float STRIKE_DAMAGE = 4.0F;
 	private static final int STRIKE_COOLDOWN = 22;
-	private long lastStruck = Long.MIN_VALUE;
+	/**
+	 * Never Long.MIN_VALUE, and this is why he never once hit anybody.
+	 *
+	 * The guard was `now - lastStruck < STRIKE_COOLDOWN`, and with a sentinel
+	 * of Long.MIN_VALUE that subtraction OVERFLOWS: a game time of twelve
+	 * thousand minus the most negative long wraps round to about negative nine
+	 * quintillion, which is comfortably less than twenty-two. So the cooldown
+	 * reported itself as still running on the very first swing, returned early,
+	 * and never assigned lastStruck — leaving it wrong forever. He walked up to
+	 * players and stood there for three rounds of testing because of a sentinel
+	 * value.
+	 *
+	 * A small negative works because game time only ever counts up from zero,
+	 * so nothing here can overflow. The comparison is written as an addition
+	 * now as well, which cannot wrap at all.
+	 */
+	private long lastStruck = -1000L;
 
 	private boolean hunting;
 	private int stuckTicks;
@@ -382,6 +398,13 @@ public class HerobrineEntity extends PathfinderMob {
 	public static AttributeSupplier.Builder createAttributes() {
 		return Mob.createMobAttributes()
 			.add(Attributes.MAX_HEALTH, 40.0)
+			// createMobAttributes does NOT include ATTACK_DAMAGE — it is
+			// LivingEntity's set plus FOLLOW_RANGE and nothing else — so
+			// doHurtTarget would have read the bare default and swung for
+			// nothing. Monsters get this from createMonsterAttributes; he does
+			// not extend Monster, so he has to ask for it.
+			.add(Attributes.ATTACK_DAMAGE, STRIKE_DAMAGE)
+			.add(Attributes.ATTACK_KNOCKBACK, 0.6)
 			.add(Attributes.MOVEMENT_SPEED, 0.3)
 			// He needs to be aware of you from much further than he ever
 			// approaches — the whole behaviour is about distance.
@@ -1292,12 +1315,16 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 		long now = here.getGameTime();
-		if (now - this.lastStruck < STRIKE_COOLDOWN) {
+		if (now < this.lastStruck + STRIKE_COOLDOWN) {
 			return;
 		}
 		this.lastStruck = now;
-		boolean landed = player.hurtServer(here,
-			here.damageSources().mobAttack(this), STRIKE_DAMAGE);
+		// The vanilla path, the same one an iron golem and a wither skeleton
+		// take. doHurtTarget reads ATTACK_DAMAGE, applies the knockback, plays
+		// the sound and runs the post-attack effects — all of which the
+		// hand-rolled hurtServer call skipped, so even once the cooldown was
+		// fixed he would have been hitting for damage with no shove behind it.
+		boolean landed = this.doHurtTarget(here, player);
 		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
 		// Logged with the answer, not just the attempt. "He is not hitting me"
 		// has two completely different causes — he never got in range, or he
