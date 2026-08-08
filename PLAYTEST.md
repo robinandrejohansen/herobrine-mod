@@ -842,6 +842,33 @@ change the moment the phase does.
 > Say if the fog at SIEGE is too thick to play in. It is the one setting here
 > that could cross from atmosphere into a handicap.
 
+### A7p — The villages get worse
+
+Find a village. `/locate structure minecraft:village_plains` works.
+
+- [ ] At **RUMOUR** and **WATCHER** villages are completely untouched
+- [ ] From **TRESPASSER**, standing in one applies a pass. The log says
+      `village at ... worked over` with counts
+- [ ] **Windows boarded over** with trapdoors — from the outside
+- [ ] **Graves** appear on open ground, never on a path, a floor or a crop.
+      More of them each phase
+- [ ] Moss on cobble, cracks in brick, cobwebs indoors
+- [ ] Raise the phase and come back: it gets **worse again**, once per phase
+
+**What must never happen — check all of these:**
+
+- [ ] **No villager is ever removed or harmed.** Count them before and after
+- [ ] **No light is removed.** Torches, lanterns and campfires untouched, so
+      nothing new spawns and nobody gets killed overnight
+- [ ] **No door, bed or workstation is touched.** Trades still work, beds still
+      claimed, jobs still held
+- [ ] Nothing structural moves. You could undo the whole thing with a shovel
+
+> The rule is that the PLACE decays and the people are left alone. It is also
+> the better scare: a village with the windows boarded from outside and more
+> graves each visit is worse than an empty one, because somebody still lives
+> there.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the
