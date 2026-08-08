@@ -201,21 +201,64 @@ assert not other, f"{other} non-eye emissive pixels — only the eyes may glow"
 
 # ---------------------------------------------------------------- intensity
 #
-# Pure white at full opacity was too much. The eyes pipeline blends with
-# TRANSLUCENT, so the alpha here is the difference between eyes that are lit
-# and eyes that are LIGHTS — at full strength they read as two lamps set into
-# the face and appear to throw light onto him, which is exactly the "obviously
-# supernatural" register LORE.md rules out. Nothing in this mod should look
-# like it is emitting.
+# The eyes pipeline blends with TRANSLUCENT, so the alpha here is the whole
+# dial: it is the difference between eyes that are lit and eyes that are
+# LIGHTS.
 #
-# Turned down after the checks above rather than before, so the assertions
-# still compare against a clean marker colour and cannot be fooled by a
-# rounding change here.
-EYE = (232, 236, 240, 150)
-for row in glow:
-    for x, px in enumerate(row):
-        if px == C("FFFFFF"):
-            row[x] = EYE
+# This sat at 150 for a long while, on the argument that anything brighter
+# read as two lamps set into the face and looked like it was emitting. That
+# was judged at arm's length in an inventory screen, and it was the wrong
+# place to judge it: he is SEEN at forty to seventy blocks, where four pixels
+# at fifty-nine per cent alpha are not subtle, they are absent. The whole
+# event is a figure you cannot quite explain, and the eyes are the only part
+# of him that says so.
+#
+# So: near-full on the eyes themselves, and a faint ring around them. The ring
+# is what stops the brightness reading as lamps — a hard-edged bright square
+# looks like a light source stuck on the face, whereas the same brightness
+# with a little bleed around it looks like it is coming from inside him. It
+# also survives distance far better, because when the eye itself is down to
+# one screen pixel the halo is still carrying the shape.
+#
+# Turned up after the checks above rather than before, so the assertions still
+# compare against a clean marker colour.
+EYE = (255, 255, 255, 240)
+HALO = (232, 236, 240, 60)
+
+sockets = [(x, y) for y, row in enumerate(glow)
+           for x, px in enumerate(row) if px == C("FFFFFF")]
+for x, y in sockets:
+    glow[y][x] = EYE
+
+# One pixel of bleed, and NOT into the gap between the eyes.
+#
+# A plain eight-neighbour ring was tried and joined them: the sockets are two
+# pixels apart, so the two halos met in the middle and the whole thing read as
+# a single lit band across the face — a visor, not eyes. It is a good example
+# of a rule that is right per-pixel and wrong on the model.
+#
+# So the bleed goes up, down, and outward only. A horizontal neighbour is
+# refused if there is another socket within three pixels that way, which keeps
+# the bridge clear without any coordinate here having to know where the eyes
+# happen to be.
+socket_set = set(sockets)
+halo_at = set()
+for x, y in sockets:
+    halo_at.add((x, y - 1))
+    halo_at.add((x, y + 1))
+    for step in (-1, 1):
+        if not any((x + step * n, y) in socket_set for n in (1, 2, 3)):
+            halo_at.add((x + step, y))
+
+for x, y in sorted(halo_at):
+    # Eyes sit on row 11 of the head's front face, so every one of these is
+    # inside the 8..15 square. Asserted rather than trusted: a halo leaking
+    # onto the head's side face would show up as a glowing stripe down his
+    # temple, and it would look deliberate.
+    assert 8 <= x <= 15 and 8 <= y <= 15, \
+        f"halo at ({x},{y}) is outside the head's front face"
+    if (x, y) not in socket_set and glow[y][x][3] == 0:
+        glow[y][x] = HALO
 
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                    "..", "src", "main", "resources", "assets", "herobrine",
@@ -223,4 +266,5 @@ out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 os.makedirs(out, exist_ok=True)
 write_png(os.path.join(out, "herobrine.png"), lit)
 write_png(os.path.join(out, "herobrine_eyes.png"), glow)
-print(f"wrote herobrine.png + herobrine_eyes.png ({eyes} emissive eye px)")
+halo = sum(1 for row in glow for px in row if px == HALO)
+print(f"wrote herobrine.png + herobrine_eyes.png ({eyes} eye px at alpha {EYE[3]}, {halo} halo px at {HALO[3]})")
