@@ -108,7 +108,10 @@ much faster and is the intended route.
 - [x] The head stays locked on you while the body walks wherever it is going
 - [x] He hits — two hearts, once a second. Still invulnerable; hit him and he
       reappears behind you and keeps coming
-- [x] Outrun him by 52 blocks and he stops; walking home does not work
+- [x] He breaks off — suddenly 26–46 blocks away, standing, watching — then
+      comes back in at 9–17 and runs at you again
+- [x] Swims at walking speed; a lake is not a moat
+- [x] Ends after 100 seconds, or when you put 52 blocks between you
 - [x] Blocked by a ravine, he stops trying and reappears closer, behind you
 - [x] The standoff breaks: 17 blocks becomes 7, and he no longer leaves
 - [x] Walk into the last of it and he closes it himself, then goes — and the

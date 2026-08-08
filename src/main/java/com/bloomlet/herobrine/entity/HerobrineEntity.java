@@ -133,8 +133,15 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final double HUNT_SPEED = 1.32;
 	/** Break this far away and he stops. Far enough that it costs something. */
 	private static final double OUTRUN = 52.0;
-	/** A hunt runs longer than a sighting, and is the only thing that does. */
-	private static final int HUNT_LIFETIME = 1400;
+	/**
+	 * A hunt runs longer than a sighting, and is the only thing that does.
+	 *
+	 * A hundred seconds, up from seventy, now that it has a rhythm rather than
+	 * being one unbroken sprint. Long enough for three or four break-offs, so
+	 * the player gets the pause and the return at least twice — once is an
+	 * incident, twice is a pattern, and the pattern is what they carry.
+	 */
+	private static final int HUNT_LIFETIME = 2000;
 	/**
 	 * Stuck for this long and he stops trying to walk it.
 	 *
@@ -154,8 +161,31 @@ public class HerobrineEntity extends PathfinderMob {
 	/** Flight is a way past an obstacle, never a way of travelling. */
 	private static final int FLY_LIMIT = 120;
 
+	/** Where he goes to watch from, and where he comes back to. */
+	private static final double WATCH_NEAR = 26.0;
+	private static final double WATCH_FAR = 46.0;
+	private static final double RUSH_NEAR = 9.0;
+	private static final double RUSH_FAR = 17.0;
+
 	private boolean flying;
 	private int flyTicks;
+
+	/**
+	 * He does not only ever run at you.
+	 *
+	 * A pursuit that is one unbroken sprint from start to finish is a chase
+	 * scene, and a chase scene is exciting rather than frightening — the player
+	 * spends it looking forward, solving a movement problem, and never once has
+	 * to wonder where he is. So he breaks off. He is suddenly a long way away,
+	 * standing still, watching; and then he is not there; and then he is close
+	 * again and coming.
+	 *
+	 * The variety in the DISTANCE is the part that does the work. Something
+	 * that is always eight blocks behind you can be modelled. Something that is
+	 * forty blocks away and then nine is not.
+	 */
+	private boolean watching;
+	private int moodTicks;
 
 	/** Two hearts, and not oftener than once a second. */
 	private static final float STRIKE_DAMAGE = 4.0F;
@@ -168,6 +198,17 @@ public class HerobrineEntity extends PathfinderMob {
 
 	public void beginHunt() {
 		this.hunting = true;
+		this.moodTicks = chaseSpell();
+	}
+
+	/** How long he comes at you before breaking off. 8–16 seconds. */
+	private int chaseSpell() {
+		return 160 + this.random.nextInt(160);
+	}
+
+	/** And how long he stands and watches before coming back. 3–5 seconds. */
+	private int watchSpell() {
+		return 60 + this.random.nextInt(50);
 	}
 	// ---- END THE HUNT ----------------------------------------------------
 
@@ -345,6 +386,14 @@ public class HerobrineEntity extends PathfinderMob {
 			// He needs to be aware of you from much further than he ever
 			// approaches — the whole behaviour is about distance.
 			.add(Attributes.FOLLOW_RANGE, 96.0)
+			// He swims like he walks.
+			//
+			// travelInWater accelerates at a flat 0.02 unless this attribute
+			// says otherwise, which is why an unmodified mob crossing a river
+			// looks like it is wading through setting concrete. At 1.0 the
+			// acceleration term becomes his actual movement speed — the same
+			// mechanism Depth Strider uses — so a lake stops being a moat.
+			.add(Attributes.WATER_MOVEMENT_EFFICIENCY, 1.0)
 			// A full block, and then some, taken in his stride.
 			//
 			// Vanilla is 0.6, which is a slab — so a single block of terrain
@@ -852,8 +901,16 @@ public class HerobrineEntity extends PathfinderMob {
 			this.vanish("hunt: nobody left to follow");
 			return;
 		}
-		if (distance > OUTRUN) {
+		// The outrun check is skipped while he is watching, because he chose
+		// that distance himself and it would be absurd for him to give up on
+		// account of it.
+		if (!this.watching && distance > OUTRUN) {
 			this.vanish("hunt: outrun");
+			return;
+		}
+
+		if (this.watching) {
+			this.watch(quarry);
 			return;
 		}
 
@@ -867,6 +924,18 @@ public class HerobrineEntity extends PathfinderMob {
 		// to disobey — and getMaxHeadYRot below is what lets it keep you while
 		// the body goes past.
 		this.getLookControl().setLookAt(quarry, 90.0F, 90.0F);
+
+		// And a shove while he is actually in it. The attribute fixes the
+		// acceleration but travelInWater halves it again the moment he is off
+		// the bottom, which is most of any real crossing.
+		if (this.isInWater()) {
+			Vec3 swim = new Vec3(quarry.getX() - this.getX(), 0.0,
+				quarry.getZ() - this.getZ());
+			if (swim.lengthSqr() > 1.0E-4) {
+				swim = swim.normalize().scale(0.09);
+				this.setDeltaMovement(this.getDeltaMovement().add(swim.x, 0.012, swim.z));
+			}
+		}
 
 		// Already over it.
 		if (this.flying) {
@@ -908,6 +977,54 @@ public class HerobrineEntity extends PathfinderMob {
 			this.takeOff();
 		}
 		this.lastDistance = distance;
+
+		// Long enough. He stops coming, and is somewhere else entirely.
+		if (--this.moodTicks <= 0) {
+			if (reappearAt(quarry, WATCH_NEAR, WATCH_FAR, true)) {
+				this.watching = true;
+				this.moodTicks = watchSpell();
+				HerobrineMod.LOGGER.info("hunt: broke off to watch from {} blocks",
+					String.format("%.0f", this.distanceTo(quarry)));
+			} else {
+				// Nowhere to stand and be seen from. He simply keeps coming,
+				// which is the right failure: the alternative is him blinking
+				// out for no reason the player can perceive.
+				this.moodTicks = chaseSpell();
+			}
+		}
+	}
+
+	/**
+	 * Standing off, watching, doing nothing at all.
+	 *
+	 * The whole value of this is that it is a PAUSE in something that was
+	 * frightening because it would not stop. He is visible, he is a long way
+	 * off, and he is not approaching — which gives the player just long enough
+	 * to think it might be over.
+	 */
+	private void watch(Player quarry) {
+		this.getNavigation().stop();
+		this.setDeltaMovement(Vec3.ZERO);
+		float yaw = (float)(net.minecraft.util.Mth.atan2(
+			quarry.getZ() - this.getZ(), quarry.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
+		this.setYRot(yaw);
+		this.yHeadRot = yaw;
+		this.setYBodyRot(yaw);
+
+		if (--this.moodTicks > 0) {
+			return;
+		}
+		this.watching = false;
+		this.moodTicks = chaseSpell();
+		// And then he is close. Out of their view for the move itself, because
+		// the oldest rule in the mod is that he is never seen arriving — they
+		// look back at where he was standing and he is not there any more.
+		if (reappearAt(quarry, RUSH_NEAR, RUSH_FAR, false)) {
+			HerobrineMod.LOGGER.info("hunt: back in at {} blocks",
+				String.format("%.0f", this.distanceTo(quarry)));
+		}
+		this.lastDistance = Double.MAX_VALUE;
+		this.stuckTicks = 0;
 	}
 
 	/**
@@ -1016,6 +1133,19 @@ public class HerobrineEntity extends PathfinderMob {
 	 * their shoulder the gap has halved.
 	 */
 	private boolean reappearNear(Player quarry) {
+		return reappearAt(quarry, 12.0, 24.0, false);
+	}
+
+	/**
+	 * Be somewhere else, chosen rather than stumbled into.
+	 *
+	 * @param wantSeen true when the point is to be LOOKED at — the standing-off
+	 *                 half of a hunt only works if the player actually finds
+	 *                 him out there; false when he is coming back in, because
+	 *                 the oldest rule in the mod is that he is never seen
+	 *                 arriving.
+	 */
+	private boolean reappearAt(Player quarry, double min, double max, boolean wantSeen) {
 		if (!(this.level() instanceof ServerLevel here)) {
 			return false;
 		}
@@ -1023,9 +1153,9 @@ public class HerobrineEntity extends PathfinderMob {
 		if (this.flying) {
 			this.land();
 		}
-		for (int attempt = 0; attempt < 24; attempt++) {
+		for (int attempt = 0; attempt < 40; attempt++) {
 			double angle = this.random.nextDouble() * Math.PI * 2.0;
-			double range = 12.0 + this.random.nextDouble() * 12.0;
+			double range = min + this.random.nextDouble() * (max - min);
 			int x = net.minecraft.util.Mth.floor(quarry.getX() + Math.cos(angle) * range);
 			int z = net.minecraft.util.Mth.floor(quarry.getZ() + Math.sin(angle) * range);
 			int y = here.getHeight(
@@ -1040,17 +1170,38 @@ public class HerobrineEntity extends PathfinderMob {
 			if (at == null) {
 				continue;
 			}
+
 			Vec3 look = quarry.getViewVector(1.0F).normalize();
 			Vec3 toSpot = new Vec3(at.getX() + 0.5 - quarry.getX(),
 				at.getY() - quarry.getEyeY(), at.getZ() + 0.5 - quarry.getZ()).normalize();
-			if (look.dot(toSpot) > 0.1) {
-				continue;   // in front of them; he would be seen arriving
+			boolean inFront = look.dot(toSpot) > (wantSeen ? 0.35 : 0.1);
+
+			if (wantSeen) {
+				// In front of them AND actually visible from where they stand.
+				// A spot behind a hill satisfies the cone and wastes the whole
+				// pause — they turn, see nothing, and decide it is over.
+				if (!inFront || !clearTo(here, quarry, at)) {
+					continue;
+				}
+			} else if (inFront) {
+				continue;
 			}
+
 			this.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, this.getYRot(), 0.0F);
 			this.lastDistance = Double.MAX_VALUE;
 			return true;
 		}
 		return false;
+	}
+
+	/** Nothing solid between their eye and where his head would be. */
+	private static boolean clearTo(ServerLevel level, Player quarry, BlockPos at) {
+		Vec3 head = new Vec3(at.getX() + 0.5, at.getY() + 1.7, at.getZ() + 0.5);
+		return level.clip(new net.minecraft.world.level.ClipContext(
+			quarry.getEyePosition(), head,
+			net.minecraft.world.level.ClipContext.Block.COLLIDER,
+			net.minecraft.world.level.ClipContext.Fluid.NONE, quarry))
+			.getType() == net.minecraft.world.phys.HitResult.Type.MISS;
 	}
 
 	/**
