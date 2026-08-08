@@ -1,9 +1,6 @@
 package com.bloomlet.herobrine.entity;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -42,20 +39,23 @@ public class HerobrineEntity extends PathfinderMob {
 	/** Ticks a player has held their gaze on him before he leaves. */
 	private int unseenTicks;
 	/**
-	 * How long each person has held him in their eyes, kept per player.
+	 * How long he has been looked at, by anybody, since the first pair of eyes
+	 * landed on him. ONE clock for the whole event, deliberately.
 	 *
-	 * One shared counter was wrong for the same reason nearest-player-only was
-	 * wrong: whoever looked first spent the whole allowance, so a friend
-	 * glancing at him across the clearing used up the second and a half and he
-	 * was gone before you had turned round. You then had nothing — not even the
-	 * half-glimpse the event exists to give you.
+	 * Per-player allowances were tried and were wrong, and the reason is worth
+	 * keeping. They guaranteed everyone their own second and a half — which
+	 * sounds fair and quietly deletes the best thing the sighting has. If both
+	 * of you saw him there is nothing to disagree about, and the entire mod is
+	 * built on the player not being able to prove what happened.
 	 *
-	 * Per player, everybody gets their own moment. It also means a group that
-	 * keeps taking turns looking holds him there far longer than one person
-	 * can, which is the same reward for co-ordinating that UNSEEN_GRACE gives
-	 * and is bounded by the same things.
+	 * The clock belongs to whoever spots him first, and it runs whether or not
+	 * anybody else has turned round. Your friend says "he was standing right
+	 * there" and you were looking at the wrong hill and there is nothing to
+	 * see, and now one of you has to take the other's word for it. Two people
+	 * who cannot agree on what was in the clearing is a far worse place to be
+	 * than two people who both watched something vanish.
 	 */
-	private final Map<UUID, Integer> watchedTicks = new HashMap<>();
+	private int watchedTicks;
 	private int fleeTicks;
 	private boolean fleeing;
 	/** Ticks since he arrived. */
@@ -306,11 +306,16 @@ public class HerobrineEntity extends PathfinderMob {
 			this.unseenTicks = 0;
 			// EARLY ON, BEING LOOKED AT IS ENOUGH TO END IT.
 			//
-			// At WATCHER he is gone almost the instant a player's eyes land on
-			// him — half a second, not enough to be sure of anything. That is
-			// the correct first encounter: the player has seen something and
-			// has nothing to show for it, and every later sighting is measured
-			// against a memory they do not trust.
+			// At WATCHER he is gone a second and a half after the first pair of
+			// eyes lands on him — enough to find a shape, nowhere near enough to
+			// be sure of anything. That is the correct first encounter: the
+			// player has seen something and has nothing to show for it, and
+			// every later sighting is measured against a memory they do not
+			// trust.
+			//
+			// The clock is shared and starts on FIRST sight, which is what
+			// makes this work with company. Whoever spots him spends it, and
+			// anybody still facing the other way arrives at an empty hill.
 			//
 			// The limit stretches with the phases until it stops existing, so
 			// the same act of looking at him gets a longer and longer answer.
@@ -319,7 +324,7 @@ public class HerobrineEntity extends PathfinderMob {
 			// to allow it.
 			int allowed = this.level() instanceof ServerLevel here
 				? staredDown(Wrath.phase(here.getServer())) : 0;
-			if (allowed > 0 && everyoneHasHadTheirLook(watchers, allowed)) {
+			if (allowed > 0 && ++this.watchedTicks > allowed) {
 				this.vanish();
 			}
 		} else if (this.witnessed && ++this.unseenTicks > UNSEEN_GRACE) {
@@ -342,30 +347,6 @@ public class HerobrineEntity extends PathfinderMob {
 	 * method: at first he cannot be held in the eye at all, and by the end he
 	 * does not mind being seen.
 	 */
-	/**
-	 * Has every pair of eyes currently on him had its fill?
-	 *
-	 * Only people who can see him RIGHT NOW get a vote. Someone facing the
-	 * other way must not be able to pin him in place indefinitely — that is
-	 * what UNSEEN_GRACE is for, and it already handles the case where nobody is
-	 * looking at all.
-	 */
-	private boolean everyoneHasHadTheirLook(List<Player> watchers, int allowed) {
-		boolean anyoneLooking = false;
-		boolean allDone = true;
-		for (Player watcher : watchers) {
-			if (!inViewOf(watcher)) {
-				continue;
-			}
-			anyoneLooking = true;
-			int held = this.watchedTicks.merge(watcher.getUUID(), 1, Integer::sum);
-			if (held <= allowed) {
-				allDone = false;
-			}
-		}
-		return anyoneLooking && allDone;
-	}
-
 	private static int staredDown(Phase phase) {
 		return switch (phase) {
 			// Long enough to register, and no longer.
@@ -719,10 +700,10 @@ public class HerobrineEntity extends PathfinderMob {
 
 		this.relocations++;
 		this.unseenTicks = 0;
-		// Everybody's allowance back, because this is a new sighting. Without
-		// it the second appearance is instant for anyone who used theirs on the
-		// first, and they walk round the rock to find him already gone.
-		this.watchedTicks.clear();
+		// The clock back to zero, because this is a new sighting. Without it the
+		// second appearance is instant and the player walks round the rock to
+		// find him already gone.
+		this.watchedTicks = 0;
 		this.age = 0;          // a fresh visit; you have earned the second look
 		return true;
 	}
