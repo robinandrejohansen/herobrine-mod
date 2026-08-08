@@ -59,6 +59,9 @@ BONE_DARK = (48, 40, 35, 255)
 # A cavity, not a shadow. Near black, so bone inside it reads as depth.
 CAVITY = (26, 20, 18, 255)
 BLOOD = (78, 24, 20, 255)
+# Fresh at the mouth, where it is still coming from. Everything else on the
+# body is old and dry — the contrast is what makes the mouth read as wet.
+WET = (122, 26, 24, 255)
 BRAIN = (146, 78, 80, 255)
 TOOTH = (198, 192, 176, 255)
 
@@ -79,15 +82,43 @@ RIB_SHADOW = [(22, 26, 4, 1)]
 STUMP = [(28, 20, 3, 1)]
 STUMP_RAW = [(28, 21, 3, 2)]
 
-# Head front is (8, 8). Vanilla leaves the lower face blank — the eyes sit at
-# row 12 and there is no mouth at all, which is why it needed one.
-JAW = [(10, 14, 4, 2)]
-TEETH = [(10, 14, 1, 1), (13, 14, 1, 1), (11, 15, 2, 1)]
+# Head front is (8, 8). Vanilla leaves the lower face blank — eyes at row 12
+# and nothing else — which is why it read as a mask.
+#
+# The mouth is open and full. A dark rim so it reads as a hole rather than a
+# painted shape, wet red inside it, a couple of teeth left, and blood over the
+# chin — which then keeps going down the chest, because blood does not stop at
+# the edge of a texture and the two faces meet at the neck.
+MOUTH_RIM = [(10, 13, 4, 1)]
+MOUTH_WET = [(11, 14, 2, 1), (10, 15, 4, 1)]
+MOUTH_DEEP = [(10, 14, 1, 1), (13, 14, 1, 1)]
+TEETH = [(11, 13, 1, 1), (12, 13, 1, 1)]
+
+# Down the front, from the chin. Uneven lengths — a run of even streaks looks
+# like a pattern, and this wants to look like it happened.
+DRIPS = [(22, 20, 1, 6), (24, 20, 1, 3), (23, 20, 1, 2), (25, 21, 1, 2), (21, 20, 1, 1)]
 
 # Head top is (8, 0).
 SKULL = [(10, 2, 4, 3), (11, 1, 2, 1)]
 
 STAINS = [(24, 29, 2, 1), (20, 31, 2, 1), (5, 22, 2, 3), (6, 27, 2, 2), (26, 22, 1, 3)]
+
+
+def speckle(px, width, height):
+	"""One shade of movement across the painted areas, deterministically."""
+	touched = (BONE, BONE_DARK, CAVITY, BLOOD, WET, BRAIN, TOOTH)
+	for y in range(height):
+		for x in range(width):
+			px_at = px[y][x]
+			if px_at[3] == 0 or px_at not in touched:
+				continue
+			# A fixed checker rather than a random roll, so the texture is the
+			# same every time it is generated and can be diffed.
+			shift = -9 if (x * 7 + y * 13) % 3 == 0 else 6 if (x + y) % 4 == 0 else 0
+			if shift:
+				r, g, b, a = px_at
+				px[y][x] = (max(0, min(255, r + shift)), max(0, min(255, g + shift)),
+				            max(0, min(255, b + shift)), a)
 
 
 def paint(px, boxes, colour, width, height):
@@ -129,10 +160,19 @@ def main():
 	paint(px, STUMP_RAW, BLOOD, width, height)
 	paint(px, STUMP, BONE, width, height)
 
-	paint(px, JAW, CAVITY, width, height)
+	paint(px, MOUTH_RIM, CAVITY, width, height)
+	paint(px, MOUTH_DEEP, CAVITY, width, height)
+	paint(px, MOUTH_WET, WET, width, height)
 	paint(px, TEETH, TOOTH, width, height)
+	paint(px, DRIPS, BLOOD, width, height)
 	paint(px, SKULL, BRAIN, width, height)
 	paint(px, STAINS, BLOOD, width, height)
+
+	# A pixel of variation over everything that was painted flat. Four blocks
+	# of identical colour read as a sticker; the same four with one shade of
+	# movement in them read as a surface, which is the whole difference between
+	# pixel art and a coloured rectangle.
+	speckle(px, width, height)
 
 	out = os.path.join(OUT, 'zombie.png')
 	pngio.write(out, width, height, px)

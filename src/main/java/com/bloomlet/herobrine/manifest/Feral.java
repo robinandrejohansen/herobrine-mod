@@ -73,12 +73,22 @@ public final class Feral {
 	private static final double STRIKE_RANGE = 2.2;
 	private static final int STRIKE_COOLDOWN = 20;
 	private static final float STRIKE_DAMAGE = 3.0F;
-	/** Faster than a walking player, slower than a sprint. It gets there. */
-	private static final double CHARGE = 1.35;
+	/**
+	 * Faster than a walking player, slower than a sprint.
+	 *
+	 * Pulled back from 1.35. A thing that closes on you quicker than you can
+	 * think about it is a jump scare, and this is meant to be a decision — you
+	 * see it start, and you have the two or three seconds it takes to arrive to
+	 * choose between the sword and the ladder.
+	 */
+	private static final double CHARGE = 1.08;
 
 	private static final Map<UUID, Long> lastStruck = new HashMap<>();
 	/** Which of them are currently coming, so the turn can be heard once. */
 	private static final Set<UUID> roused = new HashSet<>();
+
+	/** Seven seconds between beats, staggered per creature. */
+	private static final int HEARTBEAT = 140;
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Feral::onTick);
@@ -155,7 +165,7 @@ public final class Feral {
 		if (roused.add(mob.getUUID())) {
 			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
 				SoundEvents.WARDEN_ANGRY, SoundSource.HOSTILE, 1.0F, 1.45F);
-		} else if (level.getGameTime() % 70 == 0) {
+		} else if ((level.getGameTime() + Math.floorMod(mob.getUUID().hashCode(), 70)) % 70 == 0) {
 			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
 				SoundEvents.WARDEN_AGITATED, SoundSource.HOSTILE, 0.8F, 1.4F);
 		}
@@ -190,7 +200,16 @@ public final class Feral {
 		// that one is the closest thing to it. Quiet enough that a player in
 		// the passage hears it before they can tell where it is coming from,
 		// which is the entire reason it is a heartbeat and not a groan.
-		if (level.getGameTime() % 140 == 0) {
+		// Offset per creature, which is the fix for the echo.
+		//
+		// Keyed on game time alone, every one of them beat on exactly the same
+		// tick — so two cells a few blocks apart fired the same sound at the
+		// same instant and it came back as one doubled, slightly flanged noise
+		// rather than as two things breathing. Their own id spreads them out,
+		// and two heartbeats that are close but not together is far worse than
+		// either one alone.
+		long own = Math.floorMod(mob.getUUID().hashCode(), HEARTBEAT);
+		if ((level.getGameTime() + own) % HEARTBEAT == 0) {
 			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
 				SoundEvents.WARDEN_HEARTBEAT, SoundSource.HOSTILE, 0.45F, 0.85F);
 		}
