@@ -108,8 +108,10 @@ much faster and is the intended route.
 - [x] The head stays locked on you while the body walks wherever it is going
 - [x] He hits — two hearts, once a second. Still invulnerable; hit him and he
       reappears behind you and keeps coming
-- [x] He breaks off — suddenly 26–46 blocks away, standing, watching — then
-      comes back in at 9–17 and runs at you again
+- [x] He breaks off three times — 26–46 blocks away, standing, watching — and
+      each return comes in closer and gives you less room than the last
+- [x] It ends where you can see it: he stops dead in the open, looks at you
+      for two and a half seconds, and goes
 - [x] Swims at walking speed; a lake is not a moat
 - [x] Ends after 100 seconds, or when you put 52 blocks between you
 - [x] Blocked by a ravine, he stops trying and reappears closer, behind you

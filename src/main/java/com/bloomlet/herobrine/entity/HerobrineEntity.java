@@ -187,6 +187,23 @@ public class HerobrineEntity extends PathfinderMob {
 	private boolean watching;
 	private int moodTicks;
 
+	/**
+	 * How many times he has broken off, and why it is counted.
+	 *
+	 * An unbounded watch-and-return loop is what "it is just coming back and
+	 * back" means: every cycle is the same size as the last, so there is no
+	 * way to tell the second from the fifth, and a thing with no shape reads as
+	 * a thing with no end. Three, and each return comes in closer and stays
+	 * shorter than the one before, so the player can feel it tightening even
+	 * without counting.
+	 */
+	private int breakOffs;
+	private static final int MAX_BREAK_OFFS = 3;
+
+	/** He stops, and lets them watch him stop. */
+	private boolean relenting;
+	private static final int RELENT_TICKS = 50;
+
 	/** Two hearts, and not oftener than once a second. */
 	private static final float STRIKE_DAMAGE = 4.0F;
 	private static final int STRIKE_COOLDOWN = 22;
@@ -217,9 +234,15 @@ public class HerobrineEntity extends PathfinderMob {
 		this.moodTicks = chaseSpell();
 	}
 
-	/** How long he comes at you before breaking off. 8–16 seconds. */
+	/**
+	 * How long he comes at you before breaking off.
+	 *
+	 * Shorter each time round, so the rhythm accelerates: a long first run that
+	 * gives the player time to work out what is happening, then progressively
+	 * less room to think in.
+	 */
 	private int chaseSpell() {
-		return 160 + this.random.nextInt(160);
+		return Math.max(70, 200 - this.breakOffs * 45) + this.random.nextInt(90);
 	}
 
 	/** And how long he stands and watches before coming back. 3–5 seconds. */
@@ -932,6 +955,16 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
+		if (this.relenting) {
+			this.getNavigation().stop();
+			this.setDeltaMovement(Vec3.ZERO);
+			this.faceOneOf(java.util.List.of(quarry));
+			if (--this.moodTicks <= 0) {
+				this.vanish("hunt: he stopped");
+			}
+			return;
+		}
+
 		if (this.watching) {
 			this.watch(quarry);
 			return;
@@ -1003,10 +1036,14 @@ public class HerobrineEntity extends PathfinderMob {
 
 		// Long enough. He stops coming, and is somewhere else entirely.
 		if (--this.moodTicks <= 0) {
-			if (reappearAt(quarry, WATCH_NEAR, WATCH_FAR, true)) {
+			if (this.breakOffs >= MAX_BREAK_OFFS) {
+				this.relent(quarry);
+			} else if (reappearAt(quarry, WATCH_NEAR, WATCH_FAR, true)) {
 				this.watching = true;
+				this.breakOffs++;
 				this.moodTicks = watchSpell();
-				HerobrineMod.LOGGER.info("hunt: broke off to watch from {} blocks",
+				HerobrineMod.LOGGER.info("hunt: broke off ({}/{}) to watch from {} blocks",
+					this.breakOffs, MAX_BREAK_OFFS,
 					String.format("%.0f", this.distanceTo(quarry)));
 			} else {
 				// Nowhere to stand and be seen from. He simply keeps coming,
@@ -1015,6 +1052,29 @@ public class HerobrineEntity extends PathfinderMob {
 				this.moodTicks = chaseSpell();
 			}
 		}
+	}
+
+	/**
+	 * He stops, and they get to see him stop.
+	 *
+	 * A hunt that ends by the pursuer quietly ceasing to exist somewhere behind
+	 * you does not end at all — the player keeps checking over their shoulder
+	 * for the next ten minutes, which sounds like a triumph and is actually the
+	 * event failing to resolve. So the last beat is deliberate and legible: he
+	 * stops dead, in the open, and looks at them for two and a half seconds
+	 * while doing nothing whatever. Then he goes.
+	 *
+	 * That pause is the only full stop this phase has. It is also the thing
+	 * that makes the NEXT hunt frightening, because they now know what it looks
+	 * like when he is finished, and they will be waiting for it.
+	 */
+	private void relent(Player quarry) {
+		this.relenting = true;
+		this.watching = false;
+		this.moodTicks = RELENT_TICKS;
+		this.getNavigation().stop();
+		HerobrineMod.LOGGER.info("hunt: done after {} ticks and {} break-offs",
+			this.age, this.breakOffs);
 	}
 
 	/**
@@ -1042,7 +1102,11 @@ public class HerobrineEntity extends PathfinderMob {
 		// And then he is close. Out of their view for the move itself, because
 		// the oldest rule in the mod is that he is never seen arriving — they
 		// look back at where he was standing and he is not there any more.
-		if (reappearAt(quarry, RUSH_NEAR, RUSH_FAR, false)) {
+		// Tighter every time. The third return starts about where the first one
+		// ended, which is the whole reason for counting them.
+		double squeeze = 2.5 * this.breakOffs;
+		if (reappearAt(quarry, Math.max(6.0, RUSH_NEAR - squeeze),
+				Math.max(8.0, RUSH_FAR - squeeze), false)) {
 			HerobrineMod.LOGGER.info("hunt: back in at {} blocks",
 				String.format("%.0f", this.distanceTo(quarry)));
 		}
