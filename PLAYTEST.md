@@ -675,6 +675,57 @@ Needs darkness. It reports where he is — turn and look.
 - [ ] Books and loot are whatever the first arrival's roll produced — the
       second player sees the same chests, not their own version
 
+### A7l — The threshold (house 5)
+
+```
+/herobrine threshold
+```
+
+Reports where it is — 2600–3600 blocks out, always further than the homestead.
+To look at it now:
+
+```
+/herobrine threshold here
+```
+
+**Above ground — there should be almost nothing:**
+
+- [ ] A doorframe standing in the grass with **no house behind it**
+- [ ] A hole beside it with steps going down
+- [ ] No path, no field, no fence, no graves. Nothing says anybody lived here
+- [ ] You could walk past it at twenty blocks and not look twice
+
+**Going down:**
+
+- [ ] A cut stair, about 34 steps, walled in brick
+- [ ] The stonework gets **rougher the deeper it goes** — the workmanship
+      gives out on the way down
+- [ ] Then it stops being built and starts being dug: a long, empty, wandering
+      passage into a big hall
+
+**The cells — this is the moment:**
+
+- [ ] Right angles, squared brick walls and iron bars **inside a cave that has
+      none**. That contrast is the whole thing
+- [ ] Eight cells, four a side, along a corridor you have to walk the length
+      of. There is no way round
+- [ ] Bones, cobwebs, hanging chains. **No beds and no bowls** — nothing that
+      says anybody was kept alive in here
+- [ ] Exactly **one** cell has its bars pushed **outward** into the corridor,
+      with two bars left standing in the walkway. Not broken into. Broken out
+- [ ] A few words scratched in his hand in some cells
+
+**The seal:**
+
+- [ ] An obsidian frame with newer, cracked deepslate bricked into it — the
+      opening was cut, then filled in from this side
+- [ ] Chains, and redstone staining the floor in front of it
+- [ ] It does **nothing**. No portal, no particles, nothing to interact with
+- [ ] `we put it back / it did not hold`
+
+> The reward for reaching the bottom is not a dimension. It is the certainty
+> that there is one, that somebody shut it, and that the seal is cracked.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the

@@ -47,9 +47,26 @@ public final class Dwellings {
 	public static final AttachmentType<Long> ORIGIN =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("homestead_origin"), Codec.LONG);
 
+	public static final AttachmentType<Boolean> THRESHOLD_RAISED =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("threshold_raised"), Codec.BOOL);
+
+	public static final AttachmentType<Long> THRESHOLD_ORIGIN =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("threshold_origin"), Codec.LONG);
+
 	/** Far enough to be a journey, near enough to be reachable on foot. */
 	private static final int MIN_RANGE = 1100;
 	private static final int MAX_RANGE = 1900;
+
+	/**
+	 * The threshold sits further out than the homestead, and always further
+	 * than it in the same world.
+	 *
+	 * Distance is the only thing telling the player these are a sequence. He
+	 * did not move house to somewhere nicer; each one is further from anywhere
+	 * anybody else would go, and the last is a long way past the first.
+	 */
+	private static final int THRESHOLD_MIN = 2600;
+	private static final int THRESHOLD_MAX = 3600;
 	/** Build when somebody is this close. Inside a default simulation radius. */
 	private static final int RAISE_RANGE = 112;
 	private static final int CHECK_INTERVAL = 40;
@@ -65,16 +82,72 @@ public final class Dwellings {
 			return;
 		}
 		ServerLevel overworld = server.overworld();
-		if (Boolean.TRUE.equals(overworld.getAttached(RAISED))) {
-			return;
-		}
-		BlockPos site = siteFor(overworld);
-		for (ServerPlayer player : overworld.players()) {
-			if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
-				raise(overworld, site);
-				return;
+		if (!Boolean.TRUE.equals(overworld.getAttached(RAISED))) {
+			BlockPos site = siteFor(overworld);
+			for (ServerPlayer player : overworld.players()) {
+				if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
+					raise(overworld, site);
+					break;
+				}
 			}
 		}
+		if (!Boolean.TRUE.equals(overworld.getAttached(THRESHOLD_RAISED))) {
+			BlockPos site = thresholdSiteFor(overworld);
+			for (ServerPlayer player : overworld.players()) {
+				if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
+					raiseThreshold(overworld, site);
+					break;
+				}
+			}
+		}
+	}
+
+	public static BlockPos thresholdSiteFor(ServerLevel level) {
+		RandomSource random = RandomSource.create(level.getSeed() ^ 0x546872657368L);
+		double angle = random.nextDouble() * Math.PI * 2.0;
+		double range = THRESHOLD_MIN + random.nextDouble() * (THRESHOLD_MAX - THRESHOLD_MIN);
+		BlockPos spawn = level.getLevelData().getRespawnData().pos();
+		return new BlockPos(
+			spawn.getX() + (int)(Math.cos(angle) * range),
+			spawn.getY(),
+			spawn.getZ() + (int)(Math.sin(angle) * range));
+	}
+
+	public static @org.jspecify.annotations.Nullable BlockPos thresholdOrigin(ServerLevel level) {
+		Long packed = level.getServer().overworld().getAttached(THRESHOLD_ORIGIN);
+		return packed == null ? null : BlockPos.of(packed);
+	}
+
+	/**
+	 * Raise the threshold near its site.
+	 *
+	 * Far less fussy about ground than the homestead, and deliberately so:
+	 * almost nothing of it is above the surface, so a slope that would tilt a
+	 * farmhouse does not matter to a stair mouth. All it needs is dry land.
+	 */
+	public static boolean raiseThreshold(ServerLevel level, BlockPos near) {
+		for (int attempt = 0; attempt < 24; attempt++) {
+			int x = near.getX() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
+			int z = near.getZ() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
+			BlockPos column = new BlockPos(x, level.getSeaLevel(), z);
+			if (!level.isLoaded(column)) {
+				continue;
+			}
+			int ground = Ground.topOf(level, x, z);
+			if (ground <= level.getSeaLevel()
+				|| !level.getFluidState(new BlockPos(x, ground, z)).isEmpty()) {
+				continue;
+			}
+			BlockPos origin = new BlockPos(x, ground, z);
+			Threshold.raise(level, origin, level.getRandom());
+			ServerLevel overworld = level.getServer().overworld();
+			overworld.setAttached(THRESHOLD_RAISED, true);
+			overworld.setAttached(THRESHOLD_ORIGIN, origin.asLong());
+			return true;
+		}
+		HerobrineMod.LOGGER.warn("no dry ground for the threshold near [{}, {}]",
+			near.getX(), near.getZ());
+		return false;
 	}
 
 	/**

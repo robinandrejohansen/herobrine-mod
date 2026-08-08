@@ -40,6 +40,10 @@ public final class HerobrineCommand {
 
 				.then(Commands.literal("status").executes(HerobrineCommand::status))
 
+				.then(Commands.literal("threshold")
+					.executes(HerobrineCommand::threshold)
+					.then(Commands.literal("here").executes(HerobrineCommand::thresholdHere)))
+
 				.then(Commands.literal("house")
 					.executes(HerobrineCommand::house)
 					// Raises it at your feet instead of a thousand blocks out.
@@ -209,6 +213,32 @@ public final class HerobrineCommand {
 			+ site.getX() + " " + site.getY() + " " + site.getZ()
 			+ "  |  " + distance + " blocks away";
 		ctx.getSource().sendSuccess(() -> Component.literal(line), false);
+		return 1;
+	}
+
+	private static int threshold(CommandContext<CommandSourceStack> ctx)
+			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		ServerLevel level = (ServerLevel)player.level();
+		net.minecraft.core.BlockPos found = Dwellings.thresholdOrigin(level);
+		net.minecraft.core.BlockPos site = found != null ? found : Dwellings.thresholdSiteFor(level);
+		int distance = (int)Math.sqrt(site.distSqr(player.blockPosition()));
+		String line = (found != null ? "threshold standing at " : "threshold will stand near ")
+			+ site.getX() + " " + site.getY() + " " + site.getZ()
+			+ "  |  " + distance + " blocks away";
+		ctx.getSource().sendSuccess(() -> Component.literal(line), false);
+		return 1;
+	}
+
+	private static int thresholdHere(CommandContext<CommandSourceStack> ctx)
+			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		ServerLevel level = (ServerLevel)player.level();
+		net.minecraft.core.BlockPos at = player.blockPosition().offset(0, 0, 6);
+		com.bloomlet.herobrine.structure.Threshold.raise(level, at, level.getRandom());
+		ctx.getSource().sendSuccess(() -> Component.literal(
+			"threshold raised at " + at.getX() + " " + at.getY() + " " + at.getZ()
+				+ "  |  the stair goes down and south"), false);
 		return 1;
 	}
 
