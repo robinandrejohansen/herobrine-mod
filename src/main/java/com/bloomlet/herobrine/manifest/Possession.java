@@ -61,6 +61,26 @@ public final class Possession {
 	public static final AttachmentType<Boolean> POSSESSED =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("possessed"), Codec.BOOL);
 
+	/**
+	 * Whose it is.
+	 *
+	 * A possessed animal belongs to exactly one player, and this is the single
+	 * most important line in the file for more than one person on a server.
+	 * Without it a mob standing between two players has its facing overwritten
+	 * twice a tick and visibly flickers between them, its place in the ring
+	 * oscillates between a ring around each, and the catch-up can fire twice
+	 * and drag it toward whichever player happened to be iterated last.
+	 *
+	 * It is also the right design and not merely the fix. DESIGN.md's
+	 * multiplayer rule is that the seal is shared but the ATTENTION is
+	 * personal, and nothing carries that better than this: your animals follow
+	 * you and walk straight past your friend as though they were furniture. To
+	 * them it looks like a cow that has singled you out, which is worse for
+	 * both of you than a cow that hates everybody.
+	 */
+	public static final AttachmentType<String> OWNER =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("possessed_by"), Codec.STRING);
+
 	private static final double SEARCH_RADIUS = 24.0;
 
 	/** Beyond this, walking will not do — it is brought closer instead. */
@@ -97,13 +117,20 @@ public final class Possession {
 	private static int tickCounter;
 
 	/**
-	 * Animals that saw you do it.
+	 * Animals that saw you do it, and which of you they saw.
 	 *
 	 * Deliberately NOT an attachment. This is a few seconds of shock, not a
 	 * property of the animal, and it should not survive a world reload — a cow
 	 * still frozen in horror the next morning is a bug, not a scare.
+	 *
+	 * The killer is recorded because they all turn to face THAT player. A
+	 * bystander watching a herd swing round to stare at their friend gets the
+	 * better half of this: they can see exactly who it is about, and it is not
+	 * them yet.
 	 */
-	private static final Map<UUID, Long> witnesses = new HashMap<>();
+	private record Witness(long until, UUID sawWhom) {}
+
+	private static final Map<UUID, Witness> witnesses = new HashMap<>();
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Possession::onTick);
@@ -182,7 +209,7 @@ public final class Possession {
 			}
 			// No idle noise. A cow that stares in silence is worse than one
 			// that stares and then moos, which would break it instantly.
-			claim(taken);
+			claim(taken, player);
 			if (took == 0) {
 				ManifestationDirector.noteLocation(taken.blockPosition());
 			}
@@ -243,7 +270,7 @@ public final class Possession {
 				continue;
 			}
 			if (other instanceof Animal || other instanceof AbstractVillager) {
-				witnesses.put(other.getUUID(), until);
+				witnesses.put(other.getUUID(), new Witness(until, player.getUUID()));
 				if (!other.isBaby()) {
 					watchers.add(other);
 				}
@@ -262,17 +289,42 @@ public final class Possession {
 		if (killed >= TOLL_LIMIT || live >= LIVE_CAP) {
 			return;   // he has taken enough here
 		}
+		// The two new ones belong to whoever swung, not to whoever the dead one
+		// belonged to. On a server that makes helping a friend cull their herd
+		// the way you inherit it — which is the correct price, and the same one
+		// wrath already charges, since the defiance for the kill goes to the
+		// killer too. There is no way to take this on for someone else without
+		// taking it on.
 		int room = Math.min(SPREAD_PER_KILL, LIVE_CAP - live);
 		java.util.Collections.shuffle(watchers, new java.util.Random(level.getRandom().nextLong()));
 		for (int i = 0; i < room && i < watchers.size(); i++) {
-			claim(watchers.get(i));
+			claim(watchers.get(i), player);
 		}
 	}
 
-	private static void claim(Mob mob) {
+	private static void claim(Mob mob, ServerPlayer owner) {
 		mob.setAttached(POSSESSED, true);
+		mob.setAttached(OWNER, owner.getUUID().toString());
 		mob.setSilent(true);
 		mob.setPersistenceRequired();
+	}
+
+	/** @return the player this one belongs to, if they are here to be followed */
+	private static @org.jetbrains.annotations.Nullable ServerPlayer ownerOf(
+			ServerLevel level, Mob mob) {
+		String id = mob.getAttached(OWNER);
+		if (id == null) {
+			return null;
+		}
+		ServerPlayer owner;
+		try {
+			owner = level.getServer().getPlayerList().getPlayer(UUID.fromString(id));
+		} catch (IllegalArgumentException malformed) {
+			return null;
+		}
+		// Another dimension counts as gone. It has no way to follow them there
+		// and should not be twitching toward a player who is not in this world.
+		return owner != null && owner.level() == level ? owner : null;
 	}
 
 	private static void drop(ServerLevel level, Mob mob, ItemStack stack) {
@@ -297,11 +349,24 @@ public final class Possession {
 				AABB close = player.getBoundingBox().inflate(WITNESS_RADIUS);
 				for (Mob mob : level.getEntitiesOfClass(Mob.class, close)) {
 					if (isPossessed(mob)) {
-						if (settled(mob, player)) {
+						ServerPlayer owner = ownerOf(level, mob);
+						if (owner == null) {
+							// Whoever it belongs to has logged off or left this
+							// world. It does not transfer and it does not go
+							// back to being an animal — it simply stops where
+							// it is. Someone else logging in finds silent,
+							// motionless cattle standing in a field, which is
+							// the most unsettling thing in this file and costs
+							// nothing to produce.
+							stop(mob);
+						} else if (owner == player && settled(mob, player)) {
 							hold(mob, player);
 						}
-					} else if (sawIt(level, mob)) {
-						hold(mob, player);
+					} else {
+						ServerPlayer saw = sawIt(level, mob);
+						if (saw == player) {
+							hold(mob, player);
+						}
 					}
 				}
 				if (!sweep) {
@@ -309,7 +374,10 @@ public final class Possession {
 				}
 				AABB far = player.getBoundingBox().inflate(SWEEP_RADIUS);
 				for (Mob mob : level.getEntitiesOfClass(Mob.class, far)) {
-					if (!isPossessed(mob) || settled(mob, player)) {
+					// Only its owner moves it. Anyone else it is standing near
+					// is scenery as far as it is concerned.
+					if (!isPossessed(mob) || ownerOf(level, mob) != player
+						|| settled(mob, player)) {
 						continue;
 					}
 					if (mob.distanceTo(player) > CATCHUP_RADIUS) {
@@ -434,24 +502,32 @@ public final class Possession {
 		}
 	}
 
-	/** True while an ordinary animal is still frozen by what it just watched. */
-	private static boolean sawIt(ServerLevel level, Mob mob) {
-		Long until = witnesses.get(mob.getUUID());
-		if (until == null) {
-			return false;
+	/**
+	 * @return the player an ordinary animal is still frozen watching, or null
+	 *         if it saw nothing or has got over it
+	 */
+	private static @org.jetbrains.annotations.Nullable ServerPlayer sawIt(
+			ServerLevel level, Mob mob) {
+		Witness witness = witnesses.get(mob.getUUID());
+		if (witness == null) {
+			return null;
 		}
-		if (level.getGameTime() >= until) {
+		if (level.getGameTime() >= witness.until()) {
 			witnesses.remove(mob.getUUID());
-			return false;
+			return null;
 		}
-		return true;
+		return level.getServer().getPlayerList().getPlayer(witness.sawWhom());
 	}
 
-	private static void hold(Mob mob, Player player) {
-		// Undo whatever the goals decided this tick.
+	/** Undo whatever the goals decided this tick. */
+	private static void stop(Mob mob) {
 		mob.getNavigation().stop();
 		mob.setDeltaMovement(0.0, mob.getDeltaMovement().y, 0.0);
 		mob.setJumping(false);
+	}
+
+	private static void hold(Mob mob, Player player) {
+		stop(mob);
 
 		// Track the player with the head, and turn the body to match — a
 		// creature facing you squarely reads as attention, where head-only

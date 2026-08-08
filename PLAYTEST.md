@@ -334,6 +334,30 @@ The command prints which animal and where. Now go and look at it.
 > Known gap: **the eyes do not glow yet.** That needs a separate texture per
 > mob type aligned to each one's UV map, and is a follow-up.
 
+### A7f — Possessed mobs with two players
+
+Needs a second player. Open the world to LAN (`Esc` -> `Open to LAN`, allow
+cheats) and have someone join.
+
+- [ ] Get one of yours following you, then stand next to your friend. It faces
+      **you**, and keeps facing you as they walk around it. It never flickers
+      between you
+- [ ] Walk apart. It follows **you**, and ignores them completely
+- [ ] Both of you get your own. They do not share a flock, and each animal
+      rings its own owner
+- [ ] Have your friend kill one of **yours**. The two new ones follow
+      **them**, not you — and the defiance lands on them
+- [ ] Log out with some of yours following you. Your friend finds them
+      **standing still and silent** where you left them — not wandering, not
+      transferring to them
+- [ ] Log back in: yours resume following you
+- [ ] Go through a nether portal with some following. They stop rather than
+      twitching toward a player who is not in that world
+- [ ] Kill one in front of your friend: the herd turns to face **the killer**,
+      not the bystander
+- [ ] `/herobrine status` shows the same `his animals killed n/100` for both of
+      you — the toll is the world's, not yours
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the

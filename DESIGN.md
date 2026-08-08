@@ -335,6 +335,26 @@ Flagged honestly, to be resolved before the relevant phase is built.
   Sign text is chosen from the reading player's own stats, so two players at
   the same base get different words.
 
+  **A possessed animal belongs to one player.** It follows its owner, rings
+  its owner, and walks past everyone else as though they were furniture. This
+  is the clearest expression of the split anywhere in the mod: to a bystander
+  it is a cow that has singled out their friend, which is worse for both of
+  them than a cow that hates everybody.
+
+  It is also load-bearing rather than flavour. Without an owner, a mob standing
+  between two players has its facing overwritten twice a tick and visibly
+  flickers between them, its place in the ring oscillates, and the catch-up can
+  fire twice in a sweep and drag it toward whichever player was iterated last.
+
+  Killing one of someone else's transfers the two it spreads to **the killer**,
+  and the defiance lands on the killer as well. Helping a friend cull their
+  herd is how you inherit it, and there is no way to take this on for someone
+  else without taking it on.
+
+  An owner who logs off or leaves the dimension does not hand their animals to
+  anybody. They stop where they are — silent and motionless until that player
+  comes back.
+
   **The Journal is shared**, on the same reasoning as the seal. There was one
   journal; the elder brother wrote it once and tore it up once. Two players
   assemble one account between them, which gives them something to compare and
