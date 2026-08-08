@@ -30,6 +30,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * The flag is read at the top of the layer and held in a field for the three
  * calls that follow, which is safe because all of this happens on one render
  * thread and none of it outlives the method.
+ *
+ * Both injections name submit's FULL descriptor, and that is not tidiness. The
+ * class carries two of them — the real one and a synthetic bridge taking the
+ * erased EntityRenderState — and a bare "submit" matches both. The bridge
+ * contains none of the calls being modified, so the argument modifier scanned
+ * zero targets there, failed its injection check, and crashed the game on
+ * startup.
  */
 @Mixin(VillagerProfessionLayer.class)
 public class VillagerProfessionLayerMixin {
@@ -40,7 +47,8 @@ public class VillagerProfessionLayerMixin {
 	@Unique
 	private boolean herobrine$drained;
 
-	@Inject(method = "submit", at = @At("HEAD"))
+	@Inject(method = "submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;FF)V",
+		at = @At("HEAD"))
 	private void herobrine$check(com.mojang.blaze3d.vertex.PoseStack poseStack,
 	                             net.minecraft.client.renderer.SubmitNodeCollector collector,
 	                             int lightCoords, LivingEntityRenderState state,
@@ -49,7 +57,7 @@ public class VillagerProfessionLayerMixin {
 	}
 
 	@ModifyArg(
-		method = "submit",
+		method = "submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;FF)V",
 		at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/renderer/entity/layers/RenderLayer;"
 				+ "renderColoredCutoutModel(Lnet/minecraft/client/model/Model;"
