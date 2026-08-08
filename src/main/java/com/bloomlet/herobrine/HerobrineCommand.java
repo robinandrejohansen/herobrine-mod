@@ -89,6 +89,8 @@ public final class HerobrineCommand {
 			+ "  |  pages " + com.bloomlet.herobrine.manifest.Journal.pagesFound(level)
 				+ "/" + com.bloomlet.herobrine.manifest.JournalPages.maxPageFor(phase)
 				+ " readable now"
+			+ "  |  his animals killed " + com.bloomlet.herobrine.manifest.Possession.toll(level)
+				+ "/" + com.bloomlet.herobrine.manifest.Possession.tollLimit()
 			+ (ManifestationDirector.speed() > 1 ? "  |  pacing x" + ManifestationDirector.speed() : "");
 		ctx.getSource().sendSuccess(() -> Component.literal(line), false);
 		return 1;

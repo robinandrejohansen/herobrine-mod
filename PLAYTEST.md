@@ -289,7 +289,15 @@ The command prints which animal and where. Now go and look at it.
 - [ ] It drops a **bone and rotten flesh** on top of its normal drops
 - [ ] Every ordinary animal within 20 blocks **stops and turns to face you**,
       in silence, for about six seconds — then goes back to being an animal
-- [ ] Those witnesses do **not** follow you and never attack
+- [ ] **Two of the watchers never stop watching.** They are his now — walk
+      away and they follow. You did not have to spawn or provoke anything
+- [ ] Kill those two and it spreads again. The herd builds itself
+- [ ] `/herobrine status` shows `his animals killed n/100`. At 100 it stops
+      spreading, and never resets
+- [ ] It stops spreading if 16 are already his nearby, so it cannot run away
+      with the whole world
+- [ ] Ordinary witnesses that were *not* taken go back to normal after six
+      seconds — they do not follow and never attack
 - [ ] Reload the world during the six seconds: nobody is still frozen
 
 **Try to interact with a possessed one:**
@@ -306,8 +314,15 @@ The command prints which animal and where. Now go and look at it.
 ```
 
 - [ ] **Two** animals are taken (four at `/herobrine wrath 1800`)
-- [ ] They all follow you home and end up standing together outside, at
-      roughly the same distance, facing you — without any herding code
+- [ ] They **ring** you rather than piling up on one side. Stand still in a
+      field with six of his and they spread out around you at about 9 blocks
+- [ ] Each keeps its own side as you walk about — they do not reshuffle
+- [ ] Go into your base and stay a while. They gather around **the building**,
+      spread out, all facing it
+- [ ] Do the same in a cave: they come down and take up positions in the
+      passages around you
+- [ ] Walk right up to one. It **holds its ground** and stares — it never
+      backs off to keep its distance
 - [ ] Only adults, never babies
 - [ ] It is never taken while you are looking at it
 

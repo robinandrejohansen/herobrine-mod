@@ -63,8 +63,6 @@ public final class Possession {
 
 	private static final double SEARCH_RADIUS = 24.0;
 
-	/** Inside this it stops and stares. Outside it walks. */
-	private static final double STARE_RADIUS = 12.0;
 	/** Beyond this, walking will not do — it is brought closer instead. */
 	private static final double CATCHUP_RADIUS = 44.0;
 	/** How far out we look for followers that need moving. */
@@ -78,6 +76,23 @@ public final class Possession {
 	private static final double WITNESS_RADIUS = 20.0;
 	/** How long the rest of them stare afterwards. Six seconds is plenty. */
 	private static final int WITNESS_TICKS = 120;
+
+	/** How many of the watchers he takes each time you put one down. */
+	private static final int SPREAD_PER_KILL = 2;
+	/** Ceiling on how many can be his at once near you. Sanity, not design. */
+	private static final int LIVE_CAP = 16;
+	/** How many you may put down before it stops spreading. */
+	private static final int TOLL_LIMIT = 100;
+	/** Where they stand once they have caught you up. */
+	private static final double RING_RADIUS = 9.0;
+	/** Close enough to its place in the ring to stop walking. */
+	private static final double SLOT_TOLERANCE = 3.0;
+	/** Walk right up to one and it holds its ground rather than backing off. */
+	private static final double HOLD_RADIUS = 7.0;
+
+	/** How many of his you have killed. World-wide, and it does not reset. */
+	public static final AttachmentType<Integer> TOLL =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("possession_toll"), Codec.INT);
 
 	private static int tickCounter;
 
@@ -108,6 +123,15 @@ public final class Possession {
 			}
 			return InteractionResult.PASS;
 		});
+	}
+
+	public static int toll(ServerLevel level) {
+		Integer n = level.getServer().overworld().getAttached(TOLL);
+		return n == null ? 0 : n;
+	}
+
+	public static int tollLimit() {
+		return TOLL_LIMIT;
 	}
 
 	public static boolean isPossessed(Mob mob) {
@@ -156,11 +180,9 @@ public final class Possession {
 			if (took >= wanted) {
 				break;
 			}
-			taken.setAttached(POSSESSED, true);
 			// No idle noise. A cow that stares in silence is worse than one
 			// that stares and then moos, which would break it instantly.
-			taken.setSilent(true);
-			taken.setPersistenceRequired();
+			claim(taken);
 			if (took == 0) {
 				ManifestationDirector.noteLocation(taken.blockPosition());
 			}
@@ -203,16 +225,54 @@ public final class Possession {
 		if (!(killer instanceof ServerPlayer player)) {
 			return;
 		}
+
+		ServerLevel overworld = level.getServer().overworld();
+		int killed = toll(level) + 1;
+		overworld.setAttached(TOLL, killed);
+
+		List<Mob> watchers = new ArrayList<>();
+		int live = 0;
 		long until = level.getGameTime() + WITNESS_TICKS;
 		for (Mob other : level.getEntitiesOfClass(
 				Mob.class, mob.getBoundingBox().inflate(WITNESS_RADIUS))) {
-			if (other == mob || isPossessed(other)) {
+			if (other == mob) {
+				continue;
+			}
+			if (isPossessed(other)) {
+				live++;
 				continue;
 			}
 			if (other instanceof Animal || other instanceof AbstractVillager) {
 				witnesses.put(other.getUUID(), until);
+				if (!other.isBaby()) {
+					watchers.add(other);
+				}
 			}
 		}
+
+		// It spreads through the watchers. The ones that stopped to look at
+		// what you did are the ones he takes, which is the whole point — the
+		// player sees a field of animals turn, kills the one that was already
+		// his, and only later works out that two of the watchers never
+		// stopped watching.
+		//
+		// This is what makes the herd build itself. One possession is a
+		// haunting you can end with a sword; two-for-one means ending it is
+		// how it grows, and the player's own most obvious move is the engine.
+		if (killed >= TOLL_LIMIT || live >= LIVE_CAP) {
+			return;   // he has taken enough here
+		}
+		int room = Math.min(SPREAD_PER_KILL, LIVE_CAP - live);
+		java.util.Collections.shuffle(watchers, new java.util.Random(level.getRandom().nextLong()));
+		for (int i = 0; i < room && i < watchers.size(); i++) {
+			claim(watchers.get(i));
+		}
+	}
+
+	private static void claim(Mob mob) {
+		mob.setAttached(POSSESSED, true);
+		mob.setSilent(true);
+		mob.setPersistenceRequired();
 	}
 
 	private static void drop(ServerLevel level, Mob mob, ItemStack stack) {
@@ -237,7 +297,7 @@ public final class Possession {
 				AABB close = player.getBoundingBox().inflate(WITNESS_RADIUS);
 				for (Mob mob : level.getEntitiesOfClass(Mob.class, close)) {
 					if (isPossessed(mob)) {
-						if (mob.distanceTo(player) <= STARE_RADIUS) {
+						if (settled(mob, player)) {
 							hold(mob, player);
 						}
 					} else if (sawIt(level, mob)) {
@@ -249,14 +309,10 @@ public final class Possession {
 				}
 				AABB far = player.getBoundingBox().inflate(SWEEP_RADIUS);
 				for (Mob mob : level.getEntitiesOfClass(Mob.class, far)) {
-					if (!isPossessed(mob)) {
+					if (!isPossessed(mob) || settled(mob, player)) {
 						continue;
 					}
-					double distance = mob.distanceTo(player);
-					if (distance <= STARE_RADIUS) {
-						continue;   // handled per-tick above
-					}
-					if (distance > CATCHUP_RADIUS) {
+					if (mob.distanceTo(player) > CATCHUP_RADIUS) {
 						catchUp(level, mob, player);
 					} else {
 						follow(mob, player);
@@ -273,7 +329,50 @@ public final class Possession {
 	 * in the open — it is supposed to be there later, which is worse.
 	 */
 	private static void follow(Mob mob, ServerPlayer player) {
-		mob.getNavigation().moveTo(player, FOLLOW_SPEED);
+		Vec3 slot = slotOf(mob, player);
+		mob.getNavigation().moveTo(slot.x, slot.y, slot.z, FOLLOW_SPEED);
+	}
+
+	/**
+	 * Where this one stands, once it has caught you up.
+	 *
+	 * Each takes a fixed bearing derived from its own id, so they arrive on
+	 * different sides and end up RINGING wherever you spend your time rather
+	 * than piling up on whichever side they happened to come from. Nothing
+	 * coordinates them — they have never heard of each other. The ring is what
+	 * you get for free when a dozen things independently want to stand a fixed
+	 * distance from you, and it is why walking out of your door at dawn to
+	 * find them spread around the treeline looks deliberate.
+	 *
+	 * The bearing is fixed rather than random so a given animal keeps its
+	 * place as you move around. One that reshuffled every two seconds would
+	 * read as confused, and confusion is not frightening.
+	 */
+	private static Vec3 slotOf(Mob mob, ServerPlayer player) {
+		double angle = (mob.getUUID().hashCode() & 0xFFFF) / 65536.0 * Math.PI * 2.0;
+		return new Vec3(
+			player.getX() + Math.cos(angle) * RING_RADIUS,
+			player.getY(),
+			player.getZ() + Math.sin(angle) * RING_RADIUS);
+	}
+
+	/**
+	 * True when it should stop walking and simply look at you.
+	 *
+	 * Either it has reached its place in the ring, or you have walked right up
+	 * to it — the second case matters, because an animal that backed away to
+	 * keep its distance would read as evasive rather than possessed. It has no
+	 * reason to avoid you. It stands there and lets you do whatever you came
+	 * to do.
+	 */
+	private static boolean settled(Mob mob, ServerPlayer player) {
+		if (mob.distanceTo(player) <= HOLD_RADIUS) {
+			return true;
+		}
+		Vec3 slot = slotOf(mob, player);
+		double dx = mob.getX() - slot.x;
+		double dz = mob.getZ() - slot.z;
+		return Math.sqrt(dx * dx + dz * dz) <= SLOT_TOLERANCE;
 	}
 
 	/**
@@ -305,9 +404,14 @@ public final class Possession {
 		}
 
 		Vec3 look = player.getViewVector(1.0F).normalize();
+		Vec3 slot = slotOf(mob, player);
+		double bearing = Math.atan2(slot.z - player.getZ(), slot.x - player.getX());
 
 		for (int attempt = 0; attempt < 10; attempt++) {
-			double angle = level.getRandom().nextDouble() * Math.PI * 2.0;
+			// Near its own bearing, so a flock arrives spread around you
+			// rather than stacked in one place. Widened a little each try so
+			// a blocked side does not strand it out of range forever.
+			double angle = bearing + (level.getRandom().nextDouble() - 0.5) * (0.4 + attempt * 0.3);
 			double range = 22.0 + level.getRandom().nextDouble() * 12.0;
 			int x = (int)(player.getX() + Math.cos(angle) * range);
 			int z = (int)(player.getZ() + Math.sin(angle) * range);
