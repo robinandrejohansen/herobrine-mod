@@ -39,8 +39,11 @@ import net.minecraft.world.level.levelgen.Heightmap;
  * is a sentence, and the player assembles it themselves — which is the only
  * way it ever lands.
  *
- * Kept to three blocks of interior height on purpose. A tall building reads as
- * a landmark or a dungeon; a low one reads as somewhere people ate.
+ * Four blocks of interior height under a roof, which is low enough to read as
+ * somewhere people ate rather than as a landmark or a dungeon, and tall enough
+ * that walking through it does not feel like crouching in a crawlspace. The
+ * first cut of this was three high and roofless and played like a model of a
+ * house rather than a house.
  *
  * Laid out as character maps by layer rather than as a list of block placements
  * because the layout is the design here, and a floorplan you can see in the
@@ -52,112 +55,170 @@ public final class Homestead {
 	private Homestead() {}
 
 	/** Where the front door sits in the maps, for facing the path. */
-	private static final int DOOR_X = 5;
+	private static final int DOOR_X = 6;
 
 	private static final String[] GROUND = {
-		"                       ",
-		"                       ",
-		"  #############~~~~~~~ ",
-		"  #...........#~~~~~~~ ",
-		"  #...........#~~~~~~~ ",
-		"  #...........#~~~~~~~ ",
-		"  #...........#~~~~~~~ ",
-		"  #...........#~~~~~~~ ",
-		"  #...........#~~~~~~~ ",
-		"  #...........#~~~~~~~ ",
-		"  #############        ",
-		"   ,,,,,,      OOO     ",
-		"     ,         OoO     ",
-		"     , ------  OOO     ",
-		"     , ------     *    ",
-		"     , ------       *  ",
-		"     , ------      *   ",
+		"                             ",
+		"                             ",
+		"  ################# ~~~~~~~~ ",
+		"  #...............# ~~~~~~~~ ",
+		"  #...............# ~~~~~~~~ ",
+		"  #...............# ~~~~~~~~ ",
+		"  #...............# ~~~~~~~~ ",
+		"  #...............# ~~~~~~~~ ",
+		"  #...............# ~~~~~~~~ ",
+		"  #...............# ~~~~~~~~ ",
+		"  #...............# ~~~~~~~~ ",
+		"  #...............#          ",
+		"  #...............#          ",
+		"  #...............# OOO      ",
+		"  ################# OoO      ",
+		"    ,,,,,,,         OOO      ",
+		"      ,                      ",
+		"   ---,------                ",
+		"   ---,------         *      ",
+		"   ---,------            *   ",
+		"   ---,------                ",
+		"   ---,------          *     ",
+		"      ,                      ",
 	};
 
 	private static final String[] COURSE_ONE = {
-		"                       ",
-		"                       ",
-		"  #############fffffff ",
-		"  #AFcCh WB BP#f     f ",
-		"  #   hThW   C#f k   f ",
-		"  #L   h      #G     f ",
-		"  #S     WMMMM#f   k f ",
-		"  #S    xW ^^x#f     f ",
-		"  # l x rWB   #f  k  f ",
-		"  #P^   CW  xC#fffffff ",
-		"  ###D#########        ",
-		"               OOO     ",
-		"               OoO     ",
-		"               OOO     ",
-		"                  ^    ",
-		"                    ^  ",
-		"                   ^   ",
+		"                             ",
+		"                             ",
+		"  ################# ffffffff ",
+		"  #AFc1   PWB  B P# f      f ",
+		"  #    h   W     3# f k    f ",
+		"  #   hTh         # f      f ",
+		"  #L   h   W x    # G      f ",
+		"  #S     x W      # f    k f ",
+		"  #SS    qrWMMMMMM# f      f ",
+		"  #WWW WWWWW  we  # f  k   f ",
+		"  #A      CW    x # ffffffff ",
+		"  #A   x   WB     #          ",
+		"  #  l     W x  C #          ",
+		"  #      2 W     4# OOO      ",
+		"  ####D############ OoO      ",
+		"                    OOO      ",
+		"                             ",
+		"                             ",
+		"                      m      ",
+		"                         n   ",
+		"                             ",
+		"                       p     ",
+		"                             ",
 	};
 
 	private static final String[] COURSE_TWO = {
-		"                       ",
-		"                       ",
-		"  WWgWWWgWWgWgW        ",
-		"  W   t  W    W        ",
-		"  g      W  t W        ",
-		"  W           W        ",
-		"  WS     WMMMMW        ",
-		"  WS     W    W        ",
-		"  b      W x  b        ",
-		"  W    x W    W        ",
-		"  WWWDWWWWWWWWW        ",
-		"                       ",
-		"                       ",
-		"                       ",
-		"                       ",
-		"                       ",
-		"                       ",
+		"                             ",
+		"                             ",
+		"  WWWgWWgWWWWgWWgWW          ",
+		"  W  t     W  t   W          ",
+		"  W        W      g          ",
+		"  g     t         W          ",
+		"  W        W      g          ",
+		"  gS     x W      W          ",
+		"  WS       WMMMMMMW          ",
+		"  WWWW WWWWW      W          ",
+		"  W        W      W          ",
+		"  W        W x    b          ",
+		"  g  t     W      W          ",
+		"  W        W      b          ",
+		"  WWWWDWWWWWWWWbWWW          ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
 	};
 
 	private static final String[] COURSE_THREE = {
-		"                       ",
-		"                       ",
-		"  WWWWWWWWWWWWW        ",
-		"  W      W    W        ",
-		"  W x    W    W        ",
-		"  W      W    W        ",
-		"  W      WMMMMW        ",
-		"  W      W    W        ",
-		"  W      W  x W        ",
-		"  W      W    W        ",
-		"  WWWWWWWWWWWWW        ",
-		"                       ",
-		"                       ",
-		"                       ",
-		"                       ",
-		"                       ",
-		"                       ",
+		"                             ",
+		"                             ",
+		"  WWWWWWWWWWWWWWWWW          ",
+		"  W        W      W          ",
+		"  W x      W      W          ",
+		"  W        W      W          ",
+		"  W        W      W          ",
+		"  W        W      W          ",
+		"  W        WMMMMMMW          ",
+		"  WWWWWWWWWW      W          ",
+		"  W        W      W          ",
+		"  W        W      W          ",
+		"  W        W    x W          ",
+		"  W        W      W          ",
+		"  WWWWWWWWWWWWWWWWW          ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+	};
+
+	private static final String[] COURSE_FOUR = {
+		"                             ",
+		"                             ",
+		"  WWWWWWWWWWWWWWWWW          ",
+		"  W        W      W          ",
+		"  W        W      W          ",
+		"  W        W      W          ",
+		"  W        W      W          ",
+		"  W    x   W      W          ",
+		"  W        WMMMMMMW          ",
+		"  WWWWWWWWWW      W          ",
+		"  W        W      W          ",
+		"  W        W      W          ",
+		"  W        W      W          ",
+		"  W        W      W          ",
+		"  WWWWWWWWWWWWWWWWW          ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
 	};
 
 	private static final String[] ROOF = {
-		"                       ",
-		"                       ",
-		"  _____________        ",
-		"  _____________        ",
-		"  _____________        ",
-		"  _____________        ",
-		"  _____________        ",
-		"  _____________        ",
-		"  _____________        ",
-		"  _____________        ",
-		"  _____________        ",
-		"                       ",
-		"                       ",
-		"                       ",
-		"                       ",
-		"                       ",
-		"                       ",
+		"                             ",
+		" ///////////////////         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" /_________________/         ",
+		" ///////////////////         ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
+		"                             ",
 	};
-
 
 	private static final String[][] LAYERS = {
-		GROUND, COURSE_ONE, COURSE_TWO, COURSE_THREE, ROOF
+		GROUND, COURSE_ONE, COURSE_TWO, COURSE_THREE, COURSE_FOUR, ROOF
 	};
+
+	/** Which layer index the roof deck sits on, for the eaves. */
+	private static final int ROOF_LAYER = 5;
 
 	static {
 		int width = GROUND[0].length();
@@ -227,7 +288,7 @@ public final class Homestead {
 						level.setBlockAndUpdate(below, Blocks.DIRT.defaultBlockState());
 					}
 				}
-				for (int up = 0; up <= 5; up++) {
+				for (int up = 0; up < LAYERS.length + 2; up++) {
 					BlockPos above = floor.above(up);
 					if (!level.getBlockState(above).isAir()) {
 						level.setBlockAndUpdate(above, Blocks.AIR.defaultBlockState());
@@ -260,7 +321,11 @@ public final class Homestead {
 				.setValue(BlockStateProperties.HALF, Half.BOTTOM));
 			case 'D' -> door(level, pos, layer);
 			case 'B' -> bed(level, pos);
-			case 'C' -> chest(level, pos, x, z);
+			case 'C' -> chest(level, pos, null, random);
+			case '1' -> chest(level, pos, HouseBooks.child(), random);
+			case '2' -> chest(level, pos, HouseBooks.farRoom(), random);
+			case '3' -> chest(level, pos, HouseBooks.ledger(), random);
+			case '4' -> chest(level, pos, HouseBooks.tally(), random);
 			case 'c' -> set(level, pos, Blocks.CRAFTING_TABLE.defaultBlockState());
 			case 'F' -> set(level, pos, Blocks.FURNACE.defaultBlockState());
 			case 'A' -> set(level, pos, Blocks.BARREL.defaultBlockState());
@@ -275,7 +340,19 @@ public final class Homestead {
 			case 'x' -> set(level, pos, Blocks.COBWEB.defaultBlockState());
 			case 'k' -> set(level, pos, Blocks.BONE_BLOCK.defaultBlockState()
 				.setValue(BlockStateProperties.AXIS, Direction.Axis.X));
-			case '^' -> sign(level, pos, x, z);
+			case 'q' -> sign(level, pos, "water before dark", "bread on the",
+				"second day", "J. — remember");
+			// His hand. Lowercase, no full stops, unlike every other written
+			// word in the building — nobody has to be told these are not the
+			// family's.
+			case 'w' -> sign(level, pos, "i can hear them", "sleeping");
+			case 'e' -> sign(level, pos, "the bar is on", "their side", "i can wait");
+			case 'm' -> sign(level, pos, "M.");
+			case 'n' -> sign(level, pos, "R.");
+			// Three markers. Four names in the books. Nobody comments on it.
+			case 'p' -> sign(level, pos, "the little one");
+			case '_' -> roofDeck(level, pos, random);
+			case '/' -> eave(level, pos, x, z);
 			default -> { }
 		}
 	}
@@ -375,29 +452,26 @@ public final class Homestead {
 	 * who finds them in the wrong order still gets the story; one who finds
 	 * them in the wrong PLACES does not get anything.
 	 */
-	private static void chest(ServerLevel level, BlockPos pos, int x, int z) {
+	/**
+	 * A chest, its book if it has one, and then whatever the house had left.
+	 *
+	 * The book goes in first and into slot zero, and the loot only ever fills
+	 * slots that are still empty. That ordering is the guarantee: no roll of
+	 * the dice can leave the sealed room without its tally, which is the one
+	 * thing in this building that must never be missing.
+	 */
+	private static void chest(ServerLevel level, BlockPos pos,
+	                          @org.jspecify.annotations.Nullable ItemStack book,
+	                          RandomSource random) {
 		set(level, pos, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
-		BlockEntity entity = level.getBlockEntity(pos);
-		if (!(entity instanceof ChestBlockEntity chest)) {
+		if (!(level.getBlockEntity(pos) instanceof ChestBlockEntity chest)) {
 			return;
 		}
-		if (x == 6 && z == 3) {                 // by the hearth
-			chest.setItem(0, HouseBooks.child());
-			chest.setItem(2, new ItemStack(Items.BREAD, 3));
-			chest.setItem(3, new ItemStack(Items.WHEAT, 12));
-			chest.setItem(5, new ItemStack(Items.WOOL.pick(DyeColor.WHITE), 4));
-		} else if (x == 8 && z == 9) {          // nearest the sealed wall
-			chest.setItem(0, HouseBooks.farRoom());
-			chest.setItem(2, new ItemStack(Items.IRON_INGOT, 2));
-			chest.setItem(4, new ItemStack(Items.STICK, 9));
-		} else if (x == 13 && z == 4) {         // the bedroom
-			chest.setItem(0, HouseBooks.ledger());
-			chest.setItem(3, new ItemStack(Items.SHEARS));
-			chest.setItem(5, new ItemStack(Items.LEATHER, 3));
-		} else {                                 // behind the wall
-			chest.setItem(0, HouseBooks.tally());
+		if (book != null) {
+			chest.setItem(0, book);
 		}
+		Loot.scatter(chest, random, Loot.Tier.HOMESTEAD);
 	}
 
 	/**
@@ -408,22 +482,7 @@ public final class Homestead {
 	 * halfway through the building is the loudest thing in it — nobody has to
 	 * be told that two different people wrote these.
 	 */
-	private static void sign(ServerLevel level, BlockPos pos, int x, int z) {
-		String[] lines;
-		if (x == 4 && z == 9) {
-			lines = new String[]{"water before dark", "bread on the", "second day", "J. — remember"};
-		} else if (z == 7 && x == 11) {
-			lines = new String[]{"i can hear them", "sleeping"};
-		} else if (z == 7 && x == 12) {
-			lines = new String[]{"the bar is on", "their side", "i can wait"};
-		} else if (x == 18) {
-			lines = new String[]{"M."};
-		} else if (x == 20) {
-			lines = new String[]{"R."};
-		} else {
-			// Three markers, four names in the books. Nobody comments on it.
-			lines = new String[]{"the little one"};
-		}
+	private static void sign(ServerLevel level, BlockPos pos, String... lines) {
 		set(level, pos, Blocks.SPRUCE_SIGN.defaultBlockState()
 			.setValue(BlockStateProperties.ROTATION_16, 8));
 		if (level.getBlockEntity(pos) instanceof SignBlockEntity sign) {
@@ -433,6 +492,44 @@ public final class Homestead {
 			}
 			sign.setText(text, true);
 			sign.setWaxed(true);
+		}
+	}
+
+	/**
+	 * The roof, with weather in it.
+	 *
+	 * Holes rather than a clean deck, because a sound roof on a house nobody
+	 * has lived in for years is the detail that would undo all the others. The
+	 * gaps are what let daylight into the main room in stripes, which is the
+	 * only lighting effect in the building and it is free.
+	 */
+	private static void roofDeck(ServerLevel level, BlockPos pos, RandomSource random) {
+		if (random.nextInt(9) == 0) {
+			return;   // fallen in
+		}
+		set(level, pos, Blocks.SPRUCE_PLANKS.defaultBlockState());
+	}
+
+	/**
+	 * The overhang, one block out from the wall all the way round.
+	 *
+	 * Facing is worked out from which side the deck is on rather than written
+	 * into the map, so the eave stays correct if the footprint ever changes.
+	 * Without it the roof meets the walls flush and the whole thing reads as a
+	 * box with a lid.
+	 */
+	private static void eave(ServerLevel level, BlockPos pos, int x, int z) {
+		for (Direction facing : Direction.Plane.HORIZONTAL) {
+			int nx = x + facing.getStepX();
+			int nz = z + facing.getStepZ();
+			if (nz < 0 || nz >= depth() || nx < 0 || nx >= width()) {
+				continue;
+			}
+			if (LAYERS[ROOF_LAYER][nz].charAt(nx) == '_') {
+				set(level, pos, Blocks.SPRUCE_STAIRS.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
+				return;
+			}
 		}
 	}
 
@@ -451,33 +548,34 @@ public final class Homestead {
 	 * mod is the answer to.
 	 */
 	private static void cellar(ServerLevel level, BlockPos origin, RandomSource random) {
-		BlockPos hole = origin.offset(4, 0, 8);
+		BlockPos hole = origin.offset(5, 0, 12);
 
-		// The room, hollowed under the west half of the house.
-		for (int x = 3; x <= 7; x++) {
-			for (int z = 6; z <= 10; z++) {
+		// The room, hollowed under the store at the back of the house.
+		for (int x = 3; x <= 9; x++) {
+			for (int z = 10; z <= 14; z++) {
 				for (int y = -1; y >= -3; y--) {
 					set(level, origin.offset(x, y, z), Blocks.AIR.defaultBlockState());
 				}
 				set(level, origin.offset(x, -4, z), Blocks.COBBLESTONE.defaultBlockState());
 			}
 		}
+
 		// The hole in the floor itself. The map cannot do this: its ground
 		// layer lays a plank floor across the whole interior, so without
 		// taking one back out the cellar is a sealed box nobody can reach.
 		set(level, hole, Blocks.AIR.defaultBlockState());
 
 		// A pillar beside the shaft, so the ladder has something to hang on.
-		// Carved out of the room after it is hollowed, not before.
+		// Carved back out of the room after it is hollowed, not before.
 		for (int y = -1; y >= -3; y--) {
-			set(level, origin.offset(4, y, 7), Blocks.COBBLESTONE.defaultBlockState());
-			set(level, origin.offset(4, y, 8), Blocks.LADDER.defaultBlockState()
+			set(level, origin.offset(5, y, 11), Blocks.COBBLESTONE.defaultBlockState());
+			set(level, origin.offset(5, y, 12), Blocks.LADDER.defaultBlockState()
 				.setValue(LadderBlock.FACING, Direction.SOUTH));
 		}
 
-		// The tunnel. It goes north and it stops.
-		for (int run = 1; run <= 11; run++) {
-			BlockPos at = origin.offset(5, -3, 6 - run);
+		// The tunnel. It goes out from under the house, and it stops.
+		for (int run = 1; run <= 13; run++) {
+			BlockPos at = origin.offset(6, -3, 14 + run);
 			set(level, at, Blocks.AIR.defaultBlockState());
 			set(level, at.below(), Blocks.AIR.defaultBlockState());
 			set(level, at.below(2), Blocks.COBBLESTONE.defaultBlockState());
@@ -492,15 +590,16 @@ public final class Homestead {
 			}
 		}
 
-		BlockPos crate = origin.offset(6, -3, 9);
+		BlockPos crate = origin.offset(8, -3, 13);
 		set(level, crate, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST));
 		if (level.getBlockEntity(crate) instanceof ChestBlockEntity chest) {
 			chest.setItem(0, HouseBooks.brother());
-			chest.setItem(2, new ItemStack(Items.IRON_PICKAXE));
-			chest.setItem(4, new ItemStack(Items.TORCH, 17));
+			chest.setItem(1, new ItemStack(Items.IRON_PICKAXE));
+			Loot.scatter(chest, random, Loot.Tier.HOMESTEAD);
 		}
-		set(level, origin.offset(3, -3, 9), Blocks.COBWEB.defaultBlockState());
+		set(level, origin.offset(3, -3, 13), Blocks.COBWEB.defaultBlockState());
+		set(level, origin.offset(9, -3, 10), Blocks.COBWEB.defaultBlockState());
 	}
 
 	/** Where the ground actually is, averaged so a slope does not tilt it. */

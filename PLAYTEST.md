@@ -445,7 +445,11 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 - [ ] The lectern book (`the house book`) reads as an ordinary household
       diary until its last line
 - [ ] Chests hold `my book` and `the small room`
-- [ ] Interior is **three blocks high** everywhere
+- [ ] A store room at the back with barrels and the cellar hatch
+- [ ] Interior is **four blocks high** everywhere, and the rooms are big
+      enough to move around furniture in
+- [ ] There is a **roof**, with holes in it letting daylight through in
+      stripes, and an overhanging eave all the way round
 
 **The bedroom:**
 
@@ -468,6 +472,21 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 - [ ] A tunnel heading north lit with **redstone** torches that stops in the
       middle of the stone without reaching anything
 - [ ] No ore, no rails, no branch mining. Nobody dug this **for** anything
+
+**The loot:**
+
+- [ ] Every chest still has its book, every single time. Raise it ten times
+      with `/herobrine house here` and check the sealed room always has
+      `tally`
+- [ ] The rest of the contents **differ between raisings**
+- [ ] Nothing in it is exciting. Wheat, string, coal, wool, a bucket, at most
+      a couple of iron. No diamonds, no enchantments, no armour
+- [ ] Tools come out **half worn** — nobody left a pristine hoe behind
+- [ ] Some chests hold something useless. That is deliberate
+
+> If you ever open one and think "I'm kitted out now", that is a bug and tell
+> me. The house should feel like a help, never like a prize — the moment it
+> pays out it stops being somewhere people lived.
 
 > The test is not whether it is scary. Nothing in it moves. The test is
 > whether you come out having worked out what happened without being told —
