@@ -145,6 +145,18 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private static final int STUCK_LIMIT = 70;
 
+	/** Anything up to this he jumps. Anything above it he goes over. */
+	private static final int VAULT_MAX = 4;
+	/** How high he will look for a way up before deciding to fly. */
+	private static final int SCAN = 10;
+	private static final double FLY_SPEED = 0.42;
+	private static final double CLIMB_RATE = 0.38;
+	/** Flight is a way past an obstacle, never a way of travelling. */
+	private static final int FLY_LIMIT = 120;
+
+	private boolean flying;
+	private int flyTicks;
+
 	/** Two hearts, and not oftener than once a second. */
 	private static final float STRIKE_DAMAGE = 4.0F;
 	private static final int STRIKE_COOLDOWN = 22;
@@ -332,7 +344,15 @@ public class HerobrineEntity extends PathfinderMob {
 			.add(Attributes.MOVEMENT_SPEED, 0.3)
 			// He needs to be aware of you from much further than he ever
 			// approaches — the whole behaviour is about distance.
-			.add(Attributes.FOLLOW_RANGE, 96.0);
+			.add(Attributes.FOLLOW_RANGE, 96.0)
+			// A full block, and then some, taken in his stride.
+			//
+			// Vanilla is 0.6, which is a slab — so a single block of terrain
+			// made him stop and jump like anything else, and a fence line or a
+			// stepped hillside broke the walk into a series of hops. At 1.6 he
+			// comes up a block without altering his pace at all, which is much
+			// worse to watch than a thing that has to climb.
+			.add(Attributes.STEP_HEIGHT, 1.6);
 	}
 
 	@Override
@@ -847,6 +867,29 @@ public class HerobrineEntity extends PathfinderMob {
 		// to disobey — and getMaxHeadYRot below is what lets it keep you while
 		// the body goes past.
 		this.getLookControl().setLookAt(quarry, 90.0F, 90.0F);
+
+		// Already over it.
+		if (this.flying) {
+			this.glide(quarry);
+			return;
+		}
+
+		// What is in the way, and is it worth leaving the ground for?
+		//
+		// Measured rather than inferred from a failed path, because by the time
+		// the navigator has given up the player has already watched him stand
+		// at a wall looking stupid, and that is the moment the whole thing
+		// stops working.
+		int wall = wallAhead(quarry);
+		if (wall > 0 && this.onGround()) {
+			if (wall <= VAULT_MAX) {
+				this.vault(quarry, wall);
+			} else {
+				this.takeOff();
+			}
+			return;
+		}
+
 		this.getNavigation().moveTo(quarry, HUNT_SPEED);
 
 		// Is he actually getting anywhere? Measured on distance to the player
@@ -857,11 +900,111 @@ public class HerobrineEntity extends PathfinderMob {
 			this.stuckTicks = 0;
 		} else if (++this.stuckTicks > STUCK_LIMIT) {
 			this.stuckTicks = 0;
-			if (!this.reappearNear(quarry)) {
-				this.vanish("hunt: no way through and nowhere to reappear");
-			}
+			// Beaten by the terrain rather than by a wall — a ravine, a lake
+			// edge, a path that loops. Going over it is better than vanishing,
+			// because the player gets to SEE him solve it, and a pursuer you
+			// watched come over the ridge is worse than one that was simply
+			// closer when you looked again.
+			this.takeOff();
 		}
 		this.lastDistance = distance;
+	}
+
+	/**
+	 * How tall the thing directly in his way is, in blocks.
+	 *
+	 * Looks at the column one step along the line to the player and counts the
+	 * solid blocks stacked from his own feet upward. Zero means the way is
+	 * clear and he should simply walk.
+	 */
+	private int wallAhead(Player quarry) {
+		Vec3 flat = new Vec3(quarry.getX() - this.getX(), 0.0, quarry.getZ() - this.getZ());
+		if (flat.lengthSqr() < 1.0E-4) {
+			return 0;
+		}
+		Vec3 step = flat.normalize();
+		BlockPos ahead = BlockPos.containing(
+			this.getX() + step.x, this.getY(), this.getZ() + step.z);
+		int height = 0;
+		while (height < SCAN && this.level().getBlockState(ahead.above(height)).blocksMotion()) {
+			height++;
+		}
+		// A block he can simply step onto is not an obstacle at all — the raised
+		// STEP_HEIGHT swallows it, and treating it as one would have him
+		// hopping over every kerb.
+		return height <= 1 ? 0 : height;
+	}
+
+	/**
+	 * Over it, in one movement.
+	 *
+	 * The impulse is worked out from the height rather than fixed, because a
+	 * jump tuned for a fence looks feeble at a four-block cliff and one tuned
+	 * for the cliff sends him sailing over a fence. Vanilla's 0.42 clears about
+	 * a block and a quarter and height goes as the square of the launch speed,
+	 * so the rest is arithmetic — plus a tenth for the margin, since falling
+	 * just short of the ledge is the one outcome that looks broken.
+	 */
+	private void vault(Player quarry, int height) {
+		Vec3 flat = new Vec3(quarry.getX() - this.getX(), 0.0, quarry.getZ() - this.getZ())
+			.normalize();
+		double lift = 0.42 * Math.sqrt(height / 1.25) * 1.1;
+		this.setDeltaMovement(flat.x * 0.34, lift, flat.z * 0.34);
+		// 26.2 has no hasImpulse; hurtMarked is what forces the velocity down
+		// to the client now. Without it the server knows he jumped and the
+		// player watches him slide up the wall.
+		this.hurtMarked = true;
+	}
+
+	private void takeOff() {
+		if (this.flying) {
+			return;
+		}
+		this.flying = true;
+		this.flyTicks = 0;
+		this.setNoGravity(true);
+		HerobrineMod.LOGGER.info("hunt: going over");
+	}
+
+	/**
+	 * Over the top of whatever it was.
+	 *
+	 * Moved by position rather than by velocity, the same way fleeing is, and
+	 * for the same reason: something being pathed can be cornered, and being
+	 * cornered forces the honest answer about what he is. It also means he goes
+	 * straight over a mountain rather than around its shoulder.
+	 *
+	 * Strictly a way PAST something. He comes down as soon as there is ground
+	 * to come down on, and FLY_LIMIT ends it regardless — a Herobrine who
+	 * simply flies everywhere is a different and much sillier character.
+	 */
+	private void glide(Player quarry) {
+		Vec3 flat = new Vec3(quarry.getX() - this.getX(), 0.0, quarry.getZ() - this.getZ());
+		double away = flat.length();
+
+		// High enough to clear the ground at both ends, which is the cheap
+		// approximation of clearing everything between.
+		double ceiling = Math.max(this.getY(), quarry.getY()) + 3.0;
+		double y = this.getY() < ceiling
+			? Math.min(ceiling, this.getY() + CLIMB_RATE)
+			: this.getY();
+
+		Vec3 step = away < 1.0E-4 ? Vec3.ZERO : flat.normalize().scale(FLY_SPEED);
+		this.snapTo(this.getX() + step.x, y, this.getZ() + step.z, this.getYRot(), 0.0F);
+		this.setDeltaMovement(Vec3.ZERO);
+
+		boolean overhead = this.getY() - quarry.getY() > 1.0;
+		if ((away < 2.5 && !overhead) || ++this.flyTicks > FLY_LIMIT) {
+			this.land();
+		}
+	}
+
+	private void land() {
+		this.flying = false;
+		this.setNoGravity(false);
+		this.fallDistance = 0.0;
+		this.lastDistance = Double.MAX_VALUE;
+		this.stuckTicks = 0;
 	}
 
 	/**
@@ -875,6 +1018,10 @@ public class HerobrineEntity extends PathfinderMob {
 	private boolean reappearNear(Player quarry) {
 		if (!(this.level() instanceof ServerLevel here)) {
 			return false;
+		}
+		// Whatever he was doing, he is on the ground where he turns up.
+		if (this.flying) {
+			this.land();
 		}
 		for (int attempt = 0; attempt < 24; attempt++) {
 			double angle = this.random.nextDouble() * Math.PI * 2.0;
@@ -915,6 +1062,13 @@ public class HerobrineEntity extends PathfinderMob {
 	 * it stops being a choice.
 	 */
 	private void closeOn(ServerPlayer player, double distance) {
+		// Feet down first. The standoff branch runs BEFORE the hunt branch, so
+		// a player who lets him get within seven blocks while he is still over
+		// the wall would take control away from glide() and leave him walking
+		// on air with gravity switched off.
+		if (this.flying) {
+			this.land();
+		}
 		this.getLookControl().setLookAt(player, 90.0F, 90.0F);
 
 		if (distance > ARMS_LENGTH) {
