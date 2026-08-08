@@ -55,6 +55,41 @@ public final class HauntingSpawner {
 	 */
 	private static final double CLOSE_RADIUS = 26.0;
 
+	// ---- DEBUG AID, DELETE WHEN DONE -------------------------------------
+	// A visual-only bolt on every placement, so a tester can see where he
+	// actually went instead of walking a bearing and hoping.
+	//
+	// setVisualOnly(true) gates BOTH the fire and the entity damage in
+	// LightningBolt.tick, checked against 26.2 rather than assumed — this
+	// cannot burn a forest down or hurt anybody, which is the only reason it
+	// is safe to leave switched on while playing.
+	//
+	// To remove: delete this field, the strike() call in spawnAt, the method
+	// itself, and the "mark" branch in HerobrineCommand. Nothing else refers
+	// to any of it.
+	private static boolean markSpawns = true;
+
+	public static boolean toggleMark() {
+		markSpawns = !markSpawns;
+		return markSpawns;
+	}
+
+	private static void strike(ServerLevel level, BlockPos pos) {
+		if (!markSpawns) {
+			return;
+		}
+		net.minecraft.world.entity.LightningBolt bolt =
+			net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
+				.create(level, EntitySpawnReason.EVENT);
+		if (bolt == null) {
+			return;
+		}
+		bolt.setVisualOnly(true);
+		bolt.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
+		level.addFreshEntity(bolt);
+	}
+	// ---- END DEBUG AID ---------------------------------------------------
+
 	/** How the sweep is spread: every bearing, a few distances down each. */
 	private static final int BEARINGS = 32;
 	private static final int DISTANCES = 3;
@@ -336,6 +371,7 @@ public final class HauntingSpawner {
 		// otherwise. Of all the ways to lose a week, being confidently told
 		// the wrong coordinates is the worst.
 		ManifestationDirector.noteLocation(pos);
+		strike(level, pos);   // DEBUG AID — see markSpawns above
 		// A reason to turn around — sometimes. He is still never SEEN
 		// arriving; you turn and find him already standing there.
 		herobrine.announceArrival();

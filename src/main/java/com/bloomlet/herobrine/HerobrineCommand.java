@@ -40,6 +40,15 @@ public final class HerobrineCommand {
 
 				.then(Commands.literal("status").executes(HerobrineCommand::status))
 
+				// DEBUG AID — delete with markSpawns in HauntingSpawner.
+				.then(Commands.literal("mark").executes(ctx -> {
+					boolean on = HauntingSpawner.toggleMark();
+					ctx.getSource().sendSuccess(() -> Component.literal(on
+						? "lightning marks every spawn (harmless — no fire, no damage)"
+						: "spawn marks off"), false);
+					return 1;
+				}))
+
 				.then(Commands.literal("town")
 					.then(Commands.literal("here").executes(HerobrineCommand::townHere)))
 
