@@ -618,6 +618,32 @@ Needs darkness. It reports where he is — turn and look.
 > The eyes should read as **pale**, not as headlights, and should not look
 > like they are throwing light onto his face.
 
+### A7j — The sighting with two players
+
+- [ ] Player 1 sees him and stands still. Player 2 sprints at him from a
+      different angle: he reacts to **player 2**, not to whoever saw him first
+- [ ] Player 1 keeps staring while player 2 looks away. He **stays** — it takes
+      every pair of eyes losing him
+- [ ] Split up and keep him between you. You hold him there noticeably longer
+      than one person can, but he still leaves within a few seconds of fleeing
+- [ ] Approach from opposite sides. When he runs he does **not** bolt into the
+      second player — he goes for the gap
+- [ ] Stand directly either side of him with no gap: he goes immediately rather
+      than jittering between you
+- [ ] Both of you walk him down: **both** take the defiance. Check
+      `/herobrine status` for each of you
+- [ ] When he reappears behind someone it is never in the other player's face
+- [ ] Only ever **one** of him in the world, however many players are online
+
+### A7k — The homestead with two players
+
+- [ ] `/herobrine house` reports the **same coordinates** for both of you
+- [ ] Whoever gets there first triggers the building; the other walks up to the
+      same house, already standing
+- [ ] It is never built twice, and never moves once built
+- [ ] Books and loot are whatever the first arrival's roll produced — the
+      second player sees the same chests, not their own version
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the

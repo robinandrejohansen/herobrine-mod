@@ -1,5 +1,7 @@
 package com.bloomlet.herobrine.entity;
 
+import java.util.List;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -79,6 +81,9 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final double FLEE_SPEED = 0.34;
 	/** He does not run for long. He runs until he is out of sight. */
 	private static final int FLEE_LIMIT = 70;
+
+	/** How far out he cares who is watching. */
+	private static final double WATCH_RANGE = 64.0;
 
 	/**
 	 * Chasing him costs you.
@@ -202,27 +207,57 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
-		Player nearest = this.level().getNearestPlayer(this, 48.0);
+		// Everyone, not just whoever happens to be closest.
+		//
+		// Nearest-player-only was wrong in every direction the moment a second
+		// person was in the world. A friend sprinting at him from behind while
+		// you stood still did nothing; you looking away made him leave even
+		// though your friend was staring straight at him; and fleeing from the
+		// nearest player ran him directly into the other one.
+		List<Player> watchers = this.level().getEntitiesOfClass(
+			Player.class, this.getBoundingBox().inflate(WATCH_RANGE),
+			player -> player.isAlive() && !player.isSpectator());
 
-		// Did anyone actually see him? Not "was he rendered" — was he in
-		// someone's view, unobstructed. A visit nobody perceived should not
+		// Did ANYONE actually see him? Not "was he rendered" — was he in
+		// somebody's view, unobstructed. A visit nobody perceived should not
 		// count against the pacing budget (see ManifestationDirector).
-		if (nearest != null && !this.witnessed && inViewOf(nearest)) {
+		boolean seen = false;
+		for (Player watcher : watchers) {
+			if (inViewOf(watcher)) {
+				seen = true;
+				break;
+			}
+		}
+		if (seen) {
 			this.witnessed = true;
 		}
 
 		if (this.fleeing) {
-			this.flee(nearest);
+			this.flee(watchers, seen);
 			return;
 		}
 
-		// You never get to reach him. Walking up to something that does not
-		// react is how a threat becomes an exhibit.
-		if (nearest != null && this.distanceTo(nearest) < TOO_CLOSE) {
-			if (nearest instanceof ServerPlayer chaser) {
-				WrathTriggers.defiance(chaser, DEFIANCE_APPROACHED);
+		// You never get to reach him, and it does not matter which of you tries.
+		Player closest = null;
+		double closestDistance = Double.MAX_VALUE;
+		for (Player watcher : watchers) {
+			double distance = this.distanceTo(watcher);
+			if (distance < closestDistance) {
+				closestDistance = distance;
+				closest = watcher;
 			}
-			if (!relocateBehind(nearest)) {
+		}
+
+		if (closest != null && closestDistance < TOO_CLOSE) {
+			// Everyone who closed in paid for it, not only the one who got
+			// there first. Two people walking him down is twice the defiance,
+			// which is the correct price for twice the pressure.
+			for (Player watcher : watchers) {
+				if (this.distanceTo(watcher) < TOO_CLOSE && watcher instanceof ServerPlayer chaser) {
+					WrathTriggers.defiance(chaser, DEFIANCE_APPROACHED);
+				}
+			}
+			if (!relocateBehind(watchers)) {
 				// He does not pop out of existence in your face. He turns and
 				// puts something between you, and THEN he is gone — which
 				// leaves the player having watched him leave rather than
@@ -237,17 +272,22 @@ public class HerobrineEntity extends PathfinderMob {
 		// while watched would break the only claim the whole event makes.
 		this.getNavigation().stop();
 
-		if (nearest == null) {
+		if (watchers.isEmpty()) {
 			this.vanish();
 			return;
 		}
 
-		if (inViewOf(nearest)) {
+		if (seen) {
 			this.unseenTicks = 0;
 		} else if (this.witnessed && ++this.unseenTicks > UNSEEN_GRACE) {
-			// Seen, then not seen, then not there. The player never watches
-			// him go; they simply find that he has gone, which is the one
-			// version of this they cannot talk themselves out of.
+			// Seen, then not seen, then not there. Nobody watches him go; they
+			// simply find that he has gone, which is the one version of this
+			// they cannot talk themselves out of.
+			//
+			// It takes EVERY pair of eyes losing him. Two people who split up
+			// and keep him between them hold him there far longer than one
+			// person can, which is the right reward for co-ordinating — and
+			// FLEE_LIMIT still stops it becoming a stalemate.
 			this.vanish();
 		}
 	}
@@ -265,8 +305,8 @@ public class HerobrineEntity extends PathfinderMob {
 	 * because the goal is not escape, it is to be out of sight; the moment the
 	 * player's view of him is broken by anything at all, that is the end of it.
 	 */
-	private void flee(@org.jspecify.annotations.Nullable Player from) {
-		if (from == null || ++this.fleeTicks > FLEE_LIMIT) {
+	private void flee(List<Player> from, boolean seen) {
+		if (from.isEmpty() || ++this.fleeTicks > FLEE_LIMIT) {
 			this.vanish();
 			return;
 		}
@@ -275,10 +315,21 @@ public class HerobrineEntity extends PathfinderMob {
 		this.setNoGravity(true);
 		this.getNavigation().stop();
 
-		Vec3 away = this.position().subtract(from.position());
-		away = new Vec3(away.x, 0.0, away.z);
+		// Away from all of them at once, each pulling in inverse proportion to
+		// how close they are. Running from only the nearest would have walked
+		// him straight into whoever was flanking, which is exactly the move two
+		// players will try the first time they see him.
+		Vec3 away = Vec3.ZERO;
+		for (Player watcher : from) {
+			Vec3 apart = new Vec3(this.getX() - watcher.getX(), 0.0, this.getZ() - watcher.getZ());
+			double distance = Math.max(1.0, apart.length());
+			away = away.add(apart.normalize().scale(1.0 / distance));
+		}
 		if (away.lengthSqr() < 1.0E-4) {
-			away = this.getLookAngle();
+			// Surrounded, or dead centre between them. He goes now rather than
+			// picking an arbitrary direction and jittering.
+			this.vanish();
+			return;
 		}
 		away = away.normalize();
 
@@ -292,7 +343,7 @@ public class HerobrineEntity extends PathfinderMob {
 		this.setPos(this.getX() + away.x * FLEE_SPEED,
 			this.getY(), this.getZ() + away.z * FLEE_SPEED);
 
-		if (!inViewOf(from) || this.level().getBlockState(this.blockPosition()).isSolid()) {
+		if (!seen || this.level().getBlockState(this.blockPosition()).isSolid()) {
 			this.vanish();
 		}
 	}
@@ -416,8 +467,13 @@ public class HerobrineEntity extends PathfinderMob {
 		if (source.getEntity() instanceof ServerPlayer attacker) {
 			// Swinging at him is the loudest possible defiance.
 			WrathTriggers.defiance(attacker, DEFIANCE_STRUCK);
-			if (!relocateBehind(attacker)) {
-				this.vanish();
+			// Whoever swung is not necessarily the only one here, so the same
+			// all-players check applies before he reappears anywhere.
+			if (!relocateBehind(level.getEntitiesOfClass(Player.class,
+					this.getBoundingBox().inflate(WATCH_RANGE)))) {
+				// Struck rather than merely approached: he leaves the same way,
+				// which keeps the two responses consistent.
+				this.fleeing = true;
 			}
 		}
 		return false;
@@ -439,7 +495,7 @@ public class HerobrineEntity extends PathfinderMob {
 	 * @return false when he has run out of relocations or there is nowhere
 	 *         valid, in which case the caller makes him leave for good.
 	 */
-	private boolean relocateBehind(Player player) {
+	private boolean relocateBehind(List<Player> watchers) {
 		if (this.relocations >= MAX_RELOCATIONS
 			|| this.anchor == null
 			|| !(this.level() instanceof ServerLevel server)) {
@@ -453,13 +509,30 @@ public class HerobrineEntity extends PathfinderMob {
 		if (!ConfinedPlacement.canStand(server, this.anchor)) {
 			return false;
 		}
-		if (this.anchor.distToCenterSqr(player.getX(), player.getY(), player.getZ())
-			< TOO_CLOSE * TOO_CLOSE) {
-			return false;   // they barely moved; it would look like a stutter
+		// Clear of everybody, not just the one who walked him down. Dropping
+		// him behind the player who charged is worthless if it puts him in
+		// their friend's face.
+		for (Player watcher : watchers) {
+			if (this.anchor.distToCenterSqr(watcher.getX(), watcher.getY(), watcher.getZ())
+				< TOO_CLOSE * TOO_CLOSE) {
+				return false;   // too near one of them; it would look like a stutter
+			}
 		}
 
-		double dx = player.getX() - (this.anchor.getX() + 0.5);
-		double dz = player.getZ() - (this.anchor.getZ() + 0.5);
+		// Facing whoever is nearest the place he reappears, so he is looking at
+		// somebody rather than off into the trees.
+		Player facing = watchers.get(0);
+		double best = Double.MAX_VALUE;
+		for (Player watcher : watchers) {
+			double distance = this.anchor.distToCenterSqr(
+				watcher.getX(), watcher.getY(), watcher.getZ());
+			if (distance < best) {
+				best = distance;
+				facing = watcher;
+			}
+		}
+		double dx = facing.getX() - (this.anchor.getX() + 0.5);
+		double dz = facing.getZ() - (this.anchor.getZ() + 0.5);
 		float yaw = (float)(net.minecraft.util.Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
 		this.snapTo(this.anchor.getX() + 0.5, this.anchor.getY(), this.anchor.getZ() + 0.5, yaw, 0.0F);
 
