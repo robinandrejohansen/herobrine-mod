@@ -564,8 +564,30 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 - [ ] Past the cellar it stops being built and starts being **dug**. No
       corners, no courses, no right angles — uneven ceilings, passages that
       wander and change width
-- [ ] One chamber, then a passage that gives up. More than a farm needed, and
-      deliberately far short of what the later houses will be
+- [ ] One chamber, two short branches, and a passage that gives up
+- [ ] **Every chest is intact.** Nothing is lying on the floor as an item.
+      This was broken — passages were cut after the chests were placed and
+      bored straight through them
+- [ ] The dead-end passage ends in a rough face with rubble at the foot of it,
+      not just a flat stop
+
+**The two cells — this is new:**
+
+- [ ] Each branch ends in a small **built** room: right angles and brick
+      inside a cave that has none
+- [ ] An **iron door** with barred slots either side, so you can see in before
+      you decide anything
+- [ ] A villager inside. Through the bars its head **sweeps slowly side to
+      side**, over and over
+- [ ] Both of them sweep **in step** with each other
+- [ ] It is silent
+- [ ] Open the door and it comes straight at you — head locked on, faster than
+      you walk, and it does not stop
+- [ ] It hits for about a heart and a half, on a cooldown
+- [ ] **Ordinary villager health.** You can kill it, and you will have to
+- [ ] It has **red** eyes, not white. White is his; this is what he leaves
+- [ ] Leave the door shut and nothing ever happens. They cannot open iron
+      doors — every one of these is loose because you let it out
 - [ ] Timber props shored into the passages at intervals: somebody cut this
 - [ ] Red torches only. Never a normal torch
 - [ ] Cobwebs, gravel underfoot, dripstone. Nothing valuable

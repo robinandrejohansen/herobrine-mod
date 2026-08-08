@@ -95,13 +95,15 @@ public final class Threshold {
 		BlockPos records = cells.offset(-WING_W, 0, 0);
 		BlockPos office = cells.offset(BLOCK_W, 0, 0);
 
+		// Cut in from the hall FIRST, so the passage is bored through rock
+		// rather than through the shelves. Doing this after the rooms were
+		// furnished drove it straight through the records room and left the
+		// books lying on the floor as items.
+		Digging.bore(level, hall, new Vec3(1.0, -0.12, 0.0), 14, 1.6, random, true);
+
 		records(level, records, random);
 		cellBlock(level, cells, random);
 		office(level, office, random);
-
-		// Cut in to the records room from the hall, so the built part is
-		// reached through rock rather than opening politely off it.
-		Digging.bore(level, hall, new Vec3(1.0, -0.12, 0.0), 14, 1.6, random, true);
 
 		BlockPos beyond = office.offset(WING_W, 2, BLOCK_D / 2);
 		BlockPos end = Digging.bore(level, beyond, new Vec3(1.0, -0.3, 0.15), 20, 1.7, random, true);

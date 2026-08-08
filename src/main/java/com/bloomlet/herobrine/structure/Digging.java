@@ -191,7 +191,7 @@ public final class Digging {
 						continue;
 					}
 					BlockPos pos = centre.offset(dx, dy, dz);
-					if (level.getBlockState(pos).is(Blocks.BEDROCK)) {
+					if (level.getBlockState(pos).is(Blocks.BEDROCK) || precious(level, pos)) {
 						continue;
 					}
 					level.setBlock(pos, Blocks.CAVE_AIR.defaultBlockState(), 2);
@@ -199,6 +199,25 @@ public final class Digging {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Never carve away something that was put there on purpose.
+	 *
+	 * Insurance against an ordering mistake, and it is here because that
+	 * mistake was already made twice: a passage bored out of a chamber AFTER
+	 * the chest went in cut straight through it, and the contents fell on the
+	 * floor as items and began quietly counting down to despawning. A player
+	 * finds a book they were meant to read lying in the dirt, or does not find
+	 * it at all.
+	 *
+	 * The real fix is to cut every passage before furnishing anything, and both
+	 * callers do that now. This makes sure the next one cannot get it wrong
+	 * without noticing.
+	 */
+	static boolean precious(ServerLevel level, BlockPos pos) {
+		return level.getBlockEntity(pos) != null
+			|| level.getBlockState(pos).is(Blocks.BOOKSHELF);
 	}
 
 	/**
