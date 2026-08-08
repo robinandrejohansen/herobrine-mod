@@ -292,6 +292,15 @@ The command prints which animal and where. Now go and look at it.
 - [ ] Ordinary animals standing next to it never glow
 - [ ] The eyes are in the right place on the face for each of the four
 
+**What it can see:**
+
+- [ ] **Before** it reveals: put a wall between you. It stays stopped and
+      silent but does **not** track you through it. Step into view and it
+      turns
+- [ ] **After** it reveals: wall it in, stand on the far side of a hill, go
+      behind three blocks of stone. It faces you through all of it
+- [ ] Witnesses after a kill only turn if they can actually see the killer
+
 - [ ] It **comes after you**, on foot, slower than you walk
 - [ ] Sprint 200 blocks across open ground to your base. Wait. It arrives —
       it does not give up and it does not get stuck a chunk behind you

@@ -492,12 +492,12 @@ public final class Possession {
 							// nothing to produce.
 							stop(mob);
 						} else if (owner == player && settled(mob, player)) {
-							hold(mob, player);
+							hold(mob, player, knowsWhereYouAre(mob, player));
 						}
 					} else {
 						ServerPlayer saw = sawIt(level, mob);
 						if (saw == player) {
-							hold(mob, player);
+							hold(mob, player, mob.hasLineOfSight(player));
 						}
 					}
 				}
@@ -683,8 +683,33 @@ public final class Possession {
 		}
 	}
 
-	private static void hold(Mob mob, Player player) {
+	/**
+	 * Does it know where you are when it cannot see you?
+	 *
+	 * Before it reveals, no. It only turns to face a player it has a clear
+	 * line to, which keeps the first encounter arguable — an animal that
+	 * tracked you through a hillside on day one would settle the question
+	 * immediately, and the whole first act depends on the question staying
+	 * open.
+	 *
+	 * After it reveals, yes, through anything. That is the escalation, and it
+	 * costs nothing to add because the player has already been told what they
+	 * are dealing with: it is not an animal using eyes. Walling one into a pit
+	 * and coming back to find it facing you through three blocks of stone is
+	 * the correct payoff for having worked out what it is.
+	 */
+	private static boolean knowsWhereYouAre(Mob mob, ServerPlayer player) {
+		return isRevealed(mob) || mob.hasLineOfSight(player);
+	}
+
+	private static void hold(Mob mob, Player player, boolean facing) {
 		stop(mob);
+		if (!facing) {
+			// Held in place, but not staring through a wall it has no business
+			// seeing through. A stopped animal is still wrong; it just is not
+			// yet impossible.
+			return;
+		}
 
 		// Track the player with the head, and turn the body to match — a
 		// creature facing you squarely reads as attention, where head-only
