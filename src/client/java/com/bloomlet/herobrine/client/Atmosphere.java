@@ -5,9 +5,7 @@ import com.bloomlet.herobrine.wrath.Wrath;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.ARGB;
-import net.minecraft.world.attribute.AmbientParticle;
 import net.minecraft.world.attribute.EnvironmentAttributeSystem;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 
@@ -78,13 +76,6 @@ public final class Atmosphere {
 		builder.addTimeBasedLayer(EnvironmentAttributes.CLOUD_FOG_END_DISTANCE,
 			(distance, tick) -> distance * closeness());
 
-		// Something in the air, in every biome, which is the part vanilla
-		// weather cannot do — snow falls where it is cold and rain where it is
-		// not, and neither asks how bad things have got. Ash does.
-		builder.addTimeBasedLayer(EnvironmentAttributes.AMBIENT_PARTICLES,
-			(particles, tick) -> fall() <= 0.0F ? particles
-				: AmbientParticle.of(ParticleTypes.WHITE_ASH, fall()));
-
 		// And the light, which was the real omission. Everything above changes
 		// what colour the world is; none of it changes how BRIGHT the world is,
 		// so a storm at SIEGE came out as a grey afternoon rather than as a
@@ -136,25 +127,6 @@ public final class Atmosphere {
 		}
 		float weather = level.isThundering() ? 1.55F : level.isRaining() ? 1.2F : 1.0F;
 		return Math.min(0.82F, base * weather);
-	}
-
-	/**
-	 * How much is in the air.
-	 *
-	 * White ash rather than snow, and it is the only thing here that is not a
-	 * recolour of something the world already had. It falls in a desert and a
-	 * jungle and a snowfield alike, which is precisely the point: weather has
-	 * rules and this does not obey them, so a player standing in warm rain
-	 * watching pale flecks come down has seen something the game cannot
-	 * explain to them.
-	 */
-	private static float fall() {
-		return switch (phase()) {
-			case RUMOUR, WATCHER, TRESPASSER -> 0.0F;
-			case MIMIC -> 0.02F;
-			case HUNTER -> 0.06F;
-			case SIEGE -> 0.12F;
-		};
 	}
 
 	/**

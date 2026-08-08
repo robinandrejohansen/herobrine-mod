@@ -820,8 +820,6 @@ change the moment the phase does.
 - [ ] Look at the horizon. The fogged ground should **dissolve into the sky**
       with no visible seam between them. The seam is the fake tell — if you can
       see where fog ends and sky begins, that is the bug
-- [ ] **Ash falls from MIMIC**, in every biome. In a desert, in a jungle, in
-      warm rain. Weather has rules and this does not obey them
 - [ ] The world gets **darker**, not just greyer. At SIEGE a clear noon is
       dim; a **thunderstorm at SIEGE is the darkest the world ever gets** and
       should read as dusk at midday
