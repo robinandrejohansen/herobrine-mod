@@ -381,7 +381,8 @@ public final class Homestead {
 			case 'S' -> set(level, pos, Blocks.BOOKSHELF.defaultBlockState());
 			case 'L' -> lectern(level, pos);
 			case 'T' -> table(level, pos);
-			case 'h' -> set(level, pos, Blocks.SPRUCE_STAIRS.defaultBlockState());
+			case 'h' -> set(level, pos, Blocks.SPRUCE_STAIRS.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, seatFacing(x, z)));
 			case 'P' -> set(level, pos, Blocks.POTTED_DEAD_BUSH.defaultBlockState());
 			case 't' -> torch(level, pos, Blocks.WALL_TORCH, Blocks.TORCH);
 			case 'r' -> torch(level, pos, Blocks.REDSTONE_WALL_TORCH, Blocks.REDSTONE_TORCH);
@@ -402,6 +403,31 @@ public final class Homestead {
 			case 'p' -> sign(level, pos, "the little one");
 			default -> { }
 		}
+	}
+
+	/**
+	 * Which way a chair points, from what it is standing next to.
+	 *
+	 * A stair used as a chair puts its TALL BACK on the side its facing names,
+	 * so a chair has to face AWAY from the table for its back to be outside and
+	 * its seat to open toward the food. These had no facing at all and so all
+	 * pointed north, which put three of the four with their backs to dinner.
+	 *
+	 * Read off the map rather than written per chair, so moving the table moves
+	 * the chairs with it.
+	 */
+	private static Direction seatFacing(int x, int z) {
+		for (Direction side : Direction.Plane.HORIZONTAL) {
+			int nx = x + side.getStepX();
+			int nz = z + side.getStepZ();
+			if (nz < 0 || nz >= COURSE_ONE.length || nx < 0 || nx >= COURSE_ONE[nz].length()) {
+				continue;
+			}
+			if (COURSE_ONE[nz].charAt(nx) == 'T') {
+				return side.getOpposite();
+			}
+		}
+		return Direction.SOUTH;
 	}
 
 	private static void set(ServerLevel level, BlockPos pos, BlockState state) {

@@ -954,8 +954,10 @@ Find a village. `/locate structure minecraft:village_plains` works.
 Nearest the square, on one of the lanes.
 
 - [ ] **Double doors** at the front
-- [ ] Two long tables with benches down both sides, and **every bench faces
-      its table** — nobody is sitting staring at a wall
+- [ ] Two long tables with benches down both sides, and **every bench has its
+      back to the outside and its seat toward the table**. Nobody is sitting
+      with their back to dinner
+- [ ] Same in the family houses and in the farmhouse
 - [ ] A **hearth** at the head of the room — the only real fire in the town
 - [ ] A counter with a slab top and barrels behind it
 - [ ] **The middle is open to the roof.** Stand between the tables and look up:

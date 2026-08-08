@@ -147,8 +147,8 @@ public final class Lodge {
 
 	public static boolean build(ServerLevel level, BlockPos corner, Direction facing,
 	                            RandomSource random) {
-		if (!Blueprint.place(level, corner, LAYERS, facing, (l, at, c, dir) ->
-				set(l, at, c, dir, random))) {
+		if (!Blueprint.place(level, corner, LAYERS, facing, (l, at, c, dir, mx, mz) ->
+				set(l, at, c, dir, mx, mz, random))) {
 			return false;
 		}
 		gable(level, corner, facing, random);
@@ -210,7 +210,7 @@ public final class Lodge {
 	 * kind of thing nobody consciously notices and everybody feels.
 	 */
 	private static void set(ServerLevel level, BlockPos at, char c, Direction facing,
-	                        RandomSource random) {
+	                        int x, int z, RandomSource random) {
 		switch (c) {
 			case '#' -> put(level, at, weathered(random));
 			case 'W' -> put(level, at, Blocks.SPRUCE_PLANKS.defaultBlockState());
@@ -249,12 +249,10 @@ public final class Lodge {
 			case 'T' -> table(level, at);
 			// Benches look AT the table. West of it faces east, east of it
 			// faces west — otherwise everyone sits staring at the same wall.
-			case 'h' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
+			// Seats work out where the table is and turn their backs on it.
+			case 'h', 'j' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING,
-					Blueprint.turned(Direction.EAST, facing)));
-			case 'j' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
-				.setValue(BlockStateProperties.HORIZONTAL_FACING,
-					Blueprint.turned(Direction.WEST, facing)));
+					Blueprint.seatFacing(FLOOR_ONE, x, z, 'T', facing)));
 			// The way upstairs. A three-block run against the west wall with
 			// the deck opened above it — the first version was a single ladder
 			// at one height facing the wrong wall, so there was no way up at

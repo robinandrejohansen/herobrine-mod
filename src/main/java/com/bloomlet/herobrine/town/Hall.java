@@ -176,8 +176,8 @@ public final class Hall {
 
 	public static boolean build(ServerLevel level, BlockPos corner, Direction facing,
 	                            RandomSource random) {
-		if (!Blueprint.place(level, corner, LAYERS, facing, (l, at, c, dir) ->
-				set(l, at, c, dir, random))) {
+		if (!Blueprint.place(level, corner, LAYERS, facing, (l, at, c, dir, mx, mz) ->
+				set(l, at, c, dir, mx, mz, random))) {
 			return false;
 		}
 		gable(level, corner, facing, random);
@@ -185,7 +185,7 @@ public final class Hall {
 	}
 
 	private static void set(ServerLevel level, BlockPos at, char c, Direction facing,
-	                        RandomSource random) {
+	                        int x, int z, RandomSource random) {
 		switch (c) {
 			case '#' -> put(level, at, weathered(random));
 			case 'W', '.', '_' -> put(level, at, Blocks.SPRUCE_PLANKS.defaultBlockState());
@@ -207,12 +207,10 @@ public final class Hall {
 			// you facing where its step points, so the one west of a table
 			// faces east and the one east of it faces west — otherwise a row
 			// of diners all sit staring at the same wall.
-			case 'h' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
+			// Seats work out where the table is and turn their backs on it.
+			case 'h', 'j' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING,
-					Blueprint.turned(Direction.EAST, facing)));
-			case 'j' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
-				.setValue(BlockStateProperties.HORIZONTAL_FACING,
-					Blueprint.turned(Direction.WEST, facing)));
+					Blueprint.seatFacing(FLOOR_ONE, x, z, 'T', facing)));
 			case 's' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING,
 					Blueprint.turned(Direction.NORTH, facing)));

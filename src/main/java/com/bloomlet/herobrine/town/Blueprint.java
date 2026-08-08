@@ -68,7 +68,7 @@ public final class Blueprint {
 					}
 					BlockPos at = origin.offset(turn(x, z, width, depth, facing, true),
 						layer, turn(x, z, width, depth, facing, false));
-					palette.set(level, at, c, facing);
+					palette.set(level, at, c, facing, x, z);
 				}
 			}
 		}
@@ -191,10 +191,48 @@ public final class Blueprint {
 		return high - low <= 4;
 	}
 
+	/**
+	 * Which way a seat should point, worked out from what it is next to.
+	 *
+	 * A stair used as a chair puts its TALL BACK on the side its facing names,
+	 * so a bench beside a table has to face AWAY from the table for its back to
+	 * be on the outside and its seat to open toward the food. Getting that
+	 * backwards sat an entire hall with their backs to dinner.
+	 *
+	 * Read off the map rather than hand-assigned per bench, which is the real
+	 * fix: a bench works out where the table is and turns away from it, so
+	 * moving a table in the map moves the benches with it and no coordinate
+	 * anywhere has to agree with any other.
+	 *
+	 * @param beside the character to sit against, normally the table
+	 * @return the rotated direction to face, or the building's own if there is
+	 *         nothing adjacent to sit at
+	 */
+	public static Direction seatFacing(String[] layer, int x, int z, char beside,
+	                                   Direction facing) {
+		for (Direction side : Direction.Plane.HORIZONTAL) {
+			int nx = x + side.getStepX();
+			int nz = z + side.getStepZ();
+			if (nz < 0 || nz >= layer.length || nx < 0 || nx >= layer[nz].length()) {
+				continue;
+			}
+			if (layer[nz].charAt(nx) == beside) {
+				// Away from it: the back goes on the far side from the table.
+				return turned(side.getOpposite(), facing);
+			}
+		}
+		return facing;
+	}
+
 	/** What a character means, so each kind of building can read differently. */
 	@FunctionalInterface
 	public interface Palette {
-		void set(ServerLevel level, BlockPos at, char c, Direction facing);
+		/**
+		 * @param x the character's column in the map, before rotation
+		 * @param z its row, likewise — passed so a block can look at what it
+		 *          stands next to rather than being told what to be
+		 */
+		void set(ServerLevel level, BlockPos at, char c, Direction facing, int x, int z);
 	}
 
 	/** Convenience for palettes: place a state only if there is room. */
