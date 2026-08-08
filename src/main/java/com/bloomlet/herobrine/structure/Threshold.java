@@ -76,15 +76,15 @@ public final class Threshold {
 		// branches that go nowhere make it a place the player has to find their
 		// way through, and getting lost for two minutes in the dark on the way
 		// down is worth more than anything that could be put at the end of it.
-		BlockPos leg = Digging.bore(level, bottom, new Vec3(0.2, -0.4, 1.0), 22, 1.6, random);
+		BlockPos leg = Digging.bore(level, bottom, new Vec3(0.2, -0.4, 1.0), 22, 1.6, random, true);
 		collapse(level, leg, random, true);
 		blindAlley(level, leg, new Vec3(-1.0, -0.1, 0.3), random);
 
-		leg = Digging.bore(level, leg, new Vec3(1.0, -0.3, 0.4), 24, 1.5, random);
+		leg = Digging.bore(level, leg, new Vec3(1.0, -0.3, 0.4), 24, 1.5, random, true);
 		collapse(level, leg, random, false);
 		blindAlley(level, leg, new Vec3(0.2, 0.1, -1.0), random);
 
-		BlockPos hall = Digging.bore(level, leg, new Vec3(0.6, -0.35, 0.8), 20, 1.7, random);
+		BlockPos hall = Digging.bore(level, leg, new Vec3(0.6, -0.35, 0.8), 20, 1.7, random, true);
 		Digging.hollow(level, hall, 6.5, random);
 		Digging.props(level, hall, 8, random);
 
@@ -101,10 +101,10 @@ public final class Threshold {
 
 		// Cut in to the records room from the hall, so the built part is
 		// reached through rock rather than opening politely off it.
-		Digging.bore(level, hall, new Vec3(1.0, -0.12, 0.0), 14, 1.6, random);
+		Digging.bore(level, hall, new Vec3(1.0, -0.12, 0.0), 14, 1.6, random, true);
 
 		BlockPos beyond = office.offset(WING_W, 2, BLOCK_D / 2);
-		BlockPos end = Digging.bore(level, beyond, new Vec3(1.0, -0.3, 0.15), 20, 1.7, random);
+		BlockPos end = Digging.bore(level, beyond, new Vec3(1.0, -0.3, 0.15), 20, 1.7, random, true);
 		Digging.hollow(level, end, 7.0, random);
 		seal(level, end, random);
 
@@ -160,6 +160,11 @@ public final class Threshold {
 	 */
 	private static void blindAlley(ServerLevel level, BlockPos from, Vec3 heading,
 	                               RandomSource random) {
+		// No paving and no brickwork in here, and that is the whole mechanism.
+		// The player learns in about ten seconds that the laid floor is the way
+		// on, and from then on a bare passage tells them they have guessed
+		// wrong — without a sign, a marker, or anything that admits a designer
+		// was involved.
 		BlockPos end = Digging.bore(level, from, heading, 9 + random.nextInt(5), 1.4, random);
 		collapse(level, end, random, false);
 	}
@@ -215,8 +220,45 @@ public final class Threshold {
 			post(level, at.getX() + dx, at.getZ() + 20, random);
 		}
 
+		// A way to the hole worn into the ground, so the compound reads as
+		// somewhere people walked between rather than three ruins near a pit.
+		trodden(level, at, at.offset(-15, 0, 0), random);
+		trodden(level, at, at.offset(11, 0, -10), random);
+		trodden(level, at, at.offset(-2, 0, 12), random);
+
 		scatter(level, at, random);
 		mouth(level, at, random);
+	}
+
+	/** A line of worn ground between two places somebody went often. */
+	private static void trodden(ServerLevel level, BlockPos from, BlockPos to,
+	                            RandomSource random) {
+		int steps = (int)Math.sqrt(from.distSqr(to));
+		for (int i = 0; i <= steps; i++) {
+			double t = i / (double)Math.max(1, steps);
+			int x = (int)Math.round(from.getX() + (to.getX() - from.getX()) * t);
+			int z = (int)Math.round(from.getZ() + (to.getZ() - from.getZ()) * t);
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dz = -1; dz <= 1; dz++) {
+					if (random.nextInt(4) == 0) {
+						continue;   // grown back over in places
+					}
+					int y = Ground.topOf(level, x + dx, z + dz);
+					BlockPos on = new BlockPos(x + dx, y, z + dz);
+					if (!level.getBlockState(on).isSolid()) {
+						continue;
+					}
+					level.setBlock(on, random.nextInt(4) == 0
+						? Blocks.GRAVEL.defaultBlockState()
+						: Blocks.COARSE_DIRT.defaultBlockState(), 2);
+					BlockPos above = on.above();
+					if (!level.getBlockState(above).isAir()
+						&& !level.getBlockState(above).isSolid()) {
+						level.setBlock(above, Blocks.AIR.defaultBlockState(), 2);
+					}
+				}
+			}
+		}
 	}
 
 	/** A roofless outbuilding, walls to about chest height and no more. */
@@ -327,7 +369,11 @@ public final class Threshold {
 						: weathered(random), 2);
 			}
 			if (step % 4 == 0) {
-				bracket(level, at.above(), random);
+				// Against the side wall, not the middle of the stair. The
+				// bracket needs something solid behind it, and every block
+				// beside the centre of a three-wide cut is also air — which is
+				// why none of these were appearing at all.
+				bracket(level, at.offset(random.nextBoolean() ? 1 : -1, 2, 0), random);
 			}
 		}
 		return at;

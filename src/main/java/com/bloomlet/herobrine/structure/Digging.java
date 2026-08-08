@@ -41,7 +41,16 @@ public final class Digging {
 	 * is a pipe.
 	 */
 	static BlockPos bore(ServerLevel level, BlockPos from, Vec3 heading,
-	                             int length, double radius, RandomSource random) {
+	                     int length, double radius, RandomSource random) {
+		return bore(level, from, heading, length, radius, random, false);
+	}
+
+	/**
+	 * @param waymarked lay a floor and line the walls at intervals, so this
+	 *                  passage reads as the one somebody meant you to take
+	 */
+	static BlockPos bore(ServerLevel level, BlockPos from, Vec3 heading,
+	                     int length, double radius, RandomSource random, boolean waymarked) {
 		Vec3 at = Vec3.atCenterOf(from);
 		Vec3 course = heading.normalize();
 
@@ -64,8 +73,85 @@ public final class Digging {
 			if (random.nextInt(9) == 0) {
 				lamp(level, BlockPos.containing(at));
 			}
+			if (waymarked) {
+				pave(level, BlockPos.containing(at), random);
+				if (step > 0 && step % 9 == 0) {
+					line(level, BlockPos.containing(at), radius, random);
+				}
+			}
 		}
 		return BlockPos.containing(at);
+	}
+
+	/**
+	 * A floor somebody laid.
+	 *
+	 * The single most useful thing underground, and it took a playtest to see
+	 * it. A player forty blocks down in the dark cannot tell a passage that was
+	 * cut on purpose from a natural cave they have wandered into, so the way on
+	 * and the way nowhere look identical and finding the route stops being
+	 * tense and starts being tedious.
+	 *
+	 * A laid floor fixes it without a word: stone under your feet where the
+	 * rock is bare everywhere else. It gives the player a rule they work out in
+	 * about ten seconds and then trust — follow the paving — and it means the
+	 * dead ends can stay genuinely indistinguishable at eye level while still
+	 * being fair.
+	 */
+	static void pave(ServerLevel level, BlockPos at, RandomSource random) {
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dz = -1; dz <= 1; dz++) {
+				BlockPos floor = groundUnder(level, at.offset(dx, 0, dz));
+				if (floor == null || floor.getY() < at.getY() - 3) {
+					continue;
+				}
+				int roll = random.nextInt(8);
+				level.setBlock(floor, roll == 0 ? Blocks.GRAVEL.defaultBlockState()
+					: roll < 3 ? Blocks.COBBLESTONE.defaultBlockState()
+					: roll < 5 ? Blocks.MOSSY_STONE_BRICKS.defaultBlockState()
+					: Blocks.STONE_BRICKS.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	/**
+	 * Brickwork around the passage, every so often.
+	 *
+	 * Reads as a doorway or a shored section without being either. Where the
+	 * paving tells the player they are on the route, these tell them somebody
+	 * was here often enough to make it permanent — and they mark the distance
+	 * covered, which a featureless tunnel cannot.
+	 */
+	static void line(ServerLevel level, BlockPos at, double radius, RandomSource random) {
+		int reach = (int)Math.ceil(radius) + 2;
+		for (int dx = -reach; dx <= reach; dx++) {
+			for (int dy = -reach; dy <= reach; dy++) {
+				for (int dz = -reach; dz <= reach; dz++) {
+					BlockPos pos = at.offset(dx, dy, dz);
+					BlockState state = level.getBlockState(pos);
+					if (state.isAir() || state.is(Blocks.BEDROCK) || !state.isSolid()) {
+						continue;
+					}
+					if (!touchesAir(level, pos)) {
+						continue;   // only the face of the tunnel, not the rock behind
+					}
+					level.setBlock(pos, random.nextInt(3) == 0
+						? Blocks.CRACKED_STONE_BRICKS.defaultBlockState()
+						: random.nextInt(2) == 0
+							? Blocks.MOSSY_STONE_BRICKS.defaultBlockState()
+							: Blocks.STONE_BRICKS.defaultBlockState(), 2);
+				}
+			}
+		}
+	}
+
+	private static boolean touchesAir(ServerLevel level, BlockPos pos) {
+		for (Direction side : Direction.values()) {
+			if (level.getBlockState(pos.relative(side)).isAir()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

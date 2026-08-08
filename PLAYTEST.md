@@ -695,6 +695,8 @@ To look at it now:
 - [ ] A **dead field** — farmland with nothing on it but dead bushes
 - [ ] A fence line that is mostly gaps
 - [ ] Barrels, a cauldron, slabs and dirt patches left lying about
+- [ ] **Worn paths** of coarse dirt and gravel between the outbuildings, the
+      field and the hole — grown back over in patches
 - [ ] A collapsed opening in the ground with steps down
 - [ ] **Not one sign anywhere on the surface.** Every word in this place is
       underground, in a book
@@ -704,8 +706,10 @@ To look at it now:
 - [ ] A cut stair, about 34 steps, walled in brick
 - [ ] The stonework gets **rougher the deeper it goes** — the workmanship
       gives out on the way down
-- [ ] The lights are **mostly dead**. Redstone brackets still on the wall but
-      unlit, a fifth missing altogether, and only some still burning
+- [ ] The lights are **there at all** — they were not before. Brackets on the
+      side walls of the stair, every few steps
+- [ ] Most are **dead**: unlit redstone torches still fixed to the wall, a
+      fifth missing altogether, only some still burning
 - [ ] Then it stops being built and starts being dug
 
 **Finding your way — this should take a while:**
@@ -713,10 +717,16 @@ To look at it now:
 - [ ] Three separate runs of passage, not one corridor
 - [ ] **Cave-ins.** One you can crawl over the top of, one you have to mine
       through
-- [ ] **Two branches that go nowhere** and end in collapse. You cannot tell
-      which is the way on until you have walked it
-- [ ] Getting briefly lost is the intended experience. Say if it is tedious
-      rather than tense
+- [ ] **The route has a laid floor** — stone brick and cobble underfoot where
+      the rock is bare everywhere else. Follow the paving
+- [ ] Brickwork lining the passage every so often, like a doorway somebody
+      made permanent
+- [ ] **Two branches that go nowhere.** They have **no paving and no
+      brickwork** — that is how you tell, and you should work it out in about
+      ten seconds without being told
+- [ ] Both end in collapse
+- [ ] It should now be findable but not obvious. Say if the paving gives it
+      away too fast, or still is not enough
 
 **The records room, before the cells:**
 
