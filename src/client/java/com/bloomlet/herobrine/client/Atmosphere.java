@@ -151,19 +151,25 @@ public final class Atmosphere {
 	/**
 	 * And how much is left of the distance.
 	 *
-	 * Allowed to be heavy, now that the fog and the sky it meets are the same
-	 * colour. Forty per cent at SIEGE is a genuine whiteout and it holds up,
-	 * because the horizon dissolving into a sky of its own colour is what real
-	 * distance fog looks like. It was never the amount that gave it away — it
-	 * was the seam.
+	 * Pulled right back after playing with it. Heavy fog held up in a
+	 * screenshot and did not survive an evening: it softens everything past
+	 * twenty blocks, so the world reads as low resolution rather than as
+	 * weather, and a sunset seen through it looks like a rendering fault rather
+	 * than a sunset.
+	 *
+	 * Which returns to what vanilla already knew. Minecraft's own weather never
+	 * touches a fog distance — it changes colour and light — and both times this
+	 * has been pushed toward distance it has looked wrong. Three quarters at
+	 * SIEGE is the most it gets now, and nothing at all before MIMIC.
+	 *
+	 * The colour and the darkness do the work. They always did.
 	 */
 	private static float closeness() {
 		return switch (phase()) {
-			case RUMOUR, WATCHER -> 1.0F;
-			case TRESPASSER -> 0.85F;
-			case MIMIC -> 0.7F;
-			case HUNTER -> 0.52F;
-			case SIEGE -> 0.4F;
+			case RUMOUR, WATCHER, TRESPASSER -> 1.0F;
+			case MIMIC -> 0.95F;
+			case HUNTER -> 0.85F;
+			case SIEGE -> 0.75F;
 		};
 	}
 
