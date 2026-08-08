@@ -5,9 +5,30 @@ A Minecraft Java Edition mod. He was already in your world.
 **Where this is up to: [STATUS.md](STATUS.md)** — what is built, what is not,
 and what comes next.
 
+**Download:** [herobrine-mod.vercel.app](https://herobrine-mod.vercel.app) ·
+[latest release](https://github.com/robinandrejohansen/herobrine-mod/releases/latest)
+
+## Install
+
+1. [Fabric](https://fabricmc.net/use/installer/) for **Minecraft 26.2**
+2. **Fabric API** and `herobrine-<version>.jar` into your `mods` folder
+3. Play normally. Don't go looking — the first hour is meant to feel like
+   nothing is installed.
+
+Everything is switchable in `config/herobrine.json`, which writes itself on
+first run.
+
 ## Status
 
-Scaffold only — builds and loads, no custom content yet.
+All six phases and the ending are built. See [STATUS.md](STATUS.md).
+
+## Releasing
+
+    scripts/release.sh 1.0.1
+
+Bumps the version, builds, pushes, and cuts a GitHub release with the jar on
+it. The website reads the latest release at page load, so there is nothing to
+redeploy after a fix.
 
 ## Stack
 
