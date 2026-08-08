@@ -46,8 +46,23 @@ import net.minecraft.world.phys.AABB;
 public final class Feral {
 	private Feral() {}
 
-	public static final AttachmentType<Boolean> FERAL =
-		AttachmentRegistry.createPersistent(HerobrineMod.id("feral"), Codec.BOOL);
+	/**
+	 * Synced, and it has to be.
+	 *
+	 * This is read on the CLIENT to decide whether to draw the infected skin,
+	 * and a plain persistent attachment lives only on the server — so the
+	 * client read null every time, decided the villager was fine, and drew an
+	 * ordinary one. The red eyes worked throughout because MENACE was synced
+	 * and this was not, which is a maddening way for it to fail: half the
+	 * effect appears and the half that needs a restart looks like it needs
+	 * another restart.
+	 */
+	public static final AttachmentType<Boolean> FERAL = AttachmentRegistry
+		.<Boolean>builder()
+		.persistent(Codec.BOOL)
+		.syncWith(net.minecraft.network.codec.ByteBufCodecs.BOOL.cast(),
+			net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
+		.buildAndRegister(HerobrineMod.id("feral"));
 
 	/** How far it notices somebody. Short — it has been in a small room. */
 	private static final double NOTICE = 22.0;
@@ -86,21 +101,41 @@ public final class Feral {
 	}
 
 	private static void onTick(MinecraftServer server) {
+		float sweep = (float)(Math.sin(server.overworld().getGameTime() / 24.0) * 55.0);
+
 		for (ServerLevel level : server.getAllLevels()) {
 			for (ServerPlayer player : level.players()) {
 				AABB around = player.getBoundingBox().inflate(NOTICE);
 				for (Mob mob : level.getEntitiesOfClass(Mob.class, around)) {
-					if (isFeral(mob)) {
+					if (!isFeral(mob)) {
+						continue;
+					}
+					// Line of sight is the switch, and it is the right one
+					// because it means the DOOR decides. Behind bars it cannot
+					// see out properly, so it goes on watching the room it has
+					// been alone in; the moment a player opens the door it can
+					// see them, and it comes. Nothing had to be told about the
+					// door — the geometry says it.
+					if (mob.hasLineOfSight(player)) {
 						hunt(level, mob, player);
+					} else {
+						watch(mob, sweep);
 					}
 				}
 			}
 		}
-		sweepIdle(server);
 	}
 
+	/**
+	 * It has seen you, and now it is coming.
+	 *
+	 * No vanilla goal owns this — the target is cleared every tick so the
+	 * villager's own brain cannot take over and wander it off to a job site.
+	 * Head locked the whole way, which is what separates this from an angry
+	 * mob: an angry mob looks where it is going.
+	 */
 	private static void hunt(ServerLevel level, Mob mob, ServerPlayer player) {
-		mob.setTarget(null);   // no vanilla goal owns this
+		mob.setTarget(null);
 		mob.getLookControl().setLookAt(player, 90.0F, 90.0F);
 
 		float yaw = (float)(Math.atan2(
@@ -112,7 +147,7 @@ public final class Feral {
 	}
 
 	/**
-	 * The head sweep, for the ones nobody has found yet.
+	 * The head sweep, for the ones that cannot see out yet.
 	 *
 	 * Driven off game time rather than a stored angle so every one of them is
 	 * in step, which sounds like a mistake and is not: two of them in
@@ -120,22 +155,11 @@ public final class Feral {
 	 * than two of them doing it independently. It reads as one thing wearing
 	 * two bodies, which is precisely what it is.
 	 */
-	private static void sweepIdle(MinecraftServer server) {
-		float angle = (float)(Math.sin(server.overworld().getGameTime() / 24.0) * 55.0);
-		for (ServerLevel level : server.getAllLevels()) {
-			for (ServerPlayer player : level.players()) {
-				AABB around = player.getBoundingBox().inflate(48.0);
-				for (Mob mob : level.getEntitiesOfClass(Mob.class, around)) {
-					if (!isFeral(mob) || mob.distanceTo(player) <= NOTICE) {
-						continue;
-					}
-					mob.getNavigation().stop();
-					mob.yHeadRot = angle;
-					mob.setYRot(angle * 0.25F);
-					mob.setYBodyRot(angle * 0.25F);
-				}
-			}
-		}
+	private static void watch(Mob mob, float angle) {
+		mob.getNavigation().stop();
+		mob.yHeadRot = angle;
+		mob.setYRot(angle * 0.3F);
+		mob.setYBodyRot(angle * 0.3F);
 	}
 
 	private static void strike(ServerLevel level, Mob mob, ServerPlayer player) {

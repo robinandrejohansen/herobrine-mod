@@ -581,11 +581,13 @@ move — the seed decides, not your position. Walk there, or to look at it now:
       hardcoded south, so half of them opened into solid rock
 - [ ] A redstone lamp outside each one, where somebody stood to look in
 - [ ] A villager inside. Through the bars its head **sweeps slowly side to
-      side**, over and over
+      side**, over and over — it keeps sweeping while the door is shut, because
+      it cannot see you properly through bars
 - [ ] Both of them sweep **in step** with each other
 - [ ] It is silent
-- [ ] Open the door and it comes straight at you — head locked on, faster than
-      you walk, and it does not stop
+- [ ] **Open the door** and it switches at once: head locked on, straight at
+      you, faster than you walk, and it does not stop. The door is the switch —
+      the moment it can see you, it comes
 - [ ] It hits for about a heart and a half, on a cooldown
 - [ ] **Ordinary villager health.** You can kill it, and you will have to
 - [ ] It has **red** eyes, not white. White is his; this is what he leaves
