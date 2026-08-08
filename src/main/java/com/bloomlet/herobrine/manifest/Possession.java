@@ -14,12 +14,14 @@ import com.bloomlet.herobrine.wrath.Wrath;
 import com.mojang.serialization.Codec;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -83,6 +85,41 @@ public final class Possession {
 		AttachmentRegistry.createPersistent(HerobrineMod.id("possessed_by"), Codec.STRING);
 
 	/**
+	 * Whether it has stopped pretending.
+	 *
+	 * The eyes are NOT on from the moment he takes something, and that
+	 * ordering is the whole design. The first encounter has to be deniable: a
+	 * cow that has stopped moving is a cow that has stopped moving, and the
+	 * player's first thought should be that their game is stuttering. If it
+	 * glowed straight away there would be nothing to doubt, and a horror the
+	 * player never doubted is a horror they were only ever told about.
+	 *
+	 * It reveals once the animal has FOLLOWED them — which is the moment the
+	 * innocent explanations run out. A cow standing still is a glitch. A cow
+	 * that was in the field when you left and is outside your door at dusk is
+	 * not, and that is the right moment to confirm it, because the player has
+	 * already arrived at the answer and the eyes only agree with them.
+	 *
+	 * Synced, because the client has to draw it.
+	 */
+	public static final AttachmentType<Boolean> REVEALED = AttachmentRegistry
+		.<Boolean>builder()
+		.persistent(Codec.BOOL)
+		.syncWith(ByteBufCodecs.BOOL.cast(), AttachmentSyncPredicate.all())
+		.buildAndRegister(HerobrineMod.id("possessed_revealed"));
+
+	/**
+	 * How long it has spent coming after them.
+	 *
+	 * Counted in sweeps rather than ticks, and only while it is actually
+	 * walking — an animal standing in a ring around a stationary player never
+	 * accrues any, so somebody who parks next to a possessed cow and stares at
+	 * it does not get the answer for free. You have to walk away from it.
+	 */
+	public static final AttachmentType<Integer> PURSUIT =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("possessed_pursuit"), Codec.INT);
+
+	/**
 	 * How far he will reach for something to take.
 	 *
 	 * Generous on purpose. Animals spawn in scattered herds rather than evenly,
@@ -110,6 +147,8 @@ public final class Possession {
 	private static final int SPREAD_PER_KILL = 2;
 	/** Ceiling on how many can be his at once near you. Sanity, not design. */
 	private static final int LIVE_CAP = 16;
+	/** Sweeps of real pursuit before it stops pretending. Roughly half a minute. */
+	private static final int PURSUIT_TO_REVEAL = 14;
 	/** How many you may put down before it stops spreading. */
 	private static final int TOLL_LIMIT = 100;
 	/** Where they stand once they have caught you up. */
@@ -194,6 +233,32 @@ public final class Possession {
 			return false;   // a possessed lamb is comic, not frightening
 		}
 		return !(mob instanceof TamableAnimal tame) || !tame.isTame();
+	}
+
+	/** True once it has followed you far enough to stop pretending. */
+	public static boolean isRevealed(Mob mob) {
+		return Boolean.TRUE.equals(mob.getAttached(REVEALED));
+	}
+
+	/**
+	 * One step closer to the player knowing.
+	 *
+	 * @param outright true when it has just crossed real ground to reach them,
+	 *                 which is worth the whole counter on its own
+	 */
+	private static void pursued(Mob mob, boolean outright) {
+		if (isRevealed(mob)) {
+			return;
+		}
+		int so_far = (mob.getAttached(PURSUIT) == null ? 0 : mob.getAttached(PURSUIT)) + 1;
+		mob.setAttached(PURSUIT, so_far);
+		if (!outright && so_far < PURSUIT_TO_REVEAL) {
+			return;
+		}
+		mob.setAttached(REVEALED, true);
+		HerobrineMod.LOGGER.info("a possessed {} stopped pretending at [{}, {}, {}]",
+			mob.getType().toShortString(), mob.blockPosition().getX(),
+			mob.blockPosition().getY(), mob.blockPosition().getZ());
 	}
 
 	public static boolean isPossessed(Mob mob) {
@@ -369,6 +434,8 @@ public final class Possession {
 
 	private static void claim(Mob mob, ServerPlayer owner) {
 		mob.setAttached(POSSESSED, true);
+		mob.setAttached(REVEALED, false);
+		mob.setAttached(PURSUIT, 0);
 		mob.setAttached(OWNER, owner.getUUID().toString());
 		mob.setSilent(true);
 		mob.setPersistenceRequired();
@@ -463,6 +530,7 @@ public final class Possession {
 	 */
 	private static void follow(Mob mob, ServerPlayer player) {
 		disarm(mob);
+		pursued(mob, false);
 		Vec3 slot = slotOf(mob, player);
 		mob.getNavigation().moveTo(slot.x, slot.y, slot.z, FOLLOW_SPEED);
 	}
@@ -524,6 +592,9 @@ public final class Possession {
 	 * assumed you had left it behind.
 	 */
 	private static void catchUp(ServerLevel level, Mob mob, ServerPlayer player) {
+		// It has just crossed ground to reach them. Nothing the player can
+		// tell themselves survives that, so this alone is enough.
+		pursued(mob, true);
 		// Underground, the surface heightmap is worse than useless — it would
 		// drop the animal on the mountainside above your tunnel, where it can
 		// never reach you. Same flood-fill the entity itself uses, so it

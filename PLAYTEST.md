@@ -274,6 +274,13 @@ The command prints which animal and where. Now go and look at it.
 
 **Then walk away and keep walking.** This is the real test:
 
+- [ ] Stand next to it and stare at it for two minutes. It does **not** reveal
+      — you have to walk away from it, not watch it
+- [ ] Walk away so it has to follow. After about half a minute of it actually
+      walking after you, the log says it **stopped pretending**
+- [ ] Or outrun it entirely so it has to catch up: that reveals it at once
+- [ ] Kill it and let it spread. The two new ones start over — unrevealed
+
 - [ ] It **comes after you**, on foot, slower than you walk
 - [ ] Sprint 200 blocks across open ground to your base. Wait. It arrives —
       it does not give up and it does not get stuck a chunk behind you
