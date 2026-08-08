@@ -35,7 +35,9 @@ import net.minecraft.world.phys.Vec3;
  */
 public class HerobrineEntity extends PathfinderMob {
 	/** Ticks a player has held their gaze on him before he leaves. */
-	private int watchedTicks;
+	private int unseenTicks;
+	private int fleeTicks;
+	private boolean fleeing;
 	/** Ticks since he arrived. */
 	private int age;
 	/** Whether any player actually laid eyes on him before he left. */
@@ -58,8 +60,25 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private static final int LIFETIME = 600;          // 30 seconds
 
-	/** Get closer than this and he is simply not there any more. */
-	private static final double TOO_CLOSE = 8.0;
+	/** Get closer than this and he will not let you get closer still. */
+	private static final double TOO_CLOSE = 12.0;
+
+	/**
+	 * How long he stays once you have stopped looking.
+	 *
+	 * The single best moment available: the player breaks line of sight for a
+	 * second — a tree, a corner, a glance at their hotbar — and when they look
+	 * back the figure is gone. Nothing had to move while they were watching,
+	 * which is what makes it impossible to argue with. Short enough that a
+	 * quick glance away is enough, long enough that a flickering sightline
+	 * through leaves does not fire it by accident.
+	 */
+	private static final int UNSEEN_GRACE = 16;
+
+	/** Faster than a sprinting player, so the gap only ever opens. */
+	private static final double FLEE_SPEED = 0.34;
+	/** He does not run for long. He runs until he is out of sight. */
+	private static final int FLEE_LIMIT = 70;
 
 	/**
 	 * Chasing him costs you.
@@ -171,7 +190,12 @@ public class HerobrineEntity extends PathfinderMob {
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new FloatGoal(this));
-		this.goalSelector.addGoal(1, new StalkPlayerGoal(this, 18.0, 32.0));
+		// No approach goal, deliberately. He used to close to a standoff
+		// distance, which meant the player watched him WALK, and something you
+		// watch cross a field is something you are studying rather than
+		// something you have caught sight of. He is placed where he is placed
+		// and he stays there: the whole event is a figure at a distance that
+		// was already standing there when you looked up.
 		this.goalSelector.addGoal(2, new LookAtPlayerGoal(this, Player.class, 64.0F));
 	}
 
@@ -197,6 +221,11 @@ public class HerobrineEntity extends PathfinderMob {
 			this.witnessed = true;
 		}
 
+		if (this.fleeing) {
+			this.flee(nearest);
+			return;
+		}
+
 		// You never get to reach him. Walking up to something that does not
 		// react is how a threat becomes an exhibit.
 		if (nearest != null && this.distanceTo(nearest) < TOO_CLOSE) {
@@ -204,20 +233,77 @@ public class HerobrineEntity extends PathfinderMob {
 				WrathTriggers.defiance(chaser, DEFIANCE_APPROACHED);
 			}
 			if (!relocateBehind(nearest)) {
-				this.vanish();
+				// He does not pop out of existence in your face. He turns and
+				// puts something between you, and THEN he is gone — which
+				// leaves the player having watched him leave rather than
+				// having watched him cease to exist. One is a person avoiding
+				// them; the other is a special effect.
+				this.fleeing = true;
 			}
 			return;
 		}
 
-		if (nearest != null && isLookingAtMe(nearest)) {
-			// Hold still while watched — moving would break the illusion that
-			// he was always standing there.
-			this.getNavigation().stop();
-			if (++this.watchedTicks > 40) {
-				this.vanish();
-			}
-		} else {
-			this.watchedTicks = 0;
+		// He was always standing there and he goes on standing there. Moving
+		// while watched would break the only claim the whole event makes.
+		this.getNavigation().stop();
+
+		if (nearest == null) {
+			this.vanish();
+			return;
+		}
+
+		if (inViewOf(nearest)) {
+			this.unseenTicks = 0;
+		} else if (this.witnessed && ++this.unseenTicks > UNSEEN_GRACE) {
+			// Seen, then not seen, then not there. The player never watches
+			// him go; they simply find that he has gone, which is the one
+			// version of this they cannot talk themselves out of.
+			this.vanish();
+		}
+	}
+
+	/**
+	 * He breaks your line of sight, and then he is not there.
+	 *
+	 * Moved directly rather than pathfound, and through solid rock rather than
+	 * around it. That sounds like cheating and is the opposite: a figure that
+	 * has to find a route is a figure the player can corner, and being cornered
+	 * would force the honest answer — that he is a mob with a hitbox. Backing
+	 * into a cave wall and being gone never has to answer that question.
+	 *
+	 * He does not sprint away across open ground for long. FLEE_LIMIT is short
+	 * because the goal is not escape, it is to be out of sight; the moment the
+	 * player's view of him is broken by anything at all, that is the end of it.
+	 */
+	private void flee(@org.jspecify.annotations.Nullable Player from) {
+		if (from == null || ++this.fleeTicks > FLEE_LIMIT) {
+			this.vanish();
+			return;
+		}
+
+		this.noPhysics = true;
+		this.setNoGravity(true);
+		this.getNavigation().stop();
+
+		Vec3 away = this.position().subtract(from.position());
+		away = new Vec3(away.x, 0.0, away.z);
+		if (away.lengthSqr() < 1.0E-4) {
+			away = this.getLookAngle();
+		}
+		away = away.normalize();
+
+		// Facing the way he is going, so it reads as leaving rather than as
+		// being dragged backwards.
+		float yaw = (float)(Math.atan2(away.z, away.x) * (180.0 / Math.PI)) - 90.0F;
+		this.setYRot(yaw);
+		this.setYBodyRot(yaw);
+		this.setYHeadRot(yaw);
+
+		this.setPos(this.getX() + away.x * FLEE_SPEED,
+			this.getY(), this.getZ() + away.z * FLEE_SPEED);
+
+		if (!inViewOf(from) || this.level().getBlockState(this.blockPosition()).isSolid()) {
+			this.vanish();
 		}
 	}
 
@@ -317,22 +403,6 @@ public class HerobrineEntity extends PathfinderMob {
 		this.discard();
 	}
 
-	/**
-	 * The further away he is, the tighter the angle has to be, so a distant
-	 * glance does not count. Requires unobstructed line of sight — looking at
-	 * a wall he happens to be behind is not seeing him.
-	 */
-	private boolean isLookingAtMe(Player player) {
-		Vec3 view = player.getViewVector(1.0F).normalize();
-		Vec3 toMe = new Vec3(
-			this.getX() - player.getX(),
-			this.getEyeY() - player.getEyeY(),
-			this.getZ() - player.getZ()
-		);
-		double distance = toMe.length();
-		double dot = view.dot(toMe.normalize());
-		return dot > 1.0 - GAZE_TOLERANCE / distance && player.hasLineOfSight(this);
-	}
 
 	/**
 	 * Nothing touches him.
@@ -404,7 +474,7 @@ public class HerobrineEntity extends PathfinderMob {
 		this.snapTo(this.anchor.getX() + 0.5, this.anchor.getY(), this.anchor.getZ() + 0.5, yaw, 0.0F);
 
 		this.relocations++;
-		this.watchedTicks = 0;
+		this.unseenTicks = 0;
 		this.age = 0;          // a fresh visit; you have earned the second look
 		return true;
 	}

@@ -199,6 +199,24 @@ other = sum(1 for row in glow for px in row
 assert eyes, "no emissive eye pixels"
 assert not other, f"{other} non-eye emissive pixels — only the eyes may glow"
 
+# ---------------------------------------------------------------- intensity
+#
+# Pure white at full opacity was too much. The eyes pipeline blends with
+# TRANSLUCENT, so the alpha here is the difference between eyes that are lit
+# and eyes that are LIGHTS — at full strength they read as two lamps set into
+# the face and appear to throw light onto him, which is exactly the "obviously
+# supernatural" register LORE.md rules out. Nothing in this mod should look
+# like it is emitting.
+#
+# Turned down after the checks above rather than before, so the assertions
+# still compare against a clean marker colour and cannot be fooled by a
+# rounding change here.
+EYE = (232, 236, 240, 150)
+for row in glow:
+    for x, px in enumerate(row):
+        if px == C("FFFFFF"):
+            row[x] = EYE
+
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                    "..", "src", "main", "resources", "assets", "herobrine",
                    "textures", "entity")

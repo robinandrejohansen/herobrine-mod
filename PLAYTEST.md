@@ -577,6 +577,33 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 > sound in the game and it works on reflex, which is exactly why it might not
 > belong in phase 0 — it is easy to move to WATCHER.
 
+### A7i — The sighting
+
+```
+/herobrine provoke the_stare
+```
+
+Needs darkness. It reports where he is — turn and look.
+
+- [ ] He is **already standing there**. He never walks up to you and you never
+      watch him arrive
+- [ ] He does **not** approach. Stand still and he stays where he is
+- [ ] **Look away for a second** — turn round, step behind a tree, glance at
+      your hotbar. When you look back he is gone
+- [ ] Nothing announced it. No sound, no particles, no teleport effect
+- [ ] Walk at him. Inside about twelve blocks he **turns and leaves**, faster
+      than you can sprint. You never close the gap
+- [ ] The moment anything breaks your view of him — a trunk, a corner, a rise
+      — he is gone
+- [ ] In a cave he backs **into the rock face** and is gone
+- [ ] Sometimes instead he is behind you. That is the old behaviour and it is
+      still there, roughly one approach in two to three depending on phase
+- [ ] Chasing him still raises wrath. Check `/herobrine status` before and
+      after
+
+> The eyes should read as **pale**, not as headlights, and should not look
+> like they are throwing light onto his face.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the
