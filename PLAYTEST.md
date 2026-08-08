@@ -822,6 +822,15 @@ change the moment the phase does.
       see where fog ends and sky begins, that is the bug
 - [ ] **Ash falls from MIMIC**, in every biome. In a desert, in a jungle, in
       warm rain. Weather has rules and this does not obey them
+- [ ] The world gets **darker**, not just greyer. At SIEGE a clear noon is
+      dim; a **thunderstorm at SIEGE is the darkest the world ever gets** and
+      should read as dusk at midday
+- [ ] **Clouds come down** as the phases climb — a ceiling rather than a
+      backdrop
+- [ ] Crucially: **no extra mobs.** The darkening is client-side only, so it
+      never changes spawning. Check by standing in the open at SIEGE noon in a
+      storm — dark to look at, still nothing spawning on you
+- [ ] Never so dark you cannot see to walk. If it is, say so
 - [ ] Clouds, sky and terrain all haze **together**. Nothing stays sharp while
       the rest goes soft
 - [ ] Biome still reads: a swamp still looks like a swamp, a desert like a

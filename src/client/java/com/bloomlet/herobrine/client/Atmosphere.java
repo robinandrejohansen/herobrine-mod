@@ -4,6 +4,7 @@ import com.bloomlet.herobrine.wrath.Phase;
 import com.bloomlet.herobrine.wrath.Wrath;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.attribute.AmbientParticle;
@@ -56,7 +57,7 @@ public final class Atmosphere {
 	 */
 	private static final int PALL = ARGB.color(255, 58, 60, 66);
 
-	public static void addLayers(EnvironmentAttributeSystem.Builder builder) {
+	public static void addLayers(EnvironmentAttributeSystem.Builder builder, ClientLevel level) {
 		// Same target, same strength, all three. They must agree.
 		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_COLOR,
 			(colour, tick) -> ARGB.srgbLerp(pall(), colour, PALL));
@@ -84,8 +85,57 @@ public final class Atmosphere {
 			(particles, tick) -> fall() <= 0.0F ? particles
 				: AmbientParticle.of(ParticleTypes.WHITE_ASH, fall()));
 
+		// And the light, which was the real omission. Everything above changes
+		// what colour the world is; none of it changes how BRIGHT the world is,
+		// so a storm at SIEGE came out as a grey afternoon rather than as a
+		// bad one. Vanilla's own thunder layer dims exactly these two, and
+		// stopping short of them meant recolouring a scene that was still lit
+		// like noon.
+		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_FACTOR,
+			(factor, tick) -> factor * (1.0F - gloom(level)));
+		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_LEVEL,
+			(lit, tick) -> lit * (1.0F - gloom(level) * 0.7F));
+
+		// Clouds come down. A ceiling you can nearly touch is oppressive in a
+		// way a grey one is not, and it is the only attribute here that changes
+		// the shape of the sky rather than its colour.
+		builder.addTimeBasedLayer(EnvironmentAttributes.CLOUD_HEIGHT,
+			(height, tick) -> height - 46.0F * pall());
+
 		builder.addTimeBasedLayer(EnvironmentAttributes.MUSIC_VOLUME,
 			(volume, tick) -> volume * loudness());
+	}
+
+	/**
+	 * How dark it has got, 0 to 1.
+	 *
+	 * The only thing here that reads the weather, and it is what makes a storm
+	 * at SIEGE the worst the world ever looks rather than just another grey
+	 * day. Thunder is worth over half again, so the difference between a wet
+	 * afternoon and a bad one is something the player sees rather than infers.
+	 *
+	 * Capped well short of black. A world the player cannot see to walk through
+	 * is a handicap rather than a mood, and §9 rules that out — this is meant
+	 * to be a sky you keep glancing at, not a reason to stop playing.
+	 *
+	 * Client-only, which is the happy accident that makes it safe: SKY_LIGHT_LEVEL
+	 * is a gameplay attribute and feeds mob spawning on the server, but our
+	 * layers exist only on the client. The world LOOKS darker without a single
+	 * extra zombie, so the atmosphere costs the player nothing.
+	 */
+	private static float gloom(ClientLevel level) {
+		float base = switch (phase()) {
+			case RUMOUR, WATCHER -> 0.0F;
+			case TRESPASSER -> 0.10F;
+			case MIMIC -> 0.24F;
+			case HUNTER -> 0.40F;
+			case SIEGE -> 0.56F;
+		};
+		if (base <= 0.0F) {
+			return 0.0F;
+		}
+		float weather = level.isThundering() ? 1.55F : level.isRaining() ? 1.2F : 1.0F;
+		return Math.min(0.82F, base * weather);
 	}
 
 	/**

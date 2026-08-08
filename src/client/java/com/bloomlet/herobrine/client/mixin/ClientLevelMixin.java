@@ -31,6 +31,6 @@ public class ClientLevelMixin {
 	@Inject(method = "addEnvironmentAttributeLayers", at = @At("RETURN"))
 	private void herobrine$addAtmosphere(EnvironmentAttributeSystem.Builder builder,
 	                                     CallbackInfoReturnable<EnvironmentAttributeSystem.Builder> info) {
-		Atmosphere.addLayers(builder);
+		Atmosphere.addLayers(builder, (ClientLevel)(Object)this);
 	}
 }
