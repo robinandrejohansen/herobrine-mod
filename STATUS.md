@@ -123,6 +123,9 @@ much faster and is the intended route.
       each return comes in closer and gives you less room than the last
 - [x] It ends where you can see it: he stops dead in the open, looks at you
       for two and a half seconds, and goes
+- [x] Surviving it brings him on. Enduring the whole hunt is worth 130 wrath to
+      everyone still standing; slipping him by hiding is worth 55. Six or seven
+      survived hunts is the road from HUNTER to SIEGE
 - [x] Swims at walking speed; a lake is not a moat
 - [x] Ends after 100 seconds, or when you put 52 blocks between you
 - [x] Blocked by a ravine, he stops trying and reappears closer, behind you

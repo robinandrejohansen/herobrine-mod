@@ -444,6 +444,23 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private static final int DEFIANCE_APPROACHED = 25;
 	private static final int DEFIANCE_STRUCK = 40;
+	/**
+	 * What surviving a hunt costs you, and it is the largest number here.
+	 *
+	 * This is the whole engine of the mod stated in one constant. You cannot
+	 * kill him, so the only thing you can do to a hunt is outlast it — and
+	 * outlasting it is the loudest defiance available, so it brings him on.
+	 * HUNTER is a thousand and SIEGE is eighteen hundred, which is six or seven
+	 * survived hunts: enough that the ladder is felt rather than climbed in an
+	 * evening.
+	 *
+	 * Enduring it is worth more than slipping it. A player who hid in a hole
+	 * until he lost interest has done something cleverer and less defiant than
+	 * one who was reached three times and was still standing, and the numbers
+	 * should say which of those he minds more.
+	 */
+	private static final int DEFIANCE_ENDURED = 130;
+	private static final int DEFIANCE_EVADED = 55;
 
 	/**
 	 * How many times a chase relocates him before he actually goes.
@@ -1120,7 +1137,8 @@ public class HerobrineEntity extends PathfinderMob {
 		if (this.hasLineOfSight(quarry) || this.breaking != null) {
 			this.blindTicks = 0;
 		} else if (++this.blindTicks > LOSE_TRAIL) {
-			this.relent(quarry);
+			// Slipped rather than endured, and worth less accordingly.
+			this.relent(quarry, DEFIANCE_EVADED);
 		}
 
 		if (this.relenting) {
@@ -1252,6 +1270,22 @@ public class HerobrineEntity extends PathfinderMob {
 	 * like when he is finished, and they will be waiting for it.
 	 */
 	private void relent(Player quarry) {
+		this.relent(quarry, DEFIANCE_ENDURED);
+	}
+
+	private void relent(Player quarry, int defiance) {
+		// AND IT COSTS THEM.
+		//
+		// Everyone still here, not only the quarry — surviving a hunt as a
+		// group is a group's defiance, and paying it to one of them would make
+		// standing near the others free.
+		if (this.level() instanceof ServerLevel here) {
+			for (ServerPlayer survivor : here.getEntitiesOfClass(ServerPlayer.class,
+					this.getBoundingBox().inflate(WATCH_RANGE),
+					other -> other.isAlive() && !other.isSpectator())) {
+				WrathTriggers.defiance(survivor, defiance);
+			}
+		}
 		this.relenting = true;
 		this.watching = false;
 		this.moodTicks = RELENT_TICKS;
