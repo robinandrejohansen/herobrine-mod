@@ -174,10 +174,13 @@ public final class HerobrineCommand {
 		}
 
 		Manifestation chosen = match;
+		ManifestationDirector.clearRefusal();
 		boolean ran = ManifestationDirector.runNamed(chosen, level, player);
+		String refusal = ManifestationDirector.lastRefusal();
 		ctx.getSource().sendSuccess(() -> Component.literal(
 			ran ? "ran " + chosen.name() + where(player)
-				: chosen.name() + " could not run here — wrong surroundings for it"), false);
+				: chosen.name() + " could not run here — "
+					+ (refusal == null ? "wrong surroundings for it" : refusal)), false);
 		return ran ? 1 : 0;
 	}
 

@@ -81,7 +81,15 @@ public final class Possession {
 	public static final AttachmentType<String> OWNER =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("possessed_by"), Codec.STRING);
 
-	private static final double SEARCH_RADIUS = 24.0;
+	/**
+	 * How far he will reach for something to take.
+	 *
+	 * Generous on purpose. Animals spawn in scattered herds rather than evenly,
+	 * so in a forest the nearest cow is routinely thirty blocks off through the
+	 * trees — a tighter radius made this fail over and over in ordinary terrain
+	 * while looking like a bug.
+	 */
+	private static final double SEARCH_RADIUS = 48.0;
 
 	/** Beyond this, walking will not do — it is brought closer instead. */
 	private static final double CATCHUP_RADIUS = 44.0;
@@ -171,26 +179,43 @@ public final class Possession {
 		AABB around = player.getBoundingBox().inflate(SEARCH_RADIUS);
 		Vec3 look = player.getViewVector(1.0F).normalize();
 
+		// Counted rather than merely skipped, so a refusal can say which of
+		// these it was. They are wildly different problems — "there are no
+		// animals here" is terrain, "they are all in front of you" is the
+		// player, and "they are all already his" is the mod working — and a
+		// single "wrong surroundings" for all three is useless to a tester.
+		int harmless = 0;
+		int tooClose = 0;
+		int watched = 0;
+		int alreadyHis = 0;
+
 		for (Mob mob : level.getEntitiesOfClass(Mob.class, around)) {
 			if (!(mob instanceof Animal) && !(mob instanceof AbstractVillager)) {
 				continue;   // only things that ought to be harmless
 			}
-			if (isPossessed(mob) || mob.isBaby()) {
+			if (mob.isBaby()) {
 				continue;   // a possessed lamb is comic, not frightening
 			}
-			double distance = mob.distanceTo(player);
-			if (distance < 6.0) {
+			harmless++;
+			if (isPossessed(mob)) {
+				alreadyHis++;
+				continue;
+			}
+			if (mob.distanceTo(player) < 6.0) {
+				tooClose++;
 				continue;
 			}
 			// Never taken while you are watching it happen — an animal that
 			// visibly stops mid-step is a bug; one you turn back to is not.
 			Vec3 toMob = mob.position().subtract(player.position()).normalize();
 			if (look.dot(toMob) > 0.2) {
+				watched++;
 				continue;
 			}
 			candidates.add(mob);
 		}
 		if (candidates.isEmpty()) {
+			ManifestationDirector.refused(whyNot(harmless, tooClose, watched, alreadyHis));
 			return false;
 		}
 
@@ -220,6 +245,20 @@ public final class Possession {
 			took++;
 		}
 		return took > 0;
+	}
+
+	private static String whyNot(int harmless, int tooClose, int watched, int alreadyHis) {
+		if (harmless == 0) {
+			return "no animals or villagers within " + (int)SEARCH_RADIUS + " blocks";
+		}
+		if (watched > 0 && tooClose == 0 && alreadyHis == 0) {
+			return watched + " nearby, but all in front of you — look away and try again";
+		}
+		if (alreadyHis == harmless) {
+			return "all " + harmless + " nearby are already his";
+		}
+		return harmless + " nearby: " + watched + " in your view, " + tooClose
+			+ " too close, " + alreadyHis + " already his";
 	}
 
 	private static int takeCount(Phase phase) {

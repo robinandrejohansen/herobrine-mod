@@ -325,6 +325,29 @@ public final class ManifestationDirector {
 		return lastLocation;
 	}
 
+	/**
+	 * Why the last attempt declined.
+	 *
+	 * Everything he does is placed out of sight deliberately, so a tester
+	 * cannot tell a quiet success from a quiet refusal. "Wrong surroundings"
+	 * covers half a dozen unrelated causes and names none of them, which cost
+	 * a playtest session to a manifestation that was working exactly as
+	 * designed and simply had nothing to work with.
+	 */
+	private static @org.jspecify.annotations.Nullable String lastRefusal;
+
+	public static void refused(String reason) {
+		lastRefusal = reason;
+	}
+
+	public static @org.jspecify.annotations.Nullable String lastRefusal() {
+		return lastRefusal;
+	}
+
+	public static void clearRefusal() {
+		lastRefusal = null;
+	}
+
 	/** Whether anything at all is eligible right now, for debug reporting. */
 	public static boolean anythingEligible(MinecraftServer server, ServerPlayer player) {
 		return !eligible(server, player).isEmpty();
