@@ -12,15 +12,18 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
 /**
  * What is actually under the house.
  *
- * The building on the surface is the smaller half and it is meant to read that
- * way — a farmhouse with a hole in the floor, and then far more below it than
- * anybody could have needed. A cellar is storage. This is not storage.
+ * A farmhouse with a hole in the floor, and rather more under it than a farm
+ * needed. A cellar is storage; this is not storage.
+ *
+ * Kept small on purpose. It is the first of five and each is meant to be less
+ * like somewhere a person lived than the last, so a house whose cellar already
+ * ran to three chambers would leave the later ones nowhere to go. One chamber,
+ * and a passage that gives up.
  *
  * Carved rather than built, and that distinction is the whole brief. Rooms have
  * corners, courses and right angles, and every one of those says somebody was
@@ -29,8 +32,8 @@ import net.minecraft.world.phys.Vec3;
  * because whoever cut it was not working to a plan. The moment a player can
  * read a rectangle down here it stops being a dig and becomes a basement.
  *
- * Almost nothing is put in it. Two chests over sixty blocks of tunnel, a few
- * props, and long stretches of nothing at all. The emptiness IS the content —
+ * Almost nothing is put in it. One chest, a few props, and long stretches of
+ * nothing at all. The emptiness IS the content —
  * the question the whole thing exists to ask is why a family with four names in
  * a ledger needed this, and any answer left lying around makes the question
  * smaller.
@@ -50,43 +53,33 @@ public final class Undercroft {
 	/**
 	 * Dig it, starting from the cellar the house already has.
 	 *
+	 * Deliberately modest. This is the FIRST house and it has to leave room for
+	 * the ones after it — a farmhouse whose cellar already runs to three
+	 * chambers has nowhere left to escalate to, and the whole point of the five
+	 * is that each one is less like somewhere a person lived than the last. So:
+	 * one chamber, and then a passage that gives up. Enough to say he was
+	 * digging, and nowhere near enough to say what for.
+	 *
 	 * @param mouth the cellar floor position the descent leaves from
 	 */
 	public static void dig(ServerLevel level, BlockPos mouth, RandomSource random) {
-		// Down and away from the house, winding. The first stretch is tight —
-		// a squeeze before it opens out, so the player has to commit before
-		// they can see there is anything worth committing to.
-		BlockPos at = bore(level, mouth, new Vec3(0.15, -0.55, 1.0), 22, 1.6, random);
+		// Down and away from the house, winding and tight. A squeeze before it
+		// opens out, so the player has to commit before they can see whether
+		// there is anything worth committing to.
+		BlockPos chamber = bore(level, mouth, new Vec3(0.15, -0.5, 1.0), 18, 1.5, random);
 
-		BlockPos first = at;
-		hollow(level, first, 4.2, random);
-		crate(level, first.offset(2, 0, 0), HouseBooks.brother(), random);
-		props(level, first, 4, random);
+		hollow(level, chamber, 3.6, random);
+		crate(level, chamber.offset(2, 0, 0), HouseBooks.brother(), random);
+		props(level, chamber, 4, random);
 
-		// A long run out from the first chamber. Deliberately the dullest
-		// stretch in the building: sixty seconds of tunnel with nothing in it
-		// is what makes the room at the end mean something.
-		at = bore(level, first, new Vec3(1.0, -0.35, 0.25), 30, 1.5, random);
-
-		BlockPos second = at;
-		hollow(level, second, 5.4, random);
-		props(level, second, 6, random);
-		crate(level, second.offset(-2, 0, 1), null, random);
-
-		// Two ways on from the big room, and one of them is a lie. A single
-		// corridor is a corridor; a choice makes the player commit to a guess
-		// and then find out.
-		BlockPos stub = bore(level, second, new Vec3(-0.4, -0.1, -1.0), 9, 1.3, random);
-		hollow(level, stub, 2.4, random);
-
-		// And the real one, which goes deeper and then simply stops. No wall,
-		// no door, no chamber — the pick marks end mid-stone. Whatever he was
-		// going towards, he did not get there from this end.
-		BlockPos deep = bore(level, second, new Vec3(0.8, -0.6, -0.5), 26, 1.4, random);
-		props(level, deep, 3, random);
+		// And on, deeper, until it simply stops. No wall, no door, no chamber —
+		// the pick marks end mid-stone. Whatever he was going towards, he did
+		// not reach it from this end, and nothing down here says what it was.
+		BlockPos end = bore(level, chamber, new Vec3(0.85, -0.45, -0.3), 22, 1.4, random);
+		props(level, end, 2, random);
 
 		HerobrineMod.LOGGER.info("undercroft dug, ends at [{}, {}, {}]",
-			deep.getX(), deep.getY(), deep.getZ());
+			end.getX(), end.getY(), end.getZ());
 	}
 
 	/**
@@ -134,8 +127,10 @@ public final class Undercroft {
 	 * buried turns out to have a back door.
 	 */
 	private static Vec3 clamp(ServerLevel level, Vec3 at) {
-		int surface = level.getHeight(
-			Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, (int)at.x, (int)at.z);
+		// Real ground, not the top of a tree — a dig under a forest would
+		// otherwise think it had twenty more blocks of headroom than it has and
+		// open into daylight.
+		int surface = Ground.topOf(level, (int)at.x, (int)at.z);
 		double ceiling = surface - ROOF_CLEARANCE;
 		double floor = level.getMinY() + FLOOR_CLEARANCE;
 		return new Vec3(at.x, Math.max(floor, Math.min(ceiling, at.y)), at.z);

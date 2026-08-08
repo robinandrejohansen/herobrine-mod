@@ -20,7 +20,6 @@ import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.Half;
-import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * The first house. Somebody lived here.
@@ -343,7 +342,7 @@ public final class Homestead {
 
 	/** The top solid block of the natural ground in this column. */
 	private static int groundTop(ServerLevel level, int x, int z) {
-		return level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+		return Ground.topOf(level, x, z);
 	}
 
 	/** Take the grass and flowers off, so nothing is buried in a bush. */
@@ -655,8 +654,7 @@ public final class Homestead {
 		int count = 0;
 		for (int z = HOUSE_Z0; z <= HOUSE_Z1; z += 3) {
 			for (int x = HOUSE_X0; x <= HOUSE_X1; x += 3) {
-				total += level.getHeight(
-					Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, originX + x, originZ + z);
+				total += Ground.floorOver(level, originX + x, originZ + z);
 				count++;
 			}
 		}

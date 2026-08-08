@@ -512,6 +512,9 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 
 - [ ] The **building** sits flat and level. No corner floating, no corner
       buried
+- [ ] **Raise it in a dense forest.** It sits on the ground, not above the
+      canopy. This is the case that was broken — every Minecraft heightmap
+      counts a tree trunk as terrain
 - [ ] On a slope it gets a **cobblestone footing** under its low side, like a
       real house would — not a lump of dirt
 - [ ] The **yard follows the ground.** The fence, the field, the path, the
@@ -556,15 +559,12 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 - [ ] Past the cellar it stops being built and starts being **dug**. No
       corners, no courses, no right angles — uneven ceilings, passages that
       wander and change width
-- [ ] It is **big**. Sixty-odd blocks of tunnel and three chambers, far more
-      than any farm needed
-- [ ] A long dull stretch between the first chamber and the big one. That is
-      deliberate — walk it
+- [ ] One chamber, then a passage that gives up. More than a farm needed, and
+      deliberately far short of what the later houses will be
 - [ ] Timber props shored into the passages at intervals: somebody cut this
 - [ ] Red torches only. Never a normal torch
 - [ ] Cobwebs, gravel underfoot, dripstone. Nothing valuable
-- [ ] Two ways on from the big chamber. One is a short dead end
-- [ ] The real one goes deeper and **stops mid-stone**. No wall, no door,
+- [ ] The passage goes deeper and **stops mid-stone**. No wall, no door,
       nothing at the end
 - [ ] No ore, no rails, no branch mining. Nobody dug this **for** anything
 - [ ] It never breaks the surface — you cannot walk out of a hillside

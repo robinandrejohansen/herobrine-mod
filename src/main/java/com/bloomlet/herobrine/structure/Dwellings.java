@@ -13,7 +13,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * Where he lived, and when it appears.
@@ -155,8 +154,10 @@ public final class Dwellings {
 				if (!level.isLoaded(column.atY(level.getSeaLevel()))) {
 					return false;
 				}
-				int height = level.getHeight(
-					Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x + dx, z + dz);
+				// Real ground, not the canopy. Judging a forest site by the
+				// heightmap made it look wildly uneven AND put the floor level
+				// somewhere above the trees.
+				int height = Ground.floorOver(level, x + dx, z + dz);
 				if (height <= level.getSeaLevel()) {
 					return false;   // in the sea, or in a lake
 				}
