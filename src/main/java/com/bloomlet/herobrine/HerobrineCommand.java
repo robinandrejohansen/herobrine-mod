@@ -113,12 +113,10 @@ public final class HerobrineCommand {
 
 		if (force) {
 			HauntingSpawner.Outcome outcome = HauntingSpawner.place(level, player, true);
-			ctx.getSource().sendSuccess(() -> Component.literal(switch (outcome) {
-				case PLACED -> "placed (ignoring darkness)";
-				case ALREADY_NEARBY -> "he already exists somewhere in this world — there is only ever one";
-				case NO_DARK_SPOT -> "no standable ground behind you at 26-44 blocks";
-				case BAD_PLAYER -> "you are spectating or dead";
-			}), false);
+			ctx.getSource().sendSuccess(() -> Component.literal(
+				outcome == HauntingSpawner.Outcome.PLACED
+					? "placed (ignoring darkness)" + where(player)
+					: "could not place him — " + outcome.reason()), false);
 			return 1;
 		}
 

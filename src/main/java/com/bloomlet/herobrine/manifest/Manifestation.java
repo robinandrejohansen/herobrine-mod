@@ -84,7 +84,12 @@ public enum Manifestation {
 	THE_STARE(Phase.WATCHER, 10) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
-			return HauntingSpawner.spawnBehind(level, player);
+			HauntingSpawner.Outcome outcome = HauntingSpawner.place(level, player, false);
+			if (outcome == HauntingSpawner.Outcome.PLACED) {
+				return true;
+			}
+			ManifestationDirector.refused(outcome.reason());
+			return false;
 		}
 	};
 

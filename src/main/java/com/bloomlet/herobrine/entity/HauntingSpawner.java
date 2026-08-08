@@ -59,11 +59,43 @@ public final class HauntingSpawner {
 	private static final double IN_VIEW_DOT = 0.25;
 
 	/** Why a placement did or did not happen — debug commands need the reason. */
+	/**
+	 * Why he did or did not turn up.
+	 *
+	 * Split finer than it needs to be for the code, and entirely for the
+	 * person testing. "Wrong surroundings" covered five unrelated situations
+	 * and named none of them, and the commonest one by far — he is already out
+	 * there from the last attempt — looks exactly like a broken command.
+	 */
 	public enum Outcome {
 		PLACED,
+		/** One of him already exists somewhere in the world. */
 		ALREADY_NEARBY,
-		NO_DARK_SPOT,
-		BAD_PLAYER
+		/** Enclosed, and there is no room to stand back far enough. */
+		NO_ROOM_HERE,
+		/** Somewhere to stand, but all of it lit. */
+		TOO_BRIGHT,
+		/** Dark enough, but every option was in front of the player. */
+		NOTHING_BEHIND,
+		/** Ground would not take him. */
+		NO_FOOTING,
+		BAD_PLAYER;
+
+		public String reason() {
+			return switch (this) {
+				case PLACED -> "";
+				case ALREADY_NEARBY -> "he is already somewhere in this world — "
+					+ "wait for him to go, or find him";
+				case NO_ROOM_HERE -> "you are enclosed and there is nowhere he could stand "
+					+ "9 blocks back in this space — step outside or into a bigger cave";
+				case TOO_BRIGHT -> "everywhere behind you is lit — he needs light 7 or under. "
+					+ "Try at night, or use 'provoke force'";
+				case NOTHING_BEHIND -> "everywhere dark enough was in front of you — "
+					+ "turn around and try again";
+				case NO_FOOTING -> "no solid ground to stand on in the ring behind you";
+				case BAD_PLAYER -> "you are dead or spectating";
+			};
+		}
 	}
 
 	/**
@@ -95,10 +127,10 @@ public final class HauntingSpawner {
 		if (ConfinedPlacement.isConfined(level, player)) {
 			BlockPos spot = ConfinedPlacement.find(level, player);
 			if (spot == null) {
-				return Outcome.NO_DARK_SPOT;
+				return Outcome.NO_ROOM_HERE;
 			}
 			if (!ignoreLight && level.getMaxLocalRawBrightness(spot) > MAX_LIGHT) {
-				return Outcome.NO_DARK_SPOT;
+				return Outcome.TOO_BRIGHT;
 			}
 			return spawnAt(level, player, spot);
 		}
@@ -107,7 +139,15 @@ public final class HauntingSpawner {
 		// Several attempts, because most candidate rings will be too bright or
 		// in front of the player. Failing quietly is correct — he simply does
 		// not appear this time.
-		for (int attempt = 0; attempt < 10; attempt++) {
+		// Counted rather than merely skipped, so a refusal can say which of
+		// these it was. "Too bright" is a different night from "you were
+		// facing the only dark side", and only one of them is worth waiting
+		// out.
+		int tooBright = 0;
+		int inFront = 0;
+		int noFooting = 0;
+
+		for (int attempt = 0; attempt < 20; attempt++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
 			double radius = MIN_RADIUS + random.nextDouble() * (MAX_RADIUS - MIN_RADIUS);
 			int x = Mth.floor(player.getX() + Math.cos(angle) * radius);
@@ -116,9 +156,11 @@ public final class HauntingSpawner {
 			BlockPos pos = new BlockPos(x, y, z);
 
 			if (!ignoreLight && level.getMaxLocalRawBrightness(pos) > MAX_LIGHT) {
+				tooBright++;
 				continue;
 			}
 			if (isInFrontOf(player, pos)) {
+				inFront++;
 				continue;
 			}
 
@@ -126,15 +168,19 @@ public final class HauntingSpawner {
 			if (result == Outcome.PLACED) {
 				return result;
 			}
+			noFooting++;
 		}
-		return Outcome.NO_DARK_SPOT;
+		if (tooBright >= inFront && tooBright >= noFooting) {
+			return Outcome.TOO_BRIGHT;
+		}
+		return inFront >= noFooting ? Outcome.NOTHING_BEHIND : Outcome.NO_FOOTING;
 	}
 
 	/** Puts him at a chosen spot, already facing the player. */
 	private static Outcome spawnAt(ServerLevel level, ServerPlayer player, BlockPos pos) {
 		HerobrineEntity herobrine = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
 		if (herobrine == null) {
-			return Outcome.NO_DARK_SPOT;
+			return Outcome.NO_FOOTING;
 		}
 		// Facing the player from the moment he exists. Turning to look at you
 		// afterwards would give away that he had just arrived.
