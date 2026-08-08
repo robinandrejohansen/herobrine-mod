@@ -283,6 +283,31 @@ The command prints which animal and where. Now go and look at it.
       stranded on the mountainside above the cave
 - [ ] Kill it. Run `/herobrine status` before and after: wrath goes up by 25,
       as **defiance**, not as an ordinary mob kill
+
+**When you kill it:**
+
+- [ ] It drops a **bone and rotten flesh** on top of its normal drops
+- [ ] Every ordinary animal within 20 blocks **stops and turns to face you**,
+      in silence, for about six seconds — then goes back to being an animal
+- [ ] Those witnesses do **not** follow you and never attack
+- [ ] Reload the world during the six seconds: nobody is still frozen
+
+**Try to interact with a possessed one:**
+
+- [ ] Right-click it. **Nothing happens at all** — no trade screen on a
+      villager, no breeding, no lead, no sound
+- [ ] A normal villager next to it still trades fine
+
+**At higher wrath he takes more than one:**
+
+```
+/herobrine wrath 1000
+/herobrine provoke possessed_mob
+```
+
+- [ ] **Two** animals are taken (four at `/herobrine wrath 1800`)
+- [ ] They all follow you home and end up standing together outside, at
+      roughly the same distance, facing you — without any herding code
 - [ ] Only adults, never babies
 - [ ] It is never taken while you are looking at it
 

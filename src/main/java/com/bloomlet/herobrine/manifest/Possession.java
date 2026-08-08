@@ -1,16 +1,23 @@
 package com.bloomlet.herobrine.manifest;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.entity.ConfinedPlacement;
+import com.bloomlet.herobrine.wrath.Phase;
+import com.bloomlet.herobrine.wrath.Wrath;
 
 import com.mojang.serialization.Codec;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
@@ -19,7 +26,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.npc.villager.AbstractVillager;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -63,10 +74,40 @@ public final class Possession {
 	/** Catch-up runs on this cadence, not every tick. */
 	private static final int SWEEP_INTERVAL = 40;
 
+	/** How far the news of a killing travels. */
+	private static final double WITNESS_RADIUS = 20.0;
+	/** How long the rest of them stare afterwards. Six seconds is plenty. */
+	private static final int WITNESS_TICKS = 120;
+
 	private static int tickCounter;
+
+	/**
+	 * Animals that saw you do it.
+	 *
+	 * Deliberately NOT an attachment. This is a few seconds of shock, not a
+	 * property of the animal, and it should not survive a world reload — a cow
+	 * still frozen in horror the next morning is a bug, not a scare.
+	 */
+	private static final Map<UUID, Long> witnesses = new HashMap<>();
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Possession::onTick);
+		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+			if (entity.level() instanceof ServerLevel level
+				&& entity instanceof Mob mob && isPossessed(mob)) {
+				onKilled(level, mob, source.getEntity());
+			}
+		});
+		// A possessed villager will not deal with you. Nothing happens at all
+		// when you try — no screen, no sound, no refusal animation. Silence is
+		// the whole point: you are left to decide whether the game is broken
+		// or whether this one is not a villager any more.
+		UseEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
+			if (entity instanceof Mob mob && isPossessed(mob)) {
+				return InteractionResult.FAIL;
+			}
+			return InteractionResult.PASS;
+		});
 	}
 
 	public static boolean isPossessed(Mob mob) {
@@ -102,19 +143,82 @@ public final class Possession {
 			return false;
 		}
 
-		Mob taken = candidates.get(level.getRandom().nextInt(candidates.size()));
-		taken.setAttached(POSSESSED, true);
-		// No idle noise. A cow that stares in silence is worse than one that
-		// stares and then moos, which would break it instantly.
-		taken.setSilent(true);
-		taken.setPersistenceRequired();
+		// How many he takes at once. One animal following you home is a
+		// haunting; four standing in a line outside your door in the morning
+		// is a statement, and it should only be available once he is past
+		// hinting. They need no herding logic — they all follow you, so they
+		// arrive together and stop at the same distance on their own.
+		int wanted = takeCount(Wrath.phase(level.getServer()));
+		java.util.Collections.shuffle(candidates, new java.util.Random(level.getRandom().nextLong()));
 
-		ManifestationDirector.noteLocation(taken.blockPosition());
-		HerobrineMod.LOGGER.info("possessed a {} at [{}, {}, {}]",
-			taken.getType().toShortString(),
-			taken.blockPosition().getX(), taken.blockPosition().getY(),
-			taken.blockPosition().getZ());
-		return true;
+		int took = 0;
+		for (Mob taken : candidates) {
+			if (took >= wanted) {
+				break;
+			}
+			taken.setAttached(POSSESSED, true);
+			// No idle noise. A cow that stares in silence is worse than one
+			// that stares and then moos, which would break it instantly.
+			taken.setSilent(true);
+			taken.setPersistenceRequired();
+			if (took == 0) {
+				ManifestationDirector.noteLocation(taken.blockPosition());
+			}
+			HerobrineMod.LOGGER.info("possessed a {} at [{}, {}, {}]",
+				taken.getType().toShortString(),
+				taken.blockPosition().getX(), taken.blockPosition().getY(),
+				taken.blockPosition().getZ());
+			took++;
+		}
+		return took > 0;
+	}
+
+	private static int takeCount(Phase phase) {
+		if (phase.atLeast(Phase.SIEGE)) {
+			return 4;
+		}
+		if (phase.atLeast(Phase.HUNTER)) {
+			return 2;
+		}
+		return 1;
+	}
+
+	/**
+	 * You put one down, and the rest of them know.
+	 *
+	 * This is the answer to the only move the player has here. Killing a
+	 * follower already costs wrath, but a number in a command is not a
+	 * consequence — every animal in earshot stopping and turning to face you,
+	 * in silence, is. They do not follow and they never attack. They just saw.
+	 *
+	 * And what it leaves behind says what it was. A cow that drops a bone and
+	 * rotten flesh was not a cow you killed; it was something already dead that
+	 * had been walking. That is the only place in the mod the player is told
+	 * outright, and it is told in loot rather than in words.
+	 */
+	private static void onKilled(ServerLevel level, Mob mob, net.minecraft.world.entity.Entity killer) {
+		drop(level, mob, new ItemStack(Items.ROTTEN_FLESH, 1 + level.getRandom().nextInt(2)));
+		drop(level, mob, new ItemStack(Items.BONE));
+
+		if (!(killer instanceof ServerPlayer player)) {
+			return;
+		}
+		long until = level.getGameTime() + WITNESS_TICKS;
+		for (Mob other : level.getEntitiesOfClass(
+				Mob.class, mob.getBoundingBox().inflate(WITNESS_RADIUS))) {
+			if (other == mob || isPossessed(other)) {
+				continue;
+			}
+			if (other instanceof Animal || other instanceof AbstractVillager) {
+				witnesses.put(other.getUUID(), until);
+			}
+		}
+	}
+
+	private static void drop(ServerLevel level, Mob mob, ItemStack stack) {
+		ItemEntity item = new ItemEntity(level, mob.getX(), mob.getY() + 0.5, mob.getZ(), stack);
+		item.setDefaultPickUpDelay();
+		level.addFreshEntity(item);
 	}
 
 	/**
@@ -130,9 +234,13 @@ public final class Possession {
 
 		for (ServerLevel level : server.getAllLevels()) {
 			for (ServerPlayer player : level.players()) {
-				AABB close = player.getBoundingBox().inflate(STARE_RADIUS);
+				AABB close = player.getBoundingBox().inflate(WITNESS_RADIUS);
 				for (Mob mob : level.getEntitiesOfClass(Mob.class, close)) {
 					if (isPossessed(mob)) {
+						if (mob.distanceTo(player) <= STARE_RADIUS) {
+							hold(mob, player);
+						}
+					} else if (sawIt(level, mob)) {
 						hold(mob, player);
 					}
 				}
@@ -220,6 +328,19 @@ public final class Possession {
 			mob.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, mob.getYRot(), 0.0F);
 			return;
 		}
+	}
+
+	/** True while an ordinary animal is still frozen by what it just watched. */
+	private static boolean sawIt(ServerLevel level, Mob mob) {
+		Long until = witnesses.get(mob.getUUID());
+		if (until == null) {
+			return false;
+		}
+		if (level.getGameTime() >= until) {
+			witnesses.remove(mob.getUUID());
+			return false;
+		}
+		return true;
 	}
 
 	private static void hold(Mob mob, Player player) {
