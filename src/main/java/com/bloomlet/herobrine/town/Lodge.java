@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.LadderBlock;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
@@ -55,12 +54,12 @@ public final class Lodge {
 
 	private static final String[] FLOOR_ONE = {
 		"###########",
-		"#l Fc CA  #",
+		"#  Fc CA  #",
 		"#        S#",
 		"#    h    #",
-		"#   hTh   #",
+		"# A hTh   #",
 		"#         #",
-		"# A      P#",
+		"#s       P#",
 		"#         #",
 		"#####D#EEE#",
 	};
@@ -71,7 +70,7 @@ public final class Lodge {
 		"W         W",
 		"g         g",
 		"W         W",
-		"W         W",
+		"Ws        W",
 		"g         g",
 		"W         W",
 		"WWgWWDWEeEW",
@@ -82,7 +81,7 @@ public final class Lodge {
 		"W         W",
 		"W         W",
 		"W         W",
-		"W         W",
+		"Ws        W",
 		"W         W",
 		"W         W",
 		"W         W",
@@ -91,12 +90,12 @@ public final class Lodge {
 
 	private static final String[] DECK = {
 		"WWWWWWWWWWW",
+		"W_________W",
+		"W_________W",
+		"W_________W",
 		"Wo________W",
-		"W_________W",
-		"W_________W",
-		"W_________W",
-		"W_________W",
-		"W_________W",
+		"Wo________W",
+		"Wo________W",
 		"W_________W",
 		"WWWWWWWWWWW",
 	};
@@ -108,7 +107,7 @@ public final class Lodge {
 		"W    W    W",
 		"W         W",
 		"W    W    W",
-		"Wx C W   AW",
+		"W xK W   AW",
 		"W    W    W",
 		"WWWWWWWWWWW",
 	};
@@ -171,7 +170,8 @@ public final class Lodge {
 			case 'g' -> put(level, at, Blocks.GLASS_PANE.defaultBlockState());
 			case 'D' -> door(level, at, facing);
 			case 'B' -> bed(level, at, facing, random);
-			case 'C' -> chest(level, at, facing, random);
+			case 'C' -> chest(level, at, facing, random, Loot.Tier.LARDER);
+			case 'K' -> chest(level, at, facing, random, Loot.Tier.HOMESTEAD);
 			case 'c' -> put(level, at, Blocks.CRAFTING_TABLE.defaultBlockState());
 			case 'F' -> put(level, at, Blocks.FURNACE.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
@@ -181,8 +181,13 @@ public final class Lodge {
 			case 'T' -> table(level, at);
 			case 'h' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
-			case 'l' -> put(level, at, Blocks.LADDER.defaultBlockState()
-				.setValue(LadderBlock.FACING, facing.getOpposite()));
+			// The way upstairs. A three-block run against the west wall with
+			// the deck opened above it — the first version was a single ladder
+			// at one height facing the wrong wall, so there was no way up at
+			// all and the whole first floor was unreachable.
+			case 's' -> put(level, at, Blocks.SPRUCE_STAIRS.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING,
+					Blueprint.turned(Direction.NORTH, facing)));
 			case 'x' -> put(level, at, Blocks.COBWEB.defaultBlockState());
 			// The ward. Deliberately dull stone, and deliberately identical on
 			// every house — the meaning is in the repetition, not the design.
@@ -260,11 +265,11 @@ public final class Lodge {
 	}
 
 	private static void chest(ServerLevel level, BlockPos at, Direction facing,
-	                          RandomSource random) {
+	                          RandomSource random, Loot.Tier tier) {
 		put(level, at, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
 		if (level.getBlockEntity(at) instanceof ChestBlockEntity chest) {
-			Loot.scatter(chest, random, Loot.Tier.HOMESTEAD);
+			Loot.scatter(chest, random, tier);
 		}
 	}
 

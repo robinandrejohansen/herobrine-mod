@@ -905,6 +905,26 @@ Find a village. `/locate structure minecraft:village_plains` works.
 > graves each visit is worse than an empty one, because somebody still lives
 > there.
 
+### A7q — The town's family houses
+
+```
+/herobrine town here
+```
+
+- [ ] Six two-storey houses along the lanes, each **fronting the lane** it
+      stands on — doors, beds, stairs and roof slopes all turned with it
+- [ ] **A stair run up the west wall** to the first floor, with the deck opened
+      above it. You can actually get upstairs — the first version had a single
+      ladder at one height facing the wrong wall and the whole floor was
+      unreachable
+- [ ] Two bedrooms above, split by a partition
+- [ ] Gable roof in the same language as the farmhouse
+- [ ] A **ward** beside every door: three by three, plain dark stone, never
+      explained. Identical on all six
+- [ ] The chest by the hearth is a **larder** — bread and carrots, and also
+      rotten flesh and a poisonous potato. Somebody shopped here and stopped
+- [ ] The chest upstairs is ordinary household stuff
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the

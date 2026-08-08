@@ -39,12 +39,17 @@ public final class Loot {
 	/**
 	 * How well off the place was.
 	 *
-	 * One tier so far. It exists as an enum rather than a hardcoded list
-	 * because the later houses are supposed to be poorer and stranger as he
-	 * stops being a person who owns things, and that progression wants
-	 * somewhere to live from the start.
+	 * HOMESTEAD is a working farm's cupboard. LARDER is a food store that has
+	 * been standing a while, and it is the one that carries a room — a chest of
+	 * bread and carrots says somebody shops here, and the same chest with
+	 * rotten flesh and a poisonous potato in it says somebody shopped here and
+	 * then stopped coming.
+	 *
+	 * An enum rather than a hardcoded list because the later houses are meant
+	 * to be poorer and stranger as he stops being a person who owns things, and
+	 * that progression wants somewhere to live from the start.
 	 */
-	public enum Tier { HOMESTEAD }
+	public enum Tier { HOMESTEAD, LARDER }
 
 	private record Entry(Item item, int min, int max, int weight, boolean worn) {}
 
@@ -85,6 +90,40 @@ public final class Loot {
 	};
 
 	/**
+	 * A food store, and most of it has gone over.
+	 *
+	 * The single cheapest way to make a house feel lived in and then left. A
+	 * chest of bread and carrots says somebody shops here; a chest of bread,
+	 * carrots, rotten flesh and a poisonous potato says somebody shopped here
+	 * and then stopped coming, and the difference is four item types.
+	 *
+	 * Deliberately still worth opening. Some of it is edible and some of it is
+	 * not, which is a far better feeling than either a reward or a joke —
+	 * the player rummages, takes the bread, leaves the rest, and has spent ten
+	 * seconds thinking about the people who filled it.
+	 *
+	 * Nothing here is dangerous by accident. The poisonous potato is the only
+	 * thing that could hurt anybody and it announces itself in the name.
+	 */
+	private static final Entry[] LARDER_POOL = {
+		new Entry(Items.ROTTEN_FLESH, 2, 6, 10, false),
+		new Entry(Items.BREAD, 1, 4, 9, false),
+		new Entry(Items.POTATO, 2, 6, 8, false),
+		new Entry(Items.POISONOUS_POTATO, 1, 2, 7, false),
+		new Entry(Items.CARROT, 2, 5, 7, false),
+		new Entry(Items.BEETROOT, 1, 4, 6, false),
+		new Entry(Items.WHEAT, 3, 8, 6, false),
+		new Entry(Items.DRIED_KELP, 1, 4, 4, false),
+		new Entry(Items.BOWL, 1, 3, 4, false),
+		new Entry(Items.BEETROOT_SOUP, 1, 1, 3, false),
+		new Entry(Items.MUSHROOM_STEW, 1, 1, 3, false),
+		new Entry(Items.BONE, 1, 3, 3, false),
+		new Entry(Items.EGG, 1, 3, 3, false),
+		new Entry(Items.APPLE, 1, 2, 2, false),
+		new Entry(Items.MILK_BUCKET, 1, 1, 1, false),
+	};
+
+	/**
 	 * Fill the slots the books did not take.
 	 *
 	 * Never touches an occupied slot, so this can be called on any chest
@@ -94,6 +133,7 @@ public final class Loot {
 	public static void scatter(ChestBlockEntity chest, RandomSource random, Tier tier) {
 		Entry[] pool = switch (tier) {
 			case HOMESTEAD -> HOMESTEAD_POOL;
+			case LARDER -> LARDER_POOL;
 		};
 
 		List<Integer> free = new ArrayList<>();
