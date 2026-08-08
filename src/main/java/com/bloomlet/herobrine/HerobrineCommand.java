@@ -61,7 +61,28 @@ public final class HerobrineCommand {
 					// Raises it at your feet instead of a thousand blocks out.
 					// The only sane way to look at a building while working on
 					// it; the real one needs a long walk.
-					.then(Commands.literal("here").executes(HerobrineCommand::houseHere)))
+					.then(Commands.literal("here").executes(HerobrineCommand::houseHere))
+					// Two, three and four at your feet. They sit between the
+					// homestead and the threshold in a real world, which is a
+					// two-thousand-block walk to look at a doorway.
+					.then(Commands.argument("number", IntegerArgumentType.integer(2, 4))
+						.executes(ctx -> {
+							ServerPlayer p = ctx.getSource().getPlayerOrException();
+							int which = IntegerArgumentType.getInteger(ctx, "number");
+							ServerLevel level = (ServerLevel)p.level();
+							BlockPos at = p.blockPosition();
+							switch (which) {
+								case 2 -> com.bloomlet.herobrine.structure.SecondHouse
+									.build(level, at, level.getRandom());
+								case 3 -> com.bloomlet.herobrine.structure.TheDig
+									.build(level, at, level.getRandom());
+								default -> com.bloomlet.herobrine.structure.Shrine
+									.build(level, at, level.getRandom());
+							}
+							ctx.getSource().sendSuccess(() -> Component.literal(
+								"house " + which + " raised here"), false);
+							return 1;
+						})))
 
 				// Starts a hunt regardless of phase, so it can be tested without
 				// grinding to a thousand wrath first.

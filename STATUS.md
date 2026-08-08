@@ -232,13 +232,19 @@ much faster and is the intended route.
 | # | Name | What it is | Status |
 |---|---|---|---|
 | 1 | The homestead | A home with the furniture still in it | ✅ |
-| 2 | The second house | Same plan, buried, no windows | ❌ |
-| 3 | The dig | A bed in a hollow, tunnels | ❌ |
-| 4 | The shrine | No bed. Signs, and one chest | ❌ |
+| 2 | The second house | Same plan, buried, every window bricked | ✅ |
+| 3 | The dig | A bed on bare rock, four tunnels that stop | ✅ |
+| 4 | The shrine | No bed. Standing stones, signs, his kit in a chest | ✅ |
 | 5 | The threshold | Not a house. The lab and the seal | ✅ |
 
-Deliberately built the two ends first. 2–4 are the middle of a story whose
-ending now exists, so they can be filled in whenever.
+Built the two ends first on purpose: the first had to establish what a home of
+his looks like and the last had to establish where it was going, and the middle
+is only legible once both exist. Each of 2–4 is defined by what the one before
+it still had and this one does not — the windows, then the walls, then the bed.
+
+Sited in strictly ordered bands (1950–2200, 2250–2450, 2500–2700) that do not
+overlap, so whichever you stumble on first, the next one out is always the next
+one along. Distance is the only thing telling you they are a sequence.
 
 ### Everything else outstanding
 

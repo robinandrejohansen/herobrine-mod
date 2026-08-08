@@ -201,6 +201,84 @@ public final class HouseBooks {
 			He stands on the other side of it and waits for one of us to be curious.""");
 	}
 
+	/**
+	 * House two. Written by somebody explaining a decision to nobody.
+	 *
+	 * The trick here is that every sentence is reasonable. Each line on its own
+	 * is a sane thing for a person to say, and the paragraph they add up to is
+	 * somebody bricking up their own windows — which is a much worse way to
+	 * read it than any amount of raving would be.
+	 */
+	public static ItemStack buried() {
+		return book("the windows", "—",
+			"""
+			I have closed the windows on the east side. It is not because of anything.
+
+			It is only that a window is a thing that can be looked into as easily as out of, and I had not thought of that before.""",
+
+			"""
+			The north ones as well now. The room is not darker. I keep a lamp.
+
+			I find I am sleeping.""",
+
+			"""
+			I have taken the last of them out and put stone in.
+
+			There is nothing wrong with the house. The house is exactly as it was.
+
+			I simply do not need to see the field.""");
+	}
+
+	/**
+	 * House three, left in the dirt beside the bed.
+	 *
+	 * Not a diary any more, because he has stopped keeping one. Four fragments
+	 * with nothing joining them, the last of which is about the digging and is
+	 * not about the digging.
+	 */
+	public static ItemStack theDig() {
+		return book("notes", "—",
+			"the seam runs south. I follow it. it does not end.",
+			"""
+			slept here. no reason to go up.
+
+			nothing is up there that is not also down here.""",
+
+			"""
+			I have stopped counting the days because the counting was the last thing I was doing for anybody else's benefit.""",
+
+			"""
+			It is not that I am looking for something.
+
+			It is that the digging is the only thing left that I am still doing on purpose, and I would like to be doing something on purpose.""");
+	}
+
+	/**
+	 * House four, on the altar. The only one of these not in the first person.
+	 *
+	 * By this point he is not writing a journal, he is writing instructions —
+	 * and instructions have a reader. That change of address is the whole
+	 * content: somebody is being spoken to, and it is not us.
+	 */
+	public static ItemStack theShrine() {
+		return book("what is required", "—",
+			"""
+			Do not sleep. Sleeping is how they find the way in and you have let them in every night of your life without once being asked.""",
+
+			"""
+			Bring nothing. Everything you carry belongs to the person you were and he is not welcome here.""",
+
+			"""
+			Stand where the light is and wait to be looked at.
+
+			It will take as long as it takes. It has always taken as long as it takes.""",
+
+			"""
+			When you are looked at you will know, because you will want to leave.
+
+			Do not leave.""");
+	}
+
 	private static ItemStack book(String title, String author, String... pages) {
 		List<Filterable<Component>> written = new ArrayList<>();
 		for (String page : pages) {

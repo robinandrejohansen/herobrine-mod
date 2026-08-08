@@ -53,6 +53,46 @@ public final class Dwellings {
 	public static final AttachmentType<Long> THRESHOLD_ORIGIN =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("threshold_origin"), Codec.LONG);
 
+	/**
+	 * Two, three and four — the middle of the story.
+	 *
+	 * The two ends were built first on purpose: the first house had to
+	 * establish what a home of his looks like and the last had to establish
+	 * where it was all going, and the middle is only legible once both of those
+	 * exist. These are what the player finds between them, and each is defined
+	 * by what the one before it still had and this one does not.
+	 */
+	private static final AttachmentType<Boolean>[] MIDDLE_RAISED = middleFlags();
+
+	@SuppressWarnings("unchecked")
+	private static AttachmentType<Boolean>[] middleFlags() {
+		return new AttachmentType[] {
+			AttachmentRegistry.createPersistent(HerobrineMod.id("house_two_raised"), Codec.BOOL),
+			AttachmentRegistry.createPersistent(HerobrineMod.id("house_three_raised"), Codec.BOOL),
+			AttachmentRegistry.createPersistent(HerobrineMod.id("house_four_raised"), Codec.BOOL),
+		};
+	}
+
+	/**
+	 * Where each of the middle three sits, and why the bands do not overlap.
+	 *
+	 * Distance is the ONLY thing telling a player these are a sequence — there
+	 * is no map, no quest and no numbering anywhere in the world. So the bands
+	 * are strictly ordered and they do not touch: whichever one you stumble on
+	 * first, the next one out is always the next one along, and a player who
+	 * walks outward is reading the story in order without ever being told there
+	 * was an order.
+	 */
+	private static final int[][] MIDDLE_BANDS = {
+		{ 1950, 2200 },
+		{ 2250, 2450 },
+		{ 2500, 2700 },
+	};
+
+	private static final long[] MIDDLE_SALTS = {
+		0x486F7573653254776FL, 0x446967546872656533L, 0x536872696E65463472L,
+	};
+
 	/** Far enough to be a journey, near enough to be reachable on foot. */
 	private static final int MIN_RANGE = 1100;
 	private static final int MAX_RANGE = 1900;
@@ -100,6 +140,56 @@ public final class Dwellings {
 				}
 			}
 		}
+
+		for (int which = 0; which < MIDDLE_RAISED.length; which++) {
+			if (Boolean.TRUE.equals(overworld.getAttached(MIDDLE_RAISED[which]))) {
+				continue;
+			}
+			BlockPos site = middleSiteFor(overworld, which);
+			for (ServerPlayer player : overworld.players()) {
+				if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
+					raiseMiddle(overworld, site, which);
+					break;
+				}
+			}
+		}
+	}
+
+	/** Seeded like the other two, so it is in the same place in every copy. */
+	public static BlockPos middleSiteFor(ServerLevel level, int which) {
+		RandomSource random = RandomSource.create(level.getSeed() ^ MIDDLE_SALTS[which]);
+		double angle = random.nextDouble() * Math.PI * 2.0;
+		int[] band = MIDDLE_BANDS[which];
+		double range = band[0] + random.nextDouble() * (band[1] - band[0]);
+		BlockPos spawn = level.getLevelData().getRespawnData().pos();
+		return new BlockPos(
+			spawn.getX() + (int)Math.round(Math.cos(angle) * range), 0,
+			spawn.getZ() + (int)Math.round(Math.sin(angle) * range));
+	}
+
+	/**
+	 * @param which 0 the buried house, 1 the dig, 2 the shrine
+	 */
+	public static boolean raiseMiddle(ServerLevel level, BlockPos near, int which) {
+		for (int attempt = 0; attempt < 24; attempt++) {
+			int x = near.getX() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
+			int z = near.getZ() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
+			if (!buildable(level, x, z)) {
+				continue;
+			}
+			BlockPos origin = new BlockPos(x, Ground.topOf(level, x, z) + 1, z);
+			RandomSource random = level.getRandom();
+			switch (which) {
+				case 0 -> SecondHouse.build(level, origin, random);
+				case 1 -> TheDig.build(level, origin, random);
+				default -> Shrine.build(level, origin, random);
+			}
+			level.getServer().overworld().setAttached(MIDDLE_RAISED[which], true);
+			return true;
+		}
+		HerobrineMod.LOGGER.warn("no buildable ground for house {} near [{}, {}]",
+			which + 2, near.getX(), near.getZ());
+		return false;
 	}
 
 	public static BlockPos thresholdSiteFor(ServerLevel level) {
