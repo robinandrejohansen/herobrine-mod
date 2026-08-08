@@ -4,6 +4,7 @@ import com.bloomlet.herobrine.entity.ModEntities;
 import com.bloomlet.herobrine.manifest.ManifestationDirector;
 import com.bloomlet.herobrine.manifest.Breach;
 import com.bloomlet.herobrine.manifest.Cadence;
+import com.bloomlet.herobrine.manifest.Skies;
 import com.bloomlet.herobrine.structure.Dwellings;
 import com.bloomlet.herobrine.manifest.TheDogKnows;
 import com.bloomlet.herobrine.manifest.Journal;
@@ -37,6 +38,7 @@ public class HerobrineMod implements ModInitializer {
 		// exist before any world is loaded or saved wrath is discarded.
 		Wrath.register();
 		Cadence.register();
+		Skies.register();
 		Signs.register();
 		Journal.register();
 		Possession.register();

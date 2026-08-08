@@ -769,6 +769,25 @@ To look at it now:
 > The reward for reaching the bottom is not a dimension. It is the certainty
 > that there is one, that somebody shut it, and that the seal is cracked.
 
+### A7m — The weather
+
+Nothing to provoke. Set a phase, run `/herobrine speed 20` to compress time,
+and watch the sky. The log prints `the weather turns` whenever the mod does it.
+
+- [ ] At **RUMOUR** the mod never touches the weather. The world is normal
+- [ ] From **WATCHER** it rains noticeably more than vanilla
+- [ ] Thunder never happens below **MIMIC**
+- [ ] By **HUNTER** it is wet most of the time and storms are common
+- [ ] At **SIEGE** a clear sky is the thing worth remarking on
+- [ ] Storms still **end on their own** — the mod starts weather and never
+      stops it, so clear spells always come back
+- [ ] Sleeping still clears the sky. It costs you 12 wrath, which is the trade
+- [ ] `/weather clear` still works and is not immediately overridden
+
+> This is the one thing in the mod nobody can walk away from, so it is the
+> easiest to overdo. Say if it feels oppressive rather than atmospheric — the
+> six numbers are all in one switch.
+
 ### A8 — Living the pacing (the real test)
 
 Everything above is mechanical. This is the one that tells you whether the
