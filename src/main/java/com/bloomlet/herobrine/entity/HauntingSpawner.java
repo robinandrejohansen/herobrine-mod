@@ -29,8 +29,18 @@ import net.minecraft.world.phys.Vec3;
 public final class HauntingSpawner {
 	private HauntingSpawner() {}
 
-	private static final double MIN_RADIUS = 26.0;
-	private static final double MAX_RADIUS = 44.0;
+	/**
+	 * How far out he stands.
+	 *
+	 * Pushed a long way back after playing it. At twenty-six blocks he is a
+	 * figure you can make out, and something you can make out is something you
+	 * can assess — you look at him, decide what he is, and the moment is over.
+	 * At forty-plus he is a shape at the treeline that might be a fence post,
+	 * and the player spends several seconds deciding whether to walk towards
+	 * it. Those seconds are the entire event.
+	 */
+	private static final double MIN_RADIUS = 42.0;
+	private static final double MAX_RADIUS = 68.0;
 	/** 0-15. 7 and below is "dark enough for monsters". */
 	private static final int MAX_LIGHT = 7;
 	/**

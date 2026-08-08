@@ -63,7 +63,7 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final int LIFETIME = 600;          // 30 seconds
 
 	/** Get closer than this and he will not let you get closer still. */
-	private static final double TOO_CLOSE = 12.0;
+	private static final double TOO_CLOSE = 17.0;
 
 	/**
 	 * How long he stays once you have stopped looking.
@@ -77,8 +77,15 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private static final int UNSEEN_GRACE = 16;
 
-	/** Faster than a sprinting player, so the gap only ever opens. */
-	private static final double FLEE_SPEED = 0.34;
+	/**
+	 * Faster than a sprinting player, and by a margin.
+	 *
+	 * A sprint is about 0.28 blocks a tick, so the old 0.34 opened the gap at a
+	 * walking pace and a determined player stayed on him the whole way. Being
+	 * ALMOST able to catch him is the worst possible outcome: it makes him a
+	 * mob with a speed stat rather than something that leaves when it chooses.
+	 */
+	private static final double FLEE_SPEED = 0.52;
 	/** He does not run for long. He runs until he is out of sight. */
 	private static final int FLEE_LIMIT = 70;
 
@@ -333,9 +340,24 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 		away = away.normalize();
 
-		// Facing the way he is going, so it reads as leaving rather than as
-		// being dragged backwards.
-		float yaw = (float)(Math.atan2(away.z, away.x) * (180.0 / Math.PI)) - 90.0F;
+		// FACING THEM the whole way, and this is the note that matters most.
+		//
+		// Something that turns its back and runs is frightened, and a
+		// frightened thing is one the player has beaten. Backing away while
+		// still looking at you is not a retreat at all — it is somebody
+		// declining to let you any closer, without once looking away, and it
+		// reverses who is in charge of the distance between you.
+		Player watching = from.get(0);
+		double nearest = Double.MAX_VALUE;
+		for (Player candidate : from) {
+			double gap = this.distanceToSqr(candidate);
+			if (gap < nearest) {
+				nearest = gap;
+				watching = candidate;
+			}
+		}
+		float yaw = (float)(Math.atan2(watching.getZ() - this.getZ(),
+			watching.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
 		this.setYRot(yaw);
 		this.setYBodyRot(yaw);
 		this.setYHeadRot(yaw);

@@ -673,14 +673,18 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 
 Needs darkness. It reports where he is — turn and look.
 
-- [ ] He is **already standing there**. He never walks up to you and you never
-      watch him arrive
+- [ ] He is **already standing there**, and a long way off — forty to seventy
+      blocks. Far enough that you have to decide whether it is even him
+- [ ] He never walks up to you and you never watch him arrive
 - [ ] He does **not** approach. Stand still and he stays where he is
 - [ ] **Look away for a second** — turn round, step behind a tree, glance at
       your hotbar. When you look back he is gone
 - [ ] Nothing announced it. No sound, no particles, no teleport effect
-- [ ] Walk at him. Inside about twelve blocks he **turns and leaves**, faster
-      than you can sprint. You never close the gap
+- [ ] Walk at him. Inside about seventeen blocks he leaves, and **much faster
+      than you can sprint** — you should never be almost catching him
+- [ ] **He keeps facing you the whole way out.** He never turns his back.
+      Backing away while still watching you is the point; a thing that turns
+      and runs is a thing you have beaten
 - [ ] The moment anything breaks your view of him — a trunk, a corner, a rise
       — he is gone
 - [ ] In a cave he backs **into the rock face** and is gone
