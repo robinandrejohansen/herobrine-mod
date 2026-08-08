@@ -504,6 +504,24 @@ public class HerobrineEntity extends PathfinderMob {
 	public static final int THE_WARNING = 10;
 
 	private int hits;
+	/** Ticks until the next thing he throws. */
+	private int arsenalTicks;
+
+	/**
+	 * Which act the fight is in, one to three.
+	 *
+	 * The acts exist so the fight ESCALATES rather than simply lasting. Thirty
+	 * exchanges of the same exchange is a health bar with extra steps; thirty
+	 * that change twice is a fight the player can describe afterwards, and they
+	 * will describe it by its turning points.
+	 *
+	 * One is the standoff they already know from the hunt, only now he does not
+	 * leave. Two opens at the church, when he stops fighting the way a man
+	 * would. Three is everything at once.
+	 */
+	private int act() {
+		return Math.min(3, 1 + this.hits / THE_WARNING);
+	}
 	// ---- END THE RECKONING ------------------------------------------------
 
 	private static final int DEFIANCE_ENDURED = 130;
@@ -792,6 +810,11 @@ public class HerobrineEntity extends PathfinderMob {
 				this.fleeing = true;
 			}
 			return;
+		}
+
+		// Once the fight has started he is throwing things as well as walking.
+		if (this.hits > 0 && closest instanceof ServerPlayer duelist) {
+			this.arsenal(duelist);
 		}
 
 		// THE HUNT. He does not wait to be looked at and he does not leave
@@ -1537,6 +1560,53 @@ public class HerobrineEntity extends PathfinderMob {
 	}
 
 	/**
+	 * And it is over.
+	 *
+	 * The one thing the whole mod has been pointing at, so it must not be a
+	 * corpse and a silence. The storm breaks because the wrath that was holding
+	 * it goes with him, the clock starts again, and the sun that has not come
+	 * up for the whole of SIEGE comes up.
+	 *
+	 * Wrath goes to zero rather than being nudged down. Everything in this mod
+	 * reads off that number — the weather, the clock, the animals, the pacing,
+	 * whether he can exist at all — so zeroing it is not a scoring decision, it
+	 * is how the world is put back. The player who has just fought for thirty
+	 * exchanges gets a morning.
+	 *
+	 * And it can begin again. Wrath climbs from zero the same way it did the
+	 * first time, which is the only ending this particular story can honestly
+	 * have: he was never something that could be finished, only something that
+	 * could be pushed back.
+	 */
+	@Override
+	public void die(DamageSource source) {
+		super.die(source);
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		here.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+			this.getX(), this.getY() + 1.0, this.getZ(), 140, 0.8, 1.2, 0.8, 0.12);
+		here.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+			this.getX(), this.getY() + 1.0, this.getZ(), 90, 1.2, 1.4, 1.2, 0.03);
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.WARDEN_DEATH, this.getSoundSource(), 3.0F, 0.5F);
+
+		net.minecraft.server.MinecraftServer server = here.getServer();
+		// Clear, and stop raining. Skies will not undo a storm it did not start
+		// and Nights will not restart a clock it did not stop, so the phase
+		// dropping is what releases both — but the current storm has five
+		// minutes left on it and would sit there over the ending.
+		server.setWeatherParameters(6000, 0, false, false);
+		Wrath.add(server, null, -Wrath.get(server), Wrath.Reason.DEATH);
+
+		for (ServerPlayer survivor : here.players()) {
+			survivor.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+				"§7The rain stops."));
+		}
+		HerobrineMod.LOGGER.info("he is dead. wrath reset, weather cleared");
+	}
+
+	/**
 	 * What he is carrying, and it is never nothing.
 	 *
 	 * Empty hands make him look like he is out for a walk. The axe is the
@@ -2063,6 +2133,141 @@ public class HerobrineEntity extends PathfinderMob {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * What he throws, and how often, by act.
+	 *
+	 * Everything here is aimed with UNCERTAINTY rather than perfectly. A boss
+	 * that never misses is not difficult, it is arithmetic, and the player
+	 * stops playing and starts waiting; one that misses often enough to be
+	 * dodged rewards moving, which is the only skill this fight asks for. The
+	 * spread tightens by act, so the same evasion that worked at hit five is
+	 * getting them clipped by hit twenty-five.
+	 */
+	private void arsenal(ServerPlayer target) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		if (--this.arsenalTicks > 0) {
+			return;
+		}
+		int act = this.act();
+		// Faster every act: three seconds, then two, then just over one.
+		this.arsenalTicks = Math.max(26, 70 - act * 18) + this.random.nextInt(20);
+
+		if (act == 1) {
+			return;   // act one is still only a man with an axe
+		}
+		// Act three he stops staying on the ground between attacks. It is a
+		// reposition rather than a mode — glide already lands him as soon as
+		// there is somewhere to land — but it means the player loses the one
+		// assumption they have left, which is that he is at eye level.
+		if (act == 3 && !this.flying && this.random.nextInt(4) == 0) {
+			this.takeOff();
+		}
+		if (!this.hasLineOfSight(target)) {
+			return;   // he does not shoot through the wall he is about to break
+		}
+
+		// Act two alternates fire and arrows. Act three adds the sky.
+		int pick = this.random.nextInt(act == 2 ? 2 : 3);
+		switch (pick) {
+			case 0 -> this.throwFire(here, target, act);
+			case 1 -> this.loose(here, target, act);
+			default -> this.callDown(here, target);
+		}
+	}
+
+	/**
+	 * Fireballs, and the rain is genuinely on the player's side.
+	 *
+	 * SIEGE keeps a storm running permanently, which means anything he sets
+	 * alight is being put out from above the whole time. That is not a
+	 * concession, it is the design: the phase that makes the world unliveable
+	 * is the same phase that stops his fire from taking the world with it, and
+	 * a player who works that out has been handed something real by paying
+	 * attention.
+	 */
+	private void throwFire(ServerLevel here, ServerPlayer target, int act) {
+		Vec3 from = this.getEyePosition();
+		Vec3 to = target.position().add(0.0, 0.9, 0.0).subtract(from);
+		float spread = act == 2 ? 5.0F : 2.5F;
+
+		int shots = act == 3 ? 3 : 1;
+		for (int i = 0; i < shots; i++) {
+			net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball ball =
+				new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(
+					here, this, to.normalize());
+			ball.snapTo(from.x, from.y, from.z, this.getYRot(), this.getXRot());
+			ball.shoot(to.x, to.y, to.z, 1.3F, spread);
+			here.addFreshEntity(ball);
+		}
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.BLAZE_SHOOT, this.getSoundSource(), 1.4F, 0.7F);
+	}
+
+	/** A volley, because one arrow from a figure across a field is a joke. */
+	private void loose(ServerLevel here, ServerPlayer target, int act) {
+		Vec3 from = this.getEyePosition();
+		int shots = act == 2 ? 2 : 4;
+		float spread = act == 2 ? 8.0F : 4.0F;
+
+		for (int i = 0; i < shots; i++) {
+			net.minecraft.world.entity.projectile.arrow.Arrow arrow =
+				new net.minecraft.world.entity.projectile.arrow.Arrow(here, this,
+					new ItemStack(Items.ARROW), null);
+			arrow.snapTo(from.x, from.y - 0.2, from.z, this.getYRot(), this.getXRot());
+			double dx = target.getX() - this.getX();
+			double dy = target.getY(0.4) - arrow.getY();
+			double dz = target.getZ() - this.getZ();
+			// The lob, so a volley arcs in rather than arriving flat. It is
+			// also what gives the player the second and a half they need to see
+			// it coming and get behind something.
+			double flat = Math.sqrt(dx * dx + dz * dz);
+			arrow.shoot(dx, dy + flat * 0.18, dz, 1.5F, spread);
+			arrow.setBaseDamage(3.0);
+			here.addFreshEntity(arrow);
+		}
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.SKELETON_SHOOT, this.getSoundSource(), 1.2F, 0.6F);
+	}
+
+	/**
+	 * Act three: the sky, on their roof.
+	 *
+	 * Aimed at the ground AROUND the player rather than at the player, and
+	 * visual-only, with the ordinary scorch safeguards behind it. A real bolt
+	 * would do six damage through armour on top of everything else in act
+	 * three and would burn a wooden house to the foundations while the player
+	 * was standing in it — which is a lost world, not a lost fight, and no
+	 * amount of spectacle is worth it.
+	 *
+	 * The fire it leaves is the threat. The rain is already taking it back out.
+	 */
+	private void callDown(ServerLevel here, ServerPlayer target) {
+		for (int i = 0; i < 3; i++) {
+			double angle = this.random.nextDouble() * Math.PI * 2.0;
+			double range = 2.0 + this.random.nextDouble() * 6.0;
+			final double x = target.getX() + Math.cos(angle) * range;
+			final double z = target.getZ() + Math.sin(angle) * range;
+			final int y = here.getHeight(
+				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+				net.minecraft.util.Mth.floor(x), net.minecraft.util.Mth.floor(z));
+
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), i * 7, () -> {
+				net.minecraft.world.entity.LightningBolt bolt =
+					net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
+						.create(here, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				if (bolt == null) {
+					return;
+				}
+				bolt.setVisualOnly(true);
+				bolt.snapTo(x, y, z, 0.0F, 0.0F);
+				here.addFreshEntity(bolt);
+			});
+		}
+		this.scorch(here, 3);
 	}
 
 	/**

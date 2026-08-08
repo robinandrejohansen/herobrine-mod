@@ -174,6 +174,15 @@ much faster and is the intended route.
 - [x] **The tenth blow: the church.** A parish chapel the size of a shed, your
       grave outside it with your name on the stone, signs saying PRAY, and a
       bell you hear from wherever you are standing
+- [x] His blows go through armour and enchantments. Eight is eight whatever you
+      are wearing, so the fight is about not being hit
+- [x] Act two (10–19): fireballs and arrow volleys, lobbed so you can see them
+      coming and get behind something
+- [x] Act three (20–29): three fireballs at once, four-arrow volleys, lightning
+      around you, and he stops staying on the ground
+- [x] **He dies.** The storm breaks, the clock starts, the sun comes up, and
+      wrath goes to zero — which is how the world is put back, since everything
+      here reads off that one number. And then it can begin again
 
 ### Atmosphere
 - [x] Rain and thunder scale with wrath
@@ -220,8 +229,7 @@ ending now exists, so they can be filled in whenever.
 - [ ] **The fight** — he flies, throws fire, looses arrows. Deliberately held
       for the ending rather than spent at HUNTER, or SIEGE has nowhere to go
 - [ ] **SIEGE: the caves and long paths near him** — still to build
-- [ ] **THE RECKONING, act two and three** — fireballs, arrows, lightning on
-      your builds, flight in combat. The frame is in; the arsenal is not
+
 - [ ] **A config** — nothing can be switched off. Blocks anyone else playing it
 - [ ] **Nothing points at the houses or the town** — findable only by command
 - [ ] The stranger — an NPC who arrives before him
