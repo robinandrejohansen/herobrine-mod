@@ -33,8 +33,14 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class Blueprint {
 	private Blueprint() {}
 
-	/** How deep a footing may go before the site is refused as too steep. */
-	private static final int MAX_FOOTING = 8;
+	/**
+	 * How deep a footing may go.
+	 *
+	 * Three, and the homestead is why. A course of stone under a low corner is
+	 * a footing; anything deeper is a plinth, and a plinth means the plot was
+	 * wrong and should have been refused rather than propped up on a pillar.
+	 */
+	private static final int MAX_FOOTING = 3;
 
 	/**
 	 * @param maps    one character map per layer, index 0 at floor level
@@ -62,7 +68,7 @@ public final class Blueprint {
 					}
 					BlockPos at = origin.offset(turn(x, z, width, depth, facing, true),
 						layer, turn(x, z, width, depth, facing, false));
-					palette.set(level, at, c, spin(facing));
+					palette.set(level, at, c, facing);
 				}
 			}
 		}
@@ -86,9 +92,43 @@ public final class Blueprint {
 		};
 	}
 
-	/** How far a block's own facing has to turn to come with the building. */
-	private static Direction spin(Direction facing) {
-		return facing;
+	/** The rotated X of a map coordinate, for anything placed outside place(). */
+	public static int spinX(int x, int z, int width, int depth, Direction facing) {
+		return turn(x, z, width, depth, facing, true);
+	}
+
+	public static int spinZ(int x, int z, int width, int depth, Direction facing) {
+		return turn(x, z, width, depth, facing, false);
+	}
+
+	/**
+	 * Turn a direction the same way the building turned.
+	 *
+	 * Maps are written front-south, so a stair or a door that faces south on
+	 * paper has to end up facing whichever way the building was rotated to. The
+	 * transform is the same one turn() applies to coordinates, applied to a
+	 * step vector instead — written out per case for the same reason turn() is,
+	 * because a sign error here rotates every roof slope the wrong way and
+	 * looks almost right.
+	 */
+	public static Direction turned(Direction inMap, Direction facing) {
+		int dx = inMap.getStepX();
+		int dz = inMap.getStepZ();
+		int nx;
+		int nz;
+		switch (facing) {
+			case WEST -> { nx = dz; nz = -dx; }
+			case NORTH -> { nx = -dx; nz = -dz; }
+			case EAST -> { nx = -dz; nz = dx; }
+			default -> { nx = dx; nz = dz; }
+		}
+		if (nx > 0) {
+			return Direction.EAST;
+		}
+		if (nx < 0) {
+			return Direction.WEST;
+		}
+		return nz < 0 ? Direction.NORTH : Direction.SOUTH;
 	}
 
 	/**

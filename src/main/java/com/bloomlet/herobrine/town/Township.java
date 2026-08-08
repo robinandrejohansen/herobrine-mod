@@ -86,12 +86,21 @@ public final class Township {
 		fields(level, centre, approach, random);
 
 		List<Plot> plots = allot(level, centre, lanes, random);
+		int built = 0;
 		for (Plot plot : plots) {
 			mark(level, plot, random);
+			// Houses go up now; the rest keep their marked ground until their
+			// own building exists, so the town is walkable at every stage
+			// rather than only at the end.
+			if (plot.kind().equals("house")
+				&& Lodge.build(level, plot.corner(), plot.facing(), random)) {
+				built++;
+			}
 		}
 
 		HerobrineMod.LOGGER.info("township laid out at [{}, {}, {}], gate facing {}, {} plots",
-			centre.getX(), centre.getY(), centre.getZ(), approach.getName(), plots.size());
+			centre.getX(), centre.getY(), centre.getZ(), approach.getName(),
+			plots.size() + " (" + built + " houses up)");
 	}
 
 	/**
