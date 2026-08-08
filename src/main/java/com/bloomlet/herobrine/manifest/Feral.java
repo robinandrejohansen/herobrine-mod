@@ -1,7 +1,9 @@
 package com.bloomlet.herobrine.manifest;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import com.bloomlet.herobrine.HerobrineMod;
@@ -13,6 +15,8 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
@@ -73,6 +77,8 @@ public final class Feral {
 	private static final double CHARGE = 1.35;
 
 	private static final Map<UUID, Long> lastStruck = new HashMap<>();
+	/** Which of them are currently coming, so the turn can be heard once. */
+	private static final Set<UUID> roused = new HashSet<>();
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Feral::onTick);
@@ -127,7 +133,7 @@ public final class Feral {
 					if (mob.hasLineOfSight(player)) {
 						hunt(level, mob, player);
 					} else {
-						watch(mob, sweep);
+						watch(level, mob, sweep);
 					}
 				}
 			}
@@ -143,6 +149,16 @@ public final class Feral {
 	 * mob: an angry mob looks where it is going.
 	 */
 	private static void hunt(ServerLevel level, Mob mob, ServerPlayer player) {
+		// The moment it turns, once and loudly. Pitched UP rather than down:
+		// the warden's own register belongs to something enormous, and raising
+		// it puts the same wrongness in a body the size of a man.
+		if (roused.add(mob.getUUID())) {
+			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
+				SoundEvents.WARDEN_ANGRY, SoundSource.HOSTILE, 1.0F, 1.45F);
+		} else if (level.getGameTime() % 70 == 0) {
+			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
+				SoundEvents.WARDEN_AGITATED, SoundSource.HOSTILE, 0.8F, 1.4F);
+		}
 		mob.setTarget(null);
 		mob.getLookControl().setLookAt(player, 90.0F, 90.0F);
 
@@ -163,8 +179,21 @@ public final class Feral {
 	 * than two of them doing it independently. It reads as one thing wearing
 	 * two bodies, which is precisely what it is.
 	 */
-	private static void watch(Mob mob, float angle) {
+	private static void watch(ServerLevel level, Mob mob, float angle) {
+		roused.remove(mob.getUUID());
 		mob.getNavigation().stop();
+
+		// A heartbeat through the door, every seven seconds or so.
+		//
+		// Borrowed from the warden and pitched down, because the game has no
+		// sound for "something alive is in there and has been for years" and
+		// that one is the closest thing to it. Quiet enough that a player in
+		// the passage hears it before they can tell where it is coming from,
+		// which is the entire reason it is a heartbeat and not a groan.
+		if (level.getGameTime() % 140 == 0) {
+			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
+				SoundEvents.WARDEN_HEARTBEAT, SoundSource.HOSTILE, 0.45F, 0.85F);
+		}
 		mob.yHeadRot = angle;
 		mob.setYRot(angle * 0.3F);
 		mob.setYBodyRot(angle * 0.3F);

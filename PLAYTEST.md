@@ -596,12 +596,28 @@ move — the seed decides, not your position. Walk there, or to look at it now:
 - [ ] It hits for about a heart and a half, on a cooldown
 - [ ] **Ordinary villager health.** You can kill it, and you will have to
 - [ ] It has **red** eyes, not white. White is his; this is what he leaves
-- [ ] It wears a **different skin** from a villager — drained grey-green,
-      sunken, with dark patches. Recognisably the same shape, plainly not well
-- [ ] It still wears its **profession clothes**. An infected librarian is
-      still dressed as a librarian
-- [ ] **Ordinary villagers everywhere else are completely untouched.** Check a
-      real village
+- [ ] It is a **zombie shape with one arm missing** — you should read that
+      from across the room before anything else
+- [ ] Its shirt is **torn open** with two ribs visible inside a dark cavity —
+      bone in a hole, not stripes painted on cloth
+- [ ] A **bone stump** at the shoulder, with old dark blood below it
+- [ ] It has an **open jaw with teeth**. Vanilla zombies have no mouth at all
+- [ ] The skull is opened at the top — only visible from above
+- [ ] Blood is **dark and dry**, never bright red
+- [ ] **No glowing eyes.** Those are his
+
+**Sound:**
+
+- [ ] Through the shut door, a slow **heartbeat** every seven seconds or so,
+      quiet enough that you hear it before you can place it
+- [ ] Open the door: **one loud snarl** as it turns, then a rasp every few
+      seconds while it comes
+- [ ] It makes no ordinary zombie noises at all
+
+**And villagers:**
+
+- [ ] **Ordinary villagers everywhere are completely untouched.** Check a real
+      village — every villager mixin has been removed
 - [ ] Leave the door shut and nothing ever happens. They cannot open iron
       doors — every one of these is loose because you let it out
 - [ ] Timber props shored into the passages at intervals: somebody cut this

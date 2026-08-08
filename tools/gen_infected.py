@@ -15,8 +15,14 @@ Four changes, and the first one does most of the work:
                  single most legible silhouette change available — you read it
                  from across a room, in the dark, before you read anything else.
 
-  BONE THROUGH.  Pale ribs across the chest and a strip at the shoulder, where
-                 the arm went.
+  TORN OPEN.     The shirt is cut away to a dark cavity with a ragged edge, and
+                 the ribs are laid INSIDE it. Painting bone straight onto the
+                 cloth looks like stripes on a jumper; bone only reads as bone
+                 when there is a hole for it to be inside.
+
+  A MOUTH.       Vanilla leaves the lower face blank — eyes and nothing else.
+                 An open jaw with a couple of teeth is the whole difference
+                 between a face and a mask.
 
   BRAIN.         The top of the skull opened. Only visible when it is below you
                  or you are standing over it, which is the right amount.
@@ -46,18 +52,42 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # overlay, so nothing of it is drawn at all.
 LEFT_ARM = [(32, 48, 16, 16), (48, 48, 16, 16)]
 
-BONE = (208, 202, 186, 255)
-BLOOD = (86, 26, 22, 255)
-BRAIN = (140, 74, 78, 255)
+BONE = (206, 199, 180, 255)
+# Dark enough to read as the gap BETWEEN two ribs. At a lighter value the
+# three bands merge into one pale block and it stops looking like a ribcage.
+BONE_DARK = (48, 40, 35, 255)
+# A cavity, not a shadow. Near black, so bone inside it reads as depth.
+CAVITY = (26, 20, 18, 255)
+BLOOD = (78, 24, 20, 255)
+BRAIN = (146, 78, 80, 255)
+TOOTH = (198, 192, 176, 255)
 
-# Ribs across the chest, and the stump at the shoulder. Body front is at
-# (20, 20) and is eight wide by twelve tall.
-RIBS = [(21, 23, 6, 1), (21, 25, 5, 1), (22, 27, 4, 1), (26, 20, 2, 3)]
-# Head top is (8, 0), eight by eight.
+# THE SHIRT IS TORN OPEN, THE BONE IS NOT PAINTED ON IT.
+#
+# The first attempt drew pale ribs straight over the shirt, which looks exactly
+# like what it was: stripes on a jumper. Bone only reads as bone if there is a
+# hole for it to be inside — so the cloth is cut away to a dark cavity first,
+# with a ragged edge rather than a rectangle, and the ribs are laid in the hole
+# afterwards with a shadow line under each. Order matters more than colour.
+#
+# Body front is (20, 20), eight wide and twelve tall.
+TEAR = [(22, 24, 4, 1), (21, 25, 6, 1), (21, 26, 6, 1), (22, 27, 5, 1), (23, 28, 3, 1)]
+RIBS = [(22, 25, 4, 1), (23, 27, 3, 1)]
+RIB_SHADOW = [(22, 26, 4, 1)]
+
+# Where the arm was. The body's left face is at (28, 20).
+STUMP = [(28, 20, 3, 1)]
+STUMP_RAW = [(28, 21, 3, 2)]
+
+# Head front is (8, 8). Vanilla leaves the lower face blank — the eyes sit at
+# row 12 and there is no mouth at all, which is why it needed one.
+JAW = [(10, 14, 4, 2)]
+TEETH = [(10, 14, 1, 1), (13, 14, 1, 1), (11, 15, 2, 1)]
+
+# Head top is (8, 0).
 SKULL = [(10, 2, 4, 3), (11, 1, 2, 1)]
-# Old blood: chest, hip, and down one leg. Leg front is at (4, 20).
-STAINS = [(23, 29, 3, 2), (20, 31, 2, 1), (5, 22, 2, 3), (6, 27, 2, 2),
-          (44, 22, 2, 4), (25, 21, 1, 2)]
+
+STAINS = [(24, 29, 2, 1), (20, 31, 2, 1), (5, 22, 2, 3), (6, 27, 2, 2), (26, 22, 1, 3)]
 
 
 def paint(px, boxes, colour, width, height):
@@ -89,7 +119,18 @@ def main():
 				px[y][x] = (int(r * 0.72), int(g * 0.66), int(b * 0.62), a)
 
 	paint(px, LEFT_ARM, (0, 0, 0, 0), width, height)
+
+	# Cut the cloth away first, then put the bone in the hole. Reversing these
+	# two is the difference between a wound and a jumper with stripes on it.
+	paint(px, TEAR, CAVITY, width, height)
+	paint(px, RIB_SHADOW, BONE_DARK, width, height)
 	paint(px, RIBS, BONE, width, height)
+
+	paint(px, STUMP_RAW, BLOOD, width, height)
+	paint(px, STUMP, BONE, width, height)
+
+	paint(px, JAW, CAVITY, width, height)
+	paint(px, TEETH, TOOTH, width, height)
 	paint(px, SKULL, BRAIN, width, height)
 	paint(px, STAINS, BLOOD, width, height)
 
