@@ -18,7 +18,10 @@ important is only in somebody's head.
 already exists but have nothing of their own, so a player at 1800 wrath gets
 the same rhythm they had at 500.
 
-**Next up: HUNTER.** See "The path" below.
+**Building the town.** Frame is in and the scale is confirmed; the buildings
+are the next slice.
+
+**Still the biggest gap: HUNTER.** See "The path" below.
 
 ---
 
@@ -83,11 +86,31 @@ much faster and is the intended route.
 
 ### The world
 - [x] Ruins
-- [x] The homestead (house 1) with its dig
-- [x] The threshold (house 5) — compound, stair, cave route, cells, lab, seal
+- [x] The homestead (house 1) — gable roof, chimney, porch, bedded into the hill
+- [x] Its undercroft — carved dig, one chamber, two cells behind iron doors
+- [x] The threshold (house 5) — compound, stair, blocked cave route, records
+      room, cell block, lab office, the seal
 - [x] Zombies break glass at SIEGE, and can see you through it
+
+### The infected
+- [x] Villagers shut in behind iron doors, sweeping their heads in step
+- [x] Let one out and it charges, head locked, ordinary health
+- [x] Red eyes — white is his, red is what he leaves behind
+
+### Atmosphere
 - [x] Rain and thunder scale with wrath
 - [x] Nights get longer, days do not get shorter
+- [x] Sky, fog and cloud converge on one colour; the horizon dissolves
+- [x] The world dims, worst in a storm at SIEGE — client-side, so no extra mobs
+- [x] The music fades out, gone by SIEGE
+- [x] Vanilla villages decay as phases climb — boarded windows, graves, moss.
+      Never destructive: no villager, light, door or bed is ever touched
+
+### The town (in progress)
+- [x] Sited, walled, one gate, two towers, terrain-following
+- [x] Square with a well, lanes that wander, fields outside the wall
+- [x] Thirteen plots allotted along the lanes, levelled and marked
+- [ ] The buildings themselves — next up
 
 ---
 
@@ -106,6 +129,11 @@ Deliberately built the two ends first. 2–4 are the middle of a story whose
 ending now exists, so they can be filled in whenever.
 
 ### Everything else outstanding
+- [ ] **The town's buildings** — 6 two-storey houses, church, hall, 2 shops,
+      smithy, 2 pens
+- [ ] **Village names and signposts**, and roads between villages
+- [ ] **Infected villager skins** — red eyes carry it for now, but the Last of
+      Us look needs a villager-variant renderer
 - [ ] **HUNTER content** — the phase has nothing of its own
 - [ ] **SIEGE content** — same
 - [ ] **An ending** — no fight, no Effigy, no way to kill anything
@@ -153,6 +181,7 @@ arrival only — one walk, three lines of chat, and he leaves.
 /herobrine provoke [force|<name>]
 /herobrine house [here]
 /herobrine threshold [here]
+/herobrine town here
 ```
 
 Phase thresholds for `wrath`: 0, 60, 200, 500, 1000, 1800.
