@@ -15,6 +15,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.entity.animal.wolf.WolfSoundVariant;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.phys.AABB;
 
 /**
@@ -51,6 +52,8 @@ public final class TheDogKnows {
 	private static final double SENSE_HIM = 40.0;
 
 	private static final double OWNER_RANGE = 32.0;
+	/** Anything hostile this close and the dog has a real job to do. */
+	private static final double DUTY_RANGE = 16.0;
 	/** Roughly every two seconds. Often enough to read as a warning. */
 	private static final int GROWL_INTERVAL = 45;
 	private static final int CHECK_INTERVAL = 5;
@@ -75,6 +78,9 @@ public final class TheDogKnows {
 					if (wolf.getOwner() != player) {
 						continue;
 					}
+					if (onDuty(level, wolf, player)) {
+						continue;
+					}
 					Entity threat = nearestThreat(level, wolf);
 					if (threat != null) {
 						warn(level, wolf, threat);
@@ -82,6 +88,40 @@ public final class TheDogKnows {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Is it busy being a dog?
+	 *
+	 * The warning freezes the wolf in place, and a wolf frozen in place while
+	 * zombies close on its owner is not atmospheric, it is a betrayal. A
+	 * possessed cow standing in a field 20 blocks away would otherwise pin the
+	 * dog there all night, and the player would rightly conclude the mod had
+	 * broken their dog.
+	 *
+	 * So warning is the LOWEST priority it has. Anything hostile nearby, or a
+	 * fight already started, and it goes back to being what the player tamed
+	 * it for. He is frightening; he is not more urgent than a creeper.
+	 *
+	 * This also sharpens the signal rather than weakening it. A growl now only
+	 * ever happens when nothing else is going on, which is exactly when the
+	 * player has no other explanation for it.
+	 */
+	private static boolean onDuty(ServerLevel level, Wolf wolf, ServerPlayer owner) {
+		if (wolf.getTarget() != null) {
+			return true;   // already fighting something
+		}
+		// Vanilla's own idiom (LivingEntity line 495): the timestamp is the
+		// entity's tickCount, NOT world game time, so it must be compared
+		// against tickCount or it is meaningless.
+		if (owner.getLastHurtByMob() != null
+			&& owner.tickCount - owner.getLastHurtByMobTimestamp() <= 100) {
+			return true;   // its owner was hit in the last five seconds
+		}
+		AABB guarded = wolf.getBoundingBox().inflate(DUTY_RANGE)
+			.minmax(owner.getBoundingBox().inflate(DUTY_RANGE));
+		return !level.getEntitiesOfClass(Monster.class, guarded,
+			monster -> monster.isAlive() && !Possession.isPossessed(monster)).isEmpty();
 	}
 
 	/**

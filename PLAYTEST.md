@@ -330,6 +330,10 @@ The command prints which animal and where. Now go and look at it.
       blocks, through walls, before you can see him
 - [ ] With both a possessed cow and him nearby, it faces **him**
 - [ ] Tell the dog to sit. It stops warning — a sitting dog was told to stay
+- [ ] **It still fights.** With one of his animals 20 blocks off, let zombies
+      come at you at night. The dog **stops warning and defends you** — it
+      never stands frozen while you are being hit
+- [ ] Once the zombies are dead it goes back to warning
 - [ ] Nothing nearby: it behaves like an ordinary wolf
 
 **At higher wrath he takes more than one:**
