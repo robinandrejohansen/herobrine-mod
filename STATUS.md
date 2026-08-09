@@ -253,13 +253,21 @@ of sight of everyone — rather than on a ring around world spawn. The phase gat
 enforces the reading order for free: nobody meets the shrine before the
 homestead, because the shrine does not exist yet.
 
-| Building | Appears at |
+One per phase, in order, and the next is not sited until the last has been
+found — so the sequence cannot be read out of order or skipped past.
+
+| Phase | The new place |
 |---|---|
-| The town, the homestead | RUMOUR |
-| The tower | WATCHER |
-| The gaol | TRESPASSER |
-| The open church | MIMIC |
-| The threshold | HUNTER |
+| RUMOUR | 1 the homestead |
+| WATCHER | the town — people, exactly when he starts being seen |
+| TRESPASSER | 2 the tower |
+| MIMIC | 3 the gaol |
+| HUNTER | 4 the open church |
+| SIEGE | 5 the threshold |
+
+If nobody comes within 1400 blocks of one, it is forgotten and chosen again
+near wherever the players have got to. A place can never be stranded behind
+them, and the sequence can never stall.
 
 ### Everything else outstanding
 

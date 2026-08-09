@@ -114,25 +114,42 @@ public final class Dwellings {
 	 */
 	private static final int NEAR = 340;
 	private static final int FAR = 780;
+	/** Everybody this far from an unbuilt place, and it goes somewhere else. */
+	private static final int ABANDONED = 1400;
 
 	private static int tickCounter;
 
 	/**
 	 * The five houses, the town, and when each is allowed to exist.
 	 *
-	 * THE PHASE GATE IS THE POINT OF THIS TABLE. Sited all at once they are six
-	 * things to find; sited one per phase they are a drip — every time the world
-	 * gets worse, there is also somewhere new out there, and the two facts
-	 * arrive together. It also enforces the reading order for free: nobody meets
-	 * the shrine before the homestead, because the shrine does not exist yet.
+	 * ONE PLACE PER PHASE, IN ORDER, AND NEVER TWO AT ONCE. Six phases and six
+	 * buildings is not a coincidence any more — each phase brings exactly one
+	 * new place, so every time the world gets worse there is also somewhere new
+	 * out there, and the two arrive together. Two of them used to share RUMOUR,
+	 * which spent the opening move twice.
+	 *
+	 * The order is the story. The homestead first, because it has to establish
+	 * what a home of his looks like before anything can be measured against it.
+	 * Then the town, arriving exactly when he starts being SEEN — the one place
+	 * with living people in it, found at the moment the world stops being
+	 * ordinary. Then the four buildings that are each less like somewhere a
+	 * person lived than the last, and the threshold at the end, which is the
+	 * only one with an answer in it.
+	 *
+	 * AND THE NEXT IS NOT SITED UNTIL THE LAST HAS BEEN FOUND. That is what
+	 * makes it readable rather than scattered: a player cannot stumble into the
+	 * gaol before the tower and wonder what they missed, because until the
+	 * tower is standing the gaol does not exist. Skipping ahead with
+	 * /herobrine wrath does not skip the sequence either — it only unlocks how
+	 * far it is allowed to get.
 	 */
 	private enum Place {
-		TOWN("town", Phase.RUMOUR),
 		HOMESTEAD("homestead", Phase.RUMOUR),
-		TOWER("house_two", Phase.WATCHER),
-		GAOL("house_three", Phase.TRESPASSER),
-		CHURCH("house_four", Phase.MIMIC),
-		THRESHOLD("threshold", Phase.HUNTER);
+		TOWN("town", Phase.WATCHER),
+		TOWER("house_two", Phase.TRESPASSER),
+		GAOL("house_three", Phase.MIMIC),
+		CHURCH("house_four", Phase.HUNTER),
+		THRESHOLD("threshold", Phase.SIEGE);
 
 		final Phase from;
 		/** Where it was decided to go, once anybody was around to decide near. */
@@ -170,36 +187,59 @@ public final class Dwellings {
 			boolean wanted = place == Place.TOWN
 				? com.bloomlet.herobrine.Config.get().town
 				: com.bloomlet.herobrine.Config.get().houses;
-			if (!wanted || Boolean.TRUE.equals(overworld.getAttached(place.up))) {
+			if (!wanted) {
 				continue;
 			}
+			if (Boolean.TRUE.equals(overworld.getAttached(place.up))) {
+				continue;   // standing; on to the next chapter
+			}
 			if (!phase.atLeast(place.from)) {
-				continue;   // not part of the story yet
+				return;     // and nothing after it either — this is a sequence
 			}
 
 			Long chosen = overworld.getAttached(place.site);
 			if (chosen == null) {
 				BlockPos picked = pick(overworld);
-				if (picked == null) {
-					continue;   // nowhere to put it yet; try again in two seconds
+				if (picked != null) {
+					overworld.setAttached(place.site, picked.asLong());
+					HerobrineMod.LOGGER.info("{} will stand near [{}, {}] ({})",
+						place.name().toLowerCase(java.util.Locale.ROOT),
+						picked.getX(), picked.getZ(), phase.name());
 				}
-				overworld.setAttached(place.site, picked.asLong());
-				HerobrineMod.LOGGER.info("{} will stand near [{}, {}] ({})",
-					place.name().toLowerCase(java.util.Locale.ROOT),
-					picked.getX(), picked.getZ(), phase.name());
-				continue;
+				return;     // one at a time, and the next waits for this one
 			}
 
 			BlockPos site = BlockPos.of(chosen);
+			double nearest = Double.MAX_VALUE;
 			for (ServerPlayer player : overworld.players()) {
-				if (!player.blockPosition().closerThan(site, RAISE_RANGE)) {
-					continue;
-				}
-				if (build(overworld, place, site)) {
-					overworld.setAttached(place.up, true);
-				}
-				break;
+				nearest = Math.min(nearest, Math.sqrt(
+					site.distSqr(player.blockPosition())));
 			}
+
+			// IT FOLLOWS THEM IF THEY NEVER CAME.
+			//
+			// A place chosen near where the group was an hour ago is no use to
+			// a group that has since moved five hundred blocks and built
+			// somewhere else — it sits there, unfound, and the sequence stops
+			// dead behind it because nothing after it is allowed to exist yet.
+			//
+			// So if everybody is a long way off, it is forgotten and chosen
+			// again. Fourteen hundred is far enough that nobody walking toward
+			// it can trip this by accident; at that distance they are not
+			// coming, and the story is waiting on somebody who does not know
+			// it is waiting.
+			if (nearest > ABANDONED) {
+				overworld.setAttached(place.site, null);
+				HerobrineMod.LOGGER.info("{} was never found at [{}, {}] — moving it",
+					place.name().toLowerCase(java.util.Locale.ROOT),
+					site.getX(), site.getZ());
+				return;
+			}
+
+			if (nearest <= RAISE_RANGE && build(overworld, place, site)) {
+				overworld.setAttached(place.up, true);
+			}
+			return;         // whatever happened, the next one is not due yet
 		}
 	}
 
@@ -308,18 +348,34 @@ public final class Dwellings {
 	public static java.util.List<String> report(ServerLevel level) {
 		java.util.List<String> lines = new java.util.ArrayList<>();
 		Phase phase = Wrath.phase(level.getServer());
+		boolean reached = true;
 		for (Place place : Place.values()) {
-			Long at = level.getAttached(place.site);
 			String name = place.name().toLowerCase(java.util.Locale.ROOT);
-			if (at == null) {
-				lines.add(String.format("%-11s not sited yet — needs %s",
-					name, place.from.name()));
+			boolean built = Boolean.TRUE.equals(level.getAttached(place.up));
+			Long at = level.getAttached(place.site);
+
+			if (built) {
+				BlockPos pos = BlockPos.of(at == null ? 0L : at);
+				lines.add(String.format("%-11s found        x %d z %d",
+					name, pos.getX(), pos.getZ()));
 				continue;
 			}
-			BlockPos pos = BlockPos.of(at);
-			lines.add(String.format("%-11s x %d z %d   %s",
-				name, pos.getX(), pos.getZ(),
-				Boolean.TRUE.equals(level.getAttached(place.up)) ? "built" : "waiting"));
+			if (!reached) {
+				// Everything after the current chapter, and saying so is more
+				// use than six identical "not sited" lines.
+				lines.add(String.format("%-11s later        after %s is found",
+					name, Place.values()[place.ordinal() - 1]
+						.name().toLowerCase(java.util.Locale.ROOT)));
+				continue;
+			}
+			reached = false;
+			if (at == null) {
+				lines.add(String.format("%-11s waiting for  %s", name, place.from.name()));
+			} else {
+				BlockPos pos = BlockPos.of(at);
+				lines.add(String.format("%-11s OUT THERE    x %d z %d",
+					name, pos.getX(), pos.getZ()));
+			}
 		}
 		lines.add("phase " + phase.name());
 		return lines;
