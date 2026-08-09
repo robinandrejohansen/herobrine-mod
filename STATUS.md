@@ -29,9 +29,9 @@ are the next slice.
 
 | Phase | Wrath | Its own events | Built |
 |---|---|---|---|
-| RUMOUR | 0 | footsteps, wrong sound, snuffed torch, the fuse, the breathing | ✅ |
-| WATCHER | 60 | the stare | ✅ |
-| TRESPASSER | 200 | signs, ruins, journal pages | ✅ |
+| RUMOUR | 0 | the grove, the redstone torch, footsteps, wrong sound, snuffed torch, the fuse, the breathing | ✅ |
+| WATCHER | 60 | the stare, the sand pyramid, the 2x2 tunnel | ✅ |
+| TRESPASSER | 200 | signs, ruins, journal pages, the sealed passage | ✅ |
 | MIMIC | 500 | possessed mobs | ✅ |
 | HUNTER | 1000 | the hunt, the dark | ✅ |
 | SIEGE | 1800 | the world turns — night stops, storm never ends, animals turn | ✅ |
@@ -59,6 +59,19 @@ much faster and is the intended route.
 - [x] Relocates behind you instead, 1-in-3 → every time by MIMIC
 - [x] Aware of every player, not just the nearest
 - [x] Emissive eyes, turned down to a sheen
+
+### The signs from the original story
+Quotations, not inventions. The 2010 account is almost entirely a list of marks
+left on a world rather than things that happen to you, and none of these is
+signposted — no sound, no message, nothing pointing at any of them.
+
+- [x] Groves of trees with every leaf taken off, in a rough circle
+- [x] Small perfect sand pyramids standing in open water
+- [x] 2x2 tunnels, dead straight, eighty long, going nowhere
+- [x] One redstone torch burning in a cave nobody has been in
+- [x] A passage bricked up — the only one made in response to *you*
+- [x] Possessed animals with white eyes (already built, and canon)
+- [x] He looks at you and is gone (already built, and canon)
 
 ### Traces
 - [x] Footsteps that walk past, on the ground you are standing on

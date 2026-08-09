@@ -37,6 +37,15 @@ public final class Config {
 
 	// ---- what he does ------------------------------------------------------
 	public boolean traces = true;
+	/**
+	 * The marks from the original story: stripped groves, sand pyramids in the
+	 * ocean, 2x2 tunnels, a redstone torch in a cave, a passage bricked up.
+	 *
+	 * Off leaves the mod's own inventions and removes the quotations. Worth
+	 * having as its own switch because these are the only things here that
+	 * change the world permanently without ever being an event.
+	 */
+	public boolean signs = true;
 	public boolean theBreathing = true;
 	public boolean theStare = true;
 	public boolean signsAndPages = true;

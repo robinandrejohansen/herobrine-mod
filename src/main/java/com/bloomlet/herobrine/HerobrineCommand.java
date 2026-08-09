@@ -48,6 +48,39 @@ public final class HerobrineCommand {
 				// straight line will essentially never do that.
 				.then(Commands.literal("locate").executes(HerobrineCommand::locate))
 
+				// The five signs from the original story, on demand. Every one
+				// of them refuses itself unless the world suits it — no ocean,
+				// no pyramid; daylight, no torch — so they need trying in the
+				// right place rather than waiting on the director.
+				.then(Commands.literal("sign")
+					.then(Commands.argument("which", StringArgumentType.word())
+						.suggests((ctx, b) -> net.minecraft.commands.SharedSuggestionProvider
+							.suggest(new String[] {
+								"grove", "pyramid", "tunnel", "torch", "seal" }, b))
+						.executes(ctx -> {
+							ServerPlayer p = ctx.getSource().getPlayerOrException();
+							ServerLevel level = (ServerLevel)p.level();
+							String which = StringArgumentType.getString(ctx, "which");
+							boolean done = switch (which) {
+								case "grove" -> com.bloomlet.herobrine.manifest.Signature
+									.grove(level, p);
+								case "pyramid" -> com.bloomlet.herobrine.manifest.Signature
+									.pyramid(level, p);
+								case "tunnel" -> com.bloomlet.herobrine.manifest.Signature
+									.tunnel(level, p);
+								case "torch" -> com.bloomlet.herobrine.manifest.Signature
+									.torch(level, p);
+								case "seal" -> com.bloomlet.herobrine.manifest.Signature
+									.seal(level, p);
+								default -> false;
+							};
+							ctx.getSource().sendSuccess(() -> Component.literal(done
+								? which + " left" + where(p)
+								: which + " refused — the world here does not suit it"),
+								false);
+							return done ? 1 : 0;
+						})))
+
 				// For a world that was played before the buildings moved to
 				// being sited near the players. Clears where they were going to
 				// go so they are chosen again; touches nothing already built.

@@ -128,6 +128,69 @@ public enum Manifestation {
 		}
 	},
 
+	// ---- THE SIGNS FROM THE ORIGINAL STORY -------------------------------
+	//
+	// Weighted heavily, and at RUMOUR, because these are what the legend
+	// actually consists of. The 2010 account is almost entirely a list of marks
+	// left on a world, not a list of things that happen to you — and a mod
+	// about Herobrine that opens with footsteps and creeper sounds is a horror
+	// mod wearing his name, while one that opens with a stripped grove and a
+	// tunnel nobody dug is the story itself.
+
+	/** Trees with every leaf taken off, in a rough circle. */
+	THE_GROVE(Phase.RUMOUR, 13) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Signature.grove(level, player);
+		}
+	},
+
+	/** One redstone torch, burning, in a cave nobody has been in. */
+	THE_TORCH(Phase.RUMOUR, 12) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Signature.torch(level, player);
+		}
+	},
+
+	/**
+	 * A small perfect pyramid of sand, standing in open water.
+	 *
+	 * Held to WATCHER only because it needs an ocean and will refuse itself
+	 * most of the time inland — not because it is too strong for phase one. If
+	 * anything it is the most deniable thing in the mod: it is just sand.
+	 */
+	THE_PYRAMID(Phase.WATCHER, 11) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Signature.pyramid(level, player);
+		}
+	},
+
+	/** Two blocks square, dead straight, eighty long, going nowhere. */
+	THE_TUNNEL(Phase.WATCHER, 12) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Signature.tunnel(level, player);
+		}
+	},
+
+	/**
+	 * A passage, bricked up.
+	 *
+	 * The one trace made in response to the player rather than to the world, so
+	 * it waits until TRESPASSER — the phase whose whole job is him crossing
+	 * from being in your world to being in your business.
+	 */
+	THE_SEAL(Phase.TRESPASSER, 11) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Signature.seal(level, player);
+		}
+	},
+
+	// ---- END THE SIGNS ---------------------------------------------------
+
 	/** He is simply there, at distance, and gone when you look. */
 	THE_STARE(Phase.WATCHER, 10) {
 		@Override
@@ -156,6 +219,7 @@ public enum Manifestation {
 		}
 		return switch (this) {
 			case FOOTSTEPS, WRONG_SOUND, SNUFFED_TORCH, THE_FUSE -> config.traces;
+			case THE_GROVE, THE_TORCH, THE_PYRAMID, THE_TUNNEL, THE_SEAL -> config.signs;
 			case THE_BREATHING -> config.theBreathing;
 			case POSSESSED_MOB -> config.possession;
 			case THE_RUIN -> config.ruins;
