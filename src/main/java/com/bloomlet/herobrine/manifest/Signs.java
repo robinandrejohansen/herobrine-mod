@@ -89,6 +89,37 @@ public final class Signs {
 	private static final int SEARCH_RADIUS = 10;
 	private static final double MIN_DISTANCE = 3.0;
 
+	/**
+	 * Him, at the wall, for a second, with an arm moving.
+	 *
+	 * Particles and a sound rather than an entity. Spawning the real one would
+	 * mean a second Herobrine in the world for a second, and "there is only
+	 * ever one of him" is a rule the whole mod is built on — a player who
+	 * caught two at once would have learned something true and ruinous.
+	 *
+	 * So it is the SHAPE of him: a column of soul flame at the wall, the sound
+	 * of a block being placed, and then nothing there. Enough to say somebody
+	 * did this, without ever answering who was standing in the room.
+	 */
+	private static void writing(ServerLevel level, Placement spot) {
+		double x = spot.pos.getX() + 0.5 - spot.facing.getStepX() * 0.6;
+		double y = spot.pos.getY();
+		double z = spot.pos.getZ() + 0.5 - spot.facing.getStepZ() * 0.6;
+
+		for (int beat = 0; beat < 4; beat++) {
+			final double height = y + beat * 0.35;
+			com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), beat * 4, () -> {
+				level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+					x, height, z, 6, 0.14, 0.2, 0.14, 0.0);
+				level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+					x, height, z, 3, 0.2, 0.2, 0.2, 0.005);
+			});
+		}
+		Cadence.in(level.getServer(), 14, () -> level.playSound(null,
+			spot.pos, net.minecraft.sounds.SoundEvents.WOOD_PLACE,
+			net.minecraft.sounds.SoundSource.HOSTILE, 0.9F, 0.8F));
+	}
+
 	public static boolean write(ServerLevel level, ServerPlayer player) {
 		List<Placement> options = findWalls(level, player);
 		if (options.isEmpty()) {
@@ -102,8 +133,23 @@ public final class Signs {
 			return false;   // everything written lately; say nothing
 		}
 
+		// HE PUTS IT UP, and it takes him about a second.
+		//
+		// The sign used to simply exist, which is the one thing everything else
+		// in this mod refuses to do — he is never seen arriving, but he is not
+		// meant to be invisible either, and a message that materialises on a
+		// wall reads as a script running rather than as somebody having been in
+		// the room.
+		//
+		// So: he is there, facing the wall, for four beats. On the last one the
+		// sign is on it and he is gone. Fast enough that a player who was
+		// looking elsewhere sees only the aftermath — which is still the
+		// default outcome, because these are placed on walls behind them — and
+		// slow enough that a player who happened to be watching will not be
+		// sure what they saw.
 		BlockState sign = Blocks.OAK_WALL_SIGN.defaultBlockState()
 			.setValue(WallSignBlock.FACING, spot.facing);
+		writing(level, spot);
 		level.setBlockAndUpdate(spot.pos, sign);
 
 		if (!(level.getBlockEntity(spot.pos) instanceof SignBlockEntity entity)) {

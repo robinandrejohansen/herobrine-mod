@@ -186,6 +186,66 @@ public final class Villages {
 	 *
 	 * Placed only under open sky, so they never turn up on somebody's floor.
 	 */
+	/**
+	 * What is actually IN a grave.
+	 *
+	 * A marker on its own is a prop, and a village of props stops being read
+	 * after the third one. Something buried under it is a decision: dig it up
+	 * or leave it, and either answer says something about the player.
+	 *
+	 * DELIBERATELY POOR. What is down there is what somebody was carrying when
+	 * they were put there — a worn tool, some bread going over, the odd coin of
+	 * an iron ingot. Nothing that rewards grave-robbing on its own terms,
+	 * because the moment these are worth opening they stop being graves and
+	 * become a loot table with a story painted on.
+	 *
+	 * And some of them are occupied. Not many, and never before TRESPASSER: a
+	 * skeleton climbing out of the first grave anybody finds is a jump scare in
+	 * a phase built entirely on deniability. Later, when nothing is deniable
+	 * any more, it is exactly right.
+	 */
+	private static void furnish(ServerLevel level, BlockPos marker, RandomSource random,
+	                            Phase phase) {
+		BlockPos hollow = marker.below(2);
+		if (!level.getBlockState(hollow).isSolid()) {
+			return;   // a cave or water under it; leave the ground alone
+		}
+
+		// One in three has anything in it at all. Opening two empty ones first
+		// is what makes the third worth remembering.
+		if (random.nextInt(3) != 0) {
+			return;
+		}
+
+		level.setBlock(hollow, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING,
+				net.minecraft.core.Direction.Plane.HORIZONTAL.getRandomDirection(random)), 2);
+		level.setBlock(marker.below(), Blocks.COARSE_DIRT.defaultBlockState(), 2);
+		if (level.getBlockEntity(hollow) instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+			com.bloomlet.herobrine.structure.Loot.scatter(chest, random,
+				com.bloomlet.herobrine.structure.Loot.Tier.LARDER);
+			if (random.nextInt(4) == 0) {
+				chest.setItem(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BONE, 2 + random.nextInt(4)));
+			}
+		}
+
+		if (!phase.atLeast(Phase.TRESPASSER) || random.nextInt(4) != 0) {
+			return;
+		}
+		// Somebody still in it. Shut in with the lid, so it is found rather
+		// than met — it cannot path out through two blocks of earth, and the
+		// player is the one who opens the ground.
+		net.minecraft.world.entity.Mob buried = net.minecraft.world.entity.EntityTypes.SKELETON
+			.create(level, net.minecraft.world.entity.EntitySpawnReason.STRUCTURE);
+		if (buried == null) {
+			return;
+		}
+		buried.snapTo(hollow.getX() + 0.5, hollow.getY(), hollow.getZ() + 0.5,
+			random.nextFloat() * 360.0F, 0.0F);
+		buried.setPersistenceRequired();
+		level.addFreshEntity(buried);
+	}
+
 	private static int graves(ServerLevel level, ServerPlayer player, BoundingBox bounds,
 	                          RandomSource random, int wanted, Phase phase) {
 		int done = 0;
@@ -219,6 +279,7 @@ public final class Villages {
 				sign.setText(text, true);
 				sign.setWaxed(true);
 			}
+			furnish(level, ground, random, phase);
 			done++;
 		}
 		return done;

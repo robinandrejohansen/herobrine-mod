@@ -44,9 +44,42 @@ public final class Nights {
 
 	private static int tickCounter;
 	/** What we last asked for, so a rate is only ever set when it changes. */
+	/**
+	 * What we last asked for — and it is a CACHE OF SAVED STATE, which is the
+	 * whole problem.
+	 *
+	 * Both of these start at "normal" every time the JVM does, while the thing
+	 * they describe lives in the world file. So a world saved with the clock
+	 * paused, or running at half speed, comes back with the code believing it
+	 * is neither — and because both setters return early when the value they
+	 * are asked for matches the cache, the correction never happens.
+	 *
+	 * The failure is silent and permanent: a night that was stopped at SIEGE
+	 * stays stopped after a restart if wrath has since dropped below it, and no
+	 * amount of playing puts the sun back. Reset on server start so the first
+	 * tick re-applies the truth rather than trusting a value from a previous
+	 * session.
+	 */
 	private static float applied = 1.0F;
 
 	public static void register() {
+		// Forget everything cached, and put the world back to normal before the
+		// first tick decides what it should be. Belt and braces: the reset
+		// alone would be enough for the code, but a world that had been left
+		// paused by an older build would still be paused on disk, and nothing
+		// would ever ask it not to be.
+		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+			applied = 1.0F;
+			held = false;
+			Optional<? extends Holder<WorldClock>> clock =
+				server.overworld().registryAccess().get(WorldClocks.OVERWORLD);
+			clock.ifPresent(c -> {
+				server.clockManager().setPaused(c, false);
+				server.clockManager().setRate(c, 1.0F);
+			});
+			HerobrineMod.LOGGER.info("clock handed back at startup; the tick will retake it");
+		});
+
 		ServerTickEvents.END_SERVER_TICK.register(Nights::onTick);
 		// Put the world back before we go. A clock rate is saved data, so a
 		// world left at half speed would stay that way after the mod was
