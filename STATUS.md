@@ -60,6 +60,28 @@ much faster and is the intended route.
 - [x] Aware of every player, not just the nearest
 - [x] Emissive eyes, turned down to a sheen
 
+### The warrens
+A system under each of the four houses, rather than a cellar with a passage off
+it. Junctions, spurs, rooms at some ends and rock at others, and a route through
+that has to be worked out rather than followed.
+
+Made readable on purpose — getting lost is only interesting if it can be
+recovered from. The **trunk** is paved and lit and is the way back. **Spurs** are
+unlit and most stop in rock. Every **junction** carries a cairn of a different
+height, which is the one thing separating a place you are exploring from a
+place you are trapped in.
+
+| House | Manner | What it says |
+|---|---|---|
+| 1 the homestead | FAILING | long spurs, no lights, a trunk that stops being one |
+| 2 the tower | SURVEYED | paved, lit, every junction marked — he still had a plan |
+| 3 the gaol | WORKED | wide trunk, ordered spurs, the same hand that cut the cells |
+| 4 the church | BURIED | short and low, and it goes down more than along |
+
+Read in sequence they say something the buildings above them do not: he did not
+get worse steadily. He was already like this at the start, got organised for a
+while, and then it went again.
+
 ### The chambers
 Eight kinds of small room cut into solid rock behind your caves, scattered and
 unnumbered. The five houses are a sequence read in order; these are the

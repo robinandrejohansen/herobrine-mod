@@ -296,20 +296,14 @@ public final class TheDig {
 	 * surface — which is correct here, unlike at the entrance.
 	 */
 	private static void workings(ServerLevel level, BlockPos far, RandomSource random) {
+		// WORKED: wide trunk, ordered spurs, everything squared. The same hand
+		// that built fourteen identical cells dug this, and it shows — which is
+		// the connection the whole building needs. The gaol is not the end of
+		// the story, it is a thing put on top of a hole he was already in.
 		BlockPos back = far.offset(0, 1, 7);
-		BlockPos[] ends = {
-			Digging.bore(level, back, new Vec3(-1.0, -0.35, 0.5), 28, 1.5, random),
-			Digging.bore(level, back, new Vec3(1.0, -0.30, 0.4), 32, 1.5, random),
-			Digging.bore(level, back, new Vec3(0.1, -0.55, 1.0), 24, 1.6, random),
-		};
-		for (BlockPos end : ends) {
-			Digging.hollow(level, end, 3.2, random);
-			Digging.props(level, end, 3, random);
-			BlockPos under = Digging.groundUnder(level, end);
-			if (under != null && level.getBlockState(under.above()).isAir()) {
-				level.setBlock(under.above(), Blocks.SOUL_TORCH.defaultBlockState(), 2);
-			}
-		}
+		Warren.warn(level, far.offset(2, 1, 6),
+			new String[] { "COUNT", "THEM IN", "COUNT", "THEM OUT" });
+		Warren.dig(level, back, Warren.Manner.WORKED, random);
 	}
 
 	private static void sign(ServerLevel level, BlockPos at, String[] lines) {

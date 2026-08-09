@@ -304,9 +304,12 @@ public final class Shrine {
 		BlockPos landing = Descent.shaft(level, under, 11, rough(random));
 		Descent.hatch(level, under.above(), Direction.SOUTH);
 
-		BlockPos end = Digging.bore(level, landing, new Vec3(0.2, -0.3, -1.0), 30, 1.6, random);
-		Digging.hollow(level, end, 3.4, random);
-		Digging.props(level, end, 4, random);
+		// BURIED: short, low, and it goes down more than it goes along. A crypt
+		// rather than a mine, under the one building in the sequence that has
+		// no roof — everything above this is open to the sky and everything
+		// below it is not, which is the whole of house four in one section.
+		Warren.warn(level, under.above(), new String[] { "", "DO NOT", "LEAVE", "" });
+		Warren.dig(level, landing, Warren.Manner.BURIED, random);
 	}
 
 	private static BlockState paving(RandomSource random, int dx) {

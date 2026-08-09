@@ -153,6 +153,30 @@ public final class Chambers {
 	}
 
 	/**
+	 * Cut one at a given place, with no corridor and no doorway.
+	 *
+	 * For the warrens under the houses, which do their own connecting. The
+	 * eight rooms are the valuable part of this file and there is no reason for
+	 * a second set of them to exist somewhere else — a reading room under the
+	 * tower should be the same reading room a player might find behind a cave,
+	 * so that meeting the second one means something.
+	 *
+	 * @param kinds which of the eight, by ordinal, so a caller can give a
+	 *              warren a character rather than a random assortment
+	 */
+	public static void place(ServerLevel level, BlockPos at, int which,
+	                         RandomSource random) {
+		Kind kind = Kind.values()[Math.floorMod(which, Kind.values().length)];
+		room(level, at, random);
+		furnish(level, at, kind, random);
+	}
+
+	/** How many kinds there are, so callers can pick without importing the enum. */
+	public static int kinds() {
+		return Kind.values().length;
+	}
+
+	/**
 	 * Somewhere the player could stand, in the cave they are already in.
 	 *
 	 * The anchor for everything else. It has to be real open space with a floor

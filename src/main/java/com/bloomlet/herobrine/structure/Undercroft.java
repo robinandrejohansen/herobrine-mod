@@ -95,6 +95,14 @@ public final class Undercroft {
 		Digging.props(level, chamber, 4, random);
 		unfinished(level, end, random);
 
+		// FAILING, and it is the first one he dug. Long spurs, no lights, and
+		// a trunk that stops being one — which read in sequence with the tower's
+		// surveyed warren and the gaol's worked one says something the houses
+		// above them never quite manage: he did not get worse at this steadily.
+		// He was already like this at the start, got organised for a while, and
+		// then it went again.
+		Warren.dig(level, end, Warren.Manner.FAILING, random);
+
 		HerobrineMod.LOGGER.info("undercroft dug, ends at [{}, {}, {}]",
 			end.getX(), end.getY(), end.getZ());
 	}

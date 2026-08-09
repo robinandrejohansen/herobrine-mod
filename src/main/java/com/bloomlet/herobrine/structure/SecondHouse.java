@@ -270,9 +270,14 @@ public final class SecondHouse {
 			Loot.scatter(chest, random, Loot.Tier.LARDER);
 		}
 
-		// And a passage out of the buried house that goes somewhere.
+		// And a system under the buried house, rather than one passage out of
+		// it. SURVEYED, because at this point he still had a plan: the trunk is
+		// paved and lit, every junction is marked, and it is possible to find
+		// the way back without having counted.
 		BlockPos out = in.offset(w - 2, 1, d / 2);
-		Digging.bore(level, out, new Vec3(1.0, -0.25, 0.2), 26, 1.5, random);
+		Warren.warn(level, in.offset(w - 3, 1, d / 2),
+			new String[] { "KEEP", "TO THE", "LIT ONE", "" });
+		Warren.dig(level, out, Warren.Manner.SURVEYED, random);
 	}
 
 	/**
