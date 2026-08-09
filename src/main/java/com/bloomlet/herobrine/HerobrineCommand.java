@@ -292,12 +292,15 @@ public final class HerobrineCommand {
 			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
 		ServerLevel level = (ServerLevel)player.level();
+		// Nothing has a position before it is sited any more — a place is
+		// chosen near the players when their phase reaches it, so before that
+		// there is genuinely no answer to give rather than a seeded one.
 		net.minecraft.core.BlockPos origin = Dwellings.origin(level);
-		net.minecraft.core.BlockPos site = origin != null ? origin : Dwellings.siteFor(level);
-		int distance = (int)Math.sqrt(site.distSqr(player.blockPosition()));
-		String line = (origin != null ? "homestead standing at " : "homestead will stand near ")
-			+ site.getX() + " " + site.getY() + " " + site.getZ()
-			+ "  |  " + distance + " blocks away";
+		String line = origin == null
+			? "the homestead has not been sited yet — /herobrine locate"
+			: "homestead at " + origin.getX() + " " + origin.getY() + " " + origin.getZ()
+				+ "  |  " + (int)Math.sqrt(origin.distSqr(player.blockPosition()))
+				+ " blocks " + compass(player, origin);
 		ctx.getSource().sendSuccess(() -> Component.literal(line), false);
 		return 1;
 	}
@@ -319,11 +322,11 @@ public final class HerobrineCommand {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
 		ServerLevel level = (ServerLevel)player.level();
 		net.minecraft.core.BlockPos found = Dwellings.thresholdOrigin(level);
-		net.minecraft.core.BlockPos site = found != null ? found : Dwellings.thresholdSiteFor(level);
-		int distance = (int)Math.sqrt(site.distSqr(player.blockPosition()));
-		String line = (found != null ? "threshold standing at " : "threshold will stand near ")
-			+ site.getX() + " " + site.getY() + " " + site.getZ()
-			+ "  |  " + distance + " blocks away";
+		String line = found == null
+			? "the threshold has not been sited yet — it needs HUNTER"
+			: "threshold at " + found.getX() + " " + found.getY() + " " + found.getZ()
+				+ "  |  " + (int)Math.sqrt(found.distSqr(player.blockPosition()))
+				+ " blocks " + compass(player, found);
 		ctx.getSource().sendSuccess(() -> Component.literal(line), false);
 		return 1;
 	}
@@ -370,30 +373,12 @@ public final class HerobrineCommand {
 			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
 		ServerLevel level = (ServerLevel)player.level();
-
-		record Site(String name, net.minecraft.core.BlockPos at, boolean up) {}
-		java.util.List<Site> sites = new java.util.ArrayList<>();
-		sites.add(new Site("the town", Dwellings.townSiteFor(level), false));
-		net.minecraft.core.BlockPos home = Dwellings.origin(level);
-		sites.add(new Site("1 the homestead",
-			home != null ? home : Dwellings.siteFor(level), home != null));
-		sites.add(new Site("2 the tower", Dwellings.middleSiteFor(level, 0), false));
-		sites.add(new Site("3 the gaol", Dwellings.middleSiteFor(level, 1), false));
-		sites.add(new Site("4 the church", Dwellings.middleSiteFor(level, 2), false));
-		sites.add(new Site("5 the threshold", Dwellings.thresholdSiteFor(level), false));
-
-		for (Site site : sites) {
-			int distance = (int)Math.sqrt(
-				site.at().distSqr(new net.minecraft.core.BlockPos(
-					player.blockPosition().getX(), site.at().getY(),
-					player.blockPosition().getZ())));
-			String line = String.format("%-16s %5d blocks %s   x %d z %d",
-				site.name(), distance, compass(player, site.at()),
-				site.at().getX(), site.at().getZ());
+		for (String line : Dwellings.report(level)) {
 			ctx.getSource().sendSuccess(() -> Component.literal(line), false);
 		}
 		ctx.getSource().sendSuccess(() -> Component.literal(
-			"§8they build themselves when somebody gets within 112 blocks"), false);
+			"§8sited near the players when their phase arrives; built at 192 blocks"),
+			false);
 		return 1;
 	}
 

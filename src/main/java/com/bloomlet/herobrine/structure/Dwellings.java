@@ -1,6 +1,8 @@
 package com.bloomlet.herobrine.structure;
 
 import com.bloomlet.herobrine.HerobrineMod;
+import com.bloomlet.herobrine.wrath.Wrath;
+import com.bloomlet.herobrine.wrath.Phase;
 
 import com.mojang.serialization.Codec;
 
@@ -54,42 +56,6 @@ public final class Dwellings {
 		AttachmentRegistry.createPersistent(HerobrineMod.id("threshold_origin"), Codec.LONG);
 
 	/**
-	 * Two, three and four — the middle of the story.
-	 *
-	 * The two ends were built first on purpose: the first house had to
-	 * establish what a home of his looks like and the last had to establish
-	 * where it was all going, and the middle is only legible once both of those
-	 * exist. These are what the player finds between them, and each is defined
-	 * by what the one before it still had and this one does not.
-	 */
-	private static final AttachmentType<Boolean>[] MIDDLE_RAISED = middleFlags();
-
-	@SuppressWarnings("unchecked")
-	private static AttachmentType<Boolean>[] middleFlags() {
-		return new AttachmentType[] {
-			AttachmentRegistry.createPersistent(HerobrineMod.id("house_two_raised"), Codec.BOOL),
-			AttachmentRegistry.createPersistent(HerobrineMod.id("house_three_raised"), Codec.BOOL),
-			AttachmentRegistry.createPersistent(HerobrineMod.id("house_four_raised"), Codec.BOOL),
-		};
-	}
-
-	/**
-	 * Where each of the middle three sits, and why the bands do not overlap.
-	 *
-	 * Distance is the ONLY thing telling a player these are a sequence — there
-	 * is no map, no quest and no numbering anywhere in the world. So the bands
-	 * are strictly ordered and they do not touch: whichever one you stumble on
-	 * first, the next one out is always the next one along, and a player who
-	 * walks outward is reading the story in order without ever being told there
-	 * was an order.
-	 */
-	private static final int[][] MIDDLE_BANDS = {
-		{ 1950, 2200 },
-		{ 2250, 2450 },
-		{ 2500, 2700 },
-	};
-
-	/**
 	 * Eight bytes each, and not nine.
 	 *
 	 * These are spelled-out words in hex because a salt you can read is a salt
@@ -111,29 +77,9 @@ public final class Dwellings {
 	 */
 	private static final AttachmentType<Boolean> TOWN_RAISED =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("town_raised"), Codec.BOOL);
-	private static final int TOWN_MIN = 720;
-	private static final int TOWN_MAX = 1250;
-
-	private static final long[] MIDDLE_SALTS = {
-		0x486F757365325F5FL,   // House2__
-		0x4469675F5F5F5F33L,   // Dig____3
-		0x536872696E653401L,   // Shrine4
-	};
 
 	/** Far enough to be a journey, near enough to be reachable on foot. */
-	private static final int MIN_RANGE = 1100;
-	private static final int MAX_RANGE = 1900;
 
-	/**
-	 * The threshold sits further out than the homestead, and always further
-	 * than it in the same world.
-	 *
-	 * Distance is the only thing telling the player these are a sequence. He
-	 * did not move house to somewhere nicer; each one is further from anywhere
-	 * anybody else would go, and the last is a long way past the first.
-	 */
-	private static final int THRESHOLD_MIN = 2600;
-	private static final int THRESHOLD_MAX = 3600;
 	/** Build when somebody is this close. Inside a default simulation radius. */
 	/**
 	 * How close somebody has to get before it builds.
@@ -147,10 +93,61 @@ public final class Dwellings {
 	 * build in chunks the server is not ticking, and it nearly quadruples the
 	 * chance of an ordinary journey catching one.
 	 */
+	/**
+	 * How close somebody has to get before it builds.
+	 *
+	 * Chunks have to be ticking for this to be safe, so it stays inside a
+	 * default simulation radius.
+	 */
 	private static final int RAISE_RANGE = 192;
 	private static final int CHECK_INTERVAL = 40;
 
+	/**
+	 * How far from the players a new building is put.
+	 *
+	 * Far enough to be a walk with a reason, near enough that a server which
+	 * has settled in one valley will actually meet it. The old scheme sited
+	 * everything on a ring around WORLD SPAWN, eleven hundred to thirty-six
+	 * hundred blocks out, which quietly assumed the players would explore
+	 * outward for hours — and a group that builds a base together and stays
+	 * near it never went anywhere near any of them.
+	 */
+	private static final int NEAR = 340;
+	private static final int FAR = 780;
+
 	private static int tickCounter;
+
+	/**
+	 * The five houses, the town, and when each is allowed to exist.
+	 *
+	 * THE PHASE GATE IS THE POINT OF THIS TABLE. Sited all at once they are six
+	 * things to find; sited one per phase they are a drip — every time the world
+	 * gets worse, there is also somewhere new out there, and the two facts
+	 * arrive together. It also enforces the reading order for free: nobody meets
+	 * the shrine before the homestead, because the shrine does not exist yet.
+	 */
+	private enum Place {
+		TOWN("town", Phase.RUMOUR),
+		HOMESTEAD("homestead", Phase.RUMOUR),
+		TOWER("house_two", Phase.WATCHER),
+		GAOL("house_three", Phase.TRESPASSER),
+		CHURCH("house_four", Phase.MIMIC),
+		THRESHOLD("threshold", Phase.HUNTER);
+
+		final Phase from;
+		/** Where it was decided to go, once anybody was around to decide near. */
+		final AttachmentType<Long> site;
+		/** Whether the blocks exist. */
+		final AttachmentType<Boolean> up;
+
+		Place(String key, Phase from) {
+			this.from = from;
+			this.site = AttachmentRegistry.createPersistent(
+				HerobrineMod.id(key + "_site"), Codec.LONG);
+			this.up = AttachmentRegistry.createPersistent(
+				HerobrineMod.id(key + "_up"), Codec.BOOL);
+		}
+	}
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Dwellings::onTick);
@@ -160,85 +157,136 @@ public final class Dwellings {
 		if (++tickCounter % CHECK_INTERVAL != 0) {
 			return;
 		}
-		if (!com.bloomlet.herobrine.Config.get().enabled || !com.bloomlet.herobrine.Config.get().houses) {
+		if (!com.bloomlet.herobrine.Config.get().enabled) {
 			return;
 		}
 		ServerLevel overworld = server.overworld();
-
-		if (com.bloomlet.herobrine.Config.get().town
-			&& !Boolean.TRUE.equals(overworld.getAttached(TOWN_RAISED))) {
-			BlockPos site = townSiteFor(overworld);
-			for (ServerPlayer player : overworld.players()) {
-				if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
-					com.bloomlet.herobrine.town.Township.raise(overworld, site,
-						overworld.getRandom());
-					overworld.setAttached(TOWN_RAISED, true);
-					HerobrineMod.LOGGER.info("the town went up at [{}, {}]",
-						site.getX(), site.getZ());
-					break;
-				}
-			}
+		if (overworld.players().isEmpty()) {
+			return;
 		}
+		Phase phase = Wrath.phase(server);
 
-		if (!Boolean.TRUE.equals(overworld.getAttached(RAISED))) {
-			BlockPos site = siteFor(overworld);
-			for (ServerPlayer player : overworld.players()) {
-				if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
-					raise(overworld, site);
-					break;
-				}
-			}
-		}
-		if (!Boolean.TRUE.equals(overworld.getAttached(THRESHOLD_RAISED))) {
-			BlockPos site = thresholdSiteFor(overworld);
-			for (ServerPlayer player : overworld.players()) {
-				if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
-					raiseThreshold(overworld, site);
-					break;
-				}
-			}
-		}
-
-		for (int which = 0; which < MIDDLE_RAISED.length; which++) {
-			if (Boolean.TRUE.equals(overworld.getAttached(MIDDLE_RAISED[which]))) {
+		for (Place place : Place.values()) {
+			boolean wanted = place == Place.TOWN
+				? com.bloomlet.herobrine.Config.get().town
+				: com.bloomlet.herobrine.Config.get().houses;
+			if (!wanted || Boolean.TRUE.equals(overworld.getAttached(place.up))) {
 				continue;
 			}
-			BlockPos site = middleSiteFor(overworld, which);
-			for (ServerPlayer player : overworld.players()) {
-				if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
-					raiseMiddle(overworld, site, which);
-					break;
+			if (!phase.atLeast(place.from)) {
+				continue;   // not part of the story yet
+			}
+
+			Long chosen = overworld.getAttached(place.site);
+			if (chosen == null) {
+				BlockPos picked = pick(overworld);
+				if (picked == null) {
+					continue;   // nowhere to put it yet; try again in two seconds
 				}
+				overworld.setAttached(place.site, picked.asLong());
+				HerobrineMod.LOGGER.info("{} will stand near [{}, {}] ({})",
+					place.name().toLowerCase(java.util.Locale.ROOT),
+					picked.getX(), picked.getZ(), phase.name());
+				continue;
+			}
+
+			BlockPos site = BlockPos.of(chosen);
+			for (ServerPlayer player : overworld.players()) {
+				if (!player.blockPosition().closerThan(site, RAISE_RANGE)) {
+					continue;
+				}
+				if (build(overworld, place, site)) {
+					overworld.setAttached(place.up, true);
+				}
+				break;
 			}
 		}
-	}
-
-	/** Where the town is, fixed by the seed like everything else here. */
-	public static BlockPos townSiteFor(ServerLevel level) {
-		RandomSource random = RandomSource.create(level.getSeed() ^ 0x546F776E53697465L);
-		double angle = random.nextDouble() * Math.PI * 2.0;
-		double range = TOWN_MIN + random.nextDouble() * (TOWN_MAX - TOWN_MIN);
-		BlockPos spawn = level.getLevelData().getRespawnData().pos();
-		return new BlockPos(
-			spawn.getX() + (int)Math.round(Math.cos(angle) * range), 0,
-			spawn.getZ() + (int)Math.round(Math.sin(angle) * range));
-	}
-
-	/** Seeded like the other two, so it is in the same place in every copy. */
-	public static BlockPos middleSiteFor(ServerLevel level, int which) {
-		RandomSource random = RandomSource.create(level.getSeed() ^ MIDDLE_SALTS[which]);
-		double angle = random.nextDouble() * Math.PI * 2.0;
-		int[] band = MIDDLE_BANDS[which];
-		double range = band[0] + random.nextDouble() * (band[1] - band[0]);
-		BlockPos spawn = level.getLevelData().getRespawnData().pos();
-		return new BlockPos(
-			spawn.getX() + (int)Math.round(Math.cos(angle) * range), 0,
-			spawn.getZ() + (int)Math.round(Math.sin(angle) * range));
 	}
 
 	/**
-	 * @param which 0 the buried house, 1 the dig, 2 the shrine
+	 * Somewhere out of sight of everybody, at a walkable distance.
+	 *
+	 * Measured from the middle of wherever the players actually are rather than
+	 * from any one of them, so on a server it lands somewhere the group might
+	 * plausibly go instead of behind whoever happened to be furthest out.
+	 *
+	 * Refuses anything closer than NEAR to ANY player. A house that appears
+	 * three hundred blocks from the base of the one person who went mining is
+	 * a house somebody watches arrive, and nothing here is ever watched
+	 * arriving.
 	 */
+	private static @org.jspecify.annotations.Nullable BlockPos pick(ServerLevel level) {
+		double cx = 0;
+		double cz = 0;
+		for (ServerPlayer player : level.players()) {
+			cx += player.getX();
+			cz += player.getZ();
+		}
+		cx /= level.players().size();
+		cz /= level.players().size();
+
+		RandomSource random = level.getRandom();
+		for (int attempt = 0; attempt < 48; attempt++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = NEAR + random.nextDouble() * (FAR - NEAR);
+			int x = (int)Math.round(cx + Math.cos(angle) * range);
+			int z = (int)Math.round(cz + Math.sin(angle) * range);
+
+			if (!buildable(level, x, z)) {
+				continue;
+			}
+			BlockPos at = new BlockPos(x, Ground.topOf(level, x, z), z);
+			boolean tooNear = false;
+			for (ServerPlayer player : level.players()) {
+				if (player.blockPosition().closerThan(at, NEAR)) {
+					tooNear = true;
+					break;
+				}
+			}
+			if (!tooNear) {
+				return at;
+			}
+		}
+		return null;
+	}
+
+	/** Put the right building on the chosen ground. */
+	private static boolean build(ServerLevel level, Place place, BlockPos site) {
+		RandomSource random = level.getRandom();
+		return switch (place) {
+			case TOWN -> {
+				com.bloomlet.herobrine.town.Township.raise(level, site, random);
+				yield true;
+			}
+			case HOMESTEAD -> raise(level, site);
+			case TOWER -> raiseMiddle(level, site, 0);
+			case GAOL -> raiseMiddle(level, site, 1);
+			case CHURCH -> raiseMiddle(level, site, 2);
+			case THRESHOLD -> raiseThreshold(level, site);
+		};
+	}
+
+	/** Every building and where it ended up, for /herobrine locate. */
+	public static java.util.List<String> report(ServerLevel level) {
+		java.util.List<String> lines = new java.util.ArrayList<>();
+		Phase phase = Wrath.phase(level.getServer());
+		for (Place place : Place.values()) {
+			Long at = level.getAttached(place.site);
+			String name = place.name().toLowerCase(java.util.Locale.ROOT);
+			if (at == null) {
+				lines.add(String.format("%-11s not sited yet — needs %s",
+					name, place.from.name()));
+				continue;
+			}
+			BlockPos pos = BlockPos.of(at);
+			lines.add(String.format("%-11s x %d z %d   %s",
+				name, pos.getX(), pos.getZ(),
+				Boolean.TRUE.equals(level.getAttached(place.up)) ? "built" : "waiting"));
+		}
+		lines.add("phase " + phase.name());
+		return lines;
+	}
+
 	public static boolean raiseMiddle(ServerLevel level, BlockPos near, int which) {
 		for (int attempt = 0; attempt < 24; attempt++) {
 			int x = near.getX() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
@@ -253,7 +301,6 @@ public final class Dwellings {
 				case 1 -> TheDig.build(level, origin, random);
 				default -> Shrine.build(level, origin, random);
 			}
-			level.getServer().overworld().setAttached(MIDDLE_RAISED[which], true);
 			return true;
 		}
 		HerobrineMod.LOGGER.warn("no buildable ground for house {} near [{}, {}]",
@@ -261,16 +308,6 @@ public final class Dwellings {
 		return false;
 	}
 
-	public static BlockPos thresholdSiteFor(ServerLevel level) {
-		RandomSource random = RandomSource.create(level.getSeed() ^ 0x546872657368L);
-		double angle = random.nextDouble() * Math.PI * 2.0;
-		double range = THRESHOLD_MIN + random.nextDouble() * (THRESHOLD_MAX - THRESHOLD_MIN);
-		BlockPos spawn = level.getLevelData().getRespawnData().pos();
-		return new BlockPos(
-			spawn.getX() + (int)(Math.cos(angle) * range),
-			spawn.getY(),
-			spawn.getZ() + (int)(Math.sin(angle) * range));
-	}
 
 	public static @org.jspecify.annotations.Nullable BlockPos thresholdOrigin(ServerLevel level) {
 		Long packed = level.getServer().overworld().getAttached(THRESHOLD_ORIGIN);
@@ -300,7 +337,6 @@ public final class Dwellings {
 			BlockPos origin = new BlockPos(x, ground, z);
 			Threshold.raise(level, origin, level.getRandom());
 			ServerLevel overworld = level.getServer().overworld();
-			overworld.setAttached(THRESHOLD_RAISED, true);
 			overworld.setAttached(THRESHOLD_ORIGIN, origin.asLong());
 			return true;
 		}
@@ -309,25 +345,6 @@ public final class Dwellings {
 		return false;
 	}
 
-	/**
-	 * The seed decides. Nothing else gets a say.
-	 *
-	 * XORed with a constant of its own so this does not land on top of
-	 * anything else that seeds itself from the world, and so a later structure
-	 * can take a different constant and be somewhere else.
-	 */
-	public static BlockPos siteFor(ServerLevel level) {
-		RandomSource random = RandomSource.create(level.getSeed() ^ 0x486F6D6553746564L);
-		double angle = random.nextDouble() * Math.PI * 2.0;
-		double range = MIN_RANGE + random.nextDouble() * (MAX_RANGE - MIN_RANGE);
-		// World spawn moved in 26.2: it is now respawn data on the level data
-		// rather than a getter on the level.
-		BlockPos spawn = level.getLevelData().getRespawnData().pos();
-		return new BlockPos(
-			spawn.getX() + (int)(Math.cos(angle) * range),
-			spawn.getY(),
-			spawn.getZ() + (int)(Math.sin(angle) * range));
-	}
 
 	/** Where it actually stands, once raised. */
 	public static @org.jspecify.annotations.Nullable BlockPos origin(ServerLevel level) {
@@ -357,7 +374,6 @@ public final class Dwellings {
 			BlockPos origin = new BlockPos(x, Homestead.floorHeightAt(level, x, z), z);
 			Homestead.build(level, origin, level.getRandom());
 			ServerLevel overworld = level.getServer().overworld();
-			overworld.setAttached(RAISED, true);
 			overworld.setAttached(ORIGIN, origin.asLong());
 			return true;
 		}

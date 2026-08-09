@@ -248,9 +248,18 @@ goes somewhere: the tower's cellar bores east, the gaol's warder's room opens on
 three unlit workings, and the church has a shaft under the chancel heading
 toward the threshold.
 
-Sited in strictly ordered bands (1950–2200, 2250–2450, 2500–2700) that do not
-overlap, so whichever you stumble on first, the next one out is always the next
-one along. Distance is the only thing telling you they are a sequence.
+Sited near the players when their phase reaches them — 340 to 780 blocks, out
+of sight of everyone — rather than on a ring around world spawn. The phase gate
+enforces the reading order for free: nobody meets the shrine before the
+homestead, because the shrine does not exist yet.
+
+| Building | Appears at |
+|---|---|
+| The town, the homestead | RUMOUR |
+| The tower | WATCHER |
+| The gaol | TRESPASSER |
+| The open church | MIMIC |
+| The threshold | HUNTER |
 
 ### Everything else outstanding
 
