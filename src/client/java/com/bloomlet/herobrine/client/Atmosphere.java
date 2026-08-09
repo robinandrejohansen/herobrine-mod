@@ -231,6 +231,32 @@ public final class Atmosphere {
 	}
 
 	/**
+	 * The same turn, as a multiplier for the splash particles.
+	 *
+	 * A different kind of number from rainTint. That one replaces a colour;
+	 * this one multiplies a sprite which is already a pale blue, so the green
+	 * and blue channels have to be pulled DOWN rather than a red being pushed
+	 * up — the same red arrived at from the opposite direction.
+	 *
+	 * @return null below HUNTER, when the rain is ordinary and so is the splash
+	 */
+	public static float @org.jspecify.annotations.Nullable [] splashTint() {
+		float strength = switch (phase()) {
+			case RUMOUR, WATCHER, TRESPASSER, MIMIC -> 0.0F;
+			case HUNTER -> 0.6F;
+			case SIEGE -> 1.0F;
+		};
+		if (strength <= 0.0F) {
+			return null;
+		}
+		return new float[] {
+			1.0F,
+			1.0F - 0.78F * strength,
+			1.0F - 0.80F * strength,
+		};
+	}
+
+	/**
 	 * Not blood, and deliberately not.
 	 *
 	 * Rain is thin and half transparent, so a deep arterial red simply goes
