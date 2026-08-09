@@ -80,6 +80,14 @@ signposted — no sound, no message, nothing pointing at any of them.
 - [x] Snuffed torches
 - [x] The breathing — a heartbeat buried in the rock, with nothing behind it
 
+### The stare
+- [x] The light he needs climbs with the phase — proper dark at WATCHER, and by
+      SIEGE he will stand in a field at noon
+- [x] **Sleeping owes him a sighting.** You took the night off him, so he is
+      there when you get up, in daylight, regardless of brightness
+- [x] Weighted heaviest of anything in the mod. He is the mod; the traces were
+      drowning him out
+
 ### Writing
 - [x] Signs, written from your own stats
 - [x] Grave markers

@@ -134,8 +134,36 @@ public final class HauntingSpawner {
 	/** How the sweep is spread: every bearing, a few distances down each. */
 	private static final int BEARINGS = 32;
 	private static final int DISTANCES = 3;
-	/** 0-15. 7 and below is "dark enough for monsters". */
-	private static final int MAX_LIGHT = 7;
+	/**
+	 * How bright it may be where he stands, by phase — and it climbs.
+	 *
+	 * This was a flat 7, which is "dark enough for monsters", which outdoors
+	 * means night and nothing else. That quietly made the mod unplayable for
+	 * anyone who sleeps: night is eight minutes in twenty, sleeping removes
+	 * almost all of it, and sleeping is ALSO the largest single source of
+	 * wrath. So the players provoking him hardest were the ones with no window
+	 * left for him to appear in — one outdoor sighting a day of real play. Two
+	 * systems that did not know about each other.
+	 *
+	 * A curve fixes it and says something at the same time. At WATCHER he still
+	 * needs proper dark — dusk, dawn, the middle of a storm — and by SIEGE he
+	 * will stand in a field at noon. The thing that starts as something you
+	 * might have imagined in bad light ends up refusing to need the excuse,
+	 * which is the whole arc of the mod expressed as a number.
+	 *
+	 * Rain does the work in the middle of that range without any special
+	 * casing: an overcast sky genuinely lowers the light level, so "he turns up
+	 * on grey afternoons" falls out of it for free.
+	 */
+	private static int maxLight(Phase phase) {
+		return switch (phase) {
+			case RUMOUR, WATCHER -> 9;
+			case TRESPASSER -> 11;
+			case MIMIC -> 12;
+			case HUNTER -> 14;
+			case SIEGE -> 15;
+		};
+	}
 	/**
 	 * There is only ever ONE of him, in the entire world.
 	 *
@@ -246,7 +274,8 @@ public final class HauntingSpawner {
 			if (spot == null) {
 				return Outcome.NO_ROOM_HERE;
 			}
-			if (!ignoreLight && level.getMaxLocalRawBrightness(spot) > MAX_LIGHT) {
+			if (!ignoreLight && level.getMaxLocalRawBrightness(spot)
+				> maxLight(Wrath.phase(level.getServer()))) {
 				return Outcome.TOO_BRIGHT;
 			}
 			return spawnAt(level, player, spot, hunting);
@@ -351,7 +380,8 @@ public final class HauntingSpawner {
 					continue;
 				}
 
-				if (!ignoreLight && level.getMaxLocalRawBrightness(pos) > MAX_LIGHT) {
+				if (!ignoreLight && level.getMaxLocalRawBrightness(pos)
+					> maxLight(Wrath.phase(level.getServer()))) {
 					tooBright++;
 					continue;
 				}

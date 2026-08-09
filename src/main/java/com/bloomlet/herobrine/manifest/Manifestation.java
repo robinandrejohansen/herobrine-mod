@@ -192,7 +192,16 @@ public enum Manifestation {
 	// ---- END THE SIGNS ---------------------------------------------------
 
 	/** He is simply there, at distance, and gone when you look. */
-	THE_STARE(Phase.WATCHER, 10) {
+	/**
+	 * Weighted 18 rather than 10, which is the heaviest thing in the mod.
+	 *
+	 * He is the mod. Everything else here is evidence that he exists, and it
+	 * was collectively drowning him out: at WATCHER the stare was about
+	 * eighteen per cent of picks, so roughly one candidate an hour before the
+	 * light gate had even been consulted. A player can meet nine traces and
+	 * still not have met HIM, which is the wrong way round.
+	 */
+	THE_STARE(Phase.WATCHER, 18) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			HauntingSpawner.Outcome outcome = HauntingSpawner.place(level, player, false);
