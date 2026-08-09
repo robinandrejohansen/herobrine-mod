@@ -75,12 +75,28 @@ place you are trapped in.
 |---|---|---|
 | 1 the homestead | FAILING | long spurs, no lights, a trunk that stops being one |
 | 2 the tower | SURVEYED | paved, lit, every junction marked — he still had a plan |
+
 | 3 the gaol | WORKED | wide trunk, ordered spurs, the same hand that cut the cells |
 | 4 the church | BURIED | short and low, and it goes down more than along |
 
 Read in sequence they say something the buildings above them do not: he did not
 get worse steadily. He was already like this at the start, got organised for a
 while, and then it went again.
+
+### The survey — what the tower was for
+At the far end of the tower's warren: a working room, and a **two-by-two tunnel
+running dead straight for 240 blocks**, torch-lit every ten, cobbled underfoot,
+with rails down it.
+
+Nobody prospects in a straight line — you follow the ore, and ore is never
+straight. This is somebody who knew exactly where he was going and how far it
+was, and was prepared to dig for months.
+
+Cobblestone, torches and rails on purpose: every one of those is a block a
+person places by hand, in that order, because that is what digging a long way
+actually looks like. It reads as somebody's project because it is one.
+
+It stops unfinished, and the tools are on the floor.
 
 ### The chambers
 Eight kinds of small room cut into solid rock behind your caves, scattered and
@@ -299,7 +315,7 @@ signposted — no sound, no message, nothing pointing at any of them.
 | # | Name | What it is | Status |
 |---|---|---|---|
 | 1 | The homestead | A home with the furniture still in it | ✅ |
-| 2 | The tower | Stair up the outside, the buried house underneath | ✅ |
+| 2 | The tower | Stair up the outside, the buried house under it, and a 240-block tunnel under that | ✅ |
 | 3 | The gaol | Fourteen cells. Thirteen open, one shut | ✅ |
 | 4 | The open church | Walls, pillars, an altar, and no roof | ✅ |
 | 5 | The threshold | Not a house. The lab and the seal | ✅ |

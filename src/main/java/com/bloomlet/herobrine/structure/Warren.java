@@ -66,8 +66,8 @@ public final class Warren {
 		FAILING,
 	}
 
-	public static void dig(ServerLevel level, BlockPos root, Manner manner,
-	                       RandomSource random) {
+	public static BlockPos dig(ServerLevel level, BlockPos root, Manner manner,
+	                           RandomSource random) {
 		int trunkLegs = switch (manner) {
 			case SURVEYED -> 5;
 			case WORKED -> 6;
@@ -140,6 +140,8 @@ public final class Warren {
 		HerobrineMod.LOGGER.info("a {} warren under [{}, {}, {}]: {} junctions, {} ends, {} rooms",
 			manner.name().toLowerCase(java.util.Locale.ROOT),
 			root.getX(), root.getY(), root.getZ(), junctions.size(), ends.size(), placed);
+		// The deepest junction, so a caller can hang something on the far end.
+		return junctions.isEmpty() ? root : junctions.get(junctions.size() - 1);
 	}
 
 	/** Is there rock enough here to put a seven-by-seven room in? */

@@ -277,7 +277,9 @@ public final class SecondHouse {
 		BlockPos out = in.offset(w - 2, 1, d / 2);
 		Warren.warn(level, in.offset(w - 3, 1, d / 2),
 			new String[] { "KEEP", "TO THE", "LIT ONE", "" });
-		Warren.dig(level, out, Warren.Manner.SURVEYED, random);
+		BlockPos far = Warren.dig(level, out, Warren.Manner.SURVEYED, random);
+		// And at the far end of the plan, the thing the plan was for.
+		TheSurvey.build(level, far, random);
 	}
 
 	/**
