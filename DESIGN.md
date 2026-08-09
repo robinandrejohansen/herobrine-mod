@@ -1,11 +1,67 @@
 # Herobrine — design
 
-> He was already in your world. You are not clearing a dungeon; you are
-> being hunted in your own save file, and the only way out is to become
-> strong enough to end him.
+> This is his world. You are not clearing a dungeon and you are not
+> killing a boss — you are being argued out of a place you have decided
+> to live. **He wins when you stop playing. You win by staying.**
 
 Status: **design only.** Nothing below is implemented except where marked
 `BUILT`.
+
+---
+
+## 0. The spine
+
+Everything in this document answers to one sentence, and anything that does
+not answer to it is cut.
+
+**He is trying to make the world not worth being in. The players win by
+refusing to go.**
+
+### Why it has to be that and not a boss fight
+
+**In Minecraft, death is nothing.** You respawn, you walk back, you pick your
+things up off the floor. A Herobrine who threatens to kill you is a mob with a
+text file attached, and every player works that out inside one evening.
+
+Leaving is the only threat in this game that cannot be undone by respawning.
+So that is the one he makes. Not *I will hurt you* — **nobody stays**.
+
+### What that makes everything else
+
+| Mechanic | What it is under the spine |
+|---|---|
+| Editing your base, traps, stolen loot | An **eviction campaign**, not an attack |
+| Forest fires, mob waves | Making the land not worth holding |
+| Wearing your friends' skins | Attacking the **social** reason you log in |
+| Your bed telling him where you live | Your claim on the world is how he finds it |
+| Razing you back to spawn | His closing argument |
+| Sitting after the Ender Dragon | You beat the game. This is the game beating back |
+
+### The two halves of his argument
+
+He shows the players two things constantly, and they say opposite things on
+purpose:
+
+- **An empty house is somebody who left.**
+- **A grave is somebody who stayed.**
+
+Leaving is what everyone does, and staying is what it costs. He argues both
+sides because he only wants one outcome. It is also a lie, and the mod never
+says so — the players are the counterexample, if they last.
+
+### He is never defeated
+
+The 2010 mythos has no defeat and inventing one would be the anticlimax. He
+gives up. The world goes quiet. **"Removed Herobrine"** is the patch note, the
+running joke, and the honest ending, all at once.
+
+### The rule this puts on destruction
+
+**Real but recoverable.** He breaks and burns things that have to be repaired —
+walls, floors, a section of roof — and his traps are real and can kill. It costs
+an evening. It never costs a week. A mod that deletes a month of somebody's
+building has not frightened them, it has just made them quit, and then it has
+lost on its own terms: the whole point is that they *could* have stayed.
 
 ---
 

@@ -519,6 +519,87 @@ public final class HauntingSpawner {
 	}
 
 	/**
+	 * HIM, AT THE HOUSE, THE FIRST TIME ANYBODY FINDS IT.
+	 *
+	 * The one sighting in the mod that is meant to be SEEN. Everything else he
+	 * does at distance is built to be missable — the glimpse is ten ticks and
+	 * gone, and that is right, because a scare you are certain of is a scare
+	 * you have finished with. This is the exception, and it is the exception for
+	 * a reason: finding one of these buildings is the largest thing that happens
+	 * in a session. Somebody walked four hundred blocks, and what they get for
+	 * it is a house. Standing in the doorway of it, watching them arrive, is the
+	 * difference between finding a structure and being SHOWN one.
+	 *
+	 * So: two seconds, not half of one, and always facing them. Long enough that
+	 * everybody on voice chat gets told to look, which is exactly the moment
+	 * this is for.
+	 *
+	 * AND HE IS AT THE BUILDING RATHER THAN NEAR THE PLAYER, which is the whole
+	 * grammar of it. A figure beside you is a threat. A figure standing at the
+	 * empty house you have just walked four hundred blocks to find is a caption:
+	 * somebody lived here, and this is what happened, and he was there for it.
+	 * Under the spine of the mod that is his argument in one image — everybody
+	 * leaves eventually — made without a word on a sign.
+	 */
+	public static Outcome atPlace(ServerLevel level, ServerPlayer player, BlockPos site) {
+		if (player.isSpectator() || !player.isAlive()) {
+			return Outcome.BAD_PLAYER;
+		}
+		if (existsAnywhere(level)) {
+			return Outcome.ALREADY_NEARBY;
+		}
+
+		RandomSource random = level.getRandom();
+		for (int attempt = 0; attempt < 64; attempt++) {
+			// Just outside the walls. Close enough to read as AT the building
+			// and never so close that he is inside it, because a figure indoors
+			// is somewhere the player is about to walk and this is not a fight.
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double out = 7.0 + random.nextDouble() * 7.0;
+			BlockPos at = BlockPos.containing(
+				site.getX() + Math.cos(angle) * out,
+				site.getY() + random.nextInt(4),
+				site.getZ() + Math.sin(angle) * out);
+
+			BlockPos stand = null;
+			for (int down = 0; down <= 6 && stand == null; down++) {
+				BlockPos maybe = at.below(down);
+				if (ConfinedPlacement.canStand(level, maybe)) {
+					stand = maybe;
+				}
+			}
+			if (stand == null) {
+				continue;
+			}
+			// Far enough that he reads as part of the scene rather than as
+			// something that has come for them, and near enough to be a person
+			// rather than two pixels.
+			double away = Math.sqrt(stand.distSqr(player.blockPosition()));
+			if (away < 18.0 || away > 90.0 || !visibleFrom(level, player, stand)) {
+				continue;
+			}
+
+			HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
+			if (him == null) {
+				return Outcome.NO_FOOTING;
+			}
+			double dx = player.getX() - (stand.getX() + 0.5);
+			double dz = player.getZ() - (stand.getZ() + 0.5);
+			float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+			him.snapTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, yaw, 0.0F);
+			him.beGlimpse(40 + random.nextInt(21));
+			him.setAnchor(player.blockPosition());
+			level.addFreshEntity(him);
+			ManifestationDirector.noteLocation(stand);
+			HerobrineMod.LOGGER.info("he is at the house [{}, {}, {}], {} blocks from {}",
+				stand.getX(), stand.getY(), stand.getZ(), (int)away,
+				player.getName().getString());
+			return Outcome.PLACED;
+		}
+		return Outcome.NOTHING_VISIBLE;
+	}
+
+	/**
 	 * HIM, IN THE PASSAGE, AND THERE IS NO WAY ROUND HIM.
 	 *
 	 * The third of the three, and the one the cave actually asks for. The

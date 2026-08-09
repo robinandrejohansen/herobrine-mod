@@ -35,6 +35,18 @@ import net.minecraft.util.RandomSource;
  * vanilla stats and their position, so he comments on THIS player rather than
  * on players in general. "i watch you sleep" is a stock horror line; the same
  * line to someone who has not slept in six in-game days is not.
+ *
+ * AND HE IS NOT THREATENING TO KILL ANYBODY, because in this game death is
+ * nothing. You respawn, you walk back, you pick your things up. A Herobrine who
+ * says "you will die" is a mob with a text file. Everything he writes is aimed
+ * at one outcome instead: LEAVE. Stop playing here, go somewhere else, log off
+ * and do not come back. That is the only threat in Minecraft that cannot be
+ * undone by respawning, and it is the whole spine of the mod — he is trying to
+ * make the world not worth being in, and the players win by staying in it.
+ *
+ * So the register is eviction, not menace. Not "i will hurt you" but "nobody
+ * stays", which is worse, because it is not about what he intends to do. It is
+ * about what he has already watched happen to everybody else.
  */
 public final class SignLines {
 	private SignLines() {}
@@ -52,6 +64,48 @@ public final class SignLines {
 		{"i was here", "first"},
 		{"i do not", "like you"},
 		{"you think i", "cannot see"},
+	};
+
+	/**
+	 * THE SPINE, and it is always in the pool.
+	 *
+	 * Every one of these is the same sentence with the volume changed: go, and
+	 * do not come back. None of them threatens anything, which is what makes
+	 * them work — "nobody stays" is not a thing he is going to do to you, it is
+	 * a thing he has watched happen, and a fact is heavier than a threat
+	 * because there is nothing to fight.
+	 *
+	 * "this is not your world" is the one that carries the whole framing: the
+	 * overworld is his and always was, the players are the trespass, and every
+	 * ruin they have found belongs to somebody who worked that out.
+	 */
+	private static final String[][] LEAVING = {
+		{"go home"},
+		{"nobody stays"},
+		{"you can still", "leave"},
+		{"they left too"},
+		{"there is nothing", "here for you"},
+		{"this is not", "your world"},
+		{"how long"},
+		{"others tried", "this"},
+	};
+
+	/**
+	 * The one that stops pretending, and it is held back to HUNTER.
+	 *
+	 * Every other line in this file talks to the character. These talk to the
+	 * person holding the mouse, and that is a switch that can only be thrown
+	 * once before it becomes a gimmick. By HUNTER he has been in the world long
+	 * enough that the players have started saying "he knows" out loud, and this
+	 * is the sign that agrees with them.
+	 *
+	 * It is the single strongest thing in the mod and also the easiest to
+	 * cheapen. Late, rare, and never explained.
+	 */
+	private static final String[][] FOURTH_WALL = {
+		{"log off"},
+		{"close the game"},
+		{"go outside"},
 	};
 
 	// --------------------------------------------------------------- contextual
@@ -140,6 +194,19 @@ public final class SignLines {
 		{"- - - - -", "he did not", "know either"},
 		{"- - - -", "and the others"},
 		{"- - - - -", "one of them", "got out"},
+		// THE GRAVES AND THE HOUSES ARE THE TWO HALVES OF HIS ARGUMENT, and it
+		// is worth being deliberate about which is which. An empty house is
+		// somebody who left. A grave is somebody who stayed. He shows the
+		// players both, constantly, and the pairing does the work no single
+		// sign can: leaving is what everyone does, and staying is what this
+		// costs. He is arguing both sides because he only wants one outcome.
+		//
+		// It is also a lie, and the mod never says so. The players are the
+		// counterexample, if they last.
+		{"- - - -", "would not go"},
+		{"- - - - -", "stayed"},
+		{"- - -", "kept rebuilding"},
+		{"- - - - -", "said it was", "his"},
 	};
 
 	/**
@@ -211,6 +278,13 @@ public final class SignLines {
 	public static String[] pick(Phase phase, ServerPlayer player, RandomSource random) {
 		List<String[]> pool = new ArrayList<>();
 		java.util.Collections.addAll(pool, BASE);
+		java.util.Collections.addAll(pool, LEAVING);
+		// Once, and only from HUNTER. Single weight against a pool of forty-odd
+		// is roughly one sign in fifteen, which is the correct amount of a line
+		// that is only devastating while it is still surprising.
+		if (phase.atLeast(Phase.HUNTER)) {
+			java.util.Collections.addAll(pool, FOURTH_WALL);
+		}
 
 		// Everything below is about THIS player. Weighted in twice, so a line
 		// that fits what they have been doing beats a generic one more often
@@ -272,6 +346,9 @@ public final class SignLines {
 		if (phase.atLeast(Phase.MIMIC)) {
 			groups.add(NAMED);
 		}
+		// FOURTH_WALL is deliberately NOT here. Everything returned from this
+		// method gets weighted into the pool twice by the caller, and that group
+		// is the one thing in the file that has to stay rare after it unlocks.
 		return groups;
 	}
 }

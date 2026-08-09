@@ -156,6 +156,8 @@ public final class Dwellings {
 		final AttachmentType<Long> site;
 		/** Whether the blocks exist. */
 		final AttachmentType<Boolean> up;
+		/** Whether anybody has walked up on it yet. Spent once, for good. */
+		final AttachmentType<Boolean> met;
 
 		Place(String key, Phase from) {
 			this.from = from;
@@ -163,6 +165,8 @@ public final class Dwellings {
 				HerobrineMod.id(key + "_site"), Codec.LONG);
 			this.up = AttachmentRegistry.createPersistent(
 				HerobrineMod.id(key + "_up"), Codec.BOOL);
+			this.met = AttachmentRegistry.createPersistent(
+				HerobrineMod.id(key + "_met"), Codec.BOOL);
 		}
 	}
 
@@ -191,6 +195,7 @@ public final class Dwellings {
 				continue;
 			}
 			if (Boolean.TRUE.equals(overworld.getAttached(place.up))) {
+				arriving(overworld, place);
 				continue;   // standing; on to the next chapter
 			}
 			if (!phase.atLeast(place.from)) {
@@ -240,6 +245,49 @@ public final class Dwellings {
 				overworld.setAttached(place.up, true);
 			}
 			return;         // whatever happened, the next one is not due yet
+		}
+	}
+
+	/**
+	 * SOMEBODY IS WALKING UP ON IT FOR THE FIRST TIME, AND HE IS OUTSIDE.
+	 *
+	 * The payoff for the four-hundred-block walk. Finding one of these is the
+	 * biggest thing that happens in a session, and until now the reward for it
+	 * was a building — good, but silent. Standing at the door watching the group
+	 * come over the rise turns finding a structure into being SHOWN one, which
+	 * is the difference between world generation and somebody having been here.
+	 *
+	 * ONCE PER BUILDING, EVER, and persistent so it survives a restart. The
+	 * second time is a spawner and everybody knows it.
+	 *
+	 * Sixty blocks rather than the raise range: they have to be close enough
+	 * that the house is already in view, or he is a figure standing in a field
+	 * for no reason. This wants to land in the same breath as "there it is".
+	 */
+	private static final int ARRIVING = 60;
+
+	private static void arriving(ServerLevel level, Place place) {
+		if (Boolean.TRUE.equals(level.getAttached(place.met))) {
+			return;
+		}
+		Long chosen = level.getAttached(place.site);
+		if (chosen == null) {
+			return;
+		}
+		BlockPos site = BlockPos.of(chosen);
+		for (ServerPlayer player : level.players()) {
+			if (site.distSqr(player.blockPosition()) > (double)ARRIVING * ARRIVING) {
+				continue;
+			}
+			// Marked spent on the approach rather than on a successful placement.
+			// If the geometry refuses — they came in through the back, or it is
+			// a hillside with no sightline — the moment is gone, and trying
+			// again every two seconds until it works would put him outside the
+			// house long after they had walked into it, which is worse than
+			// nothing.
+			level.setAttached(place.met, true);
+			com.bloomlet.herobrine.entity.HauntingSpawner.atPlace(level, player, site);
+			return;
 		}
 	}
 
