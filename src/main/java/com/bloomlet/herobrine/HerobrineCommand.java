@@ -48,6 +48,20 @@ public final class HerobrineCommand {
 				// straight line will essentially never do that.
 				.then(Commands.literal("locate").executes(HerobrineCommand::locate))
 
+				// For a world that was played before the buildings moved to
+				// being sited near the players. Clears where they were going to
+				// go so they are chosen again; touches nothing already built.
+				.then(Commands.literal("resite").executes(ctx -> {
+					ServerLevel level = (ServerLevel)ctx.getSource()
+						.getPlayerOrException().level();
+					int cleared = Dwellings.forget(level);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						cleared + " places forgotten — they will be chosen again near"
+							+ " whoever is online, within a couple of seconds."
+							+ " Anything already built is left where it is."), false);
+					return 1;
+				}))
+
 				// DEBUG AID — delete with markSpawns in HauntingSpawner.
 				.then(Commands.literal("mark").executes(ctx -> {
 					boolean on = HauntingSpawner.toggleMark();

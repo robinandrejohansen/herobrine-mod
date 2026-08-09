@@ -36,6 +36,27 @@ To build one with your server already in the players' list:
 
     python3 tools/mkpack.py play.yourserver.com
 
+## Updating an existing world
+
+Swapping the jar changes the code and **nothing about the world**. Every
+position, phase and flag lives in persistent attachments — that is what makes
+them survive a restart — so a world played on an older version keeps whatever
+it decided back then.
+
+That matters once, for worlds started before 1.0.5, because the buildings used
+to be sited on a ring around world spawn and are now chosen near the players.
+An old world still has the far-off positions recorded and will go on waiting
+for somebody to walk out to them.
+
+    /herobrine resite
+
+Forgets where everything was going to go, so it is chosen again near whoever is
+online. **It leaves anything already built standing** — it only stops the mod
+believing it owns those places.
+
+Wrath is separate and is not touched; `/herobrine status` shows it and
+`/herobrine wrath <n>` moves it.
+
 ## Configuration
 
 `config/herobrine.json`, written on first run, in the server directory. It is

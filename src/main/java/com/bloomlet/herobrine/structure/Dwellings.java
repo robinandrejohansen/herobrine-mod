@@ -266,6 +266,44 @@ public final class Dwellings {
 		};
 	}
 
+	/**
+	 * Forget where everything was going to be, so it is chosen again.
+	 *
+	 * Needed because a jar swap changes nothing about a world. All of this
+	 * lives in persistent attachments — that is what makes a site survive a
+	 * restart, which is the whole point of it — so a server that ran the old
+	 * spawn-relative scheme still has those far-off positions recorded after
+	 * updating, and would go on waiting for somebody to walk eleven hundred
+	 * blocks to a coordinate the new code would never have chosen.
+	 *
+	 * This clears the bookkeeping ONLY. Anything already standing in the world
+	 * stays standing; the mod simply stops believing it owns those places and
+	 * picks new ones near the players at the next tick. That is the honest
+	 * behaviour — deleting somebody's discovered buildings to tidy up a
+	 * migration would be a far worse trade than leaving a spare farmhouse
+	 * somewhere.
+	 *
+	 * @return how many places were forgotten
+	 */
+	public static int forget(ServerLevel level) {
+		ServerLevel overworld = level.getServer().overworld();
+		int cleared = 0;
+		for (Place place : Place.values()) {
+			if (overworld.getAttached(place.site) != null
+				|| Boolean.TRUE.equals(overworld.getAttached(place.up))) {
+				cleared++;
+			}
+			overworld.setAttached(place.site, null);
+			overworld.setAttached(place.up, null);
+		}
+		// The two left over from the old scheme, or /herobrine house goes on
+		// reporting a farmhouse that is no longer anybody's business.
+		overworld.setAttached(ORIGIN, null);
+		overworld.setAttached(THRESHOLD_ORIGIN, null);
+		HerobrineMod.LOGGER.info("forgot {} sites; they will be chosen again", cleared);
+		return cleared;
+	}
+
 	/** Every building and where it ended up, for /herobrine locate. */
 	public static java.util.List<String> report(ServerLevel level) {
 		java.util.List<String> lines = new java.util.ArrayList<>();
