@@ -59,11 +59,19 @@ EYES = [(9, 12), (10, 12), (13, 12), (14, 12)]
 # glow layer is what makes them read as lit, and if the base were white too they
 # would look like paint in daylight rather than like something behind the face.
 SOCKET = (20, 16, 12, 255)
-# And the emissive pass. The alpha is the intensity dial rather than a
-# transparency: RenderTypes.eyes() blends with TRANSLUCENT, so this is the
-# difference between eyes that are lit and eyes that are LAMPS.
-EYE = (255, 255, 255, 240)
-HALO = (232, 236, 240, 60)
+# And the emissive pass. FOUR PIXELS AND NOTHING ELSE.
+#
+# There was a ring of faint glow around them, added because four pixels at
+# seventy blocks are hard to see. It worked and it was wrong: every image of
+# him for fifteen years is Steve with two white eyes, flat, with no bloom and
+# no aura, and the moment there is a halo he stops being a player with
+# something missing and starts being a creature with powers.
+#
+# The alpha carries the distance instead. RenderTypes.eyes() blends with
+# TRANSLUCENT and ignores world light, so at full opacity the eyes are the only
+# thing on him that does not go dark at night — which is the same reason the
+# original screenshot worked, and it needs no help.
+EYE = (255, 255, 255, 255)
 
 
 def client_jar():
@@ -91,32 +99,10 @@ def main():
         lit[y][x] = SOCKET
         glow[y][x] = EYE
 
-    # One pixel of bleed, up, down and outward only — never into the gap between
-    # the eyes, or the two halos meet and the whole thing reads as a lit band
-    # across the face rather than as eyes. Same rule as the old generator; it
-    # was the one part of it worth keeping.
-    sockets = set(EYES)
-    halo = set()
-    for x, y in EYES:
-        halo.add((x, y - 1))
-        halo.add((x, y + 1))
-        for step in (-1, 1):
-            if not any((x + step * n, y) in sockets for n in (1, 2, 3)):
-                halo.add((x + step, y))
-
-    for x, y in sorted(halo):
-        # Everything here is inside the head's front face, 8..15 in both axes.
-        # Asserted rather than trusted: a halo leaking onto the head's side
-        # would show as a glowing stripe down his temple and look deliberate.
-        if not (8 <= x <= 15 and 8 <= y <= 15):
-            raise SystemExit(f"halo at ({x},{y}) is off the face")
-        if (x, y) not in sockets and glow[y][x][3] == 0:
-            glow[y][x] = HALO
-
     write_png(os.path.join(OUT, "herobrine.png"), lit)
     write_png(os.path.join(OUT, "herobrine_eyes.png"), glow)
     print(f"wrote herobrine.png + herobrine_eyes.png from vanilla Steve "
-          f"({len(EYES)} eye px, {len(halo)} halo px)")
+          f"({len(EYES)} eye px, no halo)")
 
 
 if __name__ == "__main__":
