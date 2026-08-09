@@ -60,6 +60,25 @@ much faster and is the intended route.
 - [x] Aware of every player, not just the nearest
 - [x] Emissive eyes, turned down to a sheen
 
+### The chambers
+Eight kinds of small room cut into solid rock behind your caves, scattered and
+unnumbered. The five houses are a sequence read in order; these are the
+opposite — one fact each and no context, so finding three over a week assembles
+something nobody wrote down for you.
+
+- [x] **The shelter** — barrels stocked for far longer than anybody plans for
+- [x] **The observation room** — a barred window, and a cell on the far side
+- [x] **The cell** — the same room from inside. The door went outward
+- [x] **The workshop** — anvil, grindstone, and something that would not hold
+- [x] **The dig** — stopped mid-swing, the pick still on the floor
+- [x] **The reading room** — shelves both sides, and a chair facing the wall
+- [x] **The tally** — four walls of marks and nothing else at all
+- [x] **The tiles** — a perfectly regular floor, and one square worn dark
+
+Every one is cut in solid rock and connected by a passage that stops short, so
+the last two blocks are dug by the player. Arriving in a finished room through
+a hole you made yourself is worth more than walking into one.
+
 ### The signs from the original story
 Quotations, not inventions. The 2010 account is almost entirely a list of marks
 left on a world rather than things that happen to you, and none of these is

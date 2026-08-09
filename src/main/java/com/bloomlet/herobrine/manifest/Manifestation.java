@@ -137,6 +137,21 @@ public enum Manifestation {
 	// mod wearing his name, while one that opens with a stripped grove and a
 	// tunnel nobody dug is the story itself.
 
+	/**
+	 * A room cut into the rock behind your caves.
+	 *
+	 * Eight kinds, scattered and unnumbered. The five houses are a sequence
+	 * read in order; these are the opposite — one fact each and no context, so
+	 * a player who finds three over a week has assembled something nobody wrote
+	 * down for them.
+	 */
+	THE_CHAMBER(Phase.RUMOUR, 12) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Chambers.cut(level, player);
+		}
+	},
+
 	/** Trees with every leaf taken off, in a rough circle. */
 	THE_GROVE(Phase.RUMOUR, 13) {
 		@Override
@@ -259,7 +274,8 @@ public enum Manifestation {
 		}
 		return switch (this) {
 			case FOOTSTEPS, WRONG_SOUND, SNUFFED_TORCH, THE_FUSE -> config.traces;
-			case THE_GROVE, THE_TORCH, THE_PYRAMID, THE_TUNNEL, THE_SEAL -> config.signs;
+			case THE_GROVE, THE_TORCH, THE_PYRAMID, THE_TUNNEL, THE_SEAL,
+			     THE_CHAMBER -> config.signs;
 			case THE_BREATHING -> config.theBreathing;
 			case POSSESSED_MOB -> config.possession;
 			case THE_RUIN -> config.ruins;
