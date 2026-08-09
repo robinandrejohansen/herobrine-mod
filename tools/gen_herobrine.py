@@ -39,12 +39,21 @@ OUT = os.path.join(ROOT, "src", "main", "resources", "assets", "herobrine",
                    "textures", "entity")
 STEVE = "assets/minecraft/textures/entity/player/wide/steve.png"
 
-# The eye pixels on the head's front face. Steve's eyes are two pixels wide and
-# one tall, at rows 12 and 13 of the 64x64 layout — the whites at row 12 and the
-# irises at 13. Both go, because a white eye with a brown iris still reads as a
-# person looking at something.
-EYES = [(9, 12), (10, 12), (13, 12), (14, 12),
-        (9, 13), (10, 13), (13, 13), (14, 13)]
+# The eye pixels, and there are FOUR of them.
+#
+# Read off the texture rather than assumed, because the first version assumed
+# and was wrong. Steve's face at row 12 is:
+#
+#     skin  WHITE  iris  skin  skin  iris  WHITE  skin
+#
+# so each eye is two pixels wide and ONE tall — the white and the iris sit side
+# by side, not stacked. Row 13 is `E H H L L H H E`: that is his nose and his
+# mouth, and the first attempt painted white over both. It read as a figure
+# with enormous square eyes and no face under them, which is a monster, and he
+# is specifically not one. He is the default player with nothing behind the
+# eyes, and everything else about the face has to survive intact for that to
+# land.
+EYES = [(9, 12), (10, 12), (13, 12), (14, 12)]
 
 # What replaces them in normal light: not white, but the dark of a socket. The
 # glow layer is what makes them read as lit, and if the base were white too they
