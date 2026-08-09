@@ -85,8 +85,15 @@ while, and then it went again.
 
 ### The survey — what the tower was for
 At the far end of the tower's warren: a working room, and a **two-by-two tunnel
-running dead straight for 240 blocks**, torch-lit every ten, cobbled underfoot,
-with rails down it.
+running 240 blocks on one bearing** — torch-lit every ten, cobbled underfoot,
+railed, rising and falling with the rock, and **bridged in planks wherever it
+crosses a void**.
+
+Straight in plan and not in section. It never deviates a block horizontally,
+because that is the whole claim; it takes the grade as it comes, because a
+dead-level tunnel through 240 blocks of varied stone is a thing no person has
+ever dug. The bridges are half gone — but never both boards at the same step,
+so it is always crossable.
 
 Nobody prospects in a straight line — you follow the ore, and ore is never
 straight. This is somebody who knew exactly where he was going and how far it

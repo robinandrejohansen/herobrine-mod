@@ -32,11 +32,17 @@ import net.minecraft.world.level.block.state.properties.RailShape;
  * straight into the dark.
  *
  * THE TUNNEL IS THE SECRET, and the room only exists to make it legible. Two
- * hundred and forty blocks, arrow-straight, torch-lit, on a level grade, with
- * rails down it. That is not a mine. Nobody prospects in a straight line — you
- * follow the ore, and the ore is never straight. This is somebody who knew
- * exactly where he was going and how far it was, and was prepared to dig for
- * months to get there.
+ * hundred and forty blocks on one bearing, torch-lit, railed, rising and
+ * falling with the rock and bridged in planks wherever it crosses a void. That
+ * is not a mine. Nobody prospects in a straight line — you follow the ore, and
+ * the ore is never straight. This is somebody who knew exactly where he was
+ * going and how far it was, and was prepared to dig for months to get there.
+ *
+ * Straight in PLAN and not in section, which is the distinction that makes it
+ * believable. It never deviates a block horizontally, because that is the whole
+ * claim — but it takes the grade as it comes, because a dead-level tunnel
+ * through two hundred and forty blocks of varied stone is a thing no person has
+ * ever dug.
  *
  * AND IT LOOKS BUILT BY A PLAYER, which is the whole trick and is why it is
  * cobblestone and torches and rails rather than anything from a structure file.
@@ -131,41 +137,76 @@ public final class TheSurvey {
 	}
 
 	/**
-	 * Two by two, dead straight, torch-lit, railed, for two hundred and forty.
+	 * Two by two, on one bearing, for two hundred and forty blocks.
 	 *
-	 * The straightness is the entire content and it is worth being pedantic
-	 * about: no wander, no grade, no branch, no ore taken on the way. Anything
-	 * that varies would let a player read it as mining, and the moment it reads
-	 * as mining it stops saying anything at all.
+	 * STRAIGHT IN PLAN AND NOT IN SECTION, which is the distinction that makes
+	 * this work. It never deviates by a single block horizontally — that is the
+	 * whole claim, and any wander would let it be read as mining — but it rises
+	 * and falls, in runs, because the rock does and he was not going to quarry
+	 * out half a mountain to keep a level floor.
+	 *
+	 * A dead-level tunnel through two hundred and forty blocks of varied stone
+	 * is a thing no person has ever dug. One that holds its bearing and takes
+	 * the grade as it comes is exactly what somebody does when they have
+	 * decided where they are going and are being practical about the rest.
+	 *
+	 * And where it crosses open air it is BRIDGED rather than left as a hole.
+	 * The first version punched straight through caves and ravines and left
+	 * gaps, which undoes the effect entirely — a tunnel with holes in it reads
+	 * as terrain that happened to line up, not as something cut.
 	 */
 	private static BlockPos tunnel(ServerLevel level, BlockPos from, Direction heading,
 	                               RandomSource random) {
 		Direction across = heading.getClockWise();
 		BlockPos at = from;
+		int y = from.getY();
+		// Grade runs: level for a while, then up or down for a while. Changed
+		// in stretches rather than per block, so it reads as a decision
+		// somebody made and stuck to rather than as noise.
+		int grade = 0;
+		int untilTurn = 20 + random.nextInt(30);
 
 		for (int step = 6; step < RUN; step++) {
-			at = from.relative(heading, step);
-			for (int side = 0; side <= 1; side++) {
-				for (int up = 0; up <= 1; up++) {
-					level.setBlock(at.relative(across, side).above(up),
-						Blocks.CAVE_AIR.defaultBlockState(), 2);
-				}
-				// Cobbled, because stone at this depth is not level and a floor
-				// somebody laid is the difference between a tunnel and a hole.
-				level.setBlock(at.relative(across, side).below(),
-					Blocks.COBBLESTONE.defaultBlockState(), 2);
+			if (--untilTurn <= 0) {
+				grade = random.nextInt(3) - 1;
+				untilTurn = 18 + random.nextInt(34);
 			}
-			if (step % TORCH_EVERY == 0) {
+			// One in two blocks of rise or fall at most, which is walkable
+			// without jumping and is what a person cuts.
+			if (grade != 0 && step % 2 == 0) {
+				y += grade;
+			}
+			at = new BlockPos(
+				from.getX() + heading.getStepX() * step, y,
+				from.getZ() + heading.getStepZ() * step);
+
+			boolean overAir = !level.getBlockState(at.below()).isSolid()
+				&& !level.getBlockState(at.below(2)).isSolid();
+
+			for (int side = 0; side <= 1; side++) {
+				BlockPos lane = at.relative(across, side);
+				for (int up = 0; up <= 2; up++) {
+					level.setBlock(lane.above(up), Blocks.CAVE_AIR.defaultBlockState(), 2);
+				}
+				if (overAir) {
+					deck(level, lane, side, across, step, random);
+				} else if (!level.getBlockState(lane.below()).isSolid()) {
+					level.setBlock(lane.below(), Blocks.COBBLESTONE.defaultBlockState(), 2);
+				}
+			}
+
+			if (step % TORCH_EVERY == 0 && !overAir) {
 				BlockPos wall = at.relative(across, -1);
-				if (!level.getBlockState(wall).isAir()) {
+				if (level.getBlockState(wall).isSolid()) {
 					level.setBlock(at.above(), Blocks.WALL_TORCH.defaultBlockState()
 						.setValue(BlockStateProperties.HORIZONTAL_FACING, across), 2);
 				}
 			}
-			// Rail, and it stops twenty short of the face — he ran out before
-			// the digging did, which is a better detail than either running out
-			// together or the rail going all the way.
-			if (step < RUN - 20) {
+			// Rail only on solid ground and only while it lasted: it stops
+			// twenty short of the face, because he ran out before the digging
+			// did, and it never runs across the bridges — nobody lays track on
+			// planks they have not finished nailing down.
+			if (step < RUN - 20 && !overAir && grade == 0) {
 				level.setBlock(at, Blocks.RAIL.defaultBlockState()
 					.setValue(BlockStateProperties.RAIL_SHAPE,
 						heading.getAxis() == Direction.Axis.X
@@ -173,6 +214,52 @@ public final class TheSurvey {
 			}
 		}
 		return at;
+	}
+
+	/**
+	 * A plank deck over a gap, and half of it is gone.
+	 *
+	 * The best thing in the tunnel and it costs four block types. Where the cut
+	 * meets a cave or a ravine he laid boards across rather than filling it —
+	 * which is what anybody does, because filling a ravine is a week and a
+	 * bridge is an afternoon — and the boards have not lasted.
+	 *
+	 * MISSING PLANKS ARE PLACED IN A PATTERN THAT IS ALWAYS CROSSABLE. One in
+	 * five is gone, and never both lanes at the same step, so there is always a
+	 * board to be on and the crossing is a matter of watching your feet rather
+	 * than of luck. A bridge that can strand somebody two hundred blocks down
+	 * is not tension, it is a bug report — and the drop below is real, so it
+	 * only has to be possible once to ruin an evening.
+	 *
+	 * The rail never crosses these. Track on an unfinished bridge is the one
+	 * detail that would say somebody had come back and tidied up.
+	 */
+	private static void deck(ServerLevel level, BlockPos lane, int side,
+	                         Direction across, int step, RandomSource random) {
+		// A gap in one lane only, alternating which, so a walker can always
+		// step sideways onto a board rather than jump a hole in both.
+		boolean gone = (step * 7 + side * 3) % 19 < 3 && side == step % 2;
+		BlockPos board = lane.below();
+		if (gone) {
+			level.setBlock(board, Blocks.AIR.defaultBlockState(), 2);
+		} else {
+			level.setBlock(board, random.nextInt(6) == 0
+				? Blocks.SPRUCE_SLAB.defaultBlockState()
+				: Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
+		}
+
+		// A rail along the outside edge, and it has come down in places too.
+		BlockPos edge = lane.relative(across, side == 0 ? -1 : 1);
+		if (level.getBlockState(edge).isAir() && random.nextInt(4) != 0) {
+			level.setBlock(edge, Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+		}
+		// A lantern hung from the handrail every so often, which is the only
+		// light out over a drop and is worth more than any of the wall torches.
+		if (step % 14 == 0 && side == 0
+			&& level.getBlockState(edge.above()).isAir()) {
+			level.setBlock(edge.above(), Blocks.LANTERN.defaultBlockState()
+				.setValue(BlockStateProperties.HANGING, true), 2);
+		}
 	}
 
 	/**
