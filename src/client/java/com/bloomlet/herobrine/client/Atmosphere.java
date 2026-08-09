@@ -184,10 +184,17 @@ public final class Atmosphere {
 	 */
 	private static float loudness() {
 		return switch (phase()) {
+			// Turned back up. Cutting the music to a quarter by HUNTER read as
+			// the game being broken rather than as dread — a server playing for
+			// days had simply lost one of the best things about Minecraft, and
+			// silence only means something if there is something to lose.
+			//
+			// It thins rather than disappears. Even SIEGE keeps a little, so
+			// the quiet is a mood instead of a missing feature.
 			case RUMOUR, WATCHER, TRESPASSER -> 1.0F;
-			case MIMIC -> 0.6F;
-			case HUNTER -> 0.25F;
-			case SIEGE -> 0.0F;
+			case MIMIC -> 0.9F;
+			case HUNTER -> 0.7F;
+			case SIEGE -> 0.45F;
 		};
 	}
 

@@ -40,6 +40,14 @@ public final class HerobrineCommand {
 
 				.then(Commands.literal("status").executes(HerobrineCommand::status))
 
+				// Where everything is. Added after a server walked a thousand
+				// blocks west, then fourteen hundred the other way, and found
+				// none of it — which is not bad luck, it is arithmetic. Each
+				// building is ONE point at one random bearing, and you have to
+				// pass within a hundred and twelve blocks of it. Walking in a
+				// straight line will essentially never do that.
+				.then(Commands.literal("locate").executes(HerobrineCommand::locate))
+
 				// DEBUG AID — delete with markSpawns in HauntingSpawner.
 				.then(Commands.literal("mark").executes(ctx -> {
 					boolean on = HauntingSpawner.toggleMark();
@@ -350,6 +358,45 @@ public final class HerobrineCommand {
 	 * sight on purpose, which leaves a tester unable to tell "it worked and I
 	 * missed it" from "it quietly failed".
 	 */
+	/**
+	 * Every building, how far, and which way.
+	 *
+	 * Deliberately a command rather than a map item or a compass. Handing the
+	 * player a marker turns the whole thing into a quest log; telling whoever
+	 * runs the server where the buildings are lets them decide what to do with
+	 * it — walk their friends past one, or say nothing.
+	 */
+	private static int locate(CommandContext<CommandSourceStack> ctx)
+			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		ServerLevel level = (ServerLevel)player.level();
+
+		record Site(String name, net.minecraft.core.BlockPos at, boolean up) {}
+		java.util.List<Site> sites = new java.util.ArrayList<>();
+		sites.add(new Site("the town", Dwellings.townSiteFor(level), false));
+		net.minecraft.core.BlockPos home = Dwellings.origin(level);
+		sites.add(new Site("1 the homestead",
+			home != null ? home : Dwellings.siteFor(level), home != null));
+		sites.add(new Site("2 the tower", Dwellings.middleSiteFor(level, 0), false));
+		sites.add(new Site("3 the gaol", Dwellings.middleSiteFor(level, 1), false));
+		sites.add(new Site("4 the church", Dwellings.middleSiteFor(level, 2), false));
+		sites.add(new Site("5 the threshold", Dwellings.thresholdSiteFor(level), false));
+
+		for (Site site : sites) {
+			int distance = (int)Math.sqrt(
+				site.at().distSqr(new net.minecraft.core.BlockPos(
+					player.blockPosition().getX(), site.at().getY(),
+					player.blockPosition().getZ())));
+			String line = String.format("%-16s %5d blocks %s   x %d z %d",
+				site.name(), distance, compass(player, site.at()),
+				site.at().getX(), site.at().getZ());
+			ctx.getSource().sendSuccess(() -> Component.literal(line), false);
+		}
+		ctx.getSource().sendSuccess(() -> Component.literal(
+			"§8they build themselves when somebody gets within 112 blocks"), false);
+		return 1;
+	}
+
 	private static String where(ServerPlayer player) {
 		net.minecraft.core.BlockPos pos = ManifestationDirector.lastLocation();
 		if (pos == null) {

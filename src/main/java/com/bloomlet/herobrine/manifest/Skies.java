@@ -44,8 +44,19 @@ public final class Skies {
 	private static final int CHECK_INTERVAL = 2400;
 
 	/** Five to twelve minutes of it once it starts. */
-	private static final int RAIN_MIN = 6000;
-	private static final int RAIN_SPREAD = 8400;
+	/**
+	 * How long a storm runs. Nine to eighteen minutes, averaging thirteen.
+	 *
+	 * Longer than vanilla on purpose: the whole point of making them rare is
+	 * that it buys the length. A storm that arrives after forty clear minutes
+	 * and then sits over you for a quarter of an hour is an event. The same
+	 * fifteen minutes arriving every eight is just the weather in this biome.
+	 */
+	private static final int STORM_MIN = 11000;
+	private static final int STORM_SPREAD = 10000;
+	private static final float STORM_MEAN = STORM_MIN + STORM_SPREAD / 2.0F;
+	/** SIEGE: about three quarters wet, so a break is possible and rare. */
+	private static final float SIEGE_ROLL = 0.45F;
 
 	private static int tickCounter;
 
@@ -71,61 +82,117 @@ public final class Skies {
 		// storm is simply the condition now, renewed before it can run out, so
 		// a player never gets the twenty quiet minutes that would let them
 		// believe it had passed.
+		// SIEGE is heavy and it is not endless.
+		//
+		// It renewed the storm before it could ever run out, which is a fine
+		// sentence in a design document and exhausting to actually live in —
+		// and SIEGE can last days on a server. It now gets long storms with
+		// real breaks between them: about three quarters of the time under
+		// weather, and the other quarter a quiet grey sky that makes the next
+		// one land. The night that never ends is already carrying this phase;
+		// the sky does not have to do it as well.
 		if (phase == Phase.SIEGE) {
-			if (!server.overworld().isThundering()) {
-				server.setWeatherParameters(0, RAIN_MIN, true, true);
-				HerobrineMod.LOGGER.info("the storm does not stop: SIEGE");
+			if (server.overworld().isRaining()) {
+				return;
+			}
+			if (random.nextFloat() < SIEGE_ROLL) {
+				server.setWeatherParameters(0, STORM_MIN + random.nextInt(STORM_SPREAD),
+					true, true);
+				HerobrineMod.LOGGER.info("the storm returns: SIEGE");
 			}
 			return;
 		}
 
+		// ALREADY WET? Then leave it entirely alone.
+		//
+		// The old version rolled again every two minutes while it was already
+		// raining, to decide whether to add thunder — and setting the weather
+		// again RESTARTS the timer, so a shower that should have blown over in
+		// eight minutes kept renewing itself for as long as the dice were kind.
+		// That, far more than the probabilities, is why it never stopped.
+		//
+		// One decision per storm, taken when it starts. After that the weather
+		// runs down on its own and the sky is allowed to clear.
 		if (server.overworld().isRaining()) {
-			// Already wet. The only thing left to add is teeth.
-			if (!server.overworld().isThundering() && random.nextFloat() < thunderChance(phase)) {
-				server.setWeatherParameters(0, RAIN_MIN + random.nextInt(RAIN_SPREAD), true, true);
-				HerobrineMod.LOGGER.info("the weather turns: thunder at {}", phase.name());
-			}
 			return;
 		}
-		if (random.nextFloat() < rainChance(phase)) {
-			server.setWeatherParameters(0, RAIN_MIN + random.nextInt(RAIN_SPREAD), true, false);
-			HerobrineMod.LOGGER.info("the weather turns: rain at {}", phase.name());
+
+		if (random.nextFloat() >= rollFor(phase)) {
+			return;
 		}
+		// Longer than vanilla, because a storm you notice has to outlast the
+		// walk back indoors — and rare enough that the length is affordable.
+		int length = STORM_MIN + random.nextInt(STORM_SPREAD);
+		boolean teeth = random.nextFloat() < thunderShare(phase);
+		server.setWeatherParameters(0, length, true, teeth);
+		HerobrineMod.LOGGER.info("the weather turns: {} at {} for {} min",
+			teeth ? "thunder" : "rain", phase.name(), length / 1200);
 	}
 
 	/**
-	 * How often a clear sky gives up.
+	 * HOW MUCH OF THE TIME IT SHOULD BE WET, and everything else is derived.
 	 *
-	 * Checked every two minutes, so the numbers are smaller than they look —
-	 * one in ten at WATCHER is a shower every twenty minutes or so, which is
-	 * barely a bias. By SIEGE it is more than half, and clear weather has
-	 * become the thing worth remarking on.
+	 * This used to be a per-check probability, which is an unreadable way to
+	 * state a design: 0.40 at HUNTER sounds moderate and actually meant it was
+	 * raining SIXTY-THREE PER CENT of the time. That is not weather, it is a
+	 * climate, and a server playing for days through it got sick of the sound
+	 * long before he ever did anything.
+	 *
+	 * So the number here is the thing that was actually meant — the fraction of
+	 * play spent under rain — and rollFor() works backwards from it. When these
+	 * are wrong now, they are wrong in a way somebody can see.
+	 *
+	 * The shape matters as much as the level. Storms are LONGER than vanilla
+	 * and rarer, so each one arrives as an event rather than as the background:
+	 * a clear morning, a clear afternoon, and then twelve minutes of thunder
+	 * that means something because the last hour did not sound like it.
 	 */
-	private static float rainChance(Phase phase) {
+	private static float wetFraction(Phase phase) {
 		return switch (phase) {
-			case RUMOUR -> 0.0F;      // the world is still normal
-			case WATCHER -> 0.10F;
-			case TRESPASSER -> 0.18F;
-			case MIMIC -> 0.28F;
-			case HUNTER -> 0.40F;
-			case SIEGE -> 0.55F;
+			case RUMOUR -> 0.00F;     // the world is still normal
+			case WATCHER -> 0.08F;
+			case TRESPASSER -> 0.13F;
+			case MIMIC -> 0.20F;
+			case HUNTER -> 0.28F;
+			case SIEGE -> 0.75F;      // handled separately, above
 		};
 	}
 
 	/**
-	 * And how often rain becomes a storm.
+	 * And of the wet time, how much of it has teeth in it.
 	 *
-	 * Held back until MIMIC because thunder is not weather, it is a mood, and
-	 * it also darkens the sky enough to spawn hostiles in daylight. Handing a
-	 * player that while they are still deciding whether anything is happening
-	 * would be a difficulty change dressed as atmosphere.
+	 * Thunder is the jump scare, so it is a share of the rain rather than its
+	 * own roll — a storm that arrives out of a clear sky reads as scripted,
+	 * and one that builds out of rain already falling reads as weather turning.
 	 */
-	private static float thunderChance(Phase phase) {
+	private static float thunderShare(Phase phase) {
 		return switch (phase) {
-			case RUMOUR, WATCHER, TRESPASSER -> 0.0F;
-			case MIMIC -> 0.12F;
-			case HUNTER -> 0.30F;
-			case SIEGE -> 0.50F;
+			case RUMOUR, WATCHER -> 0.0F;
+			case TRESPASSER -> 0.20F;
+			case MIMIC -> 0.35F;
+			case HUNTER -> 0.55F;
+			case SIEGE -> 1.0F;
 		};
+	}
+
+	/**
+	 * The per-check roll that produces that fraction over time.
+	 *
+	 * A check happens every CHECK_INTERVAL and a storm lasts about STORM_MEAN,
+	 * so with a roll of p the expected dry stretch is CHECK_INTERVAL/p and
+	 *
+	 *     f = STORM_MEAN / (STORM_MEAN + CHECK_INTERVAL/p)
+	 *
+	 * which rearranges to the line below. Worth writing the derivation down
+	 * because the first version of it was algebraically backwards and produced
+	 * MORE rain than the numbers it replaced — and it looked perfectly
+	 * reasonable while doing it.
+	 */
+	private static float rollFor(Phase phase) {
+		float wet = wetFraction(phase);
+		if (wet <= 0.0F) {
+			return 0.0F;
+		}
+		return Math.min(1.0F, wet * CHECK_INTERVAL / (STORM_MEAN * (1.0F - wet)));
 	}
 }

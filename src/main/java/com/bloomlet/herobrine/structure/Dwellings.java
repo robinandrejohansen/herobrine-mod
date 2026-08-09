@@ -135,7 +135,19 @@ public final class Dwellings {
 	private static final int THRESHOLD_MIN = 2600;
 	private static final int THRESHOLD_MAX = 3600;
 	/** Build when somebody is this close. Inside a default simulation radius. */
-	private static final int RAISE_RANGE = 112;
+	/**
+	 * How close somebody has to get before it builds.
+	 *
+	 * Raised from 112. A building is one point at one random bearing eleven
+	 * hundred blocks out, and 112 asks a player to pass through a 224-block
+	 * window on a circle 7,000 blocks around — which a server walking in
+	 * straight lines will essentially never do, and did not.
+	 *
+	 * 192 is still inside a default simulation radius, so it cannot try to
+	 * build in chunks the server is not ticking, and it nearly quadruples the
+	 * chance of an ordinary journey catching one.
+	 */
+	private static final int RAISE_RANGE = 192;
 	private static final int CHECK_INTERVAL = 40;
 
 	private static int tickCounter;
