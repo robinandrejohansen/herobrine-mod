@@ -266,19 +266,22 @@ public final class HauntingSpawner {
 			return Outcome.ALREADY_NEARBY;
 		}
 
-		// Underground the ring-and-drop strategy below is nonsense — it would
-		// place him on the terrain above, through the rock. Follow the space
-		// the player is actually in instead.
+		// THE STARE IS AN OUTDOOR EVENT AND NOTHING ELSE.
+		//
+		// It used to fall back to a cave placement when the player was
+		// enclosed, which made one piece of code responsible for two
+		// experiences that have nothing in common. Outdoors he is a shape at
+		// the treeline sixty blocks off, read against a horizon, and the
+		// whole effect is distance. In a cave there is no horizon, no distance
+		// and no sky — he is in the corridor with you, and the effect is that
+		// there is no way round him.
+		//
+		// Sharing the code made the cave version a worse copy of the outdoor
+		// one: too far to matter in a passage, judged by rules about being
+		// behind you that mean nothing in a tunnel with two ends. Underground
+		// belongs to glimpse() and passage(), which own their own logic.
 		if (ConfinedPlacement.isConfined(level, player)) {
-			BlockPos spot = ConfinedPlacement.find(level, player);
-			if (spot == null) {
-				return Outcome.NO_ROOM_HERE;
-			}
-			if (!ignoreLight && level.getMaxLocalRawBrightness(spot)
-				> maxLight(Wrath.phase(level.getServer()))) {
-				return Outcome.TOO_BRIGHT;
-			}
-			return spawnAt(level, player, spot, hunting);
+			return Outcome.NO_ROOM_HERE;
 		}
 
 		RandomSource random = level.getRandom();
@@ -513,6 +516,69 @@ public final class HauntingSpawner {
 			return Outcome.PLACED;
 		}
 		return Outcome.NOTHING_VISIBLE;
+	}
+
+	/**
+	 * HIM, IN THE PASSAGE, AND THERE IS NO WAY ROUND HIM.
+	 *
+	 * The third of the three, and the one the cave actually asks for. The
+	 * glimpse is half a second and gone before you are sure. The stare is
+	 * sixty blocks of open country. This is neither: he is nine to twenty-four
+	 * blocks down the tunnel you were walking along, standing still, facing
+	 * you, for five to eight seconds — and the tunnel is the only way through.
+	 *
+	 * IT WORKS BECAUSE OF THE GEOMETRY, not because of anything he does. Above
+	 * ground a figure at distance is one of many things on a horizon and the
+	 * player can simply walk elsewhere. In a corridor there is no elsewhere.
+	 * The stare's rules — a long way off, behind you, judged against a skyline
+	 * — mean nothing in a tunnel with two ends, which is exactly why this
+	 * cannot share its code and did not deserve to.
+	 *
+	 * ConfinedPlacement is used because it is genuinely a cave tool: it floods
+	 * the space the player is standing in and comes back with somewhere in it,
+	 * so what it returns is always down a passage that connects. The rules
+	 * about how long he stays and what ends it are this method's own.
+	 */
+	public static Outcome passage(ServerLevel level, ServerPlayer player) {
+		if (player.isSpectator() || !player.isAlive()) {
+			return Outcome.BAD_PLAYER;
+		}
+		if (existsAnywhere(level)) {
+			return Outcome.ALREADY_NEARBY;
+		}
+		if (!ConfinedPlacement.isConfined(level, player)) {
+			return Outcome.NO_ROOM_HERE;   // out in the open; that is the stare
+		}
+
+		BlockPos spot = ConfinedPlacement.find(level, player);
+		if (spot == null) {
+			return Outcome.NO_ROOM_HERE;
+		}
+		// No light check at all, deliberately. A cave a player has torched is
+		// still a cave, and refusing to appear in the one they have lit would
+		// mean he only ever turns up where they cannot see him.
+		HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
+		if (him == null) {
+			return Outcome.NO_FOOTING;
+		}
+		double dx = player.getX() - (spot.getX() + 0.5);
+		double dz = player.getZ() - (spot.getZ() + 0.5);
+		float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+		him.snapTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, yaw, 0.0F);
+
+		// Long enough to be certain, short enough that waiting him out is not a
+		// plan. Walking at him still ends it early — the standoff owns that,
+		// and being made to back down a tunnel is the best thing that can
+		// happen here.
+		RandomSource random = level.getRandom();
+		him.beGlimpse(100 + random.nextInt(60));
+		him.setAnchor(player.blockPosition());
+		level.addFreshEntity(him);
+		ManifestationDirector.noteLocation(spot);
+		HerobrineMod.LOGGER.info("he is in the passage at [{}, {}, {}], {} blocks off",
+			spot.getX(), spot.getY(), spot.getZ(),
+			(int)Math.sqrt(spot.distSqr(player.blockPosition())));
+		return Outcome.PLACED;
 	}
 
 	/** Puts him at a chosen spot, already facing the player. */

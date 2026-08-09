@@ -723,16 +723,23 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
-		// A glimpse outranks everything. It is not a short stare — it is a
-		// different event that happens to use the same entity, and none of the
-		// stare's rules about being looked at apply to it.
-		if (this.glimpseTicks > 0 && ++this.age > this.glimpseTicks) {
-			this.vanish("glimpse over");
+		// ONE increment, then decide. Written as two separate `++this.age`
+		// checks first, which aged him twice a tick whenever a fixed lifetime
+		// was set — so every glimpse ran for half as long as it said, and the
+		// shortest of them were four ticks. A fifth of a second is not a
+		// glimpse, it is a rendering error.
+		this.age++;
+
+		// A fixed lifetime outranks everything. These are not short stares —
+		// they are different events that happen to use the same entity, and
+		// none of the stare's rules about being looked at apply to them.
+		if (this.glimpseTicks > 0 && this.age > this.glimpseTicks) {
+			this.vanish("its time was up");
 			return;
 		}
 
 		// Gone on his own, before he can become furniture.
-		if (++this.age > (this.hunting ? HUNT_LIFETIME : LIFETIME)) {
+		if (this.age > (this.hunting ? HUNT_LIFETIME : LIFETIME)) {
 			this.vanish("aged out, nobody ever turned round");
 			return;
 		}

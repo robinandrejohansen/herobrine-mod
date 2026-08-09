@@ -30,7 +30,7 @@ are the next slice.
 | Phase | Wrath | Its own events | Built |
 |---|---|---|---|
 | RUMOUR | 0 | the glimpse, the grove, the redstone torch, footsteps, wrong sound, snuffed torch, the fuse, the breathing | ✅ |
-| WATCHER | 60 | the stare, the sand pyramid, the 2x2 tunnel | ✅ |
+| WATCHER | 60 | the stare, the passage, the sand pyramid, the 2x2 tunnel | ✅ |
 | TRESPASSER | 200 | signs, ruins, journal pages, the sealed passage | ✅ |
 | MIMIC | 500 | possessed mobs | ✅ |
 | HUNTER | 1000 | the hunt, the dark | ✅ |
@@ -67,6 +67,9 @@ signposted — no sound, no message, nothing pointing at any of them.
 
 - [x] **The glimpse** — him, in a cave, in front of you, for half a second.
       No sound, and if you were looking the other way you missed it
+- [x] **The passage** — him, nine to twenty-four blocks down the tunnel you were
+      walking along, for five to eight seconds, and the tunnel is the only way
+      through. Its own logic; the stare is an outdoor event and nothing else
 - [x] Groves of trees with every leaf taken off, in a rough circle
 - [x] Small perfect sand pyramids standing in open water
 - [x] 2x2 tunnels, dead straight, eighty long, going nowhere

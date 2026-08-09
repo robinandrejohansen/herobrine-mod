@@ -207,6 +207,21 @@ public enum Manifestation {
 		}
 	},
 
+	/**
+	 * Him, down the tunnel, and there is no way round him.
+	 *
+	 * The cave counterpart to the stare rather than a version of it. At
+	 * WATCHER, because unlike the glimpse this one IS resolvable — you get
+	 * long enough to be certain — and being certain is what WATCHER is for.
+	 */
+	THE_PASSAGE(Phase.WATCHER, 14) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return HauntingSpawner.passage(level, player)
+				== HauntingSpawner.Outcome.PLACED;
+		}
+	},
+
 	/** He is simply there, at distance, and gone when you look. */
 	/**
 	 * Weighted 18 rather than 10, which is the heaviest thing in the mod.
@@ -251,7 +266,7 @@ public enum Manifestation {
 			case THE_PAGE, THE_SIGN -> config.signsAndPages;
 			case THE_DARK -> config.theDark;
 			case THE_HUNT -> config.theHunt;
-			case THE_STARE, THE_GLIMPSE -> config.theStare;
+			case THE_STARE, THE_GLIMPSE, THE_PASSAGE -> config.theStare;
 		};
 	}
 

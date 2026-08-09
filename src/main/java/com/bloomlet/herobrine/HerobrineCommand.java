@@ -49,6 +49,18 @@ public final class HerobrineCommand {
 				.then(Commands.literal("locate").executes(HerobrineCommand::locate))
 
 				// Underground only, and it is over in half a second.
+				.then(Commands.literal("passage").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					var outcome = com.bloomlet.herobrine.entity.HauntingSpawner
+						.passage((ServerLevel)p.level(), p);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						outcome == com.bloomlet.herobrine.entity.HauntingSpawner
+							.Outcome.PLACED
+							? "he is down the tunnel" + where(p)
+							: "not here — " + outcome.reason()), false);
+					return 1;
+				}))
+
 				.then(Commands.literal("glimpse").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
 					var outcome = com.bloomlet.herobrine.entity.HauntingSpawner
