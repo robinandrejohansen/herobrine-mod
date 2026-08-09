@@ -425,6 +425,96 @@ public final class HauntingSpawner {
 		return inFront >= noFooting ? Outcome.NOTHING_BEHIND : Outcome.NO_FOOTING;
 	}
 
+	/**
+	 * A GLIMPSE, underground, and it is the opposite of the stare in almost
+	 * every respect.
+	 *
+	 * The stare puts him BEHIND you, a long way off, and lets you look at him
+	 * until you have had enough. This puts him in FRONT of you, close, in a
+	 * cave, for about half a second — and it is gone before you have decided
+	 * whether it was there. The player is not meant to resolve it. They are
+	 * meant to stop, look again at an empty passage, and carry on mining
+	 * slightly differently.
+	 *
+	 * That is the original account of meeting him, almost verbatim: "he looked
+	 * at me and quickly ran into the fog". One sentence, no confrontation, and
+	 * over immediately.
+	 *
+	 * NO SOUND, and that is deliberate. Every instinct says to put a cue on it,
+	 * and a cue is exactly what turns this from something a player half-saw
+	 * into something the mod told them about. If they were looking the other
+	 * way, they missed it. That has to be a real possibility or the ones they
+	 * do catch are worth nothing.
+	 */
+	public static Outcome glimpse(ServerLevel level, ServerPlayer player) {
+		if (player.isSpectator() || !player.isAlive()) {
+			return Outcome.BAD_PLAYER;
+		}
+		if (existsAnywhere(level)) {
+			return Outcome.ALREADY_NEARBY;
+		}
+		// Underground, or it is not this event. Above ground he has the stare,
+		// which is a better version of being seen at distance in the open.
+		if (level.canSeeSky(player.blockPosition())) {
+			return Outcome.NOTHING_VISIBLE;
+		}
+
+		RandomSource random = level.getRandom();
+		Vec3 look = player.getViewVector(1.0F).normalize();
+
+		for (int attempt = 0; attempt < 48; attempt++) {
+			// Close. A figure forty blocks down a tunnel is a shape; one nine
+			// blocks away is a person, and nine blocks is also about as far as
+			// a torch reaches, so he is at the edge of what the player can see.
+			double range = 7.0 + random.nextDouble() * 11.0;
+			// Roughly where they are looking, with enough spread that it is not
+			// always dead centre — being slightly off to one side is worse,
+			// because it makes them turn their head.
+			double spread = (random.nextDouble() - 0.5) * 1.1;
+			double cos = Math.cos(spread);
+			double sin = Math.sin(spread);
+			Vec3 out = new Vec3(look.x * cos - look.z * sin, 0.0,
+				look.x * sin + look.z * cos).normalize().scale(range);
+
+			BlockPos at = BlockPos.containing(
+				player.getX() + out.x,
+				player.getY() + random.nextInt(5) - 2,
+				player.getZ() + out.z);
+
+			BlockPos stand = null;
+			for (int down = 0; down <= 3 && stand == null; down++) {
+				BlockPos maybe = at.below(down);
+				if (ConfinedPlacement.canStand(level, maybe)) {
+					stand = maybe;
+				}
+			}
+			if (stand == null || !visibleFrom(level, player, stand)) {
+				continue;
+			}
+
+			HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
+			if (him == null) {
+				return Outcome.NO_FOOTING;
+			}
+			double dx = player.getX() - (stand.getX() + 0.5);
+			double dz = player.getZ() - (stand.getZ() + 0.5);
+			float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+			him.snapTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, yaw, 0.0F);
+			// Ten to eighteen ticks. Long enough to register as a figure,
+			// nowhere near long enough to be studied, and short enough that a
+			// player who blinked genuinely did miss it.
+			him.beGlimpse(10 + random.nextInt(9));
+			him.setAnchor(player.blockPosition());
+			level.addFreshEntity(him);
+			ManifestationDirector.noteLocation(stand);
+			HerobrineMod.LOGGER.info("a glimpse at [{}, {}, {}], {} blocks off",
+				stand.getX(), stand.getY(), stand.getZ(),
+				(int)Math.sqrt(stand.distSqr(player.blockPosition())));
+			return Outcome.PLACED;
+		}
+		return Outcome.NOTHING_VISIBLE;
+	}
+
 	/** Puts him at a chosen spot, already facing the player. */
 	private static Outcome spawnAt(ServerLevel level, ServerPlayer player, BlockPos pos) {
 		return spawnAt(level, player, pos, false);

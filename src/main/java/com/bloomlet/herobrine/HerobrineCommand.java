@@ -48,6 +48,19 @@ public final class HerobrineCommand {
 				// straight line will essentially never do that.
 				.then(Commands.literal("locate").executes(HerobrineCommand::locate))
 
+				// Underground only, and it is over in half a second.
+				.then(Commands.literal("glimpse").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					var outcome = com.bloomlet.herobrine.entity.HauntingSpawner
+						.glimpse((ServerLevel)p.level(), p);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						outcome == com.bloomlet.herobrine.entity.HauntingSpawner
+							.Outcome.PLACED
+							? "look up" + where(p)
+							: "not here — " + outcome.reason()), false);
+					return 1;
+				}))
+
 				// The five signs from the original story, on demand. Every one
 				// of them refuses itself unless the world suits it — no ocean,
 				// no pyramid; daylight, no torch — so they need trying in the

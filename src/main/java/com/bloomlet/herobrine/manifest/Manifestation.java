@@ -191,6 +191,22 @@ public enum Manifestation {
 
 	// ---- END THE SIGNS ---------------------------------------------------
 
+	/**
+	 * Him, in a cave, for half a second.
+	 *
+	 * At RUMOUR, and that is the point of it: this is the only way he can
+	 * appear in the first phase without breaking deniability, because the
+	 * player never gets long enough to be sure. A stare at RUMOUR would answer
+	 * the question the whole phase exists to keep open. A glimpse asks it.
+	 */
+	THE_GLIMPSE(Phase.RUMOUR, 12) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return HauntingSpawner.glimpse(level, player)
+				== HauntingSpawner.Outcome.PLACED;
+		}
+	},
+
 	/** He is simply there, at distance, and gone when you look. */
 	/**
 	 * Weighted 18 rather than 10, which is the heaviest thing in the mod.
@@ -235,7 +251,7 @@ public enum Manifestation {
 			case THE_PAGE, THE_SIGN -> config.signsAndPages;
 			case THE_DARK -> config.theDark;
 			case THE_HUNT -> config.theHunt;
-			case THE_STARE -> config.theStare;
+			case THE_STARE, THE_GLIMPSE -> config.theStare;
 		};
 	}
 

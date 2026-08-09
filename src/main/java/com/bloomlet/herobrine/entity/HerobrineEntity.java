@@ -325,6 +325,25 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private long lastStruck = -1000L;
 
+	/**
+	 * A sighting measured in ticks rather than in seconds.
+	 *
+	 * Zero means he behaves normally. Anything else is a GLIMPSE — he exists
+	 * for that long and then he is not there, regardless of who is looking,
+	 * whether they got a good view, or what the phase would otherwise allow.
+	 *
+	 * The stare is a confrontation you win by looking. This is the opposite and
+	 * needs its own timer: the player does not get to resolve it, does not get
+	 * long enough to be sure, and is left with the memory rather than the
+	 * sighting. "He looked at me and quickly ran into the fog" is the whole of
+	 * the original account of meeting him, and it is over in a second.
+	 */
+	private int glimpseTicks;
+
+	public void beGlimpse(int ticks) {
+		this.glimpseTicks = ticks;
+	}
+
 	private boolean hunting;
 	private int stuckTicks;
 	private double lastDistance = Double.MAX_VALUE;
@@ -701,6 +720,14 @@ public class HerobrineEntity extends PathfinderMob {
 	public void tick() {
 		super.tick();
 		if (this.level().isClientSide()) {
+			return;
+		}
+
+		// A glimpse outranks everything. It is not a short stare — it is a
+		// different event that happens to use the same entity, and none of the
+		// stare's rules about being looked at apply to it.
+		if (this.glimpseTicks > 0 && ++this.age > this.glimpseTicks) {
+			this.vanish("glimpse over");
 			return;
 		}
 
