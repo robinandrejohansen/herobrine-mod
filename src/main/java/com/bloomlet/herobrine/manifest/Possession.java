@@ -179,9 +179,21 @@ public final class Possession {
 	private static final int SWEEP_INTERVAL = 40;
 
 	/** How far the news of a killing travels. */
-	private static final double WITNESS_RADIUS = 20.0;
-	/** How long the rest of them stare afterwards. Six seconds is plenty. */
-	private static final int WITNESS_TICKS = 120;
+	private static final double WITNESS_RADIUS = 30.0;
+	/**
+	 * How long the rest of them stare afterwards.
+	 *
+	 * Six seconds was "plenty" written by somebody who knew it was going to
+	 * happen and was watching for it. In play, with six people building and
+	 * nobody looking at the livestock, it began and finished before anyone
+	 * turned round — and an effect nobody sees is not a subtle effect, it is a
+	 * missing one.
+	 *
+	 * Fourteen is long enough to survive being noticed late, which is the only
+	 * way anybody was ever going to notice it. The radius went up with it, so
+	 * the whole field turns rather than the three animals nearest the body.
+	 */
+	private static final int WITNESS_TICKS = 280;
 
 	/** What the first one costs the player, and how fast that falls away. */
 	private static final int KILL_PRICE_FIRST = 25;
@@ -193,9 +205,29 @@ public final class Possession {
 	/** Ceiling on how many can be his at once near you. Sanity, not design. */
 	private static final int LIVE_CAP = 16;
 	/** Roughly a one-in-twenty-five chance per sweep, before temperament. */
-	private static final int LULL_ODDS = 25;
-	private static final int LULL_MIN_TICKS = 300;    // fifteen seconds
-	private static final int LULL_MAX_TICKS = 900;    // forty-five
+	/**
+	 * How often one stops and stands, and for how long.
+	 *
+	 * Both pulled well in. At one-in-twenty-five odds with a lull of fifteen to
+	 * FORTY-FIVE seconds, a possessed animal spent most of its existence
+	 * standing still — which reads as a mob that has lost its pathing rather
+	 * than as something waiting, especially with six people busy building and
+	 * nobody watching one cow. The stopping is supposed to be the punctuation,
+	 * not the sentence.
+	 */
+	private static final int LULL_ODDS = 60;
+	private static final int LULL_MIN_TICKS = 120;    // six seconds
+	private static final int LULL_MAX_TICKS = 320;    // sixteen
+
+	/**
+	 * An abandoned one attaches to whoever spends time near it.
+	 *
+	 * Not instant, and not at any distance — it has to be somebody who came
+	 * over and stayed, so it still reads as the animal choosing them rather
+	 * than as the mod reassigning a variable.
+	 */
+	private static final int ADOPT_INTERVAL = 200;
+	private static final double ADOPT_RADIUS = 12.0;
 
 	/** How fast one comes at you once it is hunting. Ordinary animals are 1.0. */
 	private static final double HUNT_SPEED = 1.45;
@@ -674,13 +706,31 @@ public final class Possession {
 						ServerPlayer owner = ownerOf(level, mob);
 						if (owner == null) {
 							// Whoever it belongs to has logged off or left this
-							// world. It does not transfer and it does not go
-							// back to being an animal — it simply stops where
-							// it is. Someone else logging in finds silent,
-							// motionless cattle standing in a field, which is
-							// the most unsettling thing in this file and costs
-							// nothing to produce.
+							// world, so it stops where it is. Someone else
+							// arriving finds silent, motionless cattle standing
+							// in a field, which is the most unsettling thing in
+							// this file and costs nothing to produce.
 							stop(mob);
+							// AND THEN IT FINDS SOMEBODY ELSE.
+							//
+							// It used to stop there for good, which is fine for
+							// one player and dead content for six: on a server
+							// where people come and go all evening, every animal
+							// he ever took ends up frozen in a field belonging
+							// to nobody, and the phase quietly empties itself.
+							//
+							// It waits first. Standing still for a minute is
+							// most of what makes it unsettling, and handing it
+							// straight to the nearest person would spend that
+							// for nothing — this way somebody finds it stopped,
+							// looks at it, walks away, and it follows them.
+							if (mob.tickCount % ADOPT_INTERVAL == 0
+								&& player.distanceTo(mob) < ADOPT_RADIUS) {
+								mob.setAttached(OWNER, player.getUUID().toString());
+								HerobrineMod.LOGGER.info("an orphaned {} attached itself to {}",
+									mob.getType().toShortString(),
+									player.getName().getString());
+							}
 						} else if (owner == player && menace(mob) > 0) {
 							// Head locked on, every tick, no matter where it
 							// is or what is in the way. A stalking one looks
