@@ -44,13 +44,26 @@ import net.minecraft.world.level.block.state.properties.Half;
  * AND THEY ARE HIS, not a dungeon. Every one is a room a person made, with
  * hand tools, in rock, and then left. No mob spawners, no treasure worth the
  * trip, no puzzle to solve. What is in them is furniture and evidence.
+ *
+ * EVERY ONE HAS A DOOR YOU CAN WALK IN THROUGH, and that took a rewrite. The
+ * first version cut the room in solid rock and ran a passage that stopped short
+ * of the player's tunnel, so the last two blocks were theirs to dig. That is a
+ * better arrival and it is worth nothing, because nobody ever gets there: a
+ * room thirty blocks inside bedrock with no opening is not hidden, it is
+ * absent. Being told it was "south west, 33 blocks" and having no way to act on
+ * that is the whole of the experience it produced.
+ *
+ * So the corridor now runs all the way through into the cave, and where it
+ * breaks in it gets a squared frame with a lintel. That frame is the entire
+ * mechanism by which any of this is ever found — a hole in a cave wall is
+ * terrain and a player walks past it, and a doorway is not.
  */
 public final class Chambers {
 	private Chambers() {}
 
 	/** How far from the player one may be cut. Near enough to stumble into. */
-	private static final int NEAR = 14;
-	private static final int FAR = 40;
+	private static final int NEAR = 12;
+	private static final int FAR = 28;
 
 	/**
 	 * The eight, and each is one sentence.
@@ -79,12 +92,12 @@ public final class Chambers {
 	}
 
 	/**
-	 * Cut one somewhere behind the cave the player is in.
+	 * Cut one behind the cave the player is in, with a way back into it.
 	 *
-	 * Placed in SOLID ROCK and then connected by a short passage, rather than
-	 * dropped into an existing cavern. A room that opens straight off a cave is
-	 * scenery the player walks past; one they break into, or find down a cut
-	 * they did not make, is a discovery.
+	 * The room is still in solid rock rather than dropped into an existing
+	 * cavern — a chamber opening straight off a cave is scenery — but it is
+	 * reached down a corridor that genuinely connects, from a doorway that
+	 * genuinely reads as one.
 	 */
 	public static boolean cut(ServerLevel level, ServerPlayer player) {
 		if (level.canSeeSky(player.blockPosition()) || player.getY() > 54) {
@@ -93,28 +106,171 @@ public final class Chambers {
 		RandomSource random = level.getRandom();
 		Kind kind = Kind.values()[random.nextInt(Kind.values().length)];
 
-		for (int attempt = 0; attempt < 60; attempt++) {
+		// START FROM THE CAVE, NOT FROM THE ROOM.
+		//
+		// The first version chose a spot in solid rock and cut a passage that
+		// stopped short of the player's tunnel, on the theory that digging the
+		// last two blocks yourself is a better arrival than walking in. It is —
+		// and it is worth nothing, because nobody ever gets there. A room
+		// thirty blocks inside bedrock with no opening is not hidden, it is
+		// absent: the only way to find it is to dig in exactly the right
+		// direction for no reason.
+		//
+		// So it works backwards now. Find somewhere the player could actually
+		// walk to, go inward from there, and tunnel back — which guarantees a
+		// way in, because the way in is where it started.
+		BlockPos mouth = openNear(level, player, random);
+		if (mouth == null) {
+			return false;
+		}
+
+		for (int attempt = 0; attempt < 40; attempt++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
 			double range = NEAR + random.nextDouble() * (FAR - NEAR);
 			BlockPos at = new BlockPos(
-				(int)Math.round(player.getX() + Math.cos(angle) * range),
-				player.blockPosition().getY() + random.nextInt(13) - 6,
-				(int)Math.round(player.getZ() + Math.sin(angle) * range));
+				mouth.getX() + (int)Math.round(Math.cos(angle) * range),
+				mouth.getY() + random.nextInt(9) - 4,
+				mouth.getZ() + (int)Math.round(Math.sin(angle) * range));
 
-			if (!buried(level, at, 6)) {
+			if (!buried(level, at, 5)) {
 				continue;
 			}
 			room(level, at, random);
 			furnish(level, at, kind, random);
-			connect(level, at, player, random);
+			BlockPos joined = bore(level, at, mouth);
+			doorway(level, joined, at, random);
 
-			HerobrineMod.LOGGER.info("a {} was cut at [{}, {}, {}]",
+			HerobrineMod.LOGGER.info("a {} was cut at [{}, {}, {}], opening at [{}, {}, {}]",
 				kind.name().toLowerCase(java.util.Locale.ROOT),
-				at.getX(), at.getY(), at.getZ());
-			ManifestationDirector.noteLocation(at);
+				at.getX(), at.getY(), at.getZ(),
+				joined.getX(), joined.getY(), joined.getZ());
+			ManifestationDirector.noteLocation(joined);
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Somewhere the player could stand, in the cave they are already in.
+	 *
+	 * The anchor for everything else. It has to be real open space with a floor
+	 * — not a one-block pocket in the rock — because the whole point is that a
+	 * passage arriving here arrives somewhere a person walks.
+	 */
+	private static @org.jspecify.annotations.Nullable BlockPos openNear(
+			ServerLevel level, ServerPlayer player, RandomSource random) {
+		BlockPos standing = player.blockPosition();
+		if (walkable(level, standing)) {
+			return standing;
+		}
+		for (int attempt = 0; attempt < 60; attempt++) {
+			BlockPos at = standing.offset(random.nextInt(17) - 8,
+				random.nextInt(9) - 4, random.nextInt(17) - 8);
+			if (walkable(level, at)) {
+				return at;
+			}
+		}
+		return null;
+	}
+
+	private static boolean walkable(ServerLevel level, BlockPos at) {
+		return level.getBlockState(at).isAir()
+			&& level.getBlockState(at.above()).isAir()
+			&& level.getBlockState(at.below()).isSolid();
+	}
+
+	/**
+	 * Cut from the room back to the cave, and do not stop until it is through.
+	 *
+	 * Walks the straight line and keeps going past where it thinks it should
+	 * end, so an off-by-one or a bit of terrain in the way cannot leave the
+	 * corridor sealed one block short — which is the failure this whole rewrite
+	 * exists to remove, and it would be invisible from the log.
+	 *
+	 * @return where it met open air, so the doorway can be framed there
+	 */
+	private static BlockPos bore(ServerLevel level, BlockPos from, BlockPos to) {
+		double dx = to.getX() - from.getX();
+		double dy = to.getY() - from.getY();
+		double dz = to.getZ() - from.getZ();
+		double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+		if (len < 1.0) {
+			return from;
+		}
+		int steps = (int)Math.ceil(len) + 3;
+		// Where it BROKE THROUGH, which is not where it stopped. The walk
+		// deliberately overshoots by three so a rounding error cannot leave the
+		// corridor sealed one block short — but that means the last position is
+		// somewhere past the cave, in whatever is on the far side of it, and
+		// framing the doorway there would put an arch in the middle of a wall
+		// nobody will ever stand next to.
+		//
+		// The junction is the first block that was ALREADY air before this cut
+		// it: that is the moment the tunnel met the space the player walks in,
+		// and it is the only place a doorway means anything.
+		BlockPos junction = null;
+		BlockPos last = from;
+
+		for (int step = 2; step <= steps; step++) {
+			double t = step / len;
+			BlockPos at = new BlockPos(
+				from.getX() + (int)Math.round(dx * t),
+				from.getY() + (int)Math.round(dy * t),
+				from.getZ() + (int)Math.round(dz * t));
+			last = at;
+			if (junction == null && step > 4 && level.getBlockState(at).isAir()
+				&& level.getBlockState(at.above()).isAir()) {
+				junction = at;
+			}
+			for (int dyy = 0; dyy <= 1; dyy++) {
+				// One wide, two high, and cut a little either side so it does
+				// not scrape. Still narrow enough to read as a person's tunnel
+				// rather than as a cave.
+				level.setBlock(at.above(dyy), Blocks.CAVE_AIR.defaultBlockState(), 2);
+			}
+			if (!level.getBlockState(at.below()).isSolid()) {
+				level.setBlock(at.below(), Blocks.COBBLESTONE.defaultBlockState(), 2);
+			}
+		}
+		return junction != null ? junction : last;
+	}
+
+	/**
+	 * A framed opening where the tunnel meets the cave.
+	 *
+	 * The thing that makes any of this findable. A hole in a cave wall is
+	 * terrain and a player walks past it; a squared opening with a lintel and a
+	 * course of brick down each side is unmistakably a doorway, from a distance,
+	 * in torchlight, while walking. That single detail is the difference
+	 * between a room that exists and a room that gets found.
+	 *
+	 * One torch beside it, and only one. Two would look like a corridor
+	 * somebody maintains.
+	 */
+	private static void doorway(ServerLevel level, BlockPos at, BlockPos towards,
+	                            RandomSource random) {
+		Direction into = Direction.getApproximateNearest(
+			towards.getX() - at.getX(), 0.0, towards.getZ() - at.getZ());
+		Direction across = into.getClockWise();
+
+		for (int side = -1; side <= 1; side++) {
+			for (int dy = -1; dy <= 2; dy++) {
+				BlockPos pos = at.relative(across, side).above(dy);
+				boolean frame = Math.abs(side) == 1 || dy == -1 || dy == 2;
+				if (frame) {
+					level.setBlock(pos, brick(random), 2);
+				} else {
+					level.setBlock(pos, Blocks.CAVE_AIR.defaultBlockState(), 2);
+				}
+			}
+		}
+		BlockPos lamp = at.relative(across).above();
+		if (level.getBlockState(lamp).isSolid()) {
+			BlockPos hang = at.above(1).relative(into.getOpposite());
+			if (level.getBlockState(hang).isAir()) {
+				level.setBlock(hang, Blocks.TORCH.defaultBlockState(), 2);
+			}
+		}
 	}
 
 	/** Solid all round, so it is genuinely hidden rather than open to a cave. */
