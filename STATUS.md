@@ -120,6 +120,12 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+**About one chest in six holds something he left** — enchanted, and always
+something wrong with it. Sharpness V on a wooden sword; a diamond axe carrying
+nothing but Bane of Arthropods I; a good helmet with Binding on it; an iron
+sword two hits from dust. Four kinds, one shared pool of names, so the name
+tells you who left it and never what it is. Every chest in the mod is eligible.
+
 Every one has a chest in it, and a framed doorway where its corridor breaks
 into your cave. Two of the eight hold a shut-in — the heartbeat carries through
 rock, so those can be heard before they are seen.
