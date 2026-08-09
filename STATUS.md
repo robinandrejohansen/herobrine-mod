@@ -75,9 +75,9 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
-Every one is cut in solid rock and connected by a passage that stops short, so
-the last two blocks are dug by the player. Arriving in a finished room through
-a hole you made yourself is worth more than walking into one.
+Every one has a chest in it, and a framed doorway where its corridor breaks
+into your cave. Two of the eight hold a shut-in — the heartbeat carries through
+rock, so those can be heard before they are seen.
 
 ### The signs from the original story
 Quotations, not inventions. The 2010 account is almost entirely a list of marks

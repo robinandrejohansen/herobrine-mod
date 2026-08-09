@@ -388,8 +388,11 @@ public final class Homestead {
 			case 'r' -> torch(level, pos, Blocks.REDSTONE_WALL_TORCH, Blocks.REDSTONE_TORCH);
 			case 'l' -> set(level, pos, Blocks.AIR.defaultBlockState());   // the way down
 			case 'x' -> set(level, pos, Blocks.COBWEB.defaultBlockState());
-			case 'k' -> set(level, pos, Blocks.BONE_BLOCK.defaultBlockState()
-				.setValue(BlockStateProperties.AXIS, Direction.Axis.X));
+			// A bone block in somebody's kitchen is a decorating tic rather
+			// than a detail — it is a big pale skeleton-textured cube and it
+			// reads as loot, not as a house that was lived in. A barrel is what
+			// was actually there.
+			case 'k' -> set(level, pos, Blocks.BARREL.defaultBlockState());
 			case 'q' -> sign(level, pos, "water before dark", "bread on the",
 				"second day", "J. — remember");
 			// His hand. Lowercase, no full stops, unlike every other written

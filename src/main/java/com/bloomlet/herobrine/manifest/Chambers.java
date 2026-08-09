@@ -4,6 +4,8 @@ import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.structure.Ground;
 import com.bloomlet.herobrine.structure.Loot;
 
+import net.minecraft.world.entity.Mob;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -345,10 +347,17 @@ public final class Chambers {
 						}
 					}
 				}
-				level.setBlock(f.offset(0, 1, 5), Blocks.HAY_BLOCK.defaultBlockState(), 2);
+				// A mat on the floor, not a hay bale. A bale is a farm block —
+				// it is animal feed, it reads as one, and putting it in a cell
+				// says somebody was fed rather than that somebody slept there.
+				level.setBlock(f.offset(0, 1, 5), Blocks.CARPET.pick(net.minecraft.world.item.DyeColor.BROWN)
+					.defaultBlockState(), 2);
 				level.setBlock(f.offset(-2, 1, 0), Blocks.LECTERN.defaultBlockState()
 					.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
 				sign(level, f.offset(2, 1, 0), new String[] { "DAY 41", "NO CHANGE", "", "DAY 42" });
+				chest(level, f.offset(-2, 1, -2), random, Loot.Tier.HOMESTEAD,
+					new ItemStack(Items.GLASS_BOTTLE, 3));
+				shutIn(level, m.offset(0, 0, 5));
 			}
 			// And the other half of that, met on its own: a cell whose door
 			// went outward. Nothing about it says what came out.
@@ -368,8 +377,11 @@ public final class Chambers {
 				for (int dx = -1; dx <= 1; dx++) {
 					level.setBlock(f.offset(dx, 1, -2), Blocks.IRON_BARS.defaultBlockState(), 2);
 				}
-				level.setBlock(f.offset(1, 1, 2), Blocks.HAY_BLOCK.defaultBlockState(), 2);
+				level.setBlock(f.offset(1, 1, 2), Blocks.CARPET.pick(net.minecraft.world.item.DyeColor.BROWN)
+					.defaultBlockState(), 2);
 				scratches(level, m, random);
+				chest(level, f.offset(-2, 1, 2), random, Loot.Tier.LARDER,
+					worn(Items.IRON_AXE));
 			}
 			case WORKSHOP -> {
 				level.setBlock(f.offset(-2, 1, -2), Blocks.SMITHING_TABLE.defaultBlockState(), 2);
@@ -398,6 +410,8 @@ public final class Chambers {
 					worn(Items.IRON_SHOVEL));
 			}
 			case READING -> {
+				chest(level, f.offset(1, 1, 2), random, Loot.Tier.HOMESTEAD,
+					new ItemStack(Items.BOOK, 4));
 				for (int dz = -2; dz <= 2; dz++) {
 					for (int dy = 1; dy <= 3; dy++) {
 						level.setBlock(f.offset(-2, dy, dz), shelf(random), 2);
@@ -416,6 +430,8 @@ public final class Chambers {
 			case TALLY -> {
 				scratches(level, m, random);
 				scratches(level, m, random);
+				chest(level, f.offset(2, 1, 2), random, Loot.Tier.LARDER,
+					new ItemStack(Items.CLOCK));
 				sign(level, f.offset(0, 1, -2), new String[] { "", "I STOPPED", "COUNTING", "" });
 			}
 			// The Gravity Falls tile floor, without the trap. A pale, perfectly
@@ -433,8 +449,38 @@ public final class Chambers {
 				}
 				level.setBlock(f.offset(0, 0, 0), Blocks.COAL_BLOCK.defaultBlockState(), 2);
 				sign(level, f.offset(0, 1, -2), new String[] { "STAND", "HERE", "", "" });
+				chest(level, f.offset(-2, 1, 2), random, Loot.Tier.HOMESTEAD,
+					new ItemStack(Items.REDSTONE_TORCH, 4));
+				shutIn(level, m.offset(2, 0, 2));
 			}
 		}
+	}
+
+	/**
+	 * One of the shut-in ones, and it is a locator as much as a scare.
+	 *
+	 * The chambers had a findability problem that the doorway only half solved:
+	 * a doorway still has to be walked past to be seen. A shut-in makes the
+	 * warden's heartbeat every seven seconds, which carries about as far as a
+	 * player's own footsteps and through rock, so a chamber with one in it can
+	 * be heard before it can be seen — and a player who stops mining because
+	 * something down here has a pulse is going to find the room.
+	 *
+	 * Only in the two rooms that are about containment. Putting one in the
+	 * reading room or the workshop would make every chamber a monster closet,
+	 * and the whole point of eight kinds is that most of them are furniture.
+	 */
+	private static void shutIn(ServerLevel level, BlockPos at) {
+		Mob kept = com.bloomlet.herobrine.entity.ModEntities.INFECTED
+			.create(level, net.minecraft.world.entity.EntitySpawnReason.STRUCTURE);
+		if (kept == null) {
+			return;
+		}
+		kept.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
+		// Into the world FIRST, then marked. Attachments set on an entity that
+		// is not in a level yet have nowhere to be tracked from and never sync.
+		level.addFreshEntity(kept);
+		Feral.shutIn(kept);
 	}
 
 	/** Marks on the wall, in blocks, because nothing else counts down here. */

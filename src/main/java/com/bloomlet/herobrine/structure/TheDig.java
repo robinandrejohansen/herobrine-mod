@@ -199,7 +199,12 @@ public final class TheDig {
 		// Straw, a bucket, and cobwebs. The same in every one of them, which is
 		// what makes fourteen of them read as a system rather than as rooms.
 		BlockPos in = mouth.relative(into, 3);
-		level.setBlock(in.relative(across, -1), Blocks.HAY_BLOCK.defaultBlockState(), 2);
+		// A mat, not a bale. Hay is animal feed and looks like it; a cell with
+		// a bale in it says somebody was kept the way livestock is kept, which
+		// is a different and much sillier claim than the one this makes.
+		level.setBlock(in.relative(across, -1),
+			Blocks.CARPET.pick(net.minecraft.world.item.DyeColor.BROWN)
+				.defaultBlockState(), 2);
 		level.setBlock(in.relative(across, 1), Blocks.CAULDRON.defaultBlockState(), 2);
 		for (int i = 0; i < 4; i++) {
 			BlockPos web = mouth.relative(into, 1 + random.nextInt(4))
