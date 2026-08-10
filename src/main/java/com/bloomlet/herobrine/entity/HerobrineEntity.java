@@ -1407,6 +1407,14 @@ public class HerobrineEntity extends PathfinderMob {
 				WrathTriggers.defiance(survivor, defiance);
 			}
 		}
+		// AND HE LEAVES SOMETHING WHERE HE BROKE OFF, if he is holding anything
+		// of theirs. Only ever here, at the end of a hunt, because that is what
+		// makes it read as an exchange rather than as loot: they survived, and
+		// this is what is standing on the spot when they come back to it.
+		if (this.level() instanceof ServerLevel here
+			&& here.getNearestPlayer(this, 64.0) instanceof ServerPlayer near) {
+			com.bloomlet.herobrine.manifest.Hoard.grave(here, this.blockPosition(), near);
+		}
 		this.relenting = true;
 		this.watching = false;
 		this.moodTicks = RELENT_TICKS;

@@ -103,6 +103,15 @@ public final class Config {
 	 */
 	public boolean theStranger = true;
 
+	/**
+	 * He takes things out of your chests.
+	 *
+	 * Nothing is ever deleted — it comes back in possessed animals, in graves
+	 * after a hunt, and in the late houses. The switch exists anyway, because
+	 * "a mod may touch my chests" is a decision an owner should make out loud.
+	 */
+	public boolean theTaking = true;
+
 	// ---- the ending --------------------------------------------------------
 	/** He can be killed at SIEGE. Off means the mod has no ending. */
 	public boolean theReckoning = true;

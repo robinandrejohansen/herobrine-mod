@@ -167,6 +167,29 @@ public final class Loot {
 			chest.setItem(slot, roll(pool, random));
 		}
 
+		// AND IN THE LAST HOUSES, SOME OF IT IS YOURS.
+		//
+		// The deepest thing this mod does with theft. Walking into the church and
+		// finding your own enchanted pickaxe in a chest retroactively explains
+		// every building anybody has already looted: those chests were never
+		// treasure, they were where he keeps things.
+		//
+		// Gated on the phase rather than on which building this is, because the
+		// late houses are the only ones that GENERATE from HUNTER onward — so the
+		// phase is a faithful proxy and it needs no plumbing through six callers.
+		// The honest cost of that: a chest placed in a cave chamber at HUNTER can
+		// carry stolen goods too, which is a wider net than "the last houses".
+		// That reads fine — he keeps things underground as well.
+		if (!free.isEmpty() && chest.getLevel() instanceof net.minecraft.server.level.ServerLevel here
+			&& com.bloomlet.herobrine.wrath.Wrath.phase(here.getServer())
+				.atLeast(com.bloomlet.herobrine.wrath.Phase.HUNTER)) {
+			net.minecraft.world.item.ItemStack stolen =
+				com.bloomlet.herobrine.manifest.Hoard.draw(here, random);
+			if (stolen != null) {
+				chest.setItem(free.remove(random.nextInt(free.size())), stolen);
+			}
+		}
+
 		// And now and again, on top of all that, the other thing.
 		if (!free.isEmpty() && chest.getLevel() != null && random.nextInt(CHANCE_IN) == 0) {
 			int slot = free.remove(random.nextInt(free.size()));

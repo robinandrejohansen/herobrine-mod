@@ -73,6 +73,20 @@ public enum Manifestation {
 		}
 	},
 
+	/**
+	 * He has been in your chest, and he left one behind.
+	 *
+	 * The only event that touches a player's belongings, so it is weighted low
+	 * and it is the one with the strictest rule behind it: everything taken is
+	 * kept and comes back. See Hoard.
+	 */
+	THE_TAKING(Phase.TRESPASSER, 5) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Hoard.steal(level, player);
+		}
+	},
+
 	/** Something old, at the edge of your world, that was not there yesterday. */
 	THE_RUIN(Phase.TRESPASSER, 8) {
 		@Override
@@ -296,6 +310,7 @@ public enum Manifestation {
 			case THE_BREATHING -> config.theBreathing;
 			case POSSESSED_MOB -> config.possession;
 			case THE_STRANGER -> config.theStranger;
+			case THE_TAKING -> config.theTaking;
 			case THE_RUIN -> config.ruins;
 			case THE_PAGE, THE_SIGN -> config.signsAndPages;
 			case THE_DARK -> config.theDark;

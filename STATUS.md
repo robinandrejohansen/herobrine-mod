@@ -120,6 +120,23 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### What he took
+
+From TRESPASSER he goes through your chests — one or two stacks, never the
+chest, never while anybody is looking, and **he leaves one behind**. One diamond
+where there were twelve.
+
+**Nothing is ever deleted.** It is held on the world, persisted, capped at 48
+stacks, and it comes back three ways:
+
+| Where | When | Why that one |
+|---|---|---|
+| **Inside possessed animals** | any time after | Invisible until you kill it. Every staring cow you already walked past is now a question |
+| **A grave where he broke off** | after a hunt | Somebody else's name on the stone, your own belongings under it |
+| **Chests from HUNTER on** | the late houses | Your own pickaxe in the church. Those chests were never treasure — they are where he keeps things |
+
+Config: `theTaking`.
+
 ### The seventh name
 
 From MIMIC, rarely, **somebody who is not on the server turns up wearing the

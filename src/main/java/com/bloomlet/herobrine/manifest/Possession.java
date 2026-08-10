@@ -661,6 +661,12 @@ public final class Possession {
 		mob.setAttached(OWNER, owner.getUUID().toString());
 		mob.setSilent(true);
 		mob.setPersistenceRequired();
+		// AND SOMETIMES IT IS CARRYING SOMETHING OF YOURS. Nothing about the
+		// animal looks different for it, which is what makes every staring cow
+		// anybody has already walked past into a question in hindsight.
+		if (owner.level() instanceof ServerLevel here) {
+			Hoard.seed(here, mob);
+		}
 	}
 
 	/** @return the player this one belongs to, if they are here to be followed */
