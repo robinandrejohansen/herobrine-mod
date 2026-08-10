@@ -266,6 +266,21 @@ public final class Dwellings {
 
 			Long chosen = overworld.getAttached(place.site);
 			if (chosen == null) {
+				// THE CHAPTER HAS TO HAVE HAD ITS TIME FIRST.
+				//
+				// Without this, a group that finds the homestead ten minutes after
+				// spawning is in WATCHER ten minutes after spawning, and if they
+				// are lucky again they are three phases deep inside an hour —
+				// having seen one manifestation per phase and none of the story
+				// the phases exist to tell. Discovery must be the gate on
+				// progress without also being the pace of it.
+				//
+				// Finding a place still advances the story at once. It simply
+				// does not conjure the next one: that waits until this chapter
+				// has been lived in.
+				if (!Wrath.settled(server)) {
+					return;
+				}
 				BlockPos picked = pick(overworld, place);
 				if (picked != null) {
 					overworld.setAttached(place.site, picked.asLong());

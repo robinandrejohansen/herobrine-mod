@@ -120,6 +120,19 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### The floor under each chapter
+
+Finding a place advances the story at once — but it does **not** conjure the next
+one. The next place is sited only once the current phase has been lived in for
+**15 minutes**, so a lucky group cannot be three phases deep inside an hour with
+one manifestation seen per phase.
+
+Measured in elapsed time rather than events seen, because manifestations are
+per-player and six people would burn an event quota in minutes.
+
+The rhythm: find a place → the world changes → **live in it** → somewhere new
+turns out to be out there.
+
 ### He comes home
 
 Finding a place starts a clock. **Two to four minutes** of being left alone —

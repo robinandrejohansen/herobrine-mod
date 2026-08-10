@@ -175,9 +175,58 @@ public final class Wrath {
 		return phase(server).into(get(server), since(server));
 	}
 
+	/**
+	 * How long a phase must be LIVED IN before the next place will site.
+	 *
+	 * Fifteen minutes, and this exists because discovery-gated progress has the
+	 * exact opposite failure of wrath-gated progress. Wrath let a group advance
+	 * without ever finding a building. Discovery lets a LUCKY group find three
+	 * buildings in an hour and receive the thinnest possible version of all
+	 * three phases — one manifestation each, the ramp never leaving nought, and
+	 * RUMOUR over before anybody had time to disbelieve anything. Both failures
+	 * end with the players not having seen the mod.
+	 *
+	 * So finding a place still advances the story immediately — that part was
+	 * right. What it does NOT do is make the next place exist. The next one is
+	 * sited only once this phase has had its time, which puts a floor under every
+	 * chapter without putting a ceiling on anything.
+	 *
+	 * MEASURED IN GAME TIME RATHER THAN IN EVENTS SEEN, which was the first
+	 * attempt and is wrong: manifestations are per-player, so six people would
+	 * burn through an event quota in minutes and the floor would do nothing on
+	 * exactly the servers it matters most on. Elapsed time behaves identically
+	 * for one player and for six.
+	 */
+	private static final long DUES = 18000L;
+
+	private static final AttachmentType<Long> ENTERED = AttachmentRegistry
+		.createPersistent(HerobrineMod.id("story_entered"), Codec.LONG);
+
+	/**
+	 * Has this chapter had its time?
+	 *
+	 * The rhythm this produces is the point, and it is better than the one it
+	 * replaces: find a place, the world changes, LIVE IN IT for a while, and then
+	 * somewhere new turns out to be out there. The quiet stretch after a
+	 * discovery is not dead time — it is the only window in which the thing that
+	 * just changed can be noticed at all.
+	 */
+	public static boolean settled(MinecraftServer server) {
+		long entered = server.overworld().getAttachedOrElse(ENTERED, 0L);
+		return server.overworld().getGameTime() - entered >= DUES;
+	}
+
+	/** Minutes still owed to this chapter, for /herobrine status. */
+	public static long owed(MinecraftServer server) {
+		long entered = server.overworld().getAttachedOrElse(ENTERED, 0L);
+		long left = DUES - (server.overworld().getGameTime() - entered);
+		return left <= 0 ? 0 : left / 1200;
+	}
+
 	private static void set(MinecraftServer server, Phase phase) {
 		server.overworld().setAttached(STORY, phase.ordinal());
 		server.overworld().setAttached(SINCE, get(server));
+		server.overworld().setAttached(ENTERED, server.overworld().getGameTime());
 	}
 
 	/**
