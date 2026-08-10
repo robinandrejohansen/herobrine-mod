@@ -112,10 +112,16 @@ public final class Dwellings {
 	 * outward for hours — and a group that builds a base together and stays
 	 * near it never went anywhere near any of them.
 	 */
-	private static final int NEAR = 340;
-	private static final int FAR = 780;
-	/** Everybody this far from an unbuilt place, and it goes somewhere else. */
-	private static final int ABANDONED = 1400;
+	/**
+	 * How much further than its own band a place is allowed to be ignored.
+	 *
+	 * Was a flat 1400, which stopped working the moment the bands started
+	 * climbing: the threshold sites out to 1300, so a flat threshold would have
+	 * called it abandoned almost the instant it was chosen. Relative to the
+	 * band, it means the same thing at every distance — "further away than
+	 * anybody who was coming would be".
+	 */
+	private static final int ABANDONED_MARGIN = 620;
 
 	private static int tickCounter;
 
@@ -144,14 +150,30 @@ public final class Dwellings {
 	 * far it is allowed to get.
 	 */
 	private enum Place {
-		HOMESTEAD("homestead", Phase.RUMOUR),
-		TOWN("town", Phase.WATCHER),
-		TOWER("house_two", Phase.TRESPASSER),
-		GAOL("house_three", Phase.MIMIC),
-		CHURCH("house_four", Phase.HUNTER),
-		THRESHOLD("threshold", Phase.SIEGE);
+		HOMESTEAD("homestead", Phase.RUMOUR, 280, 520),
+		TOWN("town", Phase.WATCHER, 340, 620),
+		TOWER("house_two", Phase.TRESPASSER, 450, 800),
+		GAOL("house_three", Phase.MIMIC, 550, 950),
+		CHURCH("house_four", Phase.HUNTER, 650, 1100),
+		THRESHOLD("threshold", Phase.SIEGE, 800, 1300);
 
 		final Phase from;
+		/**
+		 * How far out this one goes, and IT CLIMBS.
+		 *
+		 * Every place used to be sited in the same 340–780 band, which quietly
+		 * flattened the whole journey: the threshold was the same walk as the
+		 * homestead, so going deeper into the story never meant going further
+		 * into the world.
+		 *
+		 * It climbs now, and it is only safe to climb because the buildings
+		 * advertise themselves — roads, smoke, a sign, a sound, and a map from
+		 * the graves. Distance without any of that is what produced a group
+		 * walking a thousand blocks and finding nothing. Distance WITH it is the
+		 * thing that makes the last one feel like the edge of the map.
+		 */
+		final int near;
+		final int far;
 		/** Where it was decided to go, once anybody was around to decide near. */
 		final AttachmentType<Long> site;
 		/** Whether the blocks exist. */
@@ -159,8 +181,10 @@ public final class Dwellings {
 		/** Whether anybody has walked up on it yet. Spent once, for good. */
 		final AttachmentType<Boolean> met;
 
-		Place(String key, Phase from) {
+		Place(String key, Phase from, int near, int far) {
 			this.from = from;
+			this.near = near;
+			this.far = far;
 			this.site = AttachmentRegistry.createPersistent(
 				HerobrineMod.id(key + "_site"), Codec.LONG);
 			this.up = AttachmentRegistry.createPersistent(
@@ -200,7 +224,39 @@ public final class Dwellings {
 				if (where != null) {
 					Approach.heard(overworld, BlockPos.of(where), place.from);
 				}
-				continue;   // standing; on to the next chapter
+				// THE STORY MOVES ON WHEN SOMEBODY FINDS IT, NOT WHEN IT IS BUILT.
+				//
+				// This used to advance on `up`, and `up` happens at a hundred and
+				// ninety-two blocks — so a player passing a hundred and ninety
+				// blocks away built the place, never saw it, and unlocked the next
+				// chapter anyway. That is precisely how a group ends up three
+				// buildings deep having read none of them, which is the failure
+				// this whole direction exists to fix.
+				//
+				// `met` is set on the approach, within sixty blocks, so it means
+				// somebody actually stood outside it.
+				if (Boolean.TRUE.equals(overworld.getAttached(place.met))) {
+					continue;   // found; on to the next chapter
+				}
+				// AND IT NEVER STALLS FOREVER. A place that was built and then
+				// walked away from would otherwise hold the entire sequence shut
+				// with nobody left to open it. If everybody has gone a long way
+				// off, the story goes on without them — the building stays exactly
+				// where it is, to be found whenever they come back.
+				double away = Double.MAX_VALUE;
+				if (where != null) {
+					for (ServerPlayer player : overworld.players()) {
+						away = Math.min(away, Math.sqrt(
+							BlockPos.of(where).distSqr(player.blockPosition())));
+					}
+				}
+				if (away > place.far + ABANDONED_MARGIN) {
+					overworld.setAttached(place.met, true);
+					HerobrineMod.LOGGER.info("{} was built and never visited — moving on",
+						place.name().toLowerCase(java.util.Locale.ROOT));
+					continue;
+				}
+				return;     // standing, unfound, and somebody is still near enough
 			}
 			if (!phase.atLeast(place.from)) {
 				return;     // and nothing after it either — this is a sequence
@@ -208,7 +264,7 @@ public final class Dwellings {
 
 			Long chosen = overworld.getAttached(place.site);
 			if (chosen == null) {
-				BlockPos picked = pick(overworld);
+				BlockPos picked = pick(overworld, place);
 				if (picked != null) {
 					overworld.setAttached(place.site, picked.asLong());
 					HerobrineMod.LOGGER.info("{} will stand near [{}, {}] ({})",
@@ -237,7 +293,7 @@ public final class Dwellings {
 			// it can trip this by accident; at that distance they are not
 			// coming, and the story is waiting on somebody who does not know
 			// it is waiting.
-			if (nearest > ABANDONED) {
+			if (nearest > place.far + ABANDONED_MARGIN) {
 				overworld.setAttached(place.site, null);
 				HerobrineMod.LOGGER.info("{} was never found at [{}, {}] — moving it",
 					place.name().toLowerCase(java.util.Locale.ROOT),
@@ -329,12 +385,12 @@ public final class Dwellings {
 	 * from any one of them, so on a server it lands somewhere the group might
 	 * plausibly go instead of behind whoever happened to be furthest out.
 	 *
-	 * Refuses anything closer than NEAR to ANY player. A house that appears
+	 * Refuses anything closer than this place's own near band to ANY player. A house that appears
 	 * three hundred blocks from the base of the one person who went mining is
 	 * a house somebody watches arrive, and nothing here is ever watched
 	 * arriving.
 	 */
-	private static @org.jspecify.annotations.Nullable BlockPos pick(ServerLevel level) {
+	private static @org.jspecify.annotations.Nullable BlockPos pick(ServerLevel level, Place place) {
 		double cx = 0;
 		double cz = 0;
 		for (ServerPlayer player : level.players()) {
@@ -347,7 +403,7 @@ public final class Dwellings {
 		RandomSource random = level.getRandom();
 		for (int attempt = 0; attempt < 48; attempt++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
-			double range = NEAR + random.nextDouble() * (FAR - NEAR);
+			double range = place.near + random.nextDouble() * (place.far - place.near);
 			int x = (int)Math.round(cx + Math.cos(angle) * range);
 			int z = (int)Math.round(cz + Math.sin(angle) * range);
 
@@ -357,7 +413,7 @@ public final class Dwellings {
 			BlockPos at = new BlockPos(x, Ground.topOf(level, x, z), z);
 			boolean tooNear = false;
 			for (ServerPlayer player : level.players()) {
-				if (player.blockPosition().closerThan(at, NEAR)) {
+				if (player.blockPosition().closerThan(at, place.near)) {
 					tooNear = true;
 					break;
 				}

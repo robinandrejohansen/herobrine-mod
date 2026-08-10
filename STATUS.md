@@ -120,6 +120,26 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### The order, and the distance
+
+**You cannot find house 3 before house 2.** The next place is not even *sited*
+until the previous one has been **found** — so it does not exist to stumble on.
+
+And the walk gets longer as the story goes deeper:
+
+| | sited at | ignored past |
+|---|---|---|
+| homestead | 280–520 | 1140 |
+| town | 340–620 | 1240 |
+| tower | 450–800 | 1420 |
+| gaol | 550–950 | 1570 |
+| church | 650–1100 | 1720 |
+| threshold | 800–1300 | 1920 |
+
+Built at 192 blocks; **found** at 60. If a place is built and then abandoned,
+the story moves on without it rather than stalling — the building stays where it
+is, to be found whenever anybody comes back.
+
 ### Finding his places
 
 Every building now advertises itself at four ranges, and all four get worse as
