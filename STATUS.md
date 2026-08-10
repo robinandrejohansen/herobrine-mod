@@ -120,6 +120,21 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### The town, in a forest
+
+Buildings **fell the trees** in their footprint plus a one-block margin before
+they go up. `Ground.topOf` always found correct footing under a canopy, so the
+building was at the right height with the trunk standing straight through it.
+
+And the silent slope refusal was **4 blocks across a whole plot**, which most
+ground outside plains and deserts fails — so plots came up empty with no
+explanation. It is 7 now, and it logs when it refuses.
+
+Villagers get a **profession matched to their building** — officials in the hall,
+smiths in the shop, farmers everywhere else — so they trade, restock and work.
+Beds are claimed on their own, which they could not do while the buildings were
+full of tree.
+
 ### The floor under each chapter
 
 Finding a place advances the story at once — but it does **not** conjure the next

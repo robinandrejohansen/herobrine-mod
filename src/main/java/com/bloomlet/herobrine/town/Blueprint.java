@@ -53,6 +53,17 @@ public final class Blueprint {
 		int depth = maps[0].length;
 		int width = maps[0][0].length();
 
+		// THE TREES COME DOWN FIRST, AND THEY DID NOT BEFORE.
+		//
+		// Ground.topOf already walks down past trunks and canopy to find real
+		// footing, so the building was placed at the correct height — with the
+		// tree still standing straight through it. In anything wooded that is
+		// most of the town: walls interrupted by oak, roofs with leaves inside
+		// them, and doorways nobody can walk through.
+		//
+		// Cleared with a one-block margin, because a canopy overhanging the eaves
+		// looks exactly as wrong as one inside the wall.
+		fell(level, origin, width, depth);
 		if (!clearEnough(level, origin, width, depth)) {
 			return false;
 		}
@@ -188,7 +199,50 @@ public final class Blueprint {
 				high = Math.max(high, y);
 			}
 		}
-		return high - low <= 4;
+		// SEVEN, NOT FOUR, AND THE FOUR WAS THE BUG.
+		//
+		// This refusal is silent, and a silent refusal in a town generator means
+		// plots that simply have nothing on them — which is what "couldn't render
+		// the builds" looks like from inside the game. Four blocks of variation
+		// across a whole plot is flat, and outside plains and deserts most ground
+		// is not flat, so in hills and forest most buildings declined.
+		//
+		// Seven is safe because footing() lays a stone plinth down to real ground
+		// underneath every building: a slope does not have to be levelled, it has
+		// to be underpinned, and that is already happening. And the refusal logs
+		// now, so the next time a plot comes up empty there is a line saying why
+		// instead of a mystery.
+		if (high - low > 7) {
+			com.bloomlet.herobrine.HerobrineMod.LOGGER.info(
+				"a plot at [{}, {}] was refused: {} blocks of slope across it",
+				origin.getX(), origin.getZ(), high - low);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Take the wood out of where a building is going.
+	 *
+	 * Logs and leaves only. Never stone, never dirt, never anything a player
+	 * could have placed — this runs before the walls go up and it must not be
+	 * capable of eating somebody's build, so it is restricted by tag to the two
+	 * things that are always terrain.
+	 */
+	private static void fell(ServerLevel level, BlockPos origin, int width, int depth) {
+		for (int x = -1; x <= width + 1; x++) {
+			for (int z = -1; z <= depth + 1; z++) {
+				int ground = Ground.topOf(level, origin.getX() + x, origin.getZ() + z);
+				for (int y = ground + 1; y <= ground + 14; y++) {
+					BlockPos at = new BlockPos(origin.getX() + x, y, origin.getZ() + z);
+					BlockState state = level.getBlockState(at);
+					if (state.is(net.minecraft.tags.BlockTags.LOGS)
+						|| state.is(net.minecraft.tags.BlockTags.LEAVES)) {
+						level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+					}
+				}
+			}
+		}
 	}
 
 	/**

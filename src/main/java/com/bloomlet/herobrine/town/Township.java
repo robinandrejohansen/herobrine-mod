@@ -167,11 +167,67 @@ public final class Township {
 				}
 				soul.snapTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
 				soul.setPersistenceRequired();
+				trade(level, soul, plot.kind(), random);
 				level.addFreshEntity(soul);
 			}
 		}
 	}
 
+
+	/**
+	 * GIVE THEM A JOB, because a villager without one is scenery.
+	 *
+	 * They were spawned bare, which meant no profession, no trades, and no
+	 * reason to go anywhere: an unemployed villager will not farm, will not
+	 * restock, will not walk to a workstation, and offers nothing when clicked.
+	 * A town of ten of those looks inhabited from a ridge and looks like a bug
+	 * from the doorway.
+	 *
+	 * Assigned rather than left to the job-site search, which is the reliable
+	 * way round: the search only runs when a free workstation POI happens to be
+	 * reachable, and if it fails the villager stays a nitwit forever with nothing
+	 * to indicate why. Assigning it up front means they always have a trade, and
+	 * they will still walk to a matching workstation when there is one.
+	 *
+	 * MATCHED TO THE BUILDING, because that is nearly free and it is what makes
+	 * the town read as a place with an economy rather than a set of huts with
+	 * people in them. The hall gets the officials, the pens get the farmers, and
+	 * the shop gets somebody who sells things.
+	 *
+	 * BEDS COME FOR FREE ONCE THEY HAVE A HOME. Every bed placed in the lodges
+	 * and the hall is already a POI; villagers claim one on their own as soon as
+	 * they can path to it, and they can now that the buildings are not full of
+	 * tree. Nothing here has to assign a bed by hand, and doing so by hand would
+	 * fight the brain that manages it.
+	 */
+	private static void trade(ServerLevel level, net.minecraft.world.entity.Mob soul,
+	                          String kind, RandomSource random) {
+		if (!(soul instanceof net.minecraft.world.entity.npc.villager.Villager villager)) {
+			return;
+		}
+		net.minecraft.resources.ResourceKey<
+			net.minecraft.world.entity.npc.villager.VillagerProfession> job = switch (kind) {
+			case "hall" -> pick(random,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.CLERIC,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.LIBRARIAN,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.MASON);
+			case "shop" -> pick(random,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.TOOLSMITH,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.WEAPONSMITH,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.BUTCHER);
+			default -> pick(random,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.FARMER,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.SHEPHERD,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.FARMER);
+		};
+		villager.setVillagerData(villager.getVillagerData()
+			.withProfession(level.registryAccess(), job));
+	}
+
+	@SafeVarargs
+	private static <T> T pick(RandomSource random, T... options) {
+		return options[random.nextInt(options.length)];
+	}
 
 	public record Plot(BlockPos corner, int width, int depth, Direction facing, String kind) {}
 
