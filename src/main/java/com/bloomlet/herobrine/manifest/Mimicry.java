@@ -115,6 +115,13 @@ public final class Mimicry {
 			yaw + (random.nextFloat() - 0.5F) * 90.0F, 0.0F);
 		him.wear(id, real.name());
 		him.setLifetime(random);
+		// Underground he is carrying what anybody underground is carrying. It is
+		// the cheapest possible piece of characterisation and it does more than
+		// the skin does: a figure standing in a cave is a mob, and a figure
+		// standing in a cave holding a pickaxe is a person who came down here.
+		if (!level.canSeeSky(stand)) {
+			him.giveMiningKit();
+		}
 		if (!level.addFreshEntity(him)) {
 			return false;
 		}
@@ -186,8 +193,32 @@ public final class Mimicry {
 				furthest = player;
 			}
 		}
-		return furthest;
+		// AND IF THE WHOLE GROUP IS STANDING TOGETHER, HE WEARS THE VIEWER
+		// INSTEAD, which is the case the first version of this got wrong.
+		//
+		// Six people building one house is the normal state of a session, and in
+		// that state "the furthest player" is somebody eleven blocks away. A copy
+		// of the person you can currently see is not a haunting, it is a
+		// novelty: it resolves itself in the same glance that finds it, because
+		// the real one is RIGHT THERE, and the whole grammar of this mod is
+		// doubt.
+		//
+		// Wearing the viewer fixes it exactly, and for a reason worth stating:
+		// you cannot see yourself. To the person looking at him it is still
+		// unfalsifiable — their own name, their own skin, walking away — which is
+		// the classic version of this image and the one that works precisely
+		// WHEN everyone is together. So the event never has to refuse.
+		return best < AWAY_ENOUGH * AWAY_ENOUGH ? viewer : furthest;
 	}
+
+	/**
+	 * How far another player has to be before wearing them means anything.
+	 *
+	 * Eighty blocks is past what anybody can make out across normal terrain, so
+	 * beyond it the sighting cannot be checked by looking — only by asking, which
+	 * is the entire mechanism. Inside it, he wears the viewer instead.
+	 */
+	private static final double AWAY_ENOUGH = 80.0;
 
 	/**
 	 * Where he is standing when they first see him.
@@ -200,11 +231,31 @@ public final class Mimicry {
 	private static final double NEAR = 20.0;
 	private static final double FAR = 40.0;
 
+	/**
+	 * Underground the whole scale has to come in, or he never appears at all.
+	 *
+	 * Placement was already cave-safe — footing is checked, not sky — but the
+	 * distances were not, and that quietly made this a surface-only event. A
+	 * clear twenty-block sightline barely exists in a cave; it needs a straight
+	 * tunnel or a cathedral, so sixty-four attempts would find nothing and the
+	 * event would decline every single time somebody was mining.
+	 *
+	 * Eight to twenty instead, which is one lit tunnel's length. Closer than the
+	 * surface version and that is correct rather than a compromise: underground
+	 * he is not a shape at the treeline, he is somebody at the other end of the
+	 * passage you were about to walk down.
+	 */
+	private static final double CAVE_NEAR = 8.0;
+	private static final double CAVE_FAR = 20.0;
+
 	private static @org.jspecify.annotations.Nullable BlockPos somewhereVisible(
 			ServerLevel level, ServerPlayer viewer, RandomSource random) {
+		boolean under = !level.canSeeSky(viewer.blockPosition());
+		double near = under ? CAVE_NEAR : NEAR;
+		double far = under ? CAVE_FAR : FAR;
 		for (int attempt = 0; attempt < 64; attempt++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
-			double out = NEAR + random.nextDouble() * (FAR - NEAR);
+			double out = near + random.nextDouble() * (far - near);
 			BlockPos at = BlockPos.containing(
 				viewer.getX() + Math.cos(angle) * out,
 				viewer.getY() + random.nextInt(7) - 3,

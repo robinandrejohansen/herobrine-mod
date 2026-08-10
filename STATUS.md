@@ -130,6 +130,10 @@ doors, crosses water, and never once acknowledges anybody. Get close and he
 walks away at walking pace. Hit him and there is nothing there, and the row
 leaves the tab list with him.
 
+**Underground he is mining** — iron pickaxe in hand, facing the wall, swinging,
+cracks spreading, and the stone actually comes away. Plain rock only, from a
+whitelist, and he drops nothing.
+
 Test with `/herobrine stranger`. Config: `theStranger`.
 
 **About one chest in six holds something he left** — enchanted, and always

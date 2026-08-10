@@ -2,6 +2,11 @@ package com.bloomlet.herobrine.entity;
 
 import com.bloomlet.herobrine.manifest.Mimicry;
 
+import org.jspecify.annotations.Nullable;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -114,11 +119,14 @@ public class MimicEntity extends PathfinderMob {
 		// walk-then-sprint, because a player who has decided to leave does not
 		// break into a run, and a sprint would read as fleeing.
 		this.goalSelector.addGoal(1, new AvoidEntityGoal<>(this, Player.class, 12.0F, 1.0, 1.0));
-		this.goalSelector.addGoal(2, new WaterAvoidingRandomStrollGoal(this, 1.0));
+		// Above strolling, so that when he has a pickaxe he is a person who came
+		// down here to do something rather than a person wandering a cave.
+		this.goalSelector.addGoal(2, new Mining(this));
+		this.goalSelector.addGoal(3, new WaterAvoidingRandomStrollGoal(this, 1.0));
 		// And no LookAtPlayerGoal anywhere in here, which is the omission that
 		// does the work. Every mob in the game turns to watch you; being looked
 		// straight through is what people report as the thing that got them.
-		this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
+		this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
 	}
 
 	@Override
@@ -137,6 +145,143 @@ public class MimicEntity extends PathfinderMob {
 
 	public String wearing() {
 		return this.entityData.get(WEARING);
+	}
+
+	/** What somebody who came down here would be holding. */
+	public void giveMiningKit() {
+		this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
+			new net.minecraft.world.item.ItemStack(
+				net.minecraft.world.item.Items.IRON_PICKAXE));
+	}
+
+	private boolean hasPickaxe() {
+		return this.getMainHandItem().is(net.minecraft.world.item.Items.IRON_PICKAXE);
+	}
+
+	/**
+	 * HE IS MINING, AND THE STONE ACTUALLY COMES AWAY.
+	 *
+	 * The tell that sells everything else. A figure walking through a cave is a
+	 * mob taking a path; a figure facing a wall, swinging, with the cracks
+	 * spreading across the block in front of him, is unmistakably somebody
+	 * playing the game. It is also the behaviour a player is LEAST suspicious of,
+	 * because it is what they came down here to do themselves.
+	 *
+	 * It really breaks the block, and the crack overlay really advances, because
+	 * the alternative — swinging at a wall that never yields — is the exact
+	 * uncanny detail that makes a watcher realise they are looking at a script.
+	 * Better to lose a block of stone.
+	 *
+	 * AND ONLY PLAIN ROCK, from a whitelist. Not ores, not anything crafted,
+	 * nothing anybody put anywhere. This is the one system in the mod that
+	 * removes blocks near a player without being asked to, and DESIGN.md's rule
+	 * about the player's world versus the world's world applies hardest here:
+	 * mining a metre of stone in a cave costs nobody anything, and a fake player
+	 * who chews through somebody's wall has stopped being a scare and become the
+	 * reason they uninstall.
+	 *
+	 * He also drops nothing. What he mines, he keeps — which is what a player
+	 * does, and which means no trail of cobblestone items pointing at where he
+	 * was standing.
+	 */
+	private static class Mining extends net.minecraft.world.entity.ai.goal.Goal {
+		/** About two seconds a block: an iron pickaxe on stone, roughly. */
+		private static final int SWING_EVERY = 6;
+		private static final int SWINGS = 5;
+
+		private final MimicEntity mob;
+		private @Nullable BlockPos face;
+		private int swings;
+		private int cooldown;
+
+		Mining(MimicEntity mob) {
+			this.mob = mob;
+			this.setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK));
+		}
+
+		@Override
+		public boolean canUse() {
+			if (!this.mob.hasPickaxe() || this.mob.getRandom().nextInt(60) != 0) {
+				return false;
+			}
+			this.face = this.wall();
+			return this.face != null;
+		}
+
+		@Override
+		public boolean canContinueToUse() {
+			return this.face != null && this.swings < SWINGS
+				&& worthMining(this.mob.level(), this.face);
+		}
+
+		@Override
+		public void start() {
+			this.swings = 0;
+			this.cooldown = 0;
+			this.mob.getNavigation().stop();
+		}
+
+		@Override
+		public void stop() {
+			// Clear the crack overlay whichever way this ended, or a half-broken
+			// block is left sitting there as a signpost saying somebody was here.
+			if (this.face != null) {
+				this.mob.level().destroyBlockProgress(this.mob.getId(), this.face, -1);
+			}
+			this.face = null;
+		}
+
+		@Override
+		public boolean requiresUpdateEveryTick() {
+			return true;
+		}
+
+		@Override
+		public void tick() {
+			if (this.face == null) {
+				return;
+			}
+			this.mob.getLookControl().setLookAt(
+				this.face.getX() + 0.5, this.face.getY() + 0.5, this.face.getZ() + 0.5);
+			if (--this.cooldown > 0) {
+				return;
+			}
+			this.cooldown = SWING_EVERY;
+			this.mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+			this.swings++;
+			this.mob.level().destroyBlockProgress(this.mob.getId(), this.face,
+				Math.min(9, this.swings * 10 / SWINGS));
+			if (this.swings >= SWINGS) {
+				this.mob.level().destroyBlock(this.face, false, this.mob, 512);
+			}
+		}
+
+		/** A block at head or chest height he could plausibly be working on. */
+		private @Nullable BlockPos wall() {
+			for (Direction dir : Direction.Plane.HORIZONTAL) {
+				for (int up = 0; up <= 1; up++) {
+					BlockPos at =
+						this.mob.blockPosition().above(up).relative(dir);
+					if (worthMining(this.mob.level(), at)) {
+						return at;
+					}
+				}
+			}
+			return null;
+		}
+
+		private static boolean worthMining(net.minecraft.world.level.Level level,
+		                                   BlockPos at) {
+			net.minecraft.world.level.block.state.BlockState state = level.getBlockState(at);
+			return state.is(net.minecraft.world.level.block.Blocks.STONE)
+				|| state.is(net.minecraft.world.level.block.Blocks.DEEPSLATE)
+				|| state.is(net.minecraft.world.level.block.Blocks.ANDESITE)
+				|| state.is(net.minecraft.world.level.block.Blocks.DIORITE)
+				|| state.is(net.minecraft.world.level.block.Blocks.GRANITE)
+				|| state.is(net.minecraft.world.level.block.Blocks.TUFF)
+				|| state.is(net.minecraft.world.level.block.Blocks.DIRT)
+				|| state.is(net.minecraft.world.level.block.Blocks.GRAVEL);
+		}
 	}
 
 	public void setLifetime(net.minecraft.util.RandomSource random) {
