@@ -10,22 +10,52 @@ package com.bloomlet.herobrine.wrath;
  */
 public enum Phase {
 	/** Traces only. The player should not yet believe anything is happening. */
-	RUMOUR(0),
+	RUMOUR(0, 20),
 	/** Seen at distance, gone when looked at. */
-	WATCHER(60),
+	WATCHER(60, 30),
 	/** He touches the world: signs, small builds, things moved. */
-	TRESPASSER(200),
+	TRESPASSER(200, 40),
 	/** He wears skins and names, possesses mobs, takes things. */
-	MIMIC(500),
+	MIMIC(500, 50),
 	/** He stops keeping his distance. */
-	HUNTER(1000),
+	HUNTER(1000, 60),
 	/** Hordes, weather, sustained assault. */
-	SIEGE(1800);
+	SIEGE(1800, 60);
 
 	public final int threshold;
 
-	Phase(int threshold) {
+	/**
+	 * HOW LONG THIS CHAPTER MUST BE LIVED IN, in minutes, before the next place
+	 * will site — AND IT CLIMBS.
+	 *
+	 * A flat floor was the first version and it is wrong in both directions at
+	 * once. Twenty minutes is generous for RUMOUR, where the content is four
+	 * kinds of trace and the whole intent is that nobody is sure anything is
+	 * happening yet; the same twenty minutes is nothing at all for HUNTER, which
+	 * has the hunt, the dark, the herd, the mimic and the theft in it and cannot
+	 * show a fraction of that in twenty minutes.
+	 *
+	 * So it climbs: twenty, thirty, forty, fifty, sixty. Three hours and twenty
+	 * minutes of floor across the five gates, before a single block of travel is
+	 * counted.
+	 *
+	 * The shape of that curve is the point rather than the total. A short first
+	 * chapter means the world starts happening quickly, which is what stops a new
+	 * player concluding the mod is not installed. Long later chapters mean the
+	 * phases with the most in them get room to actually show it — and by then the
+	 * players have a base, a reason to be somewhere, and something to lose, so
+	 * time spent in a phase has stopped being time spent waiting.
+	 */
+	public final int duesMinutes;
+
+	Phase(int threshold, int duesMinutes) {
 		this.threshold = threshold;
+		this.duesMinutes = duesMinutes;
+	}
+
+	/** The floor in ticks. */
+	public long dues() {
+		return this.duesMinutes * 1200L;
 	}
 
 	public static Phase forWrath(int wrath) {

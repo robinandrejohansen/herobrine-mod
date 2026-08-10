@@ -123,9 +123,19 @@ something nobody wrote down for you.
 ### The floor under each chapter
 
 Finding a place advances the story at once — but it does **not** conjure the next
-one. The next place is sited only once the current phase has been lived in for
-**15 minutes**, so a lucky group cannot be three phases deep inside an hour with
-one manifestation seen per phase.
+one. The next place is sited only once the current phase has been lived in, and
+**the floor climbs**:
+
+| chapter | must be lived in | by then |
+|---|---|---|
+| rumour | 20 min | 0h20 |
+| watcher | 30 min | 0h50 |
+| trespasser | 40 min | 1h30 |
+| mimic | 50 min | 2h20 |
+| hunter | 60 min | 3h20 |
+
+A short first chapter so the world starts happening quickly; long later ones so
+the phases with the most in them get room to show it.
 
 Measured in elapsed time rather than events seen, because manifestations are
 per-player and six people would burn an event quota in minutes.

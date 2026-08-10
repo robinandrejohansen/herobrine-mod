@@ -178,7 +178,7 @@ public final class Wrath {
 	/**
 	 * How long a phase must be LIVED IN before the next place will site.
 	 *
-	 * Fifteen minutes, and this exists because discovery-gated progress has the
+	 * This exists because discovery-gated progress has the
 	 * exact opposite failure of wrath-gated progress. Wrath let a group advance
 	 * without ever finding a building. Discovery lets a LUCKY group find three
 	 * buildings in an hour and receive the thinnest possible version of all
@@ -196,9 +196,10 @@ public final class Wrath {
 	 * burn through an event quota in minutes and the floor would do nothing on
 	 * exactly the servers it matters most on. Elapsed time behaves identically
 	 * for one player and for six.
+	 *
+	 * The figure itself lives on {@link Phase}, because it is not one number —
+	 * it climbs from twenty minutes to an hour as the chapters get fuller.
 	 */
-	private static final long DUES = 18000L;
-
 	private static final AttachmentType<Long> ENTERED = AttachmentRegistry
 		.createPersistent(HerobrineMod.id("story_entered"), Codec.LONG);
 
@@ -213,13 +214,13 @@ public final class Wrath {
 	 */
 	public static boolean settled(MinecraftServer server) {
 		long entered = server.overworld().getAttachedOrElse(ENTERED, 0L);
-		return server.overworld().getGameTime() - entered >= DUES;
+		return server.overworld().getGameTime() - entered >= phase(server).dues();
 	}
 
 	/** Minutes still owed to this chapter, for /herobrine status. */
 	public static long owed(MinecraftServer server) {
 		long entered = server.overworld().getAttachedOrElse(ENTERED, 0L);
-		long left = DUES - (server.overworld().getGameTime() - entered);
+		long left = phase(server).dues() - (server.overworld().getGameTime() - entered);
 		return left <= 0 ? 0 : left / 1200;
 	}
 
