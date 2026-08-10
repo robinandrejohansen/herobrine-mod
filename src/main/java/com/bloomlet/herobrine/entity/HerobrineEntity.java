@@ -276,6 +276,16 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private static final int BREAK_AFTER = 25;
 	private static final double BREAK_RANGE = 16.0;
+	/**
+	 * How far he can reach to swing at something. A player's arm, near enough.
+	 *
+	 * BREAK_RANGE above is how close the player has to be for him to consider
+	 * digging at all; this is how close the BLOCK has to be for him to touch it,
+	 * and conflating the two was the whole bug. Slightly longer than vanilla's
+	 * three-ish blocks because he is taller than the block he is usually swinging
+	 * at and the sightline hits a corner rather than the middle of a face.
+	 */
+	private static final double REACH = 4.5;
 	// ---- END BREAKING IN --------------------------------------------------
 
 	/** Two hearts, and not oftener than once a second. */
@@ -1461,6 +1471,32 @@ public class HerobrineEntity extends PathfinderMob {
 				net.minecraft.world.level.ClipContext.Fluid.NONE, this));
 		if (!(hit instanceof net.minecraft.world.phys.BlockHitResult block)
 			|| hit.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK) {
+			return null;
+		}
+		// AND HE HAS TO BE ABLE TO REACH IT.
+		//
+		// This was missing, and its absence was a worse bug than it looks. The
+		// sightline finds the first block in the way at ANY distance, so with a
+		// sixteen-block trigger he would stand out in the field and take a wall
+		// apart from where he was — which reads as a glitch rather than as
+		// somebody breaking in, because nothing is touching it.
+		//
+		// It got worse after that block fell. He never had to move, so the next
+		// tick found the NEXT thing on the same line and he bored a
+		// laser-straight corridor through every internal wall between him and
+		// the player without taking a step. Two failures at once: a robot
+		// drilling rather than a person, and a repair bill that breaks the
+		// recoverable-damage rule in DESIGN.md §0 — a bore through five walls is
+		// a week, not an evening.
+		//
+		// Refusing anything out of reach fixes both with no other change. Out of
+		// reach means no break, which means he keeps pursuing, which means he
+		// WALKS TO THE WALL and works on it from arm's length. Once it is open
+		// the nearest blocking thing is inside the hole, so he steps through and
+		// takes the next one from in there. He only ever destroys what is on his
+		// actual route, one block at a time, with walking in between — which is
+		// how a person does it, and it is a far better thing to watch.
+		if (hit.getLocation().distanceToSqr(this.getEyePosition()) > REACH * REACH) {
 			return null;
 		}
 		return breakable(here, block.getBlockPos()) ? block.getBlockPos() : null;

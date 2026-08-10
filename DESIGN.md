@@ -499,3 +499,106 @@ to end it would make the mod unwinnable and unfun.
 - Stalk-to-standoff-distance goal; does not approach or attack
 - Vanishes when watched, with smoke and sound
 - Haunting spawner: darkness-gated, out of view, one at a time
+
+---
+
+## 13. The eviction — him editing your base
+
+**Status: draft. Nothing here is built.**
+
+This is the spine (§0) made mechanical. He is not raiding the base; he is
+serving notice on it, and the campaign is the notice getting louder.
+
+### The one principle
+
+**Escalate legibility, not damage.**
+
+Rung one is deniable — you genuinely cannot tell whether it was him or you.
+Rung five is a statement. What does NOT climb across the ladder is the repair
+bill: it is an evening at rung two and an evening at rung five, per the
+recoverable rule. The *dread* escalates; the *cost* stays flat.
+
+Get this backwards and the mod becomes a damage-per-hour dial, which is both
+less frightening and the thing that makes people quit for real.
+
+### How he finds you: the bed
+
+**Sleeping registers your base.** Nothing else does — not a chest, not a wall,
+not time spent standing somewhere.
+
+This is the best single mechanic available here, because it hands the player a
+real decision with a real cost on both sides. Skip sleep and stay unfound, and
+you keep the night, the phantoms and the dark. Sleep and be comfortable, and
+you have told him where you live. Your claim on the world is the thing that
+gives you away, which is the whole theme in one block.
+
+### The ladder
+
+**Rung 1 — Deniable** (RUMOUR / WATCHER) · *"did you leave that open?"*
+Nothing lost, everything one click from fixed.
+- A torch out (built)
+- A door you closed, open
+- A furnace off, its fuel spent
+- **One block of your wall swapped for a near-identical one** — cobble where
+  stone was. Not damage. *Editing.* The most quietly maddening thing on the list
+- An item frame turned to face the wall
+- A crafting table one block from where it was
+
+**Rung 2 — Present** (TRESPASSER) · *"something was in here"*
+Additions you did not place. Still nothing lost, and **all of it inert**.
+- **A button on the wall that does nothing**
+- A lever, unflipped
+- A pressure plate in a doorway, wired to nothing
+- A ladder going up to nothing
+- A one-block niche cut in a wall with a torch in it
+- Four words on a sign (built)
+
+The payload is not the trap. It is that they cannot tell it is not a trap. A
+button nobody pressed is worth more than any circuit, and it costs nothing to
+place and nothing to repair.
+
+**Rung 3 — Wired** (MIMIC) · *"that one does something"*
+Now some of them work, and the earlier inert ones become retroactively sinister.
+- A plate that fires a dispenser — noise, not arrows, the first time
+- A trapdoor over a two-block pit. Not lethal. Humiliating
+- A piston that shoves you a block when you open your own door
+- A half-buried circuit that does nothing *yet*
+- **One block of TNT, unwired, in your base.** He does not light it. You have to
+  decide whether to touch it
+
+**Rung 4 — Costly** (HUNTER) · *"he is taking it apart"*
+Real repair work, bounded.
+- A section of wall or roof opened and left
+- Every torch out at once, at night
+- Fire in the treeline (built: `scorch`)
+- Mobs at the door
+- Loot gone from one chest — never all of it
+- **Your bed broken, and left on the floor as an item.** Seconds to fix; the
+  message is total. He is saying you do not live here
+
+**Rung 5 — Eviction** (SIEGE) · *"get out"*
+All of the above, sustained, while he is also hunting. The players cannot repair
+and fight at the same time — and choosing to keep repairing anyway **is the win
+condition**. Still nothing permanently deleted.
+
+### The four rules that keep this from being griefing
+
+1. **He never opens a container to destroy it, and he never deletes an item.**
+   What he takes turns up in a chest in one of his buildings. Theft becomes a
+   LEAD rather than a loss, and a raided chest is suddenly a reason to walk four
+   hundred blocks instead of a reason to log off. This one rule converts the
+   worst mechanic on the list into the best.
+2. **A ledger.** Every block he changes is recorded, with `/herobrine undo` for
+   an operator. On a live server with family on it, the safety valve is not
+   optional — and knowing it exists is what makes it safe to turn the rest up.
+3. **Never while watched.** The oldest rule in the mod. He edits the room you
+   are not in, and the horror is arriving rather than witnessing.
+4. **Never the bed's spawn without leaving the bed.** Losing a spawn point
+   mid-session is real cost with no story attached.
+
+### What to build first
+
+Rung 1 and 2 only, and the ledger before either of them. They are the cheapest
+things on the list, they carry most of the dread, and they risk nothing — which
+makes them the right place to find out whether the group finds this frightening
+or just annoying before anything expensive gets written.
