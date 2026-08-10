@@ -120,6 +120,19 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### He comes home
+
+Finding a place starts a clock. **Two to four minutes** of being left alone —
+enough to get into the cellar, find the chest, start reading — and then the sky
+turns and he is there.
+
+Only while somebody is still within 48 blocks; walk away and the clock resets,
+because coming home only means anything if it lands while you are in the house.
+Before MIMIC he arrives watching. From MIMIC he arrives hunting.
+
+Which turns looting into a decision: read the second book, or take the chest and
+go.
+
 ### Two dials
 
 **PHASE is the story, and only finding his places moves it.** One building, one

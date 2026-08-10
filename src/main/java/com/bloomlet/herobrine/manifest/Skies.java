@@ -7,6 +7,7 @@ import com.bloomlet.herobrine.wrath.Wrath;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 
 /**
@@ -59,6 +60,31 @@ public final class Skies {
 	private static final float SIEGE_ROLL = 0.45F;
 
 	private static int tickCounter;
+
+	/**
+	 * THE SKY TURNS, NOW, BECAUSE SOMETHING HAPPENED.
+	 *
+	 * Everything else in this file is a slow dial — a wet fraction per phase, one
+	 * decision per storm, deliberately unhurried so weather never becomes the
+	 * mod's personality. This is the exception, and it is the exception for the
+	 * one thing that earns it: a storm that arrives BECAUSE of something the
+	 * players just did reads completely differently from the same storm arriving
+	 * on a timer.
+	 *
+	 * Which is also what keeps mornings calm. The bad weather is a consequence
+	 * rather than a climate, so the quiet days stay quiet and the sky going over
+	 * means something every single time.
+	 */
+	public static void turn(ServerLevel level) {
+		MinecraftServer server = level.getServer();
+		if (server == null) {
+			return;
+		}
+		RandomSource random = level.getRandom();
+		int length = STORM_MIN + random.nextInt(STORM_SPREAD);
+		server.setWeatherParameters(0, length, true, true);
+		HerobrineMod.LOGGER.info("the sky turned — thunder for {} minutes", length / 1200);
+	}
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Skies::onTick);

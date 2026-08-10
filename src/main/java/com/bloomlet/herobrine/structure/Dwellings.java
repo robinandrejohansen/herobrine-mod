@@ -236,6 +236,7 @@ public final class Dwellings {
 				// `met` is set on the approach, within sixty blocks, so it means
 				// somebody actually stood outside it.
 				if (Boolean.TRUE.equals(overworld.getAttached(place.met))) {
+					comingHome(overworld, place, phase);
 					continue;   // found; on to the next chapter
 				}
 				// AND IT NEVER STALLS FOREVER. A place that was built and then
@@ -353,6 +354,77 @@ public final class Dwellings {
 	 * for no reason. This wants to land in the same breath as "there it is".
 	 */
 	private static final int ARRIVING = 60;
+
+	/**
+	 * HE COMES HOME, AND THE BUILDING HAS A CLOCK ON IT.
+	 *
+	 * Finding one of his places used to be entirely safe. You walked up, the
+	 * sighting fired, and then it was a museum — read the books, empty the
+	 * chests, leave whenever. That is the wrong feeling for the one place in the
+	 * world that is HIS, and it is also a wasted opportunity: the building
+	 * already has the players standing still in one spot, engrossed, for several
+	 * minutes, which is the best setup this mod will ever get handed.
+	 *
+	 * So arriving starts a clock. Two to four minutes of being left alone —
+	 * enough to get into the cellar, find the chest, start reading — and then he
+	 * is there, in the doorway, and it is not a sighting.
+	 *
+	 * WHICH TURNS LOOTING INTO A DECISION, which is the real prize. Do you read
+	 * the second book or take the chest and go? Nothing has to be explained for
+	 * that question to arrive; it arrives the first time somebody hears him and
+	 * is still holding an open inventory.
+	 *
+	 * AND IT SCALES, because the same event cannot be right for the homestead and
+	 * for the threshold. Early it is weather and a sighting — the sky turns while
+	 * you are inside, and something is standing at the treeline when you come
+	 * out. Late he walks in hunting. Same trigger, same clock, and the first two
+	 * buildings teach the players to be afraid of the timer before the timer can
+	 * actually hurt them.
+	 */
+	private static final int COMES_HOME_MIN = 2400;
+	private static final int COMES_HOME_SPREAD = 2400;
+	private static final double STILL_THERE = 48.0;
+
+	/** Set when somebody arrives; counted down while anybody is still inside. */
+	private static final java.util.Map<Place, Integer> homeIn =
+		new java.util.EnumMap<>(Place.class);
+
+	private static void comingHome(ServerLevel level, Place place, Phase phase) {
+		Long where = level.getAttached(place.site);
+		if (where == null) {
+			return;
+		}
+		BlockPos site = BlockPos.of(where);
+		ServerPlayer inside = null;
+		for (ServerPlayer player : level.players()) {
+			if (Math.sqrt(site.distSqr(player.blockPosition())) <= STILL_THERE) {
+				inside = player;
+				break;
+			}
+		}
+		// Nobody there: the clock resets rather than pausing. He is not waiting
+		// for them to come back — coming home only means anything if it lands
+		// while they are still in the house.
+		if (inside == null) {
+			homeIn.remove(place);
+			return;
+		}
+		int left = homeIn.getOrDefault(place,
+			COMES_HOME_MIN + level.getRandom().nextInt(COMES_HOME_SPREAD));
+		left -= CHECK_INTERVAL;
+		if (left > 0) {
+			homeIn.put(place, left);
+			return;
+		}
+		homeIn.remove(place);
+		// Early on it is the sky and a figure. From MIMIC he walks in.
+		boolean hunting = phase.atLeast(Phase.MIMIC);
+		com.bloomlet.herobrine.manifest.Skies.turn(level);
+		com.bloomlet.herobrine.entity.HauntingSpawner.place(level, inside, hunting, false);
+		HerobrineMod.LOGGER.info("he came home to {} while {} was still there ({})",
+			place.name().toLowerCase(java.util.Locale.ROOT), inside.getName().getString(),
+			hunting ? "hunting" : "watching");
+	}
 
 	private static void arriving(ServerLevel level, Place place) {
 		if (Boolean.TRUE.equals(level.getAttached(place.met))) {
