@@ -120,6 +120,18 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### The seventh name
+
+From MIMIC, rarely, **somebody who is not on the server turns up wearing the
+skin and the name of somebody who is** — floating nameplate, a row in the tab
+list next to the real one, a matching ping. He copies whoever is FURTHEST away,
+so it cannot be resolved by looking, only by asking. He walks, wanders, opens
+doors, crosses water, and never once acknowledges anybody. Get close and he
+walks away at walking pace. Hit him and there is nothing there, and the row
+leaves the tab list with him.
+
+Test with `/herobrine stranger`. Config: `theStranger`.
+
 **About one chest in six holds something he left** — enchanted, and always
 something wrong with it. Sharpness V on a wooden sword; a diamond axe carrying
 nothing but Bane of Arthropods I; a good helmet with Binding on it; an iron

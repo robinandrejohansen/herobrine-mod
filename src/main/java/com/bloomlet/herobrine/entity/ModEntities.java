@@ -44,6 +44,22 @@ public final class ModEntities {
 			.clientTrackingRange(8)
 	);
 
+	/**
+	 * Somebody who is not on the server.
+	 *
+	 * Tracked as far out as the game will comfortably allow, because unlike him
+	 * this one is meant to be watched for a long time from a long way off —
+	 * followed, lost, and argued about. A figure that blinks out at sixteen
+	 * blocks is a rendering bug; the whole event is somebody trailing him over a
+	 * hill.
+	 */
+	public static final EntityType<MimicEntity> MIMIC = register(
+		"mimic",
+		EntityType.Builder.of(MimicEntity::new, MobCategory.MONSTER)
+			.sized(0.6F, 1.8F)
+			.clientTrackingRange(10)
+	);
+
 	private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HerobrineMod.id(name));
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
@@ -53,5 +69,6 @@ public final class ModEntities {
 	public static void register() {
 		FabricDefaultAttributeRegistry.register(HEROBRINE, HerobrineEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(INFECTED, InfectedEntity.createAttributes());
+		FabricDefaultAttributeRegistry.register(MIMIC, MimicEntity.createAttributes());
 	}
 }

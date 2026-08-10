@@ -714,7 +714,7 @@ public final class HauntingSpawner {
 	 * the ground itself would reject a perfectly good spot just over the brow
 	 * of a hill — which is one of the better places for him to be.
 	 */
-	private static boolean visibleFrom(ServerLevel level, ServerPlayer player, BlockPos pos) {
+	public static boolean visibleFrom(ServerLevel level, ServerPlayer player, BlockPos pos) {
 		Vec3 eye = player.getEyePosition();
 		Vec3 head = new Vec3(pos.getX() + 0.5, pos.getY() + 1.7, pos.getZ() + 0.5);
 		return level.clip(new net.minecraft.world.level.ClipContext(eye, head,

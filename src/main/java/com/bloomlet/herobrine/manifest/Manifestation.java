@@ -56,6 +56,23 @@ public enum Manifestation {
 		}
 	},
 
+	/**
+	 * One of your friends, four hundred blocks from where your friend is.
+	 *
+	 * Weighted LOW for the phase it unlocks in, and it is the one number in this
+	 * table worth defending. Every other event here can happen twice in an
+	 * evening and still land, because they are all things you half-saw. This one
+	 * is a thing the whole server discusses, and a mystery that recurs on a
+	 * schedule is not a mystery — it is a feature, and once it is a feature the
+	 * tab list never lies again.
+	 */
+	THE_STRANGER(Phase.MIMIC, 4) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Mimicry.appear(level, player);
+		}
+	},
+
 	/** Something old, at the edge of your world, that was not there yesterday. */
 	THE_RUIN(Phase.TRESPASSER, 8) {
 		@Override
@@ -278,6 +295,7 @@ public enum Manifestation {
 			     THE_CHAMBER -> config.signs;
 			case THE_BREATHING -> config.theBreathing;
 			case POSSESSED_MOB -> config.possession;
+			case THE_STRANGER -> config.theStranger;
 			case THE_RUIN -> config.ruins;
 			case THE_PAGE, THE_SIGN -> config.signsAndPages;
 			case THE_DARK -> config.theDark;

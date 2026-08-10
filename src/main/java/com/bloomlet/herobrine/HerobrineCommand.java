@@ -71,6 +71,16 @@ public final class HerobrineCommand {
 					return 1;
 				}))
 
+				.then(Commands.literal("stranger").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					boolean ok = com.bloomlet.herobrine.manifest.Mimicry
+						.appear((ServerLevel)p.level(), p);
+					ctx.getSource().sendSuccess(() -> Component.literal(ok
+						? "someone else is here" + where(p)
+						: "nowhere in sight to stand"), false);
+					return 1;
+				}))
+
 				.then(Commands.literal("glimpse").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
 					var outcome = com.bloomlet.herobrine.entity.HauntingSpawner

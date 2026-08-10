@@ -93,6 +93,16 @@ public final class Config {
 	public boolean town = true;
 	public boolean villageDecay = true;
 
+	/**
+	 * He wears the skin and name of somebody who is logged in.
+	 *
+	 * Given its own switch rather than riding on possession, because it is the
+	 * one event here that some groups will want off on principle — impersonating
+	 * a real person by name is a different kind of thing from a haunted cow, and
+	 * a server that is fine with the second may not be fine with the first.
+	 */
+	public boolean theStranger = true;
+
 	// ---- the ending --------------------------------------------------------
 	/** He can be killed at SIEGE. Off means the mod has no ending. */
 	public boolean theReckoning = true;

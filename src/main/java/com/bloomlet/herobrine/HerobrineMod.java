@@ -53,6 +53,7 @@ public class HerobrineMod implements ModInitializer {
 		Signs.register();
 		Journal.register();
 		Possession.register();
+		com.bloomlet.herobrine.manifest.Mimicry.register();
 		Breach.register();
 		Dwellings.register();
 		TheDogKnows.register();
