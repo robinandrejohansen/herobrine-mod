@@ -205,6 +205,67 @@ public final class Hoard {
 	// ------------------------------------------------------------------
 
 	/**
+	 * A MAP TO THE NEXT ONE, AND HE IS THE ONE WHO DREW IT.
+	 *
+	 * Why he would help is the interesting part, and it is not a contradiction.
+	 * Per the spine he wants to be FOUND — a haunting nobody investigates is a
+	 * haunting nobody is frightened by, and every building in this mod is only
+	 * worth standing up if somebody walks into it. So at the end of a hunt he
+	 * points the way, because the players going deeper is what he wants. The map
+	 * is not a kindness. It is an invitation, and taking it is the players'
+	 * decision.
+	 *
+	 * It also fixes the one genuine content failure this mod has had: a group
+	 * walked a thousand blocks west, raided villages, found signs and graves, and
+	 * never found a house — so the whole middle of the story sat in a field
+	 * nobody visited. Siting near the players helped. A map ends it.
+	 *
+	 * SCALE 3, the same as a treasure map, with unlimited tracking on. That
+	 * combination is what makes it navigable rather than a picture: the player's
+	 * own marker pins itself to the edge of the parchment and points, so it works
+	 * from four hundred bleak blocks away instead of only once they are already
+	 * standing on it.
+	 *
+	 * Points at the next building NOBODY HAS WALKED UP ON, not simply the next
+	 * one in the sequence — so it never sends a group somewhere four of them have
+	 * already looted, and it happily sends them to one that is sited but not yet
+	 * built, because arriving is what builds it.
+	 */
+	private static ItemStack chart(ServerLevel level) {
+		BlockPos target = com.bloomlet.herobrine.structure.Dwellings.unfound(level);
+		if (target == null) {
+			return ItemStack.EMPTY;
+		}
+		ItemStack map = net.minecraft.world.item.MapItem.create(
+			level, target.getX(), target.getZ(), (byte)3, true, true);
+		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
+			map, target, "+",
+			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
+		// Named, because an unnamed filled map is something a player assumes they
+		// made themselves and forgot about. This one has to be unmistakably a
+		// thing that was left for them.
+		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+			net.minecraft.network.chat.Component.literal(
+				INVITATIONS[level.getRandom().nextInt(INVITATIONS.length)]));
+		HerobrineMod.LOGGER.info("a map to [{}, {}] left in the grave",
+			target.getX(), target.getZ());
+		return map;
+	}
+
+	/**
+	 * What is written on the map.
+	 *
+	 * The same register as the signs — eviction, not menace — with one difference
+	 * that matters: these are all pointing OUTWARD. "there is one more" is him
+	 * telling them the world goes on further than they have gone, which is both
+	 * an invitation and the thing he most wants them to believe is hopeless.
+	 */
+	private static final String[] INVITATIONS = {
+		"come and see", "this way", "if you must",
+		"there is one more", "you will want to know", "go on then",
+	};
+
+	/**
 	 * INSIDE THE ANIMAL, and there is no way to tell from outside.
 	 *
 	 * Held in the hands rather than tracked separately, because vanilla already
@@ -244,7 +305,8 @@ public final class Hoard {
 	 * the entire point of siting it here.
 	 */
 	public static void grave(ServerLevel level, BlockPos where, ServerPlayer player) {
-		if (size(level) == 0) {
+		ItemStack map = chart(level);
+		if (size(level) == 0 && map.isEmpty()) {
 			return;
 		}
 		RandomSource random = level.getRandom();
@@ -258,13 +320,18 @@ public final class Hoard {
 
 		level.setBlock(hole, Blocks.CHEST.defaultBlockState(), 3);
 		if (level.getBlockEntity(hole) instanceof ChestBlockEntity chest) {
+			int slot = 0;
+			// The map first, so it is the thing they see when the lid comes up.
+			if (!map.isEmpty()) {
+				chest.setItem(slot++, map);
+			}
 			int given = 0;
-			for (int slot = 0; slot < chest.getContainerSize() && given < 4; slot++) {
+			while (slot < chest.getContainerSize() && given < 4) {
 				ItemStack stack = draw(level, random);
 				if (stack == null) {
 					break;
 				}
-				chest.setItem(slot, stack);
+				chest.setItem(slot++, stack);
 				given++;
 			}
 			chest.setChanged();

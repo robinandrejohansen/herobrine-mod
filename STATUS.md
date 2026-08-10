@@ -132,7 +132,7 @@ stacks, and it comes back three ways:
 | Where | When | Why that one |
 |---|---|---|
 | **Inside possessed animals** | any time after | Invisible until you kill it. Every staring cow you already walked past is now a question |
-| **A grave where he broke off** | after a hunt | Somebody else's name on the stone, your own belongings under it |
+| **A grave where he broke off** | after a hunt | Somebody else's name on the stone, your own belongings under it — **and a map to the next house he has not shown you yet** |
 | **Chests from HUNTER on** | the late houses | Your own pickaxe in the church. Those chests were never treasure — they are where he keeps things |
 
 Config: `theTaking`.

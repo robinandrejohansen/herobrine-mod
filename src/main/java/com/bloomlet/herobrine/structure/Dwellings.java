@@ -249,6 +249,30 @@ public final class Dwellings {
 	}
 
 	/**
+	 * The next one nobody has walked up on yet.
+	 *
+	 * Reuses the same `met` flag the arrival sighting spends, which is exactly
+	 * the right definition: a building somebody has already stood outside is not
+	 * somewhere to be sent, and one that is merely SITED and not yet built still
+	 * is — it will exist by the time anybody gets near it, because building is
+	 * what happens when a player comes within range.
+	 *
+	 * @return where to point somebody, or null if there is nothing left to find
+	 */
+	public static @org.jspecify.annotations.Nullable BlockPos unfound(ServerLevel level) {
+		for (Place place : Place.values()) {
+			if (Boolean.TRUE.equals(level.getAttached(place.met))) {
+				continue;
+			}
+			Long chosen = level.getAttached(place.site);
+			if (chosen != null) {
+				return BlockPos.of(chosen);
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * SOMEBODY IS WALKING UP ON IT FOR THE FIRST TIME, AND HE IS OUTSIDE.
 	 *
 	 * The payoff for the four-hundred-block walk. Finding one of these is the
