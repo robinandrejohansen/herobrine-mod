@@ -120,6 +120,18 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### Finding his places
+
+Every building now advertises itself at four ranges, and all four get worse as
+the phases climb.
+
+| Range | What | Early | Late |
+|---|---|---|---|
+| hundreds | **smoke** | woodsmoke column | **blue** |
+| ~90 | **roads** — 5, radiating, fading out | dirt path + cobble | stone, then deepslate |
+| road's end | **a sign** | "home / not far" — the family's | "nobody / walks back" — his |
+| ~70 | **a sound** | an axe, a bell | not a tool |
+
 ### What he took
 
 From TRESPASSER he goes through your chests — one or two stacks, never the

@@ -602,3 +602,50 @@ Rung 1 and 2 only, and the ledger before either of them. They are the cheapest
 things on the list, they carry most of the dread, and they risk nothing — which
 makes them the right place to find out whether the group finds this frightening
 or just annoying before anything expensive gets written.
+
+---
+
+## 14. Discovery drives the story — agreed, not yet built
+
+**Status: agreed direction. The findability layer (§ Approach) is built; the
+inversion below is not.**
+
+The causality is currently backwards, and it is the reason a group can play for
+days and miss everything:
+
+| | Today | Agreed |
+|---|---|---|
+| Phases advance on | wrath — sleeping, mining, killing | **finding his places** |
+| The buildings are | a reward for progressing | **the gate on progress** |
+| Wrath controls | which phase you are in | **how bad it is right now** |
+
+**Two dials, not one.** Phase is how far into the story you are, and only
+discovery moves it. Wrath is how angry he is, and disturbing his things is what
+raises it. So finding his places is simultaneously how you advance and how you
+provoke him — the story is inside his belongings, and touching it costs.
+
+**The change is contained.** 30 callers ask `Wrath.phase(server)` and only 4
+read the raw total; `phase()` is one function returning `Phase.forWrath(get())`.
+Flipping the source is one function, not a rewrite.
+
+**The guard this needs: no hard stalls.** If discovery gates progression, a
+group that cannot find a building has a dead mod, which is worse than the
+current problem. Every phase gets a timeout after which he makes it findable —
+a map, a line of torches. The gate is always "you must find it", never "you must
+be lucky."
+
+**Two consequences worth keeping.**
+
+*The hunt should not be a timer.* Tie it to place: the hunt is the journey home
+from his house. You took something; now get back with it. Start, middle and end,
+without an arbitrary duration.
+
+*The climax should not be at the players' base.* Defending your home is the
+generic mod ending. Invert it — **you go to him**, and the last building is the
+finale. SIEGE stops being a state you sit in and becomes the walk to the
+threshold. The eviction campaign (§13) is the pressure between buildings, not
+the ending.
+
+**Migration matters.** Any live world already derives its phase from wrath, so
+the inversion must seed phase from the buildings already found or that world
+loses its progress.

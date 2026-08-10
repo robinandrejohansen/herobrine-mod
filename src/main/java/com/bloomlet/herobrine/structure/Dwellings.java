@@ -196,6 +196,10 @@ public final class Dwellings {
 			}
 			if (Boolean.TRUE.equals(overworld.getAttached(place.up))) {
 				arriving(overworld, place);
+				Long where = overworld.getAttached(place.site);
+				if (where != null) {
+					Approach.heard(overworld, BlockPos.of(where), place.from);
+				}
 				continue;   // standing; on to the next chapter
 			}
 			if (!phase.atLeast(place.from)) {
@@ -243,6 +247,9 @@ public final class Dwellings {
 
 			if (nearest <= RAISE_RANGE && build(overworld, place, site)) {
 				overworld.setAttached(place.up, true);
+				// Roads, smoke and a sign, laid at build time for the same reason
+				// the building is: nobody is close enough to watch it happen.
+				Approach.lay(overworld, site, phase);
 			}
 			return;         // whatever happened, the next one is not due yet
 		}
