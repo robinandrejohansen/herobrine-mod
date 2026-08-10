@@ -27,13 +27,22 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 # name -> (vanilla texture inside the client jar, [(x, y, w, h), ...])
 MOBS = {
-	# Two wide rather than three: the outer column of a cow's eye is the dark
-	# patch around it, not the eye, and lighting it made the whole side of the
-	# face burn.
-	'cow':      ('cow/cow_temperate.png',         [(7, 8, 2, 2), (11, 8, 2, 2)]),
-	'pig':      ('pig/pig_temperate.png',         [(8, 11, 2, 1), (14, 11, 2, 1)]),
-	'sheep':    ('sheep/sheep.png',               [(8, 10, 2, 1), (12, 10, 2, 1)]),
-	'villager': ('villager/villager.png',         [(9, 14, 2, 1), (13, 14, 2, 1)]),
+	# ONE PIXEL PER EYE, AND THE COORDINATES WERE READ OUT OF THE VANILLA
+	# TEXTURES RATHER THAN GUESSED. Every one of the three that existed before
+	# was wrong: the cow was a row too high and two rows tall, and the pig and
+	# the sheep both had their right eye one pixel inboard of where it is.
+	#
+	# The pupil is a single near-black pixel in every one of these — that is the
+	# eye, and lighting anything more lights the face. Same lesson as the Steve
+	# skin, where painting two rows covered his nose. Found by scanning the head
+	# region for near-black pixels, which returns exactly two hits per mob.
+	'cow':      ('cow/cow_temperate.png',         [(6, 9, 1, 1), (13, 9, 1, 1)]),
+	'pig':      ('pig/pig_temperate.png',         [(8, 11, 1, 1), (15, 11, 1, 1)]),
+	'sheep':    ('sheep/sheep.png',               [(8, 10, 1, 1), (13, 10, 1, 1)]),
+	# Chickens had nothing at all, so a coop stayed friendly through every phase
+	# while the field outside was all staring. Their pupils sit high and close
+	# together, which makes them the most unpleasant of the four.
+	'chicken':  ('chicken/chicken_temperate.png', [(3, 4, 1, 1), (6, 4, 1, 1)]),
 }
 
 # Not white, and not opaque.

@@ -93,6 +93,15 @@ public final class TheHerd {
 			if (handled >= PER_PLAYER) {
 				return;
 			}
+			// NOTHING THAT LIVES IN WATER. Animal.class catches turtles,
+			// axolotls and frogs, and a turtle shuffling over to nip somebody's
+			// ankle is the single most ridiculous thing this mod could show.
+			// Restricting to the CREATURE category keeps it to the land animals
+			// a farm actually has, which is the only place this idea works.
+			if (animal.getType().getCategory()
+				!= net.minecraft.world.entity.MobCategory.CREATURE) {
+				continue;
+			}
 			if (animal instanceof TamableAnimal || Feral.isFeral(animal)) {
 				continue;
 			}

@@ -34,6 +34,7 @@ public final class PossessedEyesTextures {
 		add(EntityTypes.COW, "cow");
 		add(EntityTypes.PIG, "pig");
 		add(EntityTypes.SHEEP, "sheep");
+		add(EntityTypes.CHICKEN, "chicken");
 		add(EntityTypes.VILLAGER, "villager");
 	}
 
@@ -62,7 +63,7 @@ public final class PossessedEyesTextures {
 	 */
 	public static int herdMenace(EntityType<?> type, Phase phase) {
 		if (type != EntityTypes.COW && type != EntityTypes.PIG
-			&& type != EntityTypes.SHEEP) {
+			&& type != EntityTypes.SHEEP && type != EntityTypes.CHICKEN) {
 			return 0;
 		}
 		if (phase.atLeast(Phase.SIEGE)) {
