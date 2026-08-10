@@ -605,10 +605,10 @@ or just annoying before anything expensive gets written.
 
 ---
 
-## 14. Discovery drives the story — agreed, not yet built
+## 14. Discovery drives the story — BUILT
 
-**Status: agreed direction. The findability layer (§ Approach) is built; the
-inversion below is not.**
+**Status: built.** Phase is stored and advanced only by finding his places;
+wrath is intensity, and `Wrath.into()` ramps inside each phase.
 
 The causality is currently backwards, and it is the reason a group can play for
 days and miss everything:
@@ -646,6 +646,13 @@ finale. SIEGE stops being a state you sit in and becomes the walk to the
 threshold. The eviction campaign (§13) is the pressure between buildings, not
 the ending.
 
-**Migration matters.** Any live world already derives its phase from wrath, so
-the inversion must seed phase from the buildings already found or that world
-loses its progress.
+**Migration, as built.** A world with no stored phase seeds once from the old
+`Phase.forWrath(total)` derivation, so no live campaign is demoted by installing
+this. From then on the stored value is authoritative and only discovery moves it.
+
+**The ramp, as built.** `Wrath.into(server)` is 0 at the start of a phase and 1
+at the end, measured from the wrath total recorded when the phase began — not
+from the phase's threshold, because the two no longer relate. It is spent in
+`ManifestationDirector.windowFor`: the event window closes to 60% across a
+phase, so 8–20 minutes becomes 4.8–12. Only 60% on purpose — doubling the rate
+would spend the quiet that makes any of it land.

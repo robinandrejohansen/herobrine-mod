@@ -252,6 +252,7 @@ public final class Dwellings {
 				}
 				if (away > place.far + ABANDONED_MARGIN) {
 					overworld.setAttached(place.met, true);
+					Wrath.discovered(server);
 					HerobrineMod.LOGGER.info("{} was built and never visited — moving on",
 						place.name().toLowerCase(java.util.Locale.ROOT));
 					continue;
@@ -373,6 +374,9 @@ public final class Dwellings {
 			// house long after they had walked into it, which is worse than
 			// nothing.
 			level.setAttached(place.met, true);
+			// AND THE STORY MOVES, because somebody found one of his places. This
+			// is the only call site that advances a phase anywhere in the mod.
+			Wrath.discovered(level.getServer());
 			com.bloomlet.herobrine.entity.HauntingSpawner.atPlace(level, player, site);
 			return;
 		}

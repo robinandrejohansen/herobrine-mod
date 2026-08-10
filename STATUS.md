@@ -120,6 +120,20 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### Two dials
+
+**PHASE is the story, and only finding his places moves it.** One building, one
+phase. It is stored, not derived — so nobody advances by sleeping and mining any
+more, and the middle of the mod cannot be missed.
+
+**WRATH is his temper**, and it ramps *inside* each phase. `Wrath.into()` runs 0
+to 1 across a chapter and tightens the event window to 60% — 8–20 minutes
+becomes 4.8–12. The new thing arrives once and quietly when the story turns, and
+is the weather by the end of the same chapter.
+
+Existing worlds seed their phase once from the old wrath derivation, so no
+campaign is demoted.
+
 ### The order, and the distance
 
 **You cannot find house 3 before house 2.** The next place is not even *sited*

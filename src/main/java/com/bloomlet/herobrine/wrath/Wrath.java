@@ -114,8 +114,91 @@ public final class Wrath {
 		return player.getAttachedOrElse(PLAYER_SHARE, 0);
 	}
 
+	/**
+	 * The story's own position, kept rather than derived.
+	 *
+	 * STORY is the phase ordinal; SINCE is the wrath total when it was entered,
+	 * which is what {@link Phase#into} needs to ramp inside a phase.
+	 */
+	private static final AttachmentType<Integer> STORY = AttachmentRegistry
+		.createPersistent(HerobrineMod.id("story"), Codec.INT);
+	private static final AttachmentType<Integer> SINCE = AttachmentRegistry
+		.createPersistent(HerobrineMod.id("story_since"), Codec.INT);
+
+	/**
+	 * HOW FAR INTO THE STORY, AND IT IS NO LONGER A FUNCTION OF WRATH.
+	 *
+	 * This used to be Phase.forWrath(get(server)), and that one line was the
+	 * reason a group could play for days and miss the entire middle of the mod.
+	 * Progress came from sleeping, mining and killing — things everybody does
+	 * without meaning to — so the phases advanced whether or not anybody had ever
+	 * walked into one of his buildings. The buildings were a REWARD for
+	 * progressing, so progressing without them was the default.
+	 *
+	 * It is stored now, and only {@link #discovered} moves it. Wrath still exists
+	 * and still matters: it is how angry he is RIGHT NOW, which sets how often
+	 * and how hard the current phase's events land. Two dials — the story and
+	 * his temper — and the player drives both, one by going deeper and one by
+	 * disturbing things.
+	 *
+	 * MIGRATION IS THE DELICATE PART. A world saved before this change has no
+	 * stored phase and a large wrath total, and reading zero would silently throw
+	 * away a campaign. So the first read seeds from the old derivation, and the
+	 * seed is a MAXIMUM against what discovery would give — nobody is ever
+	 * demoted by installing this.
+	 */
 	public static Phase phase(MinecraftServer server) {
-		return Phase.forWrath(get(server));
+		Integer stored = server.overworld().getAttached(STORY);
+		if (stored == null) {
+			Phase seeded = Phase.forWrath(get(server));
+			set(server, seeded);
+			HerobrineMod.LOGGER.info("no stored story — seeded {} from {} wrath",
+				seeded.name(), get(server));
+			return seeded;
+		}
+		Phase[] all = Phase.values();
+		return all[Math.max(0, Math.min(all.length - 1, stored))];
+	}
+
+	/** Wrath at the moment the current phase began. */
+	public static int since(MinecraftServer server) {
+		return server.overworld().getAttachedOrElse(SINCE, 0);
+	}
+
+	/**
+	 * How deep into the current phase, nought to one.
+	 *
+	 * The single value every event should be scaling on. Early in a phase the
+	 * new thing happens once and quietly; late in it, it is the weather.
+	 */
+	public static float into(MinecraftServer server) {
+		return phase(server).into(get(server), since(server));
+	}
+
+	private static void set(MinecraftServer server, Phase phase) {
+		server.overworld().setAttached(STORY, phase.ordinal());
+		server.overworld().setAttached(SINCE, get(server));
+	}
+
+	/**
+	 * SOMEBODY FOUND ONE OF HIS PLACES, so the story moves.
+	 *
+	 * The only thing in the mod that advances a phase. Called from Dwellings the
+	 * moment a building is marked found, and it steps exactly one phase — so the
+	 * six buildings and the six phases are now the same sequence rather than two
+	 * sequences that were supposed to stay in step and did not.
+	 *
+	 * Never goes backwards and never skips.
+	 */
+	public static void discovered(MinecraftServer server) {
+		Phase now = phase(server);
+		Phase[] all = Phase.values();
+		if (now.ordinal() + 1 >= all.length) {
+			return;
+		}
+		Phase next = all[now.ordinal() + 1];
+		set(server, next);
+		HerobrineMod.LOGGER.info("a place was found — the story moves to {}", next.name());
 	}
 
 	/**

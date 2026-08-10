@@ -226,8 +226,28 @@ public final class ManifestationDirector {
 	}
 
 	/** The base window, shortened by how much this player has provoked him. */
+	/**
+	 * AND IT TIGHTENS AS THE PHASE WEARS ON.
+	 *
+	 * The one place the intra-phase ramp is spent, and the highest-value place to
+	 * spend it. Phases were a step function: the first minute of MIMIC and the
+	 * last hour of it fired events at exactly the same rate, so a phase read as
+	 * flat however good the individual events were. Six steps across a campaign
+	 * is a staircase, not a shape.
+	 *
+	 * Wrath.into is nought at the start of a phase and one at the end of it, and
+	 * the window closes to sixty per cent across that. The new thing therefore
+	 * arrives once and quietly when the story turns, and by the end of the same
+	 * chapter it is the weather — without a single new event existing.
+	 *
+	 * Only sixty per cent, deliberately. Doubling the rate would make late phases
+	 * exhausting and would spend the quiet that makes any of this land; this is
+	 * meant to be felt as a tightening rather than noticed as a number.
+	 */
 	private static int windowFor(ServerPlayer player, RandomSource random) {
-		return Math.max(40, (int)(window(random) / attentionFactor(player)));
+		float deep = Wrath.into(((ServerLevel)player.level()).getServer());
+		double tighten = 1.0 - 0.4 * deep;
+		return Math.max(40, (int)(window(random) * tighten / attentionFactor(player)));
 	}
 
 	private static int window(RandomSource random) {
