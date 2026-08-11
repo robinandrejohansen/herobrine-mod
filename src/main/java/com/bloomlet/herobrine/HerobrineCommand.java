@@ -140,15 +140,6 @@ public final class HerobrineCommand {
 					return 1;
 				}))
 
-				// DEBUG AID — delete with markSpawns in HauntingSpawner.
-				.then(Commands.literal("mark").executes(ctx -> {
-					boolean on = HauntingSpawner.toggleMark();
-					ctx.getSource().sendSuccess(() -> Component.literal(on
-						? "lightning marks every spawn (harmless — no fire, no damage)"
-						: "spawn marks off"), false);
-					return 1;
-				}))
-
 				.then(Commands.literal("town")
 					.then(Commands.literal("here").executes(HerobrineCommand::townHere)))
 
@@ -272,7 +263,12 @@ public final class HerobrineCommand {
 		long seconds = ManifestationDirector.secondsUntilNext(server, player);
 		int light = level.getMaxLocalRawBrightness(player.blockPosition());
 
+		long owed = Wrath.owed(server);
 		String line = "wrath " + wrath + "  |  phase " + phase.name()
+			// Without this the new pacing floor is indistinguishable from a bug:
+			// a house is late, nobody can see why, and the honest conclusion from
+			// inside the game is that the mod is broken.
+			+ (owed > 0 ? "  |  next place in " + owed + " min" : "  |  next place due")
 			+ (remaining >= 0 ? "  |  next phase in " + remaining : "  |  final phase")
 			+ "  |  share " + Wrath.getShare(player)
 			+ "  |  next in " + (seconds < 0 ? "unscheduled" : seconds + "s")

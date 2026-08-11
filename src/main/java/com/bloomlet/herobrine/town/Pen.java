@@ -146,7 +146,32 @@ public final class Pen {
 							? Blocks.HAY_BLOCK.defaultBlockState()
 							: Blocks.SPRUCE_PLANKS.defaultBlockState());
 					} else if (dy == 0) {
-						Blueprint.put(level, at, Blocks.DIRT_PATH.defaultBlockState());
+						// A STRIP OF WORKED GROUND, because the farmers had none.
+						//
+						// They were given the profession and nothing to do with it:
+						// a farmer with no farmland will not till, will not plant,
+						// will not harvest and will not restock, so the whole trade
+						// was decoration. Two rows of crops fixes it, and a village
+						// with somebody actually working in it is worth more than
+						// any amount of building detail.
+						//
+						// Deliberately half grown and patchy. A field at full
+						// harvest reads as a farm somebody is tending well, and this
+						// is a town in a mod about somebody who is not coming back.
+						boolean field = z > oz + 1 && !side && random.nextInt(3) != 0;
+						if (field) {
+							Blueprint.put(level, at, Blocks.FARMLAND.defaultBlockState()
+								.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.MOISTURE, 7));
+							Blueprint.put(level, at.above(), random.nextBoolean()
+								? Blocks.WHEAT.defaultBlockState().setValue(
+									net.minecraft.world.level.block.state.properties.BlockStateProperties.AGE_7,
+									random.nextInt(8))
+								: Blocks.CARROTS.defaultBlockState().setValue(
+									net.minecraft.world.level.block.state.properties.BlockStateProperties.AGE_7,
+									random.nextInt(8)));
+						} else {
+							Blueprint.put(level, at, Blocks.DIRT_PATH.defaultBlockState());
+						}
 					} else {
 						Blueprint.put(level, at, Blocks.AIR.defaultBlockState());
 					}

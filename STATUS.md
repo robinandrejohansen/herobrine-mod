@@ -120,6 +120,23 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### The sky marks where he arrives
+
+The lightning was a debug aid that shipped by accident — and it was the most
+frightening thing in the mod, so it stays properly. **Phase-gated**, because a
+bolt announcing every spawn destroys the first two chapters, where he must never
+be seen arriving.
+
+| phase | the sky |
+|---|---|
+| rumour, watcher | **nothing** |
+| trespasser | one bolt, near him, not on him — weather |
+| mimic | one, on the ground he stands on |
+| hunter | two or three, staggered |
+| siege | three or four |
+
+Visual-only throughout: no fire, no damage. `/herobrine mark` is gone.
+
 ### The town, in a forest
 
 Buildings **fell the trees** in their footprint plus a one-block margin before

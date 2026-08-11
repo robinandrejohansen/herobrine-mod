@@ -403,6 +403,17 @@ public final class Undercity {
 	 * and nothing is supposed to be — the unsettling part is that they are fine
 	 * and they are forty blocks under a town that does not mention them.
 	 */
+	private static final net.minecraft.resources.ResourceKey<
+		net.minecraft.world.entity.npc.villager.VillagerProfession>[] TRADES =
+			new net.minecraft.resources.ResourceKey[] {
+				net.minecraft.world.entity.npc.villager.VillagerProfession.FARMER,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.LIBRARIAN,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.CLERIC,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.MASON,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.BUTCHER,
+				net.minecraft.world.entity.npc.villager.VillagerProfession.SHEPHERD,
+			};
+
 	private static void people(ServerLevel level, BlockPos floor, RandomSource random) {
 		for (int i = 0; i < 9; i++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
@@ -417,6 +428,18 @@ public final class Undercity {
 			villager.snapTo(x + 0.5, floor.getY(), z + 0.5,
 				random.nextFloat() * 360.0F, 0.0F);
 			villager.setPersistenceRequired();
+			// THE SAME TRADES AS THE TOWN ABOVE, and that is the whole point.
+			//
+			// Bare villagers down here would read as a spawner: no trades, no
+			// professions, nothing to say when clicked. Giving them the SAME jobs
+			// as the people upstairs says something much worse than anything a
+			// sign could — this is not a dungeon full of prisoners, it is the town,
+			// again, underneath the town, with the same butcher and the same
+			// librarian in it. Nobody explains why and nobody has to.
+			if (villager instanceof net.minecraft.world.entity.npc.villager.Villager who) {
+				who.setVillagerData(who.getVillagerData().withProfession(
+					level.registryAccess(), TRADES[random.nextInt(TRADES.length)]));
+			}
 			level.addFreshEntity(villager);
 		}
 	}

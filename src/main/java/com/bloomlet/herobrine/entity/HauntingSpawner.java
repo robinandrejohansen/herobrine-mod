@@ -59,30 +59,59 @@ public final class HauntingSpawner {
 	private static final double CLOSE_RADIUS = 26.0;
 
 	/**
-	 * At SIEGE he does not simply be there. The sky comes with him.
+	 * THE SKY MARKS WHERE HE ARRIVES — AND THIS STARTED AS A DEBUG AID.
 	 *
-	 * Every appearance before this one is built on him never being seen to
-	 * arrive — you look up and he is already standing there, and the whole
-	 * effect depends on there having been no moment of arrival to point at.
-	 * This is the phase that abandons it, and it should be the loudest possible
-	 * abandonment: three bolts on the ground he is standing on, so the player
-	 * does not find him, they are TOLD where he is from across the valley.
+	 * It was a visual-only bolt on every single spawn, added so a tester could
+	 * see where he had actually gone instead of walking a bearing and hoping. It
+	 * was meant to be deleted and it shipped by accident for several versions.
 	 *
-	 * Visual-only, like everything else that throws lightning here. It cannot
-	 * burn anything down, which is the only reason it is allowed to happen in a
-	 * player's field at all.
+	 * It was also the single most frightening thing in the mod, which is the sort
+	 * of thing no amount of design gets you. So it stays — properly, rather than
+	 * as a leftover switch.
+	 *
+	 * WHAT MAKES IT CONTENT RATHER THAN A BUG IS THE PHASE GATE. Every appearance
+	 * in the first two chapters is built on him never being SEEN to arrive: you
+	 * look up and he is already standing there, and there was no moment to point
+	 * at. A bolt announcing every spawn destroys that, and destroys it worst
+	 * exactly where the mod is quietest and most fragile.
+	 *
+	 * So the sky says nothing at all until TRESPASSER, and then it escalates:
+	 *
+	 *   RUMOUR, WATCHER  nothing. He is never seen arriving.
+	 *   TRESPASSER       one bolt, somewhere near, not on him. Weather.
+	 *   MIMIC            one bolt on the ground he is standing on.
+	 *   HUNTER           two or three, staggered, around him.
+	 *   SIEGE            three or four, and the ground he came from is lit up.
+	 *
+	 * Visual-only throughout, checked against 26.2 rather than assumed:
+	 * setVisualOnly(true) gates BOTH the fire and the entity damage in
+	 * LightningBolt.tick. It cannot burn a forest down and it cannot hurt
+	 * anybody, which is the only reason it is allowed to happen in somebody's
+	 * field at all.
 	 */
-	private static void arrival(ServerLevel level, BlockPos pos) {
-		if (Wrath.phase(level.getServer()) != Phase.SIEGE) {
+	private static void omen(ServerLevel level, BlockPos pos) {
+		Phase phase = Wrath.phase(level.getServer());
+		int bolts = switch (phase) {
+			case RUMOUR, WATCHER -> 0;
+			case TRESPASSER, MIMIC -> 1;
+			case HUNTER -> 2 + level.getRandom().nextInt(2);
+			case SIEGE -> 3 + level.getRandom().nextInt(2);
+		};
+		if (bolts == 0) {
 			return;
 		}
 		RandomSource random = level.getRandom();
-		for (int i = 0; i < 3; i++) {
+		// At TRESPASSER it lands NEAR him rather than on him, which is the whole
+		// difference between weather and an announcement. A player who walks
+		// toward that bolt finds him by accident; one who walks toward a bolt
+		// that struck his feet was told.
+		double spread = phase == Phase.TRESPASSER ? 9.0 : 3.5;
+		for (int i = 0; i < bolts; i++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
-			double range = random.nextDouble() * 3.5;
+			double range = random.nextDouble() * spread;
 			final double x = pos.getX() + 0.5 + Math.cos(angle) * range;
 			final double z = pos.getZ() + 0.5 + Math.sin(angle) * range;
-			Cadence.in(level.getServer(), i * (3 + random.nextInt(5)), () -> {
+			Cadence.in(level.getServer(), i * (3 + random.nextInt(6)), () -> {
 				net.minecraft.world.entity.LightningBolt bolt =
 					net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
 						.create(level, EntitySpawnReason.EVENT);
@@ -95,41 +124,6 @@ public final class HauntingSpawner {
 			});
 		}
 	}
-
-	// ---- DEBUG AID, DELETE WHEN DONE -------------------------------------
-	// A visual-only bolt on every placement, so a tester can see where he
-	// actually went instead of walking a bearing and hoping.
-	//
-	// setVisualOnly(true) gates BOTH the fire and the entity damage in
-	// LightningBolt.tick, checked against 26.2 rather than assumed — this
-	// cannot burn a forest down or hurt anybody, which is the only reason it
-	// is safe to leave switched on while playing.
-	//
-	// To remove: delete this field, the strike() call in spawnAt, the method
-	// itself, and the "mark" branch in HerobrineCommand. Nothing else refers
-	// to any of it.
-	private static boolean markSpawns = true;
-
-	public static boolean toggleMark() {
-		markSpawns = !markSpawns;
-		return markSpawns;
-	}
-
-	private static void strike(ServerLevel level, BlockPos pos) {
-		if (!markSpawns) {
-			return;
-		}
-		net.minecraft.world.entity.LightningBolt bolt =
-			net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
-				.create(level, EntitySpawnReason.EVENT);
-		if (bolt == null) {
-			return;
-		}
-		bolt.setVisualOnly(true);
-		bolt.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
-		level.addFreshEntity(bolt);
-	}
-	// ---- END DEBUG AID ---------------------------------------------------
 
 	/** How the sweep is spread: every bearing, a few distances down each. */
 	private static final int BEARINGS = 32;
@@ -697,8 +691,7 @@ public final class HauntingSpawner {
 		// otherwise. Of all the ways to lose a week, being confidently told
 		// the wrong coordinates is the worst.
 		ManifestationDirector.noteLocation(pos);
-		arrival(level, pos);
-		strike(level, pos);   // DEBUG AID — see markSpawns above
+		omen(level, pos);
 		// A reason to turn around — sometimes. He is still never SEEN
 		// arriving; you turn and find him already standing there.
 		herobrine.announceArrival();
