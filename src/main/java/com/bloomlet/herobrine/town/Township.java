@@ -157,7 +157,16 @@ public final class Township {
 			for (int i = 0; i < count; i++) {
 				int x = plot.corner().getX() + random.nextInt(plot.width());
 				int z = plot.corner().getZ() + random.nextInt(plot.depth());
-				int y = Ground.topOf(level, x, z) + 1;
+				// THE PLOT'S OWN FLOOR, NOT THE GROUND UNDER IT.
+				//
+				// This asked Ground.topOf for the surface — and it runs AFTER the
+				// buildings are up, so topOf walked down from the sky, hit the
+				// ROOF, and called that the ground. Every villager was spawned on
+				// top of the house it was meant to live in.
+				//
+				// The plot corner already carries the floor height it was built
+				// at, which is the correct answer and needs no searching.
+				int y = plot.corner().getY();
 
 				net.minecraft.world.entity.Mob soul =
 					net.minecraft.world.entity.EntityTypes.VILLAGER
@@ -232,6 +241,30 @@ public final class Township {
 	public record Plot(BlockPos corner, int width, int depth, Direction facing, String kind) {}
 
 	/**
+	 * Does this footprint touch one already claimed?
+	 *
+	 * Four blocks of margin, so buildings have air between them rather than
+	 * shared walls — two houses exactly flush read as one long building, which is
+	 * a different fault with the same cause.
+	 */
+	private static boolean clashes(List<Plot> taken, BlockPos corner, int w, int d) {
+		int ax0 = corner.getX() - 4;
+		int az0 = corner.getZ() - 4;
+		int ax1 = corner.getX() + w + 4;
+		int az1 = corner.getZ() + d + 4;
+		for (Plot other : taken) {
+			int bx0 = other.corner().getX();
+			int bz0 = other.corner().getZ();
+			int bx1 = bx0 + other.width();
+			int bz1 = bz0 + other.depth();
+			if (ax0 < bx1 && bx0 < ax1 && az0 < bz1 && bz0 < az1) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Hand out the ground.
 	 *
 	 * Buildings stand along the lanes rather than anywhere they fit, because
@@ -283,6 +316,21 @@ public final class Township {
 					// Facing the lane it stands on, which is the whole reason
 					// plots carry a direction at all.
 					Direction facing = side < 0 ? across : across.getOpposite();
+					// AND IT MAY NOT SIT ON TOP OF SOMETHING ALREADY THERE.
+					//
+					// There was no overlap check at all. Plots step along a lane
+					// every fifteen blocks and several buildings are wider than
+					// fifteen, and the four lanes converge at the square — so
+					// houses were placed inside each other, which is what a town
+					// generator must never do and what the screenshots showed.
+					//
+					// Skipped rather than nudged: moving a plot to fit would drift
+					// it off the lane it is supposed to face, and a town with one
+					// fewer house is fine while a house at an angle in a field is
+					// not.
+					if (clashes(plots, corner, w, d)) {
+						continue;
+					}
 					plots.add(new Plot(corner, w, d, facing, order[taken]));
 					taken++;
 				}

@@ -212,10 +212,23 @@ public final class Blueprint {
 		// to be underpinned, and that is already happening. And the refusal logs
 		// now, so the next time a plot comes up empty there is a line saying why
 		// instead of a mystery.
-		if (high - low > 7) {
+		// AND THE TOLERANCE SCALES WITH THE FOOTPRINT, which is why the church
+		// kept not appearing.
+		//
+		// A flat seven blocks is a reasonable ask of a nine-by-nine and an
+		// impossible one of the church, which is nineteen by thirty-one — across
+		// nearly six hundred square metres of real terrain there is almost always
+		// more than seven blocks of fall somewhere, so the largest and most
+		// important building in the town was the one guaranteed to be refused.
+		//
+		// Safe to relax because footing() underpins the whole footprint with a
+		// stone plinth down to solid ground: slope is not levelled here, it is
+		// built over, and a bigger building simply gets a bigger plinth.
+		int allowed = 7 + Math.max(width, depth) / 4;
+		if (high - low > allowed) {
 			com.bloomlet.herobrine.HerobrineMod.LOGGER.info(
-				"a plot at [{}, {}] was refused: {} blocks of slope across it",
-				origin.getX(), origin.getZ(), high - low);
+				"a {}x{} plot at [{}, {}] was refused: {} blocks of slope, {} allowed",
+				width, depth, origin.getX(), origin.getZ(), high - low, allowed);
 			return false;
 		}
 		return true;
