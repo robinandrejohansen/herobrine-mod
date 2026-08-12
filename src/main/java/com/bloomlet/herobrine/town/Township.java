@@ -57,7 +57,23 @@ public final class Township {
 	 * Sized before the buildings rather than after, because a wall is the one
 	 * thing here that cannot be adjusted later without moving everything.
 	 */
-	private static final int WALL_RADIUS = 40;
+	/**
+	 * SIXTY-FOUR, NOT FORTY, because forty could not hold the town it describes.
+	 *
+	 * The plot list asks for fifteen buildings, one of which is nineteen by
+	 * thirty-one. Plots step outward from the square in rings fifteen blocks
+	 * apart and the loop stops fourteen short of the wall, so a forty-block wall
+	 * gave exactly TWO rings — and once the overlap check started rejecting the
+	 * ones that had previously been placed inside each other, the honest capacity
+	 * turned out to be eight. The log said "8 (6 houses up) plots" for a
+	 * fifteen-plot town.
+	 *
+	 * Sixty-four gives four rings, which fits the list with room to reject. It is
+	 * also simply the right size: a walled town with a church, a hall, a forge,
+	 * two shops, eight houses and two stock pens is not a forty-block circle, and
+	 * the wall was sized before any of those existed.
+	 */
+	private static final int WALL_RADIUS = 64;
 	/** The open ground at the centre, where the well is. */
 	private static final int SQUARE = 7;
 	private static final int WALL_HEIGHT = 4;

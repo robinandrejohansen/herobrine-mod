@@ -1,5 +1,8 @@
 package com.bloomlet.herobrine.town;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.bloomlet.herobrine.structure.Ground;
 
 import net.minecraft.core.BlockPos;
@@ -185,53 +188,94 @@ public final class Blueprint {
 	}
 
 	/** Is this plot flat enough and dry enough to build on? */
+	/**
+	 * LEVEL THE PLOT INSTEAD OF REFUSING IT.
+	 *
+	 * This used to measure the slope and give up when it exceeded a tolerance,
+	 * and every version of that idea is wrong for the same reason: the failure is
+	 * SILENT and it lands hardest on the biggest buildings. The church is nineteen
+	 * by thirty-one, so it samples the most ground, so it finds the most fall, so
+	 * the most important structure in the town was the one that reliably did not
+	 * exist. Raising the tolerance only moved the number the terrain had to beat —
+	 * the log said "16 blocks of slope, 14 allowed" and there is no value of
+	 * "allowed" that real ground will not eventually exceed.
+	 *
+	 * So the ground is made flat. Which is also what actually happens: nobody has
+	 * ever built a church on a hillside without cutting the hillside first, and a
+	 * levelled terrace with a stone face on the downhill side is the single most
+	 * recognisable sign of a settlement in any landscape.
+	 *
+	 * THE MEDIAN, NOT THE MEAN OR THE PEAK. The mean gets dragged by one ravine
+	 * corner and the peak buries the whole plot in fill; the median is the height
+	 * most of the plot already is, so most of the work is nothing and the cut and
+	 * the fill stay small.
+	 *
+	 * @return false only for water, which is the one thing terracing cannot fix
+	 */
 	private static boolean clearEnough(ServerLevel level, BlockPos origin, int width, int depth) {
-		int low = Integer.MAX_VALUE;
-		int high = Integer.MIN_VALUE;
-		for (int x = 0; x <= width; x += Math.max(1, width / 3)) {
-			for (int z = 0; z <= depth; z += Math.max(1, depth / 3)) {
-				int y = Ground.topOf(level, origin.getX() + x, origin.getZ() + z);
-				if (!level.getFluidState(new BlockPos(origin.getX() + x, y, origin.getZ() + z))
-						.isEmpty()) {
+		List<Integer> heights = new ArrayList<>();
+		for (int x = -1; x <= width + 1; x++) {
+			for (int z = -1; z <= depth + 1; z++) {
+				int gx = origin.getX() + x;
+				int gz = origin.getZ() + z;
+				int y = Ground.topOf(level, gx, gz);
+				if (!level.getFluidState(new BlockPos(gx, y, gz)).isEmpty()
+					|| !level.getFluidState(new BlockPos(gx, y + 1, gz)).isEmpty()) {
+					com.bloomlet.herobrine.HerobrineMod.LOGGER.info(
+						"a {}x{} plot at [{}, {}] is in water", width, depth, gx, gz);
 					return false;
 				}
-				low = Math.min(low, y);
-				high = Math.max(high, y);
+				heights.add(y);
 			}
 		}
-		// SEVEN, NOT FOUR, AND THE FOUR WAS THE BUG.
-		//
-		// This refusal is silent, and a silent refusal in a town generator means
-		// plots that simply have nothing on them — which is what "couldn't render
-		// the builds" looks like from inside the game. Four blocks of variation
-		// across a whole plot is flat, and outside plains and deserts most ground
-		// is not flat, so in hills and forest most buildings declined.
-		//
-		// Seven is safe because footing() lays a stone plinth down to real ground
-		// underneath every building: a slope does not have to be levelled, it has
-		// to be underpinned, and that is already happening. And the refusal logs
-		// now, so the next time a plot comes up empty there is a line saying why
-		// instead of a mystery.
-		// AND THE TOLERANCE SCALES WITH THE FOOTPRINT, which is why the church
-		// kept not appearing.
-		//
-		// A flat seven blocks is a reasonable ask of a nine-by-nine and an
-		// impossible one of the church, which is nineteen by thirty-one — across
-		// nearly six hundred square metres of real terrain there is almost always
-		// more than seven blocks of fall somewhere, so the largest and most
-		// important building in the town was the one guaranteed to be refused.
-		//
-		// Safe to relax because footing() underpins the whole footprint with a
-		// stone plinth down to solid ground: slope is not levelled here, it is
-		// built over, and a bigger building simply gets a bigger plinth.
-		int allowed = 7 + Math.max(width, depth) / 4;
-		if (high - low > allowed) {
-			com.bloomlet.herobrine.HerobrineMod.LOGGER.info(
-				"a {}x{} plot at [{}, {}] was refused: {} blocks of slope, {} allowed",
-				width, depth, origin.getX(), origin.getZ(), high - low, allowed);
-			return false;
-		}
+		heights.sort(null);
+		int level0 = heights.get(heights.size() / 2);
+		terrace(level, origin, width, depth, level0);
 		return true;
+	}
+
+	/**
+	 * Cut the high side, fill the low side, and face the fill in stone.
+	 *
+	 * The apron runs one block past the footprint so the building is not standing
+	 * on a plinth exactly its own size, which reads as a floating tray. Anything
+	 * DwellTracker calls built is left alone — a terrace through somebody's floor
+	 * is the one outcome worse than a building that never appeared.
+	 */
+	private static void terrace(ServerLevel level, BlockPos origin, int width, int depth,
+	                            int flat) {
+		for (int x = -1; x <= width + 1; x++) {
+			for (int z = -1; z <= depth + 1; z++) {
+				BlockPos ground = new BlockPos(origin.getX() + x, flat, origin.getZ() + z);
+				if (com.bloomlet.herobrine.manifest.DwellTracker.isBuilt(level, ground)) {
+					continue;
+				}
+				// Down to solid: fill whatever hangs in the air beneath the terrace.
+				for (int down = 0; down < 24; down++) {
+					BlockPos at = ground.below(down);
+					if (level.getBlockState(at).isSolid()) {
+						break;
+					}
+					level.setBlock(at, down == 0
+						? Blocks.GRASS_BLOCK.defaultBlockState()
+						: Blocks.STONE_BRICKS.defaultBlockState(), 2);
+				}
+				if (!level.getBlockState(ground).isSolid()) {
+					level.setBlock(ground, Blocks.GRASS_BLOCK.defaultBlockState(), 2);
+				}
+				// And take everything off the top of it.
+				for (int up = 1; up <= 20; up++) {
+					BlockPos at = ground.above(up);
+					if (level.getBlockState(at).isAir()) {
+						continue;
+					}
+					if (com.bloomlet.herobrine.manifest.DwellTracker.isBuilt(level, at)) {
+						continue;
+					}
+					level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+				}
+			}
+		}
 	}
 
 	/**
