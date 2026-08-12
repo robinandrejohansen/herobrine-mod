@@ -256,8 +256,8 @@ public final class Lodge {
 			case 'g' -> put(level, at, Blocks.GLASS_PANE.defaultBlockState());
 			case 'D' -> door(level, at, facing);
 			case 'd' -> bed(level, at, facing, random);
-			case 'C' -> chest(level, at, facing, random, Loot.Tier.LARDER);
-			case 'K' -> chest(level, at, facing, random, Loot.Tier.HOMESTEAD);
+			case 'C' -> chest(level, at, facing, random, Loot.Tier.TOWN_HOME);
+			case 'K' -> chest(level, at, facing, random, Loot.Tier.TOWN_HOME);
 			case 'c' -> put(level, at, Blocks.CRAFTING_TABLE.defaultBlockState());
 			case 'F' -> put(level, at, Blocks.FURNACE.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));

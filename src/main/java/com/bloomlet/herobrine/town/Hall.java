@@ -201,8 +201,8 @@ public final class Hall {
 				.setValue(BlockStateProperties.HALF, Half.TOP));
 			case 'D' -> door(level, at, facing);
 			case 'd' -> bed(level, at, facing, random);
-			case 'K' -> chest(level, at, facing, random, Loot.Tier.HOMESTEAD);
-			case 'C' -> chest(level, at, facing, random, Loot.Tier.LARDER);
+			case 'K' -> chest(level, at, facing, random, Loot.Tier.TOWN_TRADE);
+			case 'C' -> chest(level, at, facing, random, Loot.Tier.TOWN_HOME);
 			case 'A' -> put(level, at, Blocks.BARREL.defaultBlockState());
 			case 'T' -> table(level, at);
 			// Benches look AT the table, not all one way. A stair chair seats

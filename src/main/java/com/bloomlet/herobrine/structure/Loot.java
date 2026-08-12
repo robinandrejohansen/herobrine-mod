@@ -64,7 +64,26 @@ public final class Loot {
 	 * to be poorer and stranger as he stops being a person who owns things, and
 	 * that progression wants somewhere to live from the start.
 	 */
-	public enum Tier { HOMESTEAD, LARDER }
+	public enum Tier {
+		HOMESTEAD, LARDER,
+		/**
+		 * THE TOWN IS THE ONE PLACE THAT IS STILL TRADING, so it is the one place
+		 * allowed to be worth robbing.
+		 *
+		 * This deliberately breaks the ceiling at the top of this file, and the
+		 * distinction is honest rather than a loophole: "never a prize" is a rule
+		 * about ABANDONED buildings. A farmhouse nobody has lived in for a decade
+		 * having diamonds in the cupboard is what makes it stop being a house. A
+		 * walled town with a working forge, a fisherman and a full congregation
+		 * having iron, tackle and a few books in its chests is simply what a town
+		 * is, and finding one poorer than the derelict farm two hundred blocks
+		 * back would read as a bug.
+		 *
+		 * Split by trade, because a smithy full of bread is the same failure as a
+		 * larder full of anvils.
+		 */
+		TOWN_FORGE, TOWN_TRADE, TOWN_HOME,
+	}
 
 	private record Entry(Item item, int min, int max, int weight, boolean worn) {}
 
@@ -139,6 +158,61 @@ public final class Loot {
 	};
 
 	/**
+	 * The forge. Iron, coal, and the tools somebody made out of them.
+	 */
+	private static final Entry[] FORGE_POOL = {
+		new Entry(Items.IRON_INGOT, 3, 9, 10, false),
+		new Entry(Items.COAL, 4, 12, 9, false),
+		new Entry(Items.IRON_NUGGET, 4, 14, 7, false),
+		new Entry(Items.IRON_PICKAXE, 1, 1, 6, true),
+		new Entry(Items.IRON_AXE, 1, 1, 6, true),
+		new Entry(Items.IRON_SHOVEL, 1, 1, 5, true),
+		new Entry(Items.IRON_SWORD, 1, 1, 5, true),
+		new Entry(Items.IRON_HELMET, 1, 1, 4, true),
+		new Entry(Items.IRON_CHESTPLATE, 1, 1, 3, true),
+		new Entry(Items.FLINT_AND_STEEL, 1, 1, 4, true),
+		new Entry(Items.SHIELD, 1, 1, 3, true),
+		new Entry(Items.ANVIL, 1, 1, 1, false),
+	};
+
+	/**
+	 * The shops and the hall. What a town buys, sells and writes down.
+	 */
+	private static final Entry[] TRADE_POOL = {
+		new Entry(Items.BOOK, 2, 6, 10, false),
+		new Entry(Items.PAPER, 4, 12, 9, false),
+		new Entry(Items.EMERALD, 1, 4, 7, false),
+		new Entry(Items.FISHING_ROD, 1, 1, 7, true),
+		new Entry(Items.COD, 2, 6, 7, false),
+		new Entry(Items.SALMON, 1, 4, 6, false),
+		new Entry(Items.STRING, 4, 10, 6, false),
+		new Entry(Items.BUCKET, 1, 2, 5, false),
+		new Entry(Items.LANTERN, 1, 3, 5, false),
+		new Entry(Items.IRON_INGOT, 1, 4, 5, false),
+		new Entry(Items.BOOKSHELF, 1, 2, 4, false),
+		new Entry(Items.INK_SAC, 1, 3, 4, false),
+		new Entry(Items.NAME_TAG, 1, 1, 2, false),
+	};
+
+	/**
+	 * The lodges. People live here, and they are not poor.
+	 */
+	private static final Entry[] HOME_POOL = {
+		new Entry(Items.BREAD, 2, 6, 10, false),
+		new Entry(Items.COOKED_COD, 1, 4, 8, false),
+		new Entry(Items.WHEAT, 4, 12, 8, false),
+		new Entry(Items.CARROT, 3, 8, 7, false),
+		new Entry(Items.TORCH, 4, 12, 7, false),
+		new Entry(Items.LEATHER_BOOTS, 1, 1, 5, true),
+		new Entry(Items.LEATHER_CHESTPLATE, 1, 1, 5, true),
+		new Entry(Items.IRON_INGOT, 1, 3, 5, false),
+		new Entry(Items.BOOK, 1, 3, 5, false),
+		new Entry(Items.FISHING_ROD, 1, 1, 4, true),
+		new Entry(Items.CLOCK, 1, 1, 2, false),
+		new Entry(Items.COMPASS, 1, 1, 2, false),
+	};
+
+	/**
 	 * Fill the slots the books did not take.
 	 *
 	 * Never touches an occupied slot, so this can be called on any chest
@@ -149,6 +223,9 @@ public final class Loot {
 		Entry[] pool = switch (tier) {
 			case HOMESTEAD -> HOMESTEAD_POOL;
 			case LARDER -> LARDER_POOL;
+			case TOWN_FORGE -> FORGE_POOL;
+			case TOWN_TRADE -> TRADE_POOL;
+			case TOWN_HOME -> HOME_POOL;
 		};
 
 		List<Integer> free = new ArrayList<>();
@@ -161,7 +238,12 @@ public final class Loot {
 			return;
 		}
 
-		int stacks = 2 + random.nextInt(4);
+		boolean town = tier == Tier.TOWN_FORGE || tier == Tier.TOWN_TRADE
+			|| tier == Tier.TOWN_HOME;
+		// A trading town's chests are fuller than a dead farm's. Four to eight
+		// rather than two to five, which is the difference between rummaging and
+		// finding something.
+		int stacks = town ? 4 + random.nextInt(5) : 2 + random.nextInt(4);
 		for (int i = 0; i < stacks && !free.isEmpty(); i++) {
 			int slot = free.remove(random.nextInt(free.size()));
 			chest.setItem(slot, roll(pool, random));
@@ -191,7 +273,10 @@ public final class Loot {
 		}
 
 		// And now and again, on top of all that, the other thing.
-		if (!free.isEmpty() && chest.getLevel() != null && random.nextInt(CHANCE_IN) == 0) {
+		// One in six everywhere else; one in two in the town, because the forge
+		// and the shops are where enchanted work would actually BE.
+		if (!free.isEmpty() && chest.getLevel() != null
+			&& random.nextInt(town ? 2 : CHANCE_IN) == 0) {
 			int slot = free.remove(random.nextInt(free.size()));
 			chest.setItem(slot, chance(chest.getLevel().registryAccess(), random));
 		}

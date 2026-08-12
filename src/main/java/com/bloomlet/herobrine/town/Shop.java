@@ -228,7 +228,7 @@ public final class Shop {
 			.setValue(BlockStateProperties.HORIZONTAL_FACING,
 				Blueprint.turned(Direction.SOUTH, facing)));
 		if (level.getBlockEntity(at) instanceof ChestBlockEntity chest) {
-			Loot.scatter(chest, random, Loot.Tier.HOMESTEAD);
+			Loot.scatter(chest, random, Loot.Tier.TOWN_TRADE);
 		}
 	}
 
