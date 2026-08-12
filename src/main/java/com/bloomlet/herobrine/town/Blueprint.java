@@ -242,11 +242,34 @@ public final class Blueprint {
 	 * DwellTracker calls built is left alone — a terrace through somebody's floor
 	 * is the one outcome worse than a building that never appeared.
 	 */
+	private static final int FEATHER = 6;
+
 	private static void terrace(ServerLevel level, BlockPos origin, int width, int depth,
 	                            int flat) {
-		for (int x = -1; x <= width + 1; x++) {
-			for (int z = -1; z <= depth + 1; z++) {
-				BlockPos ground = new BlockPos(origin.getX() + x, flat, origin.getZ() + z);
+		// THE APRON FEATHERS OUT, or the town sits in a quarry.
+		//
+		// A terrace that stops dead at the footprint leaves a vertical face all
+		// the way round — a perfect rectangular shelf cut into a hillside, which
+		// is the thing in the screenshot that reads as a bug rather than as a
+		// building. Nothing in a landscape has edges like that.
+		//
+		// So outside the footprint the target height walks back toward the real
+		// ground, one block per ring, until it meets it. The building stands on
+		// flat ground and the flat ground becomes the hill again over six blocks,
+		// which is a bank rather than a cliff — and a bank is what a levelled
+		// plot on a slope actually looks like.
+		for (int x = -FEATHER; x <= width + FEATHER; x++) {
+			for (int z = -FEATHER; z <= depth + FEATHER; z++) {
+				int out = Math.max(0, Math.max(
+					Math.max(-x, x - width), Math.max(-z, z - depth)));
+				int target = flat;
+				if (out > 1) {
+					int natural = Ground.topOf(level, origin.getX() + x, origin.getZ() + z);
+					// Straight-line blend from the terrace to the terrain.
+					double t = (double)(out - 1) / (FEATHER - 1);
+					target = (int)Math.round(flat + (natural - flat) * t);
+				}
+				BlockPos ground = new BlockPos(origin.getX() + x, target, origin.getZ() + z);
 				if (com.bloomlet.herobrine.manifest.DwellTracker.isBuilt(level, ground)) {
 					continue;
 				}
@@ -287,15 +310,63 @@ public final class Blueprint {
 	 * things that are always terrain.
 	 */
 	private static void fell(ServerLevel level, BlockPos origin, int width, int depth) {
-		for (int x = -1; x <= width + 1; x++) {
-			for (int z = -1; z <= depth + 1; z++) {
+		java.util.Set<BlockPos> gone = new java.util.HashSet<>();
+		for (int x = -2; x <= width + 2; x++) {
+			for (int z = -2; z <= depth + 2; z++) {
 				int ground = Ground.topOf(level, origin.getX() + x, origin.getZ() + z);
-				for (int y = ground + 1; y <= ground + 14; y++) {
+				for (int y = ground + 1; y <= ground + 16; y++) {
 					BlockPos at = new BlockPos(origin.getX() + x, y, origin.getZ() + z);
-					BlockState state = level.getBlockState(at);
-					if (state.is(net.minecraft.tags.BlockTags.LOGS)
-						|| state.is(net.minecraft.tags.BlockTags.LEAVES)) {
-						level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+					if (level.getBlockState(at).is(net.minecraft.tags.BlockTags.LOGS)) {
+						uproot(level, at, gone);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * TAKE THE WHOLE TREE, NOT THE HALF THAT WAS IN THE WAY.
+	 *
+	 * The first version cleared logs and leaves inside the footprint and stopped
+	 * at the edge, which sliced every tree on the boundary clean in half and left
+	 * the top hanging in the air. That is the single most recognisable
+	 * mod-generated-badly artefact there is — worse than the tree being there,
+	 * because a tree in a wall reads as terrain and a floating tree crown reads as
+	 * broken software.
+	 *
+	 * So a log anywhere near the plot uproots its ENTIRE tree: flood out through
+	 * connected logs, then take the leaves hanging off them. The tree either
+	 * stands or it does not exist, and nothing is ever left mid-air.
+	 *
+	 * Capped, because a flood fill through a dark oak canopy or a jungle can walk
+	 * a very long way, and this runs once per plot in a fifteen-plot town.
+	 */
+	private static void uproot(ServerLevel level, BlockPos from,
+	                           java.util.Set<BlockPos> gone) {
+		java.util.ArrayDeque<BlockPos> queue = new java.util.ArrayDeque<>();
+		queue.add(from);
+		int budget = 900;
+		while (!queue.isEmpty() && budget-- > 0) {
+			BlockPos at = queue.poll();
+			if (!gone.add(at)) {
+				continue;
+			}
+			BlockState state = level.getBlockState(at);
+			boolean log = state.is(net.minecraft.tags.BlockTags.LOGS);
+			boolean leaf = state.is(net.minecraft.tags.BlockTags.LEAVES);
+			if (!log && !leaf) {
+				continue;
+			}
+			level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+			// Leaves are followed but never spread from, so the fill cannot walk
+			// across a canopy into the next tree and keep going.
+			if (!log) {
+				continue;
+			}
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dy = -1; dy <= 1; dy++) {
+					for (int dz = -1; dz <= 1; dz++) {
+						queue.add(at.offset(dx, dy, dz));
 					}
 				}
 			}
