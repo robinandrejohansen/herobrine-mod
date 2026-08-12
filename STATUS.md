@@ -120,6 +120,27 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### The trial — the third way into the undercity
+
+The stair behind the altar and the well are both simply *found*. This one is
+**140 blocks of gauntlet**, seven legs of twenty, and it exists because a cult
+that is still meeting needs a door the congregation can use and a stranger
+cannot.
+
+| leg | adds |
+|---|---|
+| lesson | one of every hazard, **defanged** |
+| gaps | three-block jumps, staggered lanes |
+| plates | reading the floor while jumping |
+| pistons | something that moves |
+| dark | the same geometry, no lanterns |
+| false floor | gravel that isn't ground |
+| door | lit candles — somebody is down there |
+
+Four rules make it fair: **teach before you test**, a **landing between every
+leg**, **water catches the falls and lava only threatens**, and **nothing is
+blind**.
+
 ### He knows you opened it
 
 The **first chest in each of his buildings**, once for good: the sky turns to

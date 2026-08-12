@@ -77,6 +77,17 @@ public final class Undercity {
 
 		HerobrineMod.LOGGER.info("undercity opened at [{}, {}, {}]",
 			floor.getX(), floor.getY(), floor.getZ());
+
+		// AND A THIRD WAY IN, WHICH IS THE ONLY ONE THAT IS EARNED.
+		//
+		// The stair and the well are both simply found. This is a hundred and
+		// forty blocks of gauntlet, and it exists because a cult that is still
+		// meeting needs a door the congregation can use and a stranger cannot.
+		// Cut outward from the chamber wall so the far end surfaces somewhere
+		// else entirely — which also means it is discovered from the far end,
+		// by somebody who has no idea what it leads to.
+		Trial.cut(level, floor.relative(net.minecraft.core.Direction.EAST, SPAN + 3)
+			.above(), net.minecraft.core.Direction.EAST, random);
 	}
 
 	/**
