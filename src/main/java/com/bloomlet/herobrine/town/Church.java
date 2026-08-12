@@ -78,6 +78,24 @@ public final class Church {
 	 * Floor level. The chancel is the top five rows, the nave is the middle,
 	 * and the porch under the tower is the bottom three.
 	 */
+	/**
+	 * THE FLOOR OF THE CHURCH, AND THREE THINGS WERE WRONG WITH IT.
+	 *
+	 * THE AISLE WAS ONE BLOCK WIDE. Nineteen blocks across, ten rows of pews, and
+	 * a single-file gap down the middle — which is not an aisle, it is a corridor
+	 * between two blocks of furniture. Three now, which is the narrowest thing
+	 * anybody would call an aisle and wide enough for two people to pass.
+	 *
+	 * THE WOOL HUNG IN IT. The banner glyph sat in the exact centre column, so the
+	 * only walkable line in the building was blocked at head height by cloth. It
+	 * hangs against the side walls now, which is where a hanging is hung.
+	 *
+	 * AND THE WINDOWS WERE ALL ABOVE EYE LEVEL. There was stained glass on every
+	 * layer except this one, and this is the layer a standing player's head is on
+	 * — so from inside, the church had solid walls and a lot of coloured light
+	 * coming from somewhere you could not look out of. Glass on the empty rows
+	 * between the pews now, at the height somebody would actually see through.
+	 */
 	private static final String[] NAVE = {
 		"                   ",
 		" LWWWWWWWWWWWWWWWL ",
@@ -85,21 +103,21 @@ public final class Church {
 		" W      aaa      W ",
 		" W   c       c   W ",
 		" WWWWW       WWWWW ",
-		" W               W ",
-		" W  ppppp ppppp  W ",
-		" W  ppppp ppppp  W ",
-		" W               W ",
-		" W  ppppp ppppp  W ",
-		" W  ppppp ppppp  W ",
-		" W               W ",
-		" W  ppppp ppppp  W ",
-		" W  ppppp ppppp  W ",
-		" W               W ",
-		" W  ppppp ppppp  W ",
-		" W  ppppp ppppp  W ",
-		" W               W ",
-		" W  ppppp ppppp  W ",
-		" W  ppppp ppppp  W ",
+		" g               g ",
+		" W  pppp   pppp  W ",
+		" W  pppp   pppp  W ",
+		" g               g ",
+		" W  pppp   pppp  W ",
+		" W  pppp   pppp  W ",
+		" g               g ",
+		" W  pppp   pppp  W ",
+		" W  pppp   pppp  W ",
+		" g               g ",
+		" W  pppp   pppp  W ",
+		" W  pppp   pppp  W ",
+		" g               g ",
+		" W  pppp   pppp  W ",
+		" W  pppp   pppp  W ",
 		" W               W ",
 		" WWWWW       WWWWW ",
 		" W   c       c   W ",
@@ -117,22 +135,22 @@ public final class Church {
 		" LWgWWWWWWWWWWWgWL ",
 		" W               W ",
 		" W               W ",
-		" g       m       g ",
+		" g   m       m   g ",
 		" WWWWW       WWWWW ",
 		" W               W ",
-		" g       m       g ",
+		" g   m       m   g ",
 		" W               W ",
 		" W               W ",
-		" g       m       g ",
+		" g   m       m   g ",
 		" W               W ",
 		" W               W ",
-		" g       m       g ",
+		" g   m       m   g ",
 		" W               W ",
 		" W               W ",
-		" g       m       g ",
+		" g   m       m   g ",
 		" W               W ",
 		" W               W ",
-		" g       m       g ",
+		" g   m       m   g ",
 		" W               W ",
 		" W               W ",
 		" WWWWW       WWWWW ",
