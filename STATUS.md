@@ -120,6 +120,27 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### He knows you opened it
+
+The **first chest in each of his buildings**, once for good: the sky turns to
+thunder, and **every torch in the building goes out**.
+
+Torches do not go out. There is no vanilla mechanic that snuffs one, so a player
+standing in a room that just went dark knows with certainty that something did
+it deliberately. Snuffed rather than broken — a flint and steel puts them back,
+so it costs a moment of blindness and not a repair.
+
+### The villager who is him
+
+Possessed villagers now have the two absences that matter in a crowd:
+
+- **He never sleeps.** Night falls, every villager files indoors, one stands in
+  the square. The contrast does all of it
+- **He will not trade.** No profession, so right-clicking opens nothing — which
+  is how anybody checks whether a villager is real
+- Plus what possession already gave him: **silent**, standing still, and facing
+  you
+
 ### The sky marks where he arrives
 
 The lightning was a debug aid that shipped by accident — and it was the most

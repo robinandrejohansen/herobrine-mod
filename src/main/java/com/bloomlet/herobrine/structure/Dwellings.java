@@ -180,6 +180,8 @@ public final class Dwellings {
 		final AttachmentType<Boolean> up;
 		/** Whether anybody has walked up on it yet. Spent once, for good. */
 		final AttachmentType<Boolean> met;
+		/** Whether anybody has been into its chests. Also once, for good. */
+		final AttachmentType<Boolean> rifled;
 
 		Place(String key, Phase from, int near, int far) {
 			this.from = from;
@@ -191,6 +193,8 @@ public final class Dwellings {
 				HerobrineMod.id(key + "_up"), Codec.BOOL);
 			this.met = AttachmentRegistry.createPersistent(
 				HerobrineMod.id(key + "_met"), Codec.BOOL);
+			this.rifled = AttachmentRegistry.createPersistent(
+				HerobrineMod.id(key + "_rifled"), Codec.BOOL);
 		}
 	}
 
@@ -235,6 +239,7 @@ public final class Dwellings {
 				//
 				// `met` is set on the approach, within sixty blocks, so it means
 				// somebody actually stood outside it.
+				rifling(overworld, place);
 				if (Boolean.TRUE.equals(overworld.getAttached(place.met))) {
 					comingHome(overworld, place, phase);
 					continue;   // found; on to the next chapter
@@ -325,6 +330,87 @@ public final class Dwellings {
 				Approach.lay(overworld, site, phase);
 			}
 			return;         // whatever happened, the next one is not due yet
+		}
+	}
+
+	/**
+	 * HE KNOWS YOU OPENED IT.
+	 *
+	 * The first chest in each of his buildings, once, for good. Two things happen
+	 * together and neither is an attack:
+	 *
+	 *   THE SKY TURNS. Thunder, immediately, and it lasts. Weather arriving
+	 *     BECAUSE of something somebody just did reads nothing like weather
+	 *     arriving on a timer — and this is the moment it is most obviously
+	 *     causal, because the lid is still open.
+	 *
+	 *   AND EVERY LIGHT IN THE BUILDING GOES OUT. That is the unnatural half, and
+	 *     it is better than any noise: torches do not go out. There is no vanilla
+	 *     mechanic that snuffs a torch, so a player standing in a room that just
+	 *     went dark knows with total certainty that something did it on purpose.
+	 *     It is also the only effect here that changes what they can SEE, in a
+	 *     building they were reading in.
+	 *
+	 * Nothing is destroyed and nothing is taken. The torches are snuffed rather
+	 * than broken — they go back with a flint and steel, so the cost is a moment
+	 * of blindness and not a repair bill.
+	 */
+	private static final double IN_THE_HOUSE = 24.0;
+
+	private static void opened(ServerLevel level, Place place, BlockPos site,
+	                          ServerPlayer who) {
+		if (Boolean.TRUE.equals(level.getAttached(place.rifled))) {
+			return;
+		}
+		level.setAttached(place.rifled, true);
+		com.bloomlet.herobrine.manifest.Skies.turn(level);
+		int snuffed = 0;
+		for (BlockPos pos : BlockPos.betweenClosed(
+				site.offset(-16, -12, -16), site.offset(16, 12, 16))) {
+			if (level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.TORCH)) {
+				level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR
+					.defaultBlockState(), 3);
+				snuffed++;
+			} else if (level.getBlockState(pos)
+					.is(net.minecraft.world.level.block.Blocks.WALL_TORCH)) {
+				level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR
+					.defaultBlockState(), 3);
+				snuffed++;
+			}
+		}
+		level.playSound(null, who.blockPosition(),
+			net.minecraft.sounds.SoundEvents.FIRE_EXTINGUISH,
+			net.minecraft.sounds.SoundSource.AMBIENT, 1.4F, 0.6F);
+		HerobrineMod.LOGGER.info("{} opened his chest in the {} — {} lights out",
+			who.getName().getString(),
+			place.name().toLowerCase(java.util.Locale.ROOT), snuffed);
+	}
+
+	/**
+	 * Somebody has a chest open inside one of his buildings.
+	 *
+	 * Checked from the tick rather than hooked onto the interaction, because the
+	 * container-open path is a menu and reaching it means a mixin; the open lid is
+	 * already a property of the block entity and asking every two seconds is
+	 * enough for something that only fires once per building ever.
+	 */
+	private static void rifling(ServerLevel level, Place place) {
+		if (Boolean.TRUE.equals(level.getAttached(place.rifled))) {
+			return;
+		}
+		Long where = level.getAttached(place.site);
+		if (where == null) {
+			return;
+		}
+		BlockPos site = BlockPos.of(where);
+		for (ServerPlayer player : level.players()) {
+			if (Math.sqrt(site.distSqr(player.blockPosition())) > IN_THE_HOUSE) {
+				continue;
+			}
+			if (player.containerMenu instanceof net.minecraft.world.inventory.ChestMenu) {
+				opened(level, place, site, player);
+				return;
+			}
 		}
 	}
 

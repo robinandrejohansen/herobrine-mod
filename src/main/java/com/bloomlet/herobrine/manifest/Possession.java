@@ -661,6 +661,7 @@ public final class Possession {
 		mob.setAttached(OWNER, owner.getUUID().toString());
 		mob.setSilent(true);
 		mob.setPersistenceRequired();
+		unemploy(mob);
 		// AND SOMETIMES IT IS CARRYING SOMETHING OF YOURS. Nothing about the
 		// animal looks different for it, which is what makes every staring cow
 		// anybody has already walked past into a question in hindsight.
@@ -1051,6 +1052,53 @@ public final class Possession {
 		mob.setDeltaMovement(0.0, mob.getDeltaMovement().y, 0.0);
 		mob.setJumping(false);
 		disarm(mob);
+		awake(mob);
+	}
+
+	/**
+	 * HE NEVER SLEEPS, AND IN A VILLAGE THAT IS THE WHOLE TRICK.
+	 *
+	 * The best thing about hiding him among villagers is that the village hands
+	 * the player fifteen controls to compare him against. Nothing has to be
+	 * explained and nothing has to be animated: night falls, every single
+	 * villager files indoors to a bed, and one of them is still standing in the
+	 * square. The CONTRAST does all of it.
+	 *
+	 * Undone every tick rather than by editing the brain, which is the same
+	 * approach the rest of this file takes with goals — vanilla is allowed to
+	 * decide whatever it likes and then simply does not get to keep it. Cheaper
+	 * than fighting the villager AI and it cannot break when the AI changes.
+	 */
+	private static void awake(Mob mob) {
+		if (mob instanceof AbstractVillager && mob.isSleeping()) {
+			mob.stopSleeping();
+		}
+	}
+
+	/**
+	 * AND HE WILL NOT TRADE WITH YOU.
+	 *
+	 * A villager with no profession opens nothing when clicked. That is the
+	 * second absence, and it is the one a player tests deliberately: the way
+	 * anybody checks whether a villager is real is to right-click it, and getting
+	 * no response at all is far worse than getting an empty shop.
+	 *
+	 * It also removes the profession badge, so he is a plain brown villager
+	 * standing among farmers and clerics — which is exactly the sort of wrongness
+	 * people notice without being able to name.
+	 *
+	 * Animals fall straight through this, so the one method is safe for
+	 * everything possession can take.
+	 */
+	private static void unemploy(Mob mob) {
+		if (!(mob instanceof net.minecraft.world.entity.npc.villager.Villager who)) {
+			return;
+		}
+		if (!(who.level() instanceof ServerLevel here)) {
+			return;
+		}
+		who.setVillagerData(who.getVillagerData().withProfession(here.registryAccess(),
+			net.minecraft.world.entity.npc.villager.VillagerProfession.NONE));
 	}
 
 	/**
