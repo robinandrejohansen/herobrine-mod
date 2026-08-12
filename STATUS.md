@@ -170,9 +170,18 @@ cannot.
 | false floor | gravel that isn't ground |
 | door | lit candles — somebody is down there |
 
-Four rules make it fair: **teach before you test**, a **landing between every
-leg**, **water catches the falls and lava only threatens**, and **nothing is
-blind**.
+**Lava under everything that is not the path, and no water anywhere.** Four-block
+sprint jumps, a surviving lane that moves between gaps, hidden stone plates on an
+uneven grey floor, pistons that can reach the lava, and gravel that gives way
+over it. A full stack of arrows per dispenser.
+
+Two rules survive because they are about fairness rather than difficulty: **a
+landing between every leg**, so failure costs one stretch and not the run, and
+**one sign at the mouth** — a warning, not a tutorial.
+
+The section wanders: width, height, floor level and bearing all vary, and the
+cut is rough in places. A dead-straight tube for 140 blocks is the same fault as
+a perfect dome.
 
 The far end climbs to daylight now and comes up under a **trapdoor** — a lid in
 the middle of nowhere, and the only question is whether to open it.

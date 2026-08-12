@@ -2,6 +2,7 @@ package com.bloomlet.herobrine.town;
 
 import com.bloomlet.herobrine.HerobrineMod;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
@@ -10,6 +11,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.DispenserBlockEntity;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
@@ -21,33 +24,36 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
  * forty blocks of gauntlet, and it exists because a cult that is STILL MEETING
  * needs a door that the congregation can use and a stranger cannot.
  *
- * WHY A TRAP CORRIDOR IS USUALLY BAD, AND WHAT MAKES THIS ONE NOT.
+ * IT IS MEANT TO BE HARD, AND IT IS MEANT TO COST SOMETHING.
  *
- * The failure mode of every parkour trap in every mod is the same: the player
- * dies to something they could not have seen, loses an inventory in lava, and
- * never comes back. That is not difficulty, it is a tax on curiosity, and it
- * would undo the one thing this whole mod is trying to buy — a group willing to
- * go deeper. So four rules, and they are not negotiable:
+ * An earlier version of this caught every fall in water and kept the lava beside
+ * the path as a light source and a threat. That is the safe design and it is
+ * defensible: nobody loses an inventory, so nobody stops exploring. It was
+ * overruled deliberately, and the reasoning is sound — a hazard that cannot take
+ * anything from you is scenery, and a congregation's private door SHOULD be
+ * impassable to somebody who wandered in unprepared.
  *
- *   1. TEACH BEFORE YOU TEST. The first chamber contains one of every hazard in
- *      the corridor, defanged: a gap you cannot fall into, a plate that fires
- *      into a wall, a false floor over a metre of water. The player learns every
- *      tell in the place where learning it is free.
+ * So: lava under the gaps, no water anywhere, four-block jumps, and plates you
+ * will not see unless you are looking for them. What that buys is a corridor
+ * people PREPARE for — they come back with blocks, with fire resistance, with a
+ * plan — and the undercity stops being a place you found and becomes a place you
+ * got into.
  *
- *   2. A LANDING BETWEEN EVERY SEGMENT. Failure costs one segment, never the
- *      whole run. A corridor you must do perfectly is a corridor nobody finishes.
+ * The two rules that survive, because they are about fairness rather than
+ * difficulty:
  *
- *   3. WATER CATCHES THE FALLS; LAVA ONLY THREATENS. The lava is real, visible
- *      and lights the place — and it is beside the path rather than under it. To
- *      lose an inventory here you have to jump sideways on purpose. Anybody who
- *      simply misses a jump lands in water, climbs out, and swears.
+ *   A LANDING BETWEEN EVERY LEG. Failure costs one stretch, not the whole run.
+ *     Hard is fine. Restarting a hundred and forty blocks is not hard, it is
+ *     tedious, and tedium is the only thing that actually stops people.
  *
- *   4. NOTHING IS BLIND. Every gap is visible from the ledge before it. Every
- *      plate is a different block from the floor around it. The tension is
- *      entirely in execution, never in ignorance.
+ *   ONE SIGN AT THE MOUTH. Not a tutorial — a warning. The corridor is allowed
+ *     to kill somebody who ignored it and not somebody who never knew.
  *
- * That is what "Indiana Jones" actually means mechanically — not that it is
- * unfair, but that the room tells you what it is about to do and does it anyway.
+ * AND IT IS NOT A PERFECT TUBE. Width, height and floor level all wander, the
+ * bearing joggles, and there are stretches where the cut is rough and unfinished.
+ * A dead-straight five-by-six corridor for a hundred and forty blocks is the same
+ * fault as a mathematically perfect dome: whatever is put inside it, the shape
+ * says a machine made it.
  */
 public final class Trial {
 	private Trial() {}
@@ -65,7 +71,7 @@ public final class Trial {
 	 * a test — ending on a hazard would mean the last thing the corridor does is
 	 * kill somebody who had already won.
 	 */
-	private enum Leg { LESSON, GAPS, PLATES, PISTONS, DARK, FALSE_FLOOR, DOOR }
+	private enum Leg { WARNING, GAPS, PLATES, PISTONS, DARK, FALSE_FLOOR, DOOR }
 
 	/**
 	 * Cut the whole thing, running outward from the undercity.
@@ -81,9 +87,9 @@ public final class Trial {
 		BlockPos at = from;
 		for (int leg = 0; leg < SEGMENTS; leg++) {
 			Leg kind = Leg.values()[leg];
-			hollow(level, at, heading, kind);
+			hollow(level, at, heading, kind, random);
 			switch (kind) {
-				case LESSON -> lesson(level, at, heading);
+				case WARNING -> warning(level, at, heading);
 				case GAPS -> gaps(level, at, heading, random, false);
 				case PLATES -> plates(level, at, heading, random);
 				case PISTONS -> pistons(level, at, heading, random);
@@ -112,35 +118,34 @@ public final class Trial {
 	 * never under it, per rule three.
 	 */
 	private static void hollow(ServerLevel level, BlockPos start, Direction heading,
-	                          Leg kind) {
+	                          Leg kind, RandomSource random) {
 		Direction across = heading.getClockWise();
+		// THE SECTION WANDERS. Half a metre of variation either side and a block
+		// of variation in the roof is enough — the eye reads a corridor that
+		// changes as cut by hand and one that does not as extruded.
+		double phase = random.nextDouble() * Math.PI * 2.0;
 		for (int step = 0; step < SEGMENT; step++) {
+			double wobble = Math.sin(step * 0.4 + phase);
+			int half = 2 + (wobble > 0.6 ? 1 : 0);
+			int tall = 5 + (wobble < -0.5 ? 1 : 0);
 			BlockPos spine = start.relative(heading, step);
-			for (int side = -2; side <= 2; side++) {
+			for (int side = -half; side <= half; side++) {
 				BlockPos column = spine.relative(across, side);
-				for (int up = 0; up <= 5; up++) {
+				for (int up = 0; up <= tall; up++) {
 					level.setBlock(column.above(up), Blocks.AIR.defaultBlockState(), 2);
 				}
-				// Walls, ceiling and the bed the lava sits in.
-				level.setBlock(column.above(6), Blocks.STONE_BRICKS.defaultBlockState(), 2);
+				level.setBlock(column.above(tall + 1), rough(random), 2);
 				level.setBlock(column.below(2), Blocks.STONE_BRICKS.defaultBlockState(), 2);
-				boolean edge = side == -2 || side == 2;
-				level.setBlock(column.below(),
-					edge ? Blocks.LAVA.defaultBlockState()
-						: Blocks.POLISHED_ANDESITE.defaultBlockState(), 2);
-				if (edge) {
-					// A lip, so the lava cannot run into the walking lane.
-					level.setBlock(column.relative(across, side < 0 ? -1 : 1),
-						Blocks.STONE_BRICKS.defaultBlockState(), 2);
-				}
+				// LAVA UNDER EVERYTHING THAT IS NOT THE PATH, out to the walls.
+				level.setBlock(column.below(), Blocks.LAVA.defaultBlockState(), 2);
 			}
-			// The walking floor, which the hazard methods then cut holes in.
+			// The walking surface, cut back to a narrow lane so a miss is a fall.
 			for (int side = -1; side <= 1; side++) {
-				level.setBlock(spine.relative(across, side),
-					Blocks.POLISHED_ANDESITE.defaultBlockState(), 2);
+				level.setBlock(spine.relative(across, side), floorOf(random), 2);
 			}
-			if (kind != Leg.DARK && step % 6 == 3) {
-				level.setBlock(spine.relative(across, 2).above(2),
+			// Torches only on the finished stretches. The lava lights the rest.
+			if (kind != Leg.DARK && step % 9 == 4) {
+				level.setBlock(spine.relative(across, half).above(2),
 					Blocks.WALL_TORCH.defaultBlockState()
 						.setValue(BlockStateProperties.HORIZONTAL_FACING,
 							across.getOpposite()), 2);
@@ -149,67 +154,92 @@ public final class Trial {
 	}
 
 	/**
-	 * THE ROOM THAT TEACHES, and it is the most important twenty blocks here.
+	 * A wall that was not finished to the same standard all the way along.
 	 *
-	 * One of everything, made harmless. A gap with water under it instead of a
-	 * drop. A pressure plate whose dispenser points into the wall. A gravel patch
-	 * over one block of water. A player crosses this in fifteen seconds, learns
-	 * that gravel means a hole and that a smooth plate means arrows, and carries
-	 * both facts into the eighty blocks where they are true.
+	 * Mostly brick, with cobble and cracked courses through it. Somebody cut this
+	 * over a long time and got worse at caring.
 	 */
-	private static void lesson(ServerLevel level, BlockPos start, Direction heading) {
-		Direction across = heading.getClockWise();
-		// A gap, over water.
-		for (int step = 5; step <= 6; step++) {
-			BlockPos spine = start.relative(heading, step);
-			for (int side = -1; side <= 1; side++) {
-				level.setBlock(spine.relative(across, side), Blocks.AIR.defaultBlockState(), 2);
-				level.setBlock(spine.relative(across, side).below(),
-					Blocks.WATER.defaultBlockState(), 2);
-			}
+	private static BlockState rough(RandomSource random) {
+		int roll = random.nextInt(10);
+		if (roll < 5) {
+			return Blocks.STONE_BRICKS.defaultBlockState();
 		}
-		// A plate, wired to a dispenser that fires into the wall.
-		BlockPos taught = start.relative(heading, 11);
-		level.setBlock(taught.below(), Blocks.DISPENSER.defaultBlockState()
-			.setValue(BlockStateProperties.FACING, across), 2);
-		arm(level, taught.below());
-		level.setBlock(taught, Blocks.STONE_PRESSURE_PLATE.defaultBlockState(), 2);
-		// And gravel, over one block of water.
-		BlockPos soft = start.relative(heading, 16);
-		level.setBlock(soft, Blocks.GRAVEL.defaultBlockState(), 2);
-		level.setBlock(soft.below(), Blocks.WATER.defaultBlockState(), 2);
+		if (roll < 8) {
+			return Blocks.CRACKED_STONE_BRICKS.defaultBlockState();
+		}
+		return Blocks.COBBLESTONE.defaultBlockState();
+	}
+
+	/** And the floor is laid to the same standard, which is to say unevenly. */
+	private static BlockState floorOf(RandomSource random) {
+		int roll = random.nextInt(10);
+		if (roll < 6) {
+			return Blocks.POLISHED_ANDESITE.defaultBlockState();
+		}
+		return roll < 9
+			? Blocks.ANDESITE.defaultBlockState()
+			: Blocks.COBBLESTONE.defaultBlockState();
 	}
 
 	/**
-	 * Jumps, and the water is the reason they are allowed to be hard.
+	 * ONE SIGN, AT THE MOUTH, AND THAT IS THE ENTIRETY OF THE WARNING.
 	 *
-	 * Three-block gaps, which is a running jump and not a sprint jump, staggered
-	 * left and right so the line matters. Water directly under every one of them:
-	 * a miss is a swim and a climb, never a death and never an inventory.
+	 * The teaching room that used to be here demonstrated every hazard harmlessly
+	 * before it could hurt anybody. That was the right call for a corridor meant
+	 * to be crossable and the wrong one for a corridor meant to keep people out.
+	 * A congregation does not put a tutorial in front of its own door.
+	 *
+	 * So it is a sign and a clear stretch of floor. Anybody who reads it and turns
+	 * round has lost nothing; anybody who walks past it has been told.
+	 */
+	private static void warning(ServerLevel level, BlockPos start, Direction heading) {
+		Direction across = heading.getClockWise();
+		BlockPos post = start.relative(heading, 4).relative(across, 2).above();
+		if (level.getBlockState(post).isAir()) {
+			level.setBlock(post, Blocks.OAK_SIGN.defaultBlockState()
+				.setValue(BlockStateProperties.ROTATION_16, 0), 3);
+			if (level.getBlockEntity(post) instanceof SignBlockEntity plate) {
+				SignText text = new SignText();
+				String[] said = { "", "not for you", "turn round", "" };
+				for (int row = 0; row < 4; row++) {
+					text = text.setMessage(row, Component.literal(said[row]));
+				}
+				plate.setText(text, true);
+				plate.setWaxed(true);
+			}
+		}
+	}
+
+	/**
+	 * FOUR-BLOCK GAPS OVER OPEN LAVA, and the lane is not always the same one.
+	 *
+	 * Four is a sprint jump — it cannot be walked and it cannot be done wrong
+	 * twice. Three was a running jump, which is to say a formality.
+	 *
+	 * The surviving lane moves between gaps, so the corridor cannot be crossed on
+	 * one line: every gap has to be read. And the lava is directly beneath, out to
+	 * the walls, with nothing to catch anybody — which is the whole change from
+	 * the earlier version of this file and the reason people will bring blocks.
 	 */
 	private static void gaps(ServerLevel level, BlockPos start, Direction heading,
 	                         RandomSource random, boolean dark) {
 		Direction across = heading.getClockWise();
-		for (int step = 3; step < SEGMENT - 2; step += 5) {
+		for (int step = 3; step < SEGMENT - 3; step += 6) {
 			int lane = random.nextInt(3) - 1;
-			for (int cut = 0; cut < 3; cut++) {
+			for (int cut = 0; cut < 4; cut++) {
 				BlockPos spine = start.relative(heading, step + cut);
 				for (int side = -1; side <= 1; side++) {
-					// The safe lane survives; everything else is a hole.
-					if (side == lane) {
-						continue;
+					if (side == lane && cut == 0) {
+						continue;   // the lip you leave from
 					}
 					level.setBlock(spine.relative(across, side),
 						Blocks.AIR.defaultBlockState(), 2);
 					level.setBlock(spine.relative(across, side).below(),
-						Blocks.WATER.defaultBlockState(), 2);
+						Blocks.LAVA.defaultBlockState(), 2);
 				}
 			}
 			if (!dark) {
-				// A lantern over the safe lane. In the DARK leg it is missing, and
-				// that absence IS the leg — same geometry, no longer readable at a
-				// glance, and the lava either side is the only light left.
-				level.setBlock(start.relative(heading, step + 1)
+				level.setBlock(start.relative(heading, step + 2)
 					.relative(across, lane).above(4),
 					Blocks.LANTERN.defaultBlockState()
 						.setValue(BlockStateProperties.HANGING, true), 2);
@@ -218,76 +248,78 @@ public final class Trial {
 	}
 
 	/**
-	 * Arrows out of the floor.
+	 * HIDDEN PLATES, and hiding them is a matter of matching the floor.
 	 *
-	 * A dispenser sunk flush in the walking surface, facing straight up, with a
-	 * stone plate on its lid. That wiring is chosen because it cannot be wrong:
-	 * a plate directly on a dispenser powers it, with no dust, no repeaters and
-	 * nothing to misalign — and an untested redstone trap that silently does
-	 * nothing is worse than no trap at all.
+	 * The earlier version used stone plates on polished andesite specifically so
+	 * they would stand out, on the principle that nothing should be lethal without
+	 * being visible first. That principle is gone here by instruction.
 	 *
-	 * Stone plates rather than wooden, so they are a different colour from the
-	 * andesite floor. Rule four: visible before it is lethal.
+	 * A stone pressure plate on a plain andesite or cobble floor is very nearly
+	 * invisible at walking speed and from a normal head height — and since the
+	 * floor is now laid unevenly out of three similar greys, the plates read as
+	 * one more patch of it. Dispenser in the floor facing up with the plate on its
+	 * lid, which is the one wiring that cannot be mis-assembled.
+	 *
+	 * A full stack of arrows now rather than six. It is not a warning any more.
 	 */
 	private static void plates(ServerLevel level, BlockPos start, Direction heading,
 	                           RandomSource random) {
 		Direction across = heading.getClockWise();
-		for (int step = 2; step < SEGMENT - 2; step += 3) {
+		for (int step = 2; step < SEGMENT - 2; step += 2) {
 			int side = random.nextInt(3) - 1;
 			BlockPos at = start.relative(heading, step).relative(across, side);
 			level.setBlock(at, Blocks.DISPENSER.defaultBlockState()
 				.setValue(BlockStateProperties.FACING, Direction.UP), 2);
 			arm(level, at);
 			level.setBlock(at.above(), Blocks.STONE_PRESSURE_PLATE.defaultBlockState(), 2);
+			// And the block beside it is plain stone too, so the plate is not the
+			// only thing in the corridor that colour.
+			level.setBlock(at.relative(across), Blocks.ANDESITE.defaultBlockState(), 2);
 		}
 	}
 
 	/**
-	 * Something that moves, which is the one hazard the player cannot outread.
+	 * Something that moves, and now it can actually put you in the lava.
 	 *
-	 * Sticky pistons in the wall at chest height, armed by a plate on the floor
-	 * directly beside them so the wiring is again as short as it can be. They
-	 * shove sideways, toward the lava channel — and the channel is two blocks
-	 * further out than the shove can reach, so being caught costs a stumble and
-	 * a fright rather than an inventory. The threat does the work.
+	 * The pistons used to shove one block short of the channel, so being caught
+	 * was a fright. The lava reaches the walls now, so the shove reaches it too.
 	 */
 	private static void pistons(ServerLevel level, BlockPos start, Direction heading,
 	                            RandomSource random) {
 		Direction across = heading.getClockWise();
-		for (int step = 3; step < SEGMENT - 3; step += 6) {
+		for (int step = 3; step < SEGMENT - 3; step += 5) {
 			Direction shove = random.nextBoolean() ? across : across.getOpposite();
 			BlockPos wall = start.relative(heading, step)
 				.relative(shove.getOpposite(), 2).above();
 			level.setBlock(wall, Blocks.STICKY_PISTON.defaultBlockState()
 				.setValue(BlockStateProperties.FACING, shove), 2);
-			// The trigger, on the floor, one step short of the piston's reach.
 			level.setBlock(start.relative(heading, step).relative(shove.getOpposite(), 1),
 				Blocks.STONE_PRESSURE_PLATE.defaultBlockState(), 2);
 		}
 	}
 
 	/**
-	 * A floor that is not one.
+	 * A floor that is not one, over lava rather than over a swim.
 	 *
-	 * Gravel reads as loose ground and the player has already been taught in the
-	 * lesson room that it means a hole. Water underneath, two blocks down, so it
-	 * is a fall and a climb.
+	 * Gravel that gives way, and more of it than before. With water underneath
+	 * this was an inconvenience; it is now the cheapest killer in the corridor,
+	 * which is appropriate for the hazard that requires the least skill to avoid —
+	 * you only have to be looking down.
 	 */
 	private static void falseFloor(ServerLevel level, BlockPos start, Direction heading,
 	                               RandomSource random) {
 		Direction across = heading.getClockWise();
 		for (int step = 2; step < SEGMENT - 2; step++) {
-			if (random.nextInt(3) != 0) {
+			if (random.nextInt(2) != 0) {
 				continue;
 			}
 			for (int side = -1; side <= 1; side++) {
-				if (random.nextBoolean()) {
+				if (random.nextInt(3) == 0) {
 					continue;
 				}
 				BlockPos at = start.relative(heading, step).relative(across, side);
 				level.setBlock(at, Blocks.GRAVEL.defaultBlockState(), 2);
-				level.setBlock(at.below(), Blocks.AIR.defaultBlockState(), 2);
-				level.setBlock(at.below(2), Blocks.WATER.defaultBlockState(), 2);
+				level.setBlock(at.below(), Blocks.LAVA.defaultBlockState(), 2);
 			}
 		}
 	}
@@ -400,7 +432,7 @@ public final class Trial {
 	/** A few arrows, and not a full stack. It is a warning, not an execution. */
 	private static void arm(ServerLevel level, BlockPos at) {
 		if (level.getBlockEntity(at) instanceof DispenserBlockEntity dispenser) {
-			dispenser.setItem(4, new ItemStack(Items.ARROW, 6));
+			dispenser.setItem(4, new ItemStack(Items.ARROW, 64));
 			dispenser.setChanged();
 		}
 	}
