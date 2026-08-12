@@ -120,6 +120,20 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### What the congregation wrote down
+
+**Six accounts, in six separate chests**, placed after every tunnel and trap is
+cut. The cult is about **sightings** — nobody down there worships anything, they
+each saw something at the edge of a field and came underground because they were
+the only people who believed each other.
+
+They disagree with each other, which is the point: one thinks it is a man, one
+thinks it is the mine, one keeps a tally, one is writing to somebody who left,
+one counted seven shadows at a table of six, and one has stopped being afraid.
+
+Every book describes something the players have already experienced. It is not
+"these poor lunatics" — it is a chat log from two hours ago.
+
 ### The trial — the third way into the undercity
 
 The stair behind the altar and the well are both simply *found*. This one is
@@ -140,6 +154,9 @@ cannot.
 Four rules make it fair: **teach before you test**, a **landing between every
 leg**, **water catches the falls and lava only threatens**, and **nothing is
 blind**.
+
+The far end climbs to daylight now and comes up under a **trapdoor** — a lid in
+the middle of nowhere, and the only question is whether to open it.
 
 ### He knows you opened it
 

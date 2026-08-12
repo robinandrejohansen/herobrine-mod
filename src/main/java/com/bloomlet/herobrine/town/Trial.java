@@ -94,6 +94,7 @@ public final class Trial {
 			landing(level, at.relative(heading, SEGMENT - 1), heading, kind);
 			at = at.relative(heading, SEGMENT);
 		}
+		surface(level, at, heading, random);
 		HerobrineMod.LOGGER.info("a trial cut {} blocks {} from [{}, {}, {}]",
 			SEGMENTS * SEGMENT, heading.getName(), from.getX(), from.getY(), from.getZ());
 		return at;
@@ -337,6 +338,63 @@ public final class Trial {
 			level.setBlock(at.above(4), Blocks.LANTERN.defaultBlockState()
 				.setValue(BlockStateProperties.HANGING, true), 2);
 		}
+	}
+
+	/**
+	 * THE WAY IN, AND WITHOUT IT NONE OF THIS EXISTS.
+	 *
+	 * The corridor was cut and then dead-ended in solid rock, which made a
+	 * hundred and forty blocks of gauntlet completely unreachable — a thing that
+	 * only a player already inside the undercity could ever walk, in the wrong
+	 * direction, having skipped the door. The most elaborate piece here was also
+	 * the most invisible.
+	 *
+	 * So the far end climbs to daylight, and it comes up as something a person
+	 * would build to hide a way down rather than as a hole: a ladder shaft, a
+	 * stone rim at the top, and a trapdoor over it. Somebody who finds this is
+	 * looking at a trapdoor in the middle of nowhere, and the only question worth
+	 * having is whether to open it.
+	 */
+	private static void surface(ServerLevel level, BlockPos end, Direction heading,
+	                            RandomSource random) {
+		BlockPos base = end.relative(heading, 2);
+		int top = level.getHeight(
+			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+			base.getX(), base.getZ());
+		// A shaft one block square, laddered the whole way, so it is a climb
+		// rather than a fall in either direction.
+		for (int y = base.getY(); y <= top; y++) {
+			BlockPos at = new BlockPos(base.getX(), y, base.getZ());
+			level.setBlock(at, Blocks.LADDER.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, heading), 2);
+			// A sleeve of brick, so it reads as cut rather than as a cave.
+			for (Direction side : Direction.Plane.HORIZONTAL) {
+				if (side == heading.getOpposite()) {
+					continue;   // the face the ladder is fixed to
+				}
+				BlockPos wall = at.relative(side);
+				if (!level.getBlockState(wall).isSolid()) {
+					level.setBlock(wall, Blocks.STONE_BRICKS.defaultBlockState(), 2);
+				}
+			}
+			level.setBlock(at.relative(heading.getOpposite()),
+				Blocks.STONE_BRICKS.defaultBlockState(), 2);
+		}
+		BlockPos mouth = new BlockPos(base.getX(), top, base.getZ());
+		// The rim, and then a lid on it.
+		for (Direction side : Direction.Plane.HORIZONTAL) {
+			BlockPos rim = mouth.relative(side);
+			if (level.getBlockState(rim).canBeReplaced()
+				|| !level.getBlockState(rim).isSolid()) {
+				level.setBlock(rim, Blocks.MOSSY_STONE_BRICKS.defaultBlockState(), 2);
+			}
+		}
+		level.setBlock(mouth.above(), Blocks.OAK_TRAPDOOR.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, heading)
+			.setValue(BlockStateProperties.HALF,
+				net.minecraft.world.level.block.state.properties.Half.BOTTOM), 2);
+		HerobrineMod.LOGGER.info("the trial surfaces at [{}, {}, {}]",
+			mouth.getX(), top, mouth.getZ());
 	}
 
 	/** A few arrows, and not a full stack. It is a warning, not an execution. */

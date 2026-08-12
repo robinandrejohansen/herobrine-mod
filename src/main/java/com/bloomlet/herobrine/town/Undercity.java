@@ -78,6 +78,23 @@ public final class Undercity {
 		HerobrineMod.LOGGER.info("undercity opened at [{}, {}, {}]",
 			floor.getX(), floor.getY(), floor.getZ());
 
+		// AND THE BOOKS GO DOWN LAST, after every tunnel and trap is cut.
+		//
+		// The homestead taught this the expensive way: boring a passage after a
+		// chest existed drove straight through it and left the books on the floor
+		// as items counting down to despawning. Nothing is carved after this.
+		java.util.List<BlockPos> shelves = new java.util.ArrayList<>();
+		for (int i = 0; i < 6; i++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = 6.0 + random.nextDouble() * (SPAN - 9);
+			BlockPos spot = new BlockPos(
+				floor.getX() + (int)Math.round(Math.cos(angle) * range),
+				floor.getY(),
+				floor.getZ() + (int)Math.round(Math.sin(angle) * range));
+			shelves.add(spot);
+		}
+		Testimony.write(level, shelves, random);
+
 		// AND A THIRD WAY IN, WHICH IS THE ONLY ONE THAT IS EARNED.
 		//
 		// The stair and the well are both simply found. This is a hundred and
