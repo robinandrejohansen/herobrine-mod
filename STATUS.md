@@ -120,6 +120,25 @@ something nobody wrote down for you.
 - [x] **The tally** — four walls of marks and nothing else at all
 - [x] **The tiles** — a perfectly regular floor, and one square worn dark
 
+### The undercity is not a dome any more
+
+It was `sqrt(dx*dx + dz*dz)` against a constant under a cosine vault — a
+mathematically perfect disc under a mathematically perfect dome. Every "reads
+fake" complaint was about those two lines.
+
+The outline is now a wandering radius: three harmonics at random phases summed
+around 64 bearings, so it has **lobes, bays and headlands**. Radius runs 12–27
+instead of a flat 21. The ceiling wanders on its own phases, so **the high point
+is not over the middle** — a dome's apex dead-centre is the other half of the
+tell.
+
+And the floor stops being a disc of paving: laid stone where people work, then
+**moss, coarse dirt, gravel and podzol** fraying out toward the walls.
+
+Still to do: wood framing, water channels, food in production, glass, decorated
+houses. Those are worth adding now that the shell underneath them is not a
+formula.
+
 ### What the congregation wrote down
 
 **Six accounts, in six separate chests**, placed after every tunnel and trap is

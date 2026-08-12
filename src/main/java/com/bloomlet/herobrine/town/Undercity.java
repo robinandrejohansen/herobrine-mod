@@ -116,23 +116,74 @@ public final class Undercity {
 	 * plausible and would still read as a warehouse; a barrel vault carries
 	 * itself and lets the middle stay open.
 	 */
+	/**
+	 * HOW MANY BEARINGS THE OUTLINE IS DRAWN ON.
+	 *
+	 * Sixty-four is fine enough that no straight facets show at this span and
+	 * coarse enough that the wall wanders in bays rather than in fringe.
+	 */
+	private static final int BEARINGS = 64;
+
 	private static void chamber(ServerLevel level, BlockPos floor, RandomSource random) {
-		for (int dx = -SPAN - 2; dx <= SPAN + 2; dx++) {
-			for (int dz = -SPAN - 2; dz <= SPAN + 2; dz++) {
+		// THE SHAPE WAS THE WHOLE PROBLEM, AND NO AMOUNT OF DRESSING FIXES IT.
+		//
+		// This was sqrt(dx*dx + dz*dz) tested against a constant, with a cosine
+		// vault over it — a mathematically perfect disc under a mathematically
+		// perfect dome. Every complaint about the undercity reading fake was a
+		// complaint about those two lines: wood framing, water channels and
+		// overgrown grass laid inside a shape like that still read as decoration
+		// applied to a generated volume, because they are.
+		//
+		// So the outline is drawn once per build as a wandering radius — three
+		// harmonics at random phases summed around the circle — and every column
+		// reads its limit off that. Three, because one gives an egg and a dozen
+		// gives noise: three gives LOBES, which is what a worked-out cavern is.
+		// Bays, headlands, a couple of places where the wall comes in close and
+		// somewhere it opens right out.
+		double[] rim = new double[BEARINGS];
+		double[] cap = new double[BEARINGS];
+		double p1 = random.nextDouble() * Math.PI * 2.0;
+		double p2 = random.nextDouble() * Math.PI * 2.0;
+		double p3 = random.nextDouble() * Math.PI * 2.0;
+		for (int b = 0; b < BEARINGS; b++) {
+			double a = b * Math.PI * 2.0 / BEARINGS;
+			rim[b] = SPAN
+				+ Math.sin(a * 2 + p1) * (SPAN * 0.22)
+				+ Math.sin(a * 3 + p2) * (SPAN * 0.13)
+				+ Math.sin(a * 5 + p3) * (SPAN * 0.07);
+			// The roof wanders on its own phases, so the highest part of the
+			// ceiling is NOT over the middle of the floor. A dome's apex sitting
+			// dead centre is the other half of what gives it away.
+			cap[b] = HEIGHT + Math.sin(a * 2 + p3) * 2.5 + Math.sin(a * 3 + p1) * 1.5;
+		}
+
+		for (int dx = -SPAN - 6; dx <= SPAN + 6; dx++) {
+			for (int dz = -SPAN - 6; dz <= SPAN + 6; dz++) {
 				double reach = Math.sqrt(dx * dx + dz * dz);
-				if (reach > SPAN + 2) {
+				if (reach > SPAN + 6) {
 					continue;
 				}
-				// The vault: full height in the middle, closing to nothing at
-				// the rim, so the wall and the ceiling are one curve.
-				double t = Math.min(1.0, reach / SPAN);
-				int roof = (int)Math.round(HEIGHT * Math.cos(t * Math.PI / 2.0));
+				// Which bearing this column sits on, interpolated between the two
+				// nearest so the wall curves instead of stepping.
+				double turn = (Math.atan2(dz, dx) + Math.PI * 2.0) % (Math.PI * 2.0);
+				double slot = turn / (Math.PI * 2.0) * BEARINGS;
+				int lo = (int)Math.floor(slot) % BEARINGS;
+				int hi = (lo + 1) % BEARINGS;
+				double mix = slot - Math.floor(slot);
+				double edge = rim[lo] + (rim[hi] - rim[lo]) * mix;
+				double top = cap[lo] + (cap[hi] - cap[lo]) * mix;
+				if (reach > edge + 2) {
+					continue;
+				}
 
-				for (int dy = -1; dy <= HEIGHT; dy++) {
+				double t = Math.min(1.0, reach / edge);
+				int roof = (int)Math.round(top * Math.cos(t * Math.PI / 2.0));
+
+				for (int dy = -1; dy <= HEIGHT + 4; dy++) {
 					BlockPos at = floor.offset(dx, dy, dz);
 					if (dy == -1) {
-						level.setBlock(at, paving(random), 2);
-					} else if (dy <= roof && reach <= SPAN) {
+						level.setBlock(at, ground(random, reach / edge), 2);
+					} else if (dy <= roof && reach <= edge) {
 						level.setBlock(at, Blocks.CAVE_AIR.defaultBlockState(), 2);
 					} else if (dy <= roof + 1) {
 						level.setBlock(at, vaulting(random), 2);
@@ -140,6 +191,38 @@ public final class Undercity {
 				}
 			}
 		}
+	}
+
+	/**
+	 * THE FLOOR STOPS BEING A DISC OF PAVING.
+	 *
+	 * Laid stone in the middle where people actually stand and work, and then it
+	 * gives out — the edges are dirt, gravel and moss with grass growing over
+	 * them, because nobody paves the far corners of a cavern and because a floor
+	 * that changes underfoot is the cheapest way to say which parts of a room are
+	 * used.
+	 *
+	 * @param out how far toward the wall this column is, nought at the middle
+	 */
+	private static BlockState ground(RandomSource random, double out) {
+		if (out < 0.45) {
+			return paving(random);
+		}
+		// A ragged margin rather than a ring: the further out, the likelier it
+		// has gone back to earth, so the boundary frays instead of drawing a line.
+		if (random.nextDouble() > (out - 0.35) * 1.6) {
+			return paving(random);
+		}
+		int roll = random.nextInt(10);
+		if (roll < 4) {
+			return Blocks.MOSS_BLOCK.defaultBlockState();
+		}
+		if (roll < 7) {
+			return Blocks.COARSE_DIRT.defaultBlockState();
+		}
+		return roll < 9
+			? Blocks.GRAVEL.defaultBlockState()
+			: Blocks.PODZOL.defaultBlockState();
 	}
 
 	/**
