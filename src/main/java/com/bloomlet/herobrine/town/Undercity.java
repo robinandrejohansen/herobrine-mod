@@ -65,6 +65,20 @@ public final class Undercity {
 		pool(level, floor);
 		wellShaft(level, square, floor);
 		cryptStair(level, crypt, floor);
+		// AND THE STAIR IS JOINED TO THE CHAMBER, which it was not.
+		//
+		// The spiral carves a five-by-five shaft down to the chamber's floor
+		// level and stops there, on the assumption that the church stands over
+		// the chamber and the shaft therefore breaks into it. That held while the
+		// chamber was a perfect disc of a known radius. It stopped holding the
+		// moment the outline started to wander: the rim now comes in as close as
+		// twelve blocks on some bearings, so on the church's bearing the shaft can
+		// land entirely OUTSIDE the wall — and what the player walks down to is a
+		// five-by-five dead end with nothing in it.
+		//
+		// A bore from the shaft foot to the middle fixes it for every shape,
+		// because it stops depending on the shape at all.
+		join(level, new BlockPos(crypt.getX(), floor.getY(), crypt.getZ()), floor);
 
 		library(level, floor.offset(-13, 0, -13), random);
 		for (int i = 0; i < 5; i++) {
@@ -340,6 +354,35 @@ public final class Undercity {
 	 * A proper spiral rather than a ladder. The player should be walking for
 	 * long enough to stop believing it is a cellar.
 	 */
+	/**
+	 * Cut from the foot of a shaft to the middle of the chamber.
+	 *
+	 * Walked as a straight line rather than pathfound, and it simply stops as soon
+	 * as it is standing in cave air — so on a bearing where the rim is generous it
+	 * cuts almost nothing, and on one where the wall has closed in it cuts
+	 * however far it has to. Either way the stair arrives somewhere.
+	 */
+	private static void join(ServerLevel level, BlockPos from, BlockPos floor) {
+		int steps = (int)Math.ceil(Math.sqrt(from.distSqr(floor)));
+		for (int i = 0; i <= steps; i++) {
+			double t = steps == 0 ? 1.0 : (double)i / steps;
+			int x = (int)Math.round(from.getX() + (floor.getX() - from.getX()) * t);
+			int z = (int)Math.round(from.getZ() + (floor.getZ() - from.getZ()) * t);
+			BlockPos at = new BlockPos(x, floor.getY(), z);
+			// Already inside the room, and there is nothing left to cut.
+			if (i > 2 && level.getBlockState(at.above()).is(Blocks.CAVE_AIR)) {
+				return;
+			}
+			for (int wide = -1; wide <= 1; wide++) {
+				for (int up = 0; up <= 3; up++) {
+					level.setBlock(at.offset(wide, up, 0), Blocks.CAVE_AIR.defaultBlockState(), 2);
+					level.setBlock(at.offset(0, up, wide), Blocks.CAVE_AIR.defaultBlockState(), 2);
+				}
+			}
+			level.setBlock(at.below(), paving(level.getRandom()), 2);
+		}
+	}
+
 	private static void cryptStair(ServerLevel level, BlockPos crypt, BlockPos floor) {
 		// A TIGHT SPIRAL IN A SHAFT, not a staircase that wanders.
 		//
