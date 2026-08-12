@@ -359,6 +359,24 @@ public final class Church {
 						: roofing(step));
 				}
 			}
+			// AND THE GABLE ENDS GET CLOSED, which they never were.
+			//
+			// The loop above lays the two slopes and nothing else, so both ends of
+			// the building were open triangles looking straight into the roof
+			// void — the pitch was visible from outside with the sky behind it.
+			// A roof with no gable is not a roof, it is two ramps.
+			//
+			// Filled in stone rather than in roofing, because a gable is WALL: it
+			// is the end of the building carried up to the ridge, and doing it in
+			// slate would read as a roof folded round a corner.
+			for (int z : new int[] { 1, 26 }) {
+				for (int x = step + 1; x <= WIDTH - 2 - step; x++) {
+					BlockPos at = corner.offset(
+						Blueprint.spinX(x, z, WIDTH, DEPTH, facing), 6 + step,
+						Blueprint.spinZ(x, z, WIDTH, DEPTH, facing));
+					Blueprint.put(level, at, Blocks.STONE_BRICKS.defaultBlockState());
+				}
+			}
 		}
 	}
 
