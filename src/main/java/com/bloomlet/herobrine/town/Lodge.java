@@ -54,10 +54,21 @@ public final class Lodge {
 		"           ",
 	};
 
+	/**
+	 * FURNITURE GOES INSIDE, NOT IN THE WALL LINE.
+	 *
+	 * The back row here is the WALL, and it had a furnace, a crafting table, a
+	 * chest and a barrel written into it — so all four replaced wall blocks and
+	 * were visible from the street, embedded in the outside of the house. It read
+	 * exactly like a building glitch, because it was one.
+	 *
+	 * They have moved one row in, against the inside face of the same wall, which
+	 * is where somebody would actually have put them.
+	 */
 	private static final String[] FLOOR_ONE = {
 		"           ",
-		" LWFcWCAWL ",
-		" W      PW ",
+		" LWWWWWWWL ",
+		" WFcC  APW ",
 		" W       W ",
 		" W  hTj  W ",
 		" W      SW ",
@@ -66,6 +77,13 @@ public final class Lodge {
 		"           ",
 	};
 
+	/**
+	 * And the same door rule as the shop: air over a 'D', never a block.
+	 *
+	 * This layer had its own 'D' in the doorway column, which ran door() a second
+	 * time one block up — a four-block stack of door instead of a door. Less
+	 * broken than the shop's version, which is why it survived longer.
+	 */
 	private static final String[] FLOOR_TWO = {
 		"           ",
 		" LbggbggbL ",
@@ -74,7 +92,7 @@ public final class Lodge {
 		" W       W ",
 		" gs      g ",
 		" W       W ",
-		" LbggDEeEL ",
+		" Lbgg EeEL ",
 		"           ",
 	};
 

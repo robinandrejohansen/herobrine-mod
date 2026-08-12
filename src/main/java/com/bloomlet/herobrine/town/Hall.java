@@ -86,7 +86,9 @@ public final class Hall {
 		" g           g ",
 		" gs          g ",
 		" W           W ",
-		" LbggbDDWbggbL ",
+		// Air over both door columns. FLOOR_ONE's door() already placed its
+		// top half here, and anything solid in this row destroys it.
+		" Lbggb  WbggbL ",
 		"               ",
 	};
 

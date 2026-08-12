@@ -54,21 +54,32 @@ public final class Shop {
 		" WK   AW ",
 		" W  t  W ",
 		" WPP_PPW ",
-		" W     W ",
+		" W   d W ",
 		" Wnnn  W ",
 		" LWgDgWL ",
 		"         ",
 	};
 
+	/**
+	 * THE TOP OF THE WALLS, AND NOTHING SOLID MAY SIT OVER THE DOOR.
+	 *
+	 * door() places BOTH halves of the door — lower here, upper one block up —
+	 * and this layer runs afterwards. A trapdoor sat directly on the door's top
+	 * half, which broke the door, popped it off as an item, and left the shop
+	 * with no entrance at all. That is the whole "the trade shops have no way in"
+	 * report, and it was three characters wide.
+	 *
+	 * The column above a 'D' is air here, always. Anything placed there wins.
+	 */
 	private static final String[] UPPER = {
 		"         ",
 		" LWWWWWL ",
-		" W  d  W ",
+		" W     W ",
 		" g     g ",
 		" W     W ",
 		" W     W ",
 		" g     g ",
-		" LWbbbWL ",
+		" LWb bWL ",
 		"         ",
 	};
 
