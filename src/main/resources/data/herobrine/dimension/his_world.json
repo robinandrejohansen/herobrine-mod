@@ -1,0 +1,11 @@
+{
+  "type": "herobrine:his_world",
+  "generator": {
+    "type": "minecraft:noise",
+    "settings": "minecraft:nether",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "minecraft:basalt_deltas"
+    }
+  }
+}
