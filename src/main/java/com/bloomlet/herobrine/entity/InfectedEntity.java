@@ -39,7 +39,27 @@ public class InfectedEntity extends Zombie {
 		return Zombie.createAttributes()
 			.add(Attributes.MOVEMENT_SPEED, 0.26)
 			.add(Attributes.MAX_HEALTH, 20.0)
-			.add(Attributes.ATTACK_DAMAGE, 3.0);
+			.add(Attributes.ATTACK_DAMAGE, 3.0)
+			// TALLER, AND THE WHOLE THING RATHER THAN THE MODEL.
+			//
+			// SCALE moves the hitbox with the mesh, so this is genuinely a bigger
+			// creature and not a stretched texture: it is hit where it looks like
+			// it should be hit, its eyes are where its head is, and it reaches
+			// from the height it appears to reach from. Scaling the model alone
+			// gives a thing whose sword arrives from its knees.
+			//
+			// 1.6, which is 3.1 blocks against a vanilla zombie's 1.95. Double
+			// was the instinct and it is too much — at 2.0 it stops reading as a
+			// person who is wrong and starts reading as a different species, and
+			// the whole point of these is that they used to be people.
+			//
+			// THE CONSEQUENCE IS THAT THEY CANNOT COME INDOORS, and that is worth
+			// knowing rather than discovering. Anything over about 1.03 no longer
+			// fits a two-block doorway, so these will crowd outside a house and
+			// never enter one. For the cells and the open ground they are meant
+			// for, that is fine and arguably better. For anything expected to
+			// follow a player into a corridor, it is not.
+			.add(Attributes.SCALE, 1.6);
 	}
 
 	@Override
