@@ -1,0 +1,27 @@
+{
+  "breath": {
+    "category": "ambient",
+    "subtitle": "subtitles.herobrine.breath",
+    "sounds": [ { "name": "herobrine:breath" } ]
+  },
+  "anger": {
+    "category": "hostile",
+    "subtitle": "subtitles.herobrine.anger",
+    "sounds": [ { "name": "herobrine:anger" } ]
+  },
+  "gone": {
+    "category": "hostile",
+    "subtitle": "subtitles.herobrine.gone",
+    "sounds": [ { "name": "herobrine:gone" } ]
+  },
+  "his_world": {
+    "category": "ambient",
+    "subtitle": "subtitles.herobrine.his_world",
+    "sounds": [ { "name": "herobrine:his_world", "stream": true } ]
+  },
+  "the_way": {
+    "category": "hostile",
+    "subtitle": "subtitles.herobrine.the_way",
+    "sounds": [ { "name": "herobrine:the_way" } ]
+  }
+}

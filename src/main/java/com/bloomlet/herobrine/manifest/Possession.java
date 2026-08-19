@@ -578,7 +578,7 @@ public final class Possession {
 		overworld.setAttached(TOLL, killed);
 
 		if (killer instanceof ServerPlayer scorer) {
-			com.bloomlet.herobrine.wrath.WrathTriggers.defiance(scorer, killPrice(before));
+			com.bloomlet.herobrine.wrath.Heat.noticed(scorer, killPrice(before));
 		}
 
 		List<Mob> watchers = new ArrayList<>();

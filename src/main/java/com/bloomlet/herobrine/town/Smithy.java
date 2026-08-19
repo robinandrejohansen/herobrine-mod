@@ -122,7 +122,8 @@ public final class Smithy {
 				.setValue(BlockStateProperties.HORIZONTAL_FACING,
 					Blueprint.turned(Direction.SOUTH, facing)));
 			case 'w' -> Blueprint.put(level, at, Blocks.SMITHING_TABLE.defaultBlockState());
-			case 'B' -> Blueprint.put(level, at, Blocks.BARREL.defaultBlockState());
+			case 'B' -> Blueprint.barrel(level, at, random,
+				com.bloomlet.herobrine.structure.Loot.Tier.TOWN_FORGE);
 			case 'k' -> Blueprint.put(level, at, Blocks.CAULDRON.defaultBlockState());
 			// The quench trough. Water in a workshop is not decoration — it is
 			// the second most important thing in the room after the fire.

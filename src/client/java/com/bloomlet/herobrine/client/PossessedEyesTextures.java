@@ -36,6 +36,50 @@ public final class PossessedEyesTextures {
 		add(EntityTypes.SHEEP, "sheep");
 		add(EntityTypes.CHICKEN, "chicken");
 		add(EntityTypes.VILLAGER, "villager");
+		// THE ONES HE SENDS DURING A HUNT wear his eyes too, and they reuse the
+		// overlay cut for his world's garrison — same mob, same UV layout, so
+		// there is nothing to draw twice. Zombies are not otherwise possessable,
+		// so this entry can only ever be reached by something he put there.
+		LOCKED.put(EntityTypes.ZOMBIE, HerobrineMod.id("textures/entity/host/zombie.png"));
+		HUNTING.put(EntityTypes.ZOMBIE, HerobrineMod.id("textures/entity/host/zombie.png"));
+	}
+
+	/**
+	 * AND IN HIS WORLD, EVERYTHING HAS THEM.
+	 *
+	 * Not one animal he took — every skeleton, every zombie, every creeper, all
+	 * the time, because that is his country and the things in it are his. A
+	 * dimension where each pair of eyes in the dark is the same pair says the
+	 * only thing the place needs to say, and it says it without a single line of
+	 * text.
+	 *
+	 * Separate from the LOCKED/HUNTING maps rather than folded into them because
+	 * it answers a different question. Those are "what has been done to this
+	 * animal"; this is "where is it standing".
+	 */
+	private static final Map<EntityType<?>, Identifier> HOST = new HashMap<>();
+
+	static {
+		host(EntityTypes.SKELETON, "skeleton");
+		host(EntityTypes.STRAY, "skeleton");
+		host(EntityTypes.BOGGED, "skeleton");
+		host(EntityTypes.ZOMBIE, "zombie");
+		host(EntityTypes.HUSK, "zombie");
+		host(EntityTypes.DROWNED, "zombie");
+		host(EntityTypes.CREEPER, "creeper");
+	}
+
+	private static void host(EntityType<?> type, String name) {
+		HOST.put(type, HerobrineMod.id("textures/entity/host/" + name + ".png"));
+	}
+
+	/**
+	 * @return the overlay for this mob in his world, or null if it is one of the
+	 *         things left alone — the endermen, and anything with a head shape
+	 *         these three textures would not fit
+	 */
+	public static @org.jspecify.annotations.Nullable Identifier forHost(EntityType<?> type) {
+		return HOST.get(type);
 	}
 
 	private static void add(EntityType<?> type, String name) {

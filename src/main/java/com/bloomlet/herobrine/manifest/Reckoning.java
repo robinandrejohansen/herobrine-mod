@@ -101,7 +101,7 @@ public final class Reckoning {
 		BlockPos site = new BlockPos(where.getX(),
 			Ground.topOf(level, where.getX(), where.getZ()) + 1, where.getZ());
 
-		portal(level, site);
+		com.bloomlet.herobrine.structure.TheWay.open(level, site);
 		burning(level, site, random);
 
 		// Experience, and a great deal of it. The one straightforwardly
@@ -112,46 +112,41 @@ public final class Reckoning {
 				site.getZ() + 0.5), 2600);
 
 		Cadence.in(level.getServer(), 120, () -> {
-			collapse(level, site);
+			steady(level, site);
 			memorial(level, site, random, killer);
 			warnings(level, site, random);
-			HerobrineMod.LOGGER.info("the portal failed at [{}, {}, {}]",
+			HerobrineMod.LOGGER.info("the way held at [{}, {}, {}]",
 				site.getX(), site.getY(), site.getZ());
 		});
 	}
 
-	/** Four by five of obsidian, lit. It stands for six seconds. */
-	private static void portal(ServerLevel level, BlockPos site) {
-		for (int dx = -2; dx <= 2; dx++) {
-			for (int dy = 0; dy <= 4; dy++) {
-				boolean frame = dx == -2 || dx == 2 || dy == 0 || dy == 4;
-				BlockPos at = site.offset(dx, dy, 0);
-				level.setBlock(at, frame
-					? Blocks.OBSIDIAN.defaultBlockState()
-					: Blocks.NETHER_PORTAL.defaultBlockState()
-						.setValue(BlockStateProperties.HORIZONTAL_AXIS,
-							Direction.Axis.X), 2);
-			}
-		}
-		level.playSound(null, site, SoundEvents.PORTAL_TRIGGER, SoundSource.HOSTILE, 3.0F, 0.6F);
-	}
+	// The old portal() lived here: four by five of obsidian filled with vanilla
+	// NETHER_PORTAL blocks, which would have sent anybody who reached it to the
+	// nether. It is gone rather than kept, because a dead copy of the frame in
+	// the file next to the live one is how two versions of a thing drift apart.
+	// structure/TheWay owns the frame now, on both sides of it.
 
-	/** And it fails. Loudly, and without ever having been usable. */
-	private static void collapse(ServerLevel level, BlockPos site) {
-		for (int dx = -2; dx <= 2; dx++) {
-			for (int dy = 0; dy <= 4; dy++) {
-				BlockPos at = site.offset(dx, dy, 0);
-				if (level.getBlockState(at).is(Blocks.NETHER_PORTAL)) {
-					level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
-				} else if (level.getBlockState(at).is(Blocks.OBSIDIAN)
-					&& level.getRandom().nextInt(3) != 0) {
-					// Most of the frame goes; a few stones are left standing,
-					// which says "this was here" far better than a clean site.
-					level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
-				}
-			}
-		}
-		level.playSound(null, site, SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(),
+	/**
+	 * AND IT HOLDS. IT USED TO BREAK.
+	 *
+	 * The old version raised the portal, gave the player six seconds to look at
+	 * it, and then collapsed it — most of the frame gone, a few stones left
+	 * standing. That was a good ending and a shut one. The sentence it spoke was
+	 * "he was going somewhere, and he was almost through", and the only thing
+	 * anybody could do with it was read it and walk home.
+	 *
+	 * It stays open now, and the reason is worse than the reason it broke. HE
+	 * DID NOT FINISH IT — the fight did. The last thing standing between him and
+	 * wherever he was going was the player, and the frame closes over his body
+	 * about four seconds after he stops moving.
+	 *
+	 * The six seconds are kept exactly as they were, because the beat is still
+	 * the beat: they get long enough to work out what they are looking at before
+	 * anything happens to it. All that changed is what happens at the end of
+	 * them.
+	 */
+	private static void steady(ServerLevel level, BlockPos site) {
+		level.playSound(null, site, SoundEvents.RESPAWN_ANCHOR_SET_SPAWN,
 			SoundSource.HOSTILE, 4.0F, 0.5F);
 		level.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL,
 			site.getX() + 0.5, site.getY() + 2.0, site.getZ() + 0.5, 200, 2.0, 2.0, 2.0, 0.6);

@@ -117,7 +117,8 @@ public final class Shop {
 			case 't' -> Blueprint.put(level, at, bench(trade)
 				.setValue(BlockStateProperties.HORIZONTAL_FACING,
 					Blueprint.turned(Direction.SOUTH, facing)));
-			case 'A' -> Blueprint.put(level, at, Blocks.BARREL.defaultBlockState());
+			case 'A' -> Blueprint.barrel(level, at, random,
+				com.bloomlet.herobrine.structure.Loot.Tier.TOWN_TRADE);
 			case 'K' -> chest(level, at, facing, random);
 			case 'd' -> bed(level, at, facing, random);
 			case 'b' -> Blueprint.put(level, at, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()

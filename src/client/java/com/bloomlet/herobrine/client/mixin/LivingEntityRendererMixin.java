@@ -59,6 +59,16 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity,
 			((PossessedEyes)state).herobrine$eyes(null);
 			return;
 		}
+		// IN HIS WORLD IT IS NOT A QUESTION. Everything there is his, so the
+		// overlay is decided by the dimension and nothing else is consulted —
+		// no possession, no phase, no menace. Checked first because it is also
+		// the cheapest of the three answers.
+		if (mob.level().dimension().equals(
+				com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+			((PossessedEyes)state).herobrine$eyes(
+				PossessedEyesTextures.forHost(mob.getType()));
+			return;
+		}
 		// The worse of the two: what was done to this one, and what the phase
 		// has done to all of them. A possessed cow at RUMOUR still shows its
 		// eyes, and an untouched one at SIEGE shows them too.

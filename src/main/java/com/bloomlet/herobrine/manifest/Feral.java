@@ -211,7 +211,7 @@ public final class Feral {
 		long own = Math.floorMod(mob.getUUID().hashCode(), HEARTBEAT);
 		if ((level.getGameTime() + own) % HEARTBEAT == 0) {
 			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
-				SoundEvents.WARDEN_HEARTBEAT, SoundSource.HOSTILE, 0.45F, 0.85F);
+				com.bloomlet.herobrine.sound.ModSounds.BREATH, SoundSource.HOSTILE, 0.45F, 1.1F);
 		}
 		mob.yHeadRot = angle;
 		mob.setYRot(angle * 0.3F);

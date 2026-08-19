@@ -66,6 +66,8 @@ public final class Chambers {
 	/** How far from the player one may be cut. Near enough to stumble into. */
 	private static final int NEAR = 12;
 	private static final int FAR = 28;
+	/** High enough for a mountainside, low enough to refuse a sky base. */
+	private static final int CEILING = 96;
 
 	/**
 	 * The eight, and each is one sentence.
@@ -102,7 +104,29 @@ public final class Chambers {
 	 * genuinely reads as one.
 	 */
 	public static boolean cut(ServerLevel level, ServerPlayer player) {
-		if (level.canSeeSky(player.blockPosition()) || player.getY() > 54) {
+		// FIFTY-FOUR WAS THE BUG, AND IT WAS INVISIBLE.
+		//
+		// This used to refuse above y54, which sounds like "underground" and is
+		// not: 26.2's caves run from bedrock to well past a hundred, and the ones
+		// people actually walk into on the way somewhere sit either side of sea
+		// level. A player standing in a perfectly good cave at y64 — roofed, dark,
+		// thirty blocks of rock in every direction — was refused on the number
+		// alone, so the room could only ever be cut for somebody who had already
+		// gone deliberately deep.
+		//
+		// In a playthrough that reads as the content not existing rather than as a
+		// failure, because the director simply redraws another manifestation and
+		// nobody is ever told. It cost eight rooms most of their chances to appear.
+		//
+		// The real requirement was never depth, it is ROCK — and `buried` below
+		// already tests exactly that, five blocks of it in every direction from
+		// where the room would go. That is the gate. This one only has to throw
+		// out the sky, and a ceiling high enough to keep a mountainside eligible
+		// while still refusing somebody's tower.
+		if (level.canSeeSky(player.blockPosition()) || player.getY() > CEILING) {
+			HerobrineMod.LOGGER.info("chamber refused: {} at y={}",
+				level.canSeeSky(player.blockPosition()) ? "open sky" : "too high",
+				player.getBlockY());
 			return false;
 		}
 		RandomSource random = level.getRandom();
@@ -123,9 +147,12 @@ public final class Chambers {
 		// way in, because the way in is where it started.
 		BlockPos mouth = openNear(level, player, random);
 		if (mouth == null) {
+			HerobrineMod.LOGGER.info(
+				"chamber refused: nowhere walkable within 8 blocks of the player");
 			return false;
 		}
 
+		int notBuried = 0;
 		for (int attempt = 0; attempt < 40; attempt++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
 			double range = NEAR + random.nextDouble() * (FAR - NEAR);
@@ -135,6 +162,7 @@ public final class Chambers {
 				mouth.getZ() + (int)Math.round(Math.sin(angle) * range));
 
 			if (!buried(level, at, 5)) {
+				notBuried++;
 				continue;
 			}
 			room(level, at, random);
@@ -149,6 +177,13 @@ public final class Chambers {
 			ManifestationDirector.noteLocation(joined);
 			return true;
 		}
+		// Named causes rather than a bare false. "It did not work" is the one
+		// diagnostic that cannot be acted on, and this refused fifteen times in a
+		// row in a playtest with nothing in the log to say why.
+		HerobrineMod.LOGGER.info(
+			"chamber refused: 40 sites tried from the mouth at [{}, {}, {}], "
+			+ "{} of them not in solid rock",
+			mouth.getX(), mouth.getY(), mouth.getZ(), notBuried);
 		return false;
 	}
 

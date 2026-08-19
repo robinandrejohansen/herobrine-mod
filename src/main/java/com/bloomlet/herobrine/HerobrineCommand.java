@@ -179,8 +179,12 @@ public final class HerobrineCommand {
 				// grinding to a thousand wrath first.
 				.then(Commands.literal("hunt").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
-					HauntingSpawner.Outcome outcome = HauntingSpawner.place(
-						(ServerLevel)p.level(), p, true, true);
+					// Through TheHunt, so what gets tested is the whole event —
+					// the cave placement, the ladder, and the house catching it
+					// while they are out — rather than only the spawn.
+					HauntingSpawner.Outcome outcome =
+						com.bloomlet.herobrine.manifest.TheHunt.begin(
+							(ServerLevel)p.level(), p);
 					ctx.getSource().sendSuccess(() -> Component.literal(
 						outcome == HauntingSpawner.Outcome.PLACED
 							? "the hunt is on" + where(p)
@@ -188,7 +192,44 @@ public final class HerobrineCommand {
 					return outcome == HauntingSpawner.Outcome.PLACED ? 1 : 0;
 				}))
 
-				// The tenth-blow church, on demand. Reaching it honestly needs
+				// One of the villagers, on demand. Meeting him honestly needs a
+			// village, a night, and a one-in-six roll, which is a long wait to
+			// check whether his eyes came out right.
+			.then(Commands.literal("turned").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					ServerLevel level = (ServerLevel)p.level();
+					com.bloomlet.herobrine.entity.TurnedEntity him =
+						com.bloomlet.herobrine.entity.ModEntities.TURNED.create(
+							level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+					if (him == null) {
+						ctx.getSource().sendFailure(Component.literal("could not make one"));
+						return 0;
+					}
+					// In front of them and close, unlike the real placement —
+					// this is for looking at, and the whole point of the spawn
+					// rule is that you never get to.
+					net.minecraft.world.phys.Vec3 ahead =
+						p.position().add(p.getLookAngle().scale(5.0));
+					him.snapTo(ahead.x, p.getY(), ahead.z, p.getYRot() + 180.0F, 0.0F);
+					level.addFreshEntity(him);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						"one of them turned — he only comes for you after dark"), false);
+					return 1;
+				}))
+
+			// His world, without the forty hours in front of it. Puts a way
+			// through at your feet rather than teleporting you, so what gets
+			// tested is the portal and the landing and not a debug shortcut.
+			.then(Commands.literal("theway").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					com.bloomlet.herobrine.structure.TheWay.open((ServerLevel)p.level(),
+						p.blockPosition().relative(p.getDirection(), 3));
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						"a way is open in front of you"), false);
+					return 1;
+				}))
+
+			// The tenth-blow church, on demand. Reaching it honestly needs
 				// SIEGE and ten connected swings, which is a long way to walk
 				// to check whether a doorway is in the right wall.
 				// The death aftermath, without the thirty swings in front of it.
@@ -197,7 +238,7 @@ public final class HerobrineCommand {
 					com.bloomlet.herobrine.manifest.Reckoning.aftermath(
 						(ServerLevel)p.level(), p.blockPosition(), p);
 					ctx.getSource().sendSuccess(() -> Component.literal(
-						"the portal is up — it fails in six seconds"), false);
+						"the way is open — walk into it"), false);
 					return 1;
 				}))
 
@@ -246,9 +287,15 @@ public final class HerobrineCommand {
 							return 1;
 						})))
 
-				.then(Commands.literal("wrath")
-					.then(Commands.argument("amount", IntegerArgumentType.integer(-10000, 10000))
-						.executes(HerobrineCommand::wrath)))
+				.then(Commands.literal("phase")
+					.then(Commands.argument("name", StringArgumentType.word())
+						.suggests((context, builder) -> {
+							for (Phase option : Phase.values()) {
+								builder.suggest(option.name().toLowerCase(java.util.Locale.ROOT));
+							}
+							return builder.buildFuture();
+						})
+						.executes(HerobrineCommand::phase)))
 			));
 	}
 
@@ -257,20 +304,30 @@ public final class HerobrineCommand {
 		MinecraftServer server = ctx.getSource().getServer();
 		ServerLevel level = (ServerLevel)player.level();
 
-		int wrath = Wrath.get(server);
 		Phase phase = Wrath.phase(server);
-		int remaining = phase.remaining(wrath);
 		long seconds = ManifestationDirector.secondsUntilNext(server, player);
 		int light = level.getMaxLocalRawBrightness(player.blockPosition());
 
 		long owed = Wrath.owed(server);
-		String line = "wrath " + wrath + "  |  phase " + phase.name()
+		// PHASE FIRST, and no wrath total, because there is not one any more. The
+		// old first field was a number that had been disconnected from the story
+		// for several releases and still printed next to it, which is how a
+		// playtest ended up reading "phase WATCHER" four times during RUMOUR.
+		String line = "phase " + phase.name()
 			// Without this the new pacing floor is indistinguishable from a bug:
 			// a house is late, nobody can see why, and the honest conclusion from
 			// inside the game is that the mod is broken.
 			+ (owed > 0 ? "  |  next place in " + owed + " min" : "  |  next place due")
-			+ (remaining >= 0 ? "  |  next phase in " + remaining : "  |  final phase")
-			+ "  |  share " + Wrath.getShare(player)
+			// The second thing the church waits on, and without a line for it
+			// the symptom is identical to the pacing floor: a building that is
+			// due and does not arrive, for no reason anybody can see.
+			+ (phase == Phase.HUNTER
+				? "  |  hunt " + (com.bloomlet.herobrine.manifest.TheHunt.survived(server)
+					? "survived" : "STILL OWED")
+				: "")
+			+ "  |  blows landed " + com.bloomlet.herobrine.manifest.TheHunt.wounds(server)
+			+ "  |  next place: walk into it (/herobrine locate)"
+			+ "  |  heat " + com.bloomlet.herobrine.wrath.Heat.of(player) + "/100"
 			+ "  |  next in " + (seconds < 0 ? "unscheduled" : seconds + "s")
 			+ "  |  light here " + light + (light > 7 ? " (too bright for him)" : " (dark enough)")
 			+ "  |  pages " + com.bloomlet.herobrine.manifest.Journal.pagesFound(level)
@@ -302,8 +359,8 @@ public final class HerobrineCommand {
 		if (!ManifestationDirector.anythingEligible(server, player)) {
 			ctx.getSource().sendSuccess(() -> Component.literal(
 				"nothing eligible at phase " + phase.name()
-					+ " — either everything is suppressed from recent use, or wrath is too low"
-					+ " (the stare needs " + Phase.WATCHER.threshold + ")"), false);
+					+ " — everything is suppressed from recent use, or nothing in this"
+					+ " phase can run where you are standing"), false);
 			return 0;
 		}
 
@@ -500,12 +557,35 @@ public final class HerobrineCommand {
 		return "to the " + points[index];
 	}
 
-	private static int wrath(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-		ServerPlayer player = ctx.getSource().getPlayerOrException();
+	/**
+	 * Jump the story to a chapter by name.
+	 *
+	 * Replaces `/herobrine wrath <n>`, which had quietly stopped working: wrath
+	 * came off the story several releases ago, so setting it to two thousand moved
+	 * nothing and reported a phase it had derived rather than the one in play.
+	 */
+	private static int phase(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		MinecraftServer server = ctx.getSource().getServer();
-		Wrath.add(server, player, IntegerArgumentType.getInteger(ctx, "amount"), Wrath.Reason.DEFIANCE);
-		String line = "wrath " + Wrath.get(server) + "  |  phase " + Wrath.phase(server).name();
-		ctx.getSource().sendSuccess(() -> Component.literal(line), false);
+		String asked = StringArgumentType.getString(ctx, "name");
+		Phase wanted = null;
+		for (Phase option : Phase.values()) {
+			if (option.name().equalsIgnoreCase(asked)) {
+				wanted = option;
+			}
+		}
+		if (wanted == null) {
+			ctx.getSource().sendFailure(Component.literal(
+				"no chapter called \"" + asked + "\" — try one of "
+					+ java.util.Arrays.stream(Phase.values())
+						.map(option -> option.name().toLowerCase(java.util.Locale.ROOT))
+						.collect(java.util.stream.Collectors.joining(", "))));
+			return 0;
+		}
+		Wrath.jumpTo(server, wanted);
+		final Phase moved = wanted;
+		ctx.getSource().sendSuccess(() -> Component.literal(
+			"the story is at " + moved.name() + " — the next place will site once this"
+				+ " chapter has had its " + moved.duesMinutes + " minutes"), false);
 		return 1;
 	}
 }

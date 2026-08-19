@@ -274,7 +274,13 @@ public final class HauntingSpawner {
 		// one: too far to matter in a passage, judged by rules about being
 		// behind you that mean nothing in a tunnel with two ends. Underground
 		// belongs to glimpse() and passage(), which own their own logic.
-		if (ConfinedPlacement.isConfined(level, player)) {
+		// BURIED, not merely roofed. isConfined is "no sky overhead", which is
+		// true of a cave and equally true of somebody standing in their kitchen —
+		// so a player at home was exempt from the stare entirely. The horizon is
+		// still out there when there is a plank above you; all that has changed
+		// is that he has to be looked at through a window, which visibleFrom now
+		// allows. See ConfinedPlacement.buried.
+		if (ConfinedPlacement.buried(level, player)) {
 			return Outcome.NO_ROOM_HERE;
 		}
 
@@ -656,6 +662,150 @@ public final class HauntingSpawner {
 		return Outcome.PLACED;
 	}
 
+	/**
+	 * A HUNT, WHEREVER THEY HAPPEN TO BE STANDING.
+	 *
+	 * {@link #place} is an outdoor placement and refuses underground, which was
+	 * entirely correct while the hunt was one event among forty — a quiet night
+	 * costs nothing when something else will be along in ten minutes. It stopped
+	 * being correct the moment the story started waiting on a hunt: a group who
+	 * spend HUNTER in a mine would have had the chapter refused every time it
+	 * was offered, and the mod would simply have stopped for them.
+	 *
+	 * So a hunt gets the cave version for free. The rules underground are
+	 * passage()'s rather than the stare's — he is nine to twenty-four blocks
+	 * down the tunnel rather than forty across a field — and everything after
+	 * placement is identical, because the hunt's own behaviour never cared
+	 * where it started.
+	 */
+	public static Outcome hunt(ServerLevel level, ServerPlayer player) {
+		if (player.isSpectator() || !player.isAlive()) {
+			return Outcome.BAD_PLAYER;
+		}
+		if (existsAnywhere(level)) {
+			return Outcome.ALREADY_NEARBY;
+		}
+		if (!ConfinedPlacement.buried(level, player)) {
+			// AND IT DOES NOT WAIT FOR THE DARK. Every other placement in this
+			// file needs light 7 or under, which is right for a figure that has
+			// to be half-seen at sixty blocks and wrong for one that is coming
+			// whether or not you can make him out.
+			//
+			// It is also what keeps the chapter from stalling. The hunt is owed
+			// now rather than rolled for, and a light gate on an owed event means
+			// a group who play daytime sessions get offered it, refused, and
+			// offered it again every ninety seconds until dusk — the story
+			// waiting on the clock, invisibly, for hours.
+			Outcome across = place(level, player, true, true);
+			if (across == Outcome.PLACED || across == Outcome.ALREADY_NEARBY) {
+				return across;
+			}
+			// AND IF THERE IS NOWHERE HE COULD BE SEEN FROM, HE COMES ANYWAY.
+			//
+			// place() requires a spot the player could actually lay eyes on,
+			// which is the entire point of the STARE and has nothing to do with
+			// this. A hunt is not a sighting: he is not there to be noticed at
+			// sixty blocks, he is there to arrive. Being unseen at the start is
+			// the mod's oldest rule, not a failure of one.
+			//
+			// It was also the last way the chapter could still stall. Somebody
+			// in a windowless room fails every visibility test there is — so an
+			// owed hunt would be refused, and refused again ninety seconds
+			// later, for as long as they stayed in the room the hunt exists to
+			// come to. The church would simply never be sited.
+			return unseen(level, player);
+		}
+		BlockPos spot = ConfinedPlacement.find(level, player);
+		if (spot == null) {
+			// Deep, and the space around them will not take him either — a
+			// one-block crawl, a boat on an underground lake. The last resort
+			// applies here too rather than losing the chapter to it.
+			return unseen(level, player);
+		}
+		HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
+		if (him == null) {
+			return Outcome.NO_FOOTING;
+		}
+		double dx = player.getX() - (spot.getX() + 0.5);
+		double dz = player.getZ() - (spot.getZ() + 0.5);
+		float yaw = (float)(Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
+		him.snapTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, yaw, 0.0F);
+		him.setAnchor(player.blockPosition());
+		// No glimpse timer. This is the one thing in a tunnel that does not
+		// resolve itself by standing still — see HerobrineEntity's hunt.
+		him.beginHunt();
+		level.addFreshEntity(him);
+		ManifestationDirector.noteLocation(spot);
+		him.announceArrival();
+		HerobrineMod.LOGGER.info("the hunt starts underground at [{}, {}, {}], {} blocks off",
+			spot.getX(), spot.getY(), spot.getZ(),
+			(int)Math.sqrt(spot.distSqr(player.blockPosition())));
+		return Outcome.PLACED;
+	}
+
+	/**
+	 * SOMEWHERE HE CAN STAND, AND NOTHING ELSE ASKED OF IT.
+	 *
+	 * The hunt's last resort, and deliberately the least fussy placement in the
+	 * file: ground that will take him, out of arm's reach, and that is the whole
+	 * specification. No light level, no sightline, no rule about being behind
+	 * them — every one of those exists to make a SIGHTING work, and a hunt is not
+	 * one. What happens next is that he walks to them, which needs nothing except
+	 * somewhere to start walking from.
+	 *
+	 * Close in, at twenty-four to forty-eight, because this is reached when the
+	 * player is somewhere awkward — indoors, walled in, down a hole — and putting
+	 * him seventy blocks out through two hills only means a longer walk to the
+	 * same door. He should be at it shortly.
+	 */
+	private static final double UNSEEN_NEAR = 24.0;
+	private static final double UNSEEN_FAR = 48.0;
+
+	private static Outcome unseen(ServerLevel level, ServerPlayer player) {
+		RandomSource random = level.getRandom();
+		BlockPos from = player.blockPosition();
+		for (int attempt = 0; attempt < 96; attempt++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = UNSEEN_NEAR + random.nextDouble() * (UNSEEN_FAR - UNSEEN_NEAR);
+			int x = from.getX() + (int)Math.round(Math.cos(angle) * range);
+			int z = from.getZ() + (int)Math.round(Math.sin(angle) * range);
+			if (!level.isLoaded(new BlockPos(x, from.getY(), z))) {
+				continue;
+			}
+			// Their own level first, then the surface. A player in a cellar gets
+			// him in the cellar's rock rather than on the lawn above it, and a
+			// player in a house gets him in the garden — but either will do, and
+			// having two is what makes this refuse almost never.
+			BlockPos at = standing(level, x, from.getY(), z);
+			if (at == null) {
+				at = standing(level, x, level.getHeight(
+					Heightmap.Types.MOTION_BLOCKING, x, z), z);
+			}
+			if (at == null || at.closerThan(from, 8.0)) {
+				continue;
+			}
+			return spawnAt(level, player, at, true);
+		}
+		HerobrineMod.LOGGER.warn("hunt: no footing anywhere around [{}, {}, {}]",
+			from.getX(), from.getY(), from.getZ());
+		return Outcome.NO_FOOTING;
+	}
+
+	/** The nearest place to this height with two blocks of air over solid ground. */
+	private static @org.jspecify.annotations.Nullable BlockPos standing(
+			ServerLevel level, int x, int y, int z) {
+		for (int drop = 0; drop <= 12; drop++) {
+			for (int dy : new int[] { -drop, drop }) {
+				BlockPos at = new BlockPos(x, y + dy, z);
+				if (level.isOutsideBuildHeight(at) || !ConfinedPlacement.canStand(level, at)) {
+					continue;
+				}
+				return at;
+			}
+		}
+		return null;
+	}
+
 	/** Puts him at a chosen spot, already facing the player. */
 	private static Outcome spawnAt(ServerLevel level, ServerPlayer player, BlockPos pos) {
 		return spawnAt(level, player, pos, false);
@@ -707,11 +857,34 @@ public final class HauntingSpawner {
 	 * the ground itself would reject a perfectly good spot just over the brow
 	 * of a hill — which is one of the better places for him to be.
 	 */
+	/**
+	 * AND A WINDOW IS NOT A WALL.
+	 *
+	 * VISUAL rather than COLLIDER, and that one word is the whole of it. COLLIDER
+	 * asks "would something bump into this", and glass would — it has a full
+	 * collision box. So every sightline out of a window failed, and a player who
+	 * had glazed their base had quietly made themselves unwatchable: he would
+	 * refuse every position they could actually see him from and then report that
+	 * nothing was visible.
+	 *
+	 * VISUAL asks the question that was meant all along, and it is vanilla's own
+	 * answer to it — glass and panes and bars all return an empty visual shape,
+	 * because that is the same test the game uses to decide whether you can see
+	 * out of a block. Nothing here has to keep its own list of what counts as
+	 * transparent, which is the kind of list that goes stale the moment somebody
+	 * adds a new pane.
+	 *
+	 * Leaves, slabs and fences still block, and they should — a figure read
+	 * through a hedge is not a sighting.
+	 *
+	 * Aimed a little above the block, because he stands ON it and it is his head
+	 * and shoulders that have to clear the ridge, not his feet.
+	 */
 	public static boolean visibleFrom(ServerLevel level, ServerPlayer player, BlockPos pos) {
 		Vec3 eye = player.getEyePosition();
 		Vec3 head = new Vec3(pos.getX() + 0.5, pos.getY() + 1.7, pos.getZ() + 0.5);
 		return level.clip(new net.minecraft.world.level.ClipContext(eye, head,
-			net.minecraft.world.level.ClipContext.Block.COLLIDER,
+			net.minecraft.world.level.ClipContext.Block.VISUAL,
 			net.minecraft.world.level.ClipContext.Fluid.NONE, player))
 			.getType() == net.minecraft.world.phys.HitResult.Type.MISS;
 	}

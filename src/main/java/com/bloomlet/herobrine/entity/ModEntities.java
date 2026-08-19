@@ -60,6 +60,21 @@ public final class ModEntities {
 			.clientTrackingRange(10)
 	);
 
+	/**
+	 * The villager who does not sleep.
+	 *
+	 * Villager-sized to the pixel, because everything about him depends on his
+	 * being indistinguishable from the people standing next to him. Tracked as
+	 * far out as the mimic: he is meant to be noticed across a square, watched,
+	 * and argued about before anybody gets close enough to see his eyes.
+	 */
+	public static final EntityType<TurnedEntity> TURNED = register(
+		"turned",
+		EntityType.Builder.of(TurnedEntity::new, MobCategory.MONSTER)
+			.sized(0.6F, 1.95F)
+			.clientTrackingRange(10)
+	);
+
 	private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HerobrineMod.id(name));
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
@@ -70,5 +85,6 @@ public final class ModEntities {
 		FabricDefaultAttributeRegistry.register(HEROBRINE, HerobrineEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(INFECTED, InfectedEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(MIMIC, MimicEntity.createAttributes());
+		FabricDefaultAttributeRegistry.register(TURNED, TurnedEntity.createAttributes());
 	}
 }

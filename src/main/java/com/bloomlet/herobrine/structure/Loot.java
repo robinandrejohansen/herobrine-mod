@@ -16,7 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 
 /**
  * What is left in the cupboards.
@@ -83,6 +83,22 @@ public final class Loot {
 		 * larder full of anvils.
 		 */
 		TOWN_FORGE, TOWN_TRADE, TOWN_HOME,
+		/**
+		 * WHAT THE WATCH KEEPS, which is not the same thing as what the smith
+		 * makes.
+		 *
+		 * FORGE is a workshop's stock — raw iron, coal, and tools in the middle
+		 * of being finished. This is a walled town's ARMOURY: the kit issued to
+		 * whoever stands on the gate. Bows and arrows rather than ingots, shields
+		 * and mail rather than pickaxes, and rations, because a watch that cannot
+		 * eat is not a watch.
+		 *
+		 * It matters that the town has one at all. Everything else about the
+		 * place says people are living ordinary lives forty blocks over a cult;
+		 * a hall with arms in the back says somebody there has thought about
+		 * what happens if that stops being true.
+		 */
+		TOWN_ARMS,
 	}
 
 	private record Entry(Item item, int min, int max, int weight, boolean worn) {}
@@ -213,20 +229,93 @@ public final class Loot {
 	};
 
 	/**
+	 * The gate watch's kit. Worn, and none of it matched.
+	 *
+	 * Deliberately a rung below the forge on raw value and a rung above it on
+	 * usefulness: no diamonds, no netherite, nothing a player could not have
+	 * made themselves by this point in the game — but a bow, a shield and a stack
+	 * of arrows is a genuinely good afternoon for somebody who arrived at the
+	 * town with a stone sword.
+	 *
+	 * Chainmail is in here and nowhere else, because it is the one armour set a
+	 * player cannot craft. It is not better than iron and it does not need to be:
+	 * it is the piece that says this came from somewhere.
+	 */
+	private static final Entry[] ARMS_POOL = {
+		new Entry(Items.ARROW, 8, 24, 10, false),
+		new Entry(Items.BOW, 1, 1, 8, true),
+		new Entry(Items.SHIELD, 1, 1, 7, true),
+		new Entry(Items.IRON_SWORD, 1, 1, 6, true),
+		new Entry(Items.BREAD, 3, 8, 6, false),
+		new Entry(Items.CHAINMAIL_HELMET, 1, 1, 5, true),
+		new Entry(Items.CHAINMAIL_CHESTPLATE, 1, 1, 4, true),
+		new Entry(Items.CHAINMAIL_LEGGINGS, 1, 1, 4, true),
+		new Entry(Items.CHAINMAIL_BOOTS, 1, 1, 4, true),
+		new Entry(Items.IRON_HELMET, 1, 1, 4, true),
+		new Entry(Items.TORCH, 4, 12, 5, false),
+		new Entry(Items.LEATHER, 2, 6, 4, false),
+		new Entry(Items.IRON_INGOT, 1, 3, 3, false),
+		new Entry(Items.SPYGLASS, 1, 1, 1, false),
+	};
+
+	/**
+	 * A BARREL IS A STORE CUPBOARD, NOT A STRONGBOX.
+	 *
+	 * Every barrel in the town was placed empty — the blueprints put the block
+	 * down and nothing ever filled it — so a walled settlement with a forge and a
+	 * working market had a dozen containers in it that opened onto nothing. Which
+	 * is worse than having no barrels: an empty container reads as an unfinished
+	 * mod, where no container at all reads as a room.
+	 *
+	 * Filled through here rather than through scatter, because the two are not
+	 * the same object and should not pay out the same. A chest in this town is
+	 * somebody's strongbox and is allowed to hold the enchanted thing; a barrel
+	 * is where the flour and the spare arrows live. So: fewer stacks, and never
+	 * the one-in-two enchanted roll. The chests stay the prize and the barrels
+	 * stay worth opening, which is the split that keeps a town worth searching
+	 * rather than worth clearing.
+	 */
+	public static void store(BaseContainerBlockEntity barrel, RandomSource random, Tier tier) {
+		Entry[] pool = poolFor(tier);
+		List<Integer> free = new ArrayList<>();
+		for (int slot = 0; slot < barrel.getContainerSize(); slot++) {
+			if (barrel.getItem(slot).isEmpty()) {
+				free.add(slot);
+			}
+		}
+		// Two to four, and one barrel in five is simply empty. A settlement where
+		// every single container pays out is a settlement being farmed; the empty
+		// ones are what make opening the next one a question.
+		if (free.isEmpty() || random.nextInt(5) == 0) {
+			return;
+		}
+		int stacks = 2 + random.nextInt(3);
+		for (int i = 0; i < stacks && !free.isEmpty(); i++) {
+			barrel.setItem(free.remove(random.nextInt(free.size())), roll(pool, random));
+		}
+		barrel.setChanged();
+	}
+
+	private static Entry[] poolFor(Tier tier) {
+		return switch (tier) {
+			case HOMESTEAD -> HOMESTEAD_POOL;
+			case LARDER -> LARDER_POOL;
+			case TOWN_FORGE -> FORGE_POOL;
+			case TOWN_TRADE -> TRADE_POOL;
+			case TOWN_HOME -> HOME_POOL;
+			case TOWN_ARMS -> ARMS_POOL;
+		};
+	}
+
+	/**
 	 * Fill the slots the books did not take.
 	 *
 	 * Never touches an occupied slot, so this can be called on any chest
 	 * whether or not something important is already in it, and the guarantee
 	 * holds without the caller having to remember it.
 	 */
-	public static void scatter(ChestBlockEntity chest, RandomSource random, Tier tier) {
-		Entry[] pool = switch (tier) {
-			case HOMESTEAD -> HOMESTEAD_POOL;
-			case LARDER -> LARDER_POOL;
-			case TOWN_FORGE -> FORGE_POOL;
-			case TOWN_TRADE -> TRADE_POOL;
-			case TOWN_HOME -> HOME_POOL;
-		};
+	public static void scatter(BaseContainerBlockEntity chest, RandomSource random, Tier tier) {
+		Entry[] pool = poolFor(tier);
 
 		List<Integer> free = new ArrayList<>();
 		for (int slot = 0; slot < chest.getContainerSize(); slot++) {
@@ -238,8 +327,7 @@ public final class Loot {
 			return;
 		}
 
-		boolean town = tier == Tier.TOWN_FORGE || tier == Tier.TOWN_TRADE
-			|| tier == Tier.TOWN_HOME;
+		boolean town = tier != Tier.HOMESTEAD && tier != Tier.LARDER;
 		// A trading town's chests are fuller than a dead farm's. Four to eight
 		// rather than two to five, which is the difference between rummaging and
 		// finding something.

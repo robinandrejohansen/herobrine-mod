@@ -80,13 +80,66 @@ public final class Undercity {
 		// because it stops depending on the shape at all.
 		join(level, new BlockPos(crypt.getX(), floor.getY(), crypt.getZ()), floor);
 
-		library(level, floor.offset(-13, 0, -13), random);
+		// WHERE THE ACCOUNTS END UP, AND IT IS SOMEBODY'S KITCHEN.
+		//
+		// They used to be six chests standing loose on the cavern floor at six
+		// random bearings, and that one decision undid the entire room. A chest
+		// on open ground is the most artificial object Minecraft has: nobody
+		// keeps anything in a box in the middle of a street, so six of them in a
+		// ring around a square read as loot markers with lore in them, which is
+		// exactly what they were.
+		//
+		// They go in the HOUSES now, in the BARRELS the houses already had, next
+		// to the bread. That is the whole difference between a note the mod left
+		// for the player and a note somebody hid in their own pantry. It also
+		// makes the room worth searching rather than worth scanning: the player
+		// has to go indoors, into five separate people's homes, and open
+		// containers most of which have nothing in them but food.
+		//
+		// Ten barrels across five houses and one in the library, and only six of
+		// them hold anything. Which is what makes the ones that do land.
+		java.util.List<BlockPos> accounts = new java.util.ArrayList<>();
+		java.util.List<BlockPos> pantries = new java.util.ArrayList<>();
+		BlockPos libraryAt = floor.offset(-13, 0, -13);
+		library(level, libraryAt, random);
 		for (int i = 0; i < 5; i++) {
+			// AND ONE OF THE FIVE WAS BUILT THROUGH THE LIBRARY.
+			//
+			// Five houses on a ring of fourteen and the library at (-13, -13):
+			// the fourth bearing lands its corner at (-5, -13), and a
+			// seven-by-six house from there overlaps the library's east end by
+			// three columns. The dwellings are raised after the library, so what
+			// the player actually walked into was a stone house driven through a
+			// wall of bookshelves — in the one room whose entire problem is that
+			// it reads generated.
+			//
+			// Slid ROUND the ring rather than outward, because the rim wanders in
+			// to twelve blocks on some bearings and pushing a house further from
+			// the middle can put it through the cavern wall instead. The radius
+			// is what keeps it indoors; the bearing is the free variable.
 			double angle = i * (Math.PI * 2.0 / 5.0) + 0.6;
-			int hx = floor.getX() + (int)Math.round(Math.cos(angle) * 14);
-			int hz = floor.getZ() + (int)Math.round(Math.sin(angle) * 14);
-			dwelling(level, new BlockPos(hx, floor.getY(), hz), random);
+			BlockPos site = null;
+			for (int nudge = 0; nudge < 10 && site == null; nudge++) {
+				double bearing = angle + nudge * 0.22;
+				int hx = floor.getX() + (int)Math.round(Math.cos(bearing) * 14);
+				int hz = floor.getZ() + (int)Math.round(Math.sin(bearing) * 14);
+				if (!overlaps(hx, hz, 7, 6, libraryAt.getX(), libraryAt.getZ(), 11, 9)) {
+					site = new BlockPos(hx, floor.getY(), hz);
+				}
+			}
+			if (site == null) {
+				continue;   // four houses is better than one built through a wall
+			}
+			BlockPos[] barrels = dwelling(level, site, random);
+			accounts.add(barrels[0]);
+			pantries.add(barrels[1]);
 		}
+		// THE SIXTH IS IN THE READING ROOM, and it is the sixth on purpose. The
+		// accounts are written in order and the last of them is the one who has
+		// stopped being frightened — so his is the one that is not hidden in a
+		// pantry at home. He keeps it on the shelf with the others, in the room
+		// where they meet, because he no longer minds who reads it.
+		accounts.add(libraryStore(level, libraryAt));
 		people(level, floor, random);
 
 		HerobrineMod.LOGGER.info("undercity opened at [{}, {}, {}]",
@@ -97,17 +150,7 @@ public final class Undercity {
 		// The homestead taught this the expensive way: boring a passage after a
 		// chest existed drove straight through it and left the books on the floor
 		// as items counting down to despawning. Nothing is carved after this.
-		java.util.List<BlockPos> shelves = new java.util.ArrayList<>();
-		for (int i = 0; i < 6; i++) {
-			double angle = random.nextDouble() * Math.PI * 2.0;
-			double range = 6.0 + random.nextDouble() * (SPAN - 9);
-			BlockPos spot = new BlockPos(
-				floor.getX() + (int)Math.round(Math.cos(angle) * range),
-				floor.getY(),
-				floor.getZ() + (int)Math.round(Math.sin(angle) * range));
-			shelves.add(spot);
-		}
-		Testimony.write(level, shelves, random);
+		Testimony.write(level, accounts, pantries, random);
 
 		// AND A THIRD WAY IN, WHICH IS THE ONLY ONE THAT IS EARNED.
 		//
@@ -370,7 +413,29 @@ public final class Undercity {
 			int z = (int)Math.round(from.getZ() + (floor.getZ() - from.getZ()) * t);
 			BlockPos at = new BlockPos(x, floor.getY(), z);
 			// Already inside the room, and there is nothing left to cut.
-			if (i > 2 && level.getBlockState(at.above()).is(Blocks.CAVE_AIR)) {
+			//
+			// SEVEN, NOT TWO, AND THAT TWO WAS THE DEAD END. cryptStair finishes
+			// by carving a five-by-five-by-four box of CAVE_AIR where the shaft
+			// bottoms out, to break it into the chamber. This bore starts in the
+			// middle of that box — so with the exemption at two, the very next
+			// step tested a block of the spiral's OWN breakout, found air,
+			// concluded it had arrived, and returned without cutting anything.
+			//
+			// The player walked a minute down the stair behind the altar and
+			// arrived in a five-by-five room with nothing in it and no way on.
+			//
+			// It only happened SOMETIMES, which is what made it hard to see: the
+			// box reaches up to four blocks from this bore's start, but only on
+			// the side the spiral's last step happened to land. When the chamber
+			// lay the other way the third step was already in rock and the bore
+			// cut normally. Half the towns were fine.
+			//
+			// Seven clears the box with two blocks to spare, and the two extra
+			// steps cost nothing if the chamber wall really is that close — the
+			// cut is a no-op in air and the paving goes under a floor that is
+			// already floor. And because nothing else down here is CAVE_AIR at
+			// this level, the first air found after that genuinely is the room.
+			if (i > 6 && level.getBlockState(at.above()).is(Blocks.CAVE_AIR)) {
 				return;
 			}
 			for (int wide = -1; wide <= 1; wide++) {
@@ -503,6 +568,19 @@ public final class Undercity {
 		}
 	}
 
+	/**
+	 * Do two footprints share any ground?
+	 *
+	 * A margin of one on every side, so buildings do not merely miss each other
+	 * but have a gap between them — two stone houses sharing a wall read as one
+	 * odd building rather than as two.
+	 */
+	private static boolean overlaps(int ax, int az, int aw, int ad,
+	                                int bx, int bz, int bw, int bd) {
+		return ax - 1 < bx + bw && ax + aw + 1 > bx
+			&& az - 1 < bz + bd && az + ad + 1 > bz;
+	}
+
 	/** One in six is a chiselled shelf, so the wall is not a flat texture. */
 	private static BlockState shelf(RandomSource random) {
 		return random.nextInt(6) == 0
@@ -510,8 +588,15 @@ public final class Undercity {
 			: Blocks.BOOKSHELF.defaultBlockState();
 	}
 
-	/** A small stone house, of which there are five. */
-	private static void dwelling(ServerLevel level, BlockPos at, RandomSource random) {
+	/**
+	 * A small stone house, of which there are five.
+	 *
+	 * @return its two barrels. The first is the one that gets an account and the
+	 *         second is only food — and which corner is which is rolled per
+	 *         house, so a player who works out that it is always the barrel by
+	 *         the door has worked out nothing.
+	 */
+	private static BlockPos[] dwelling(ServerLevel level, BlockPos at, RandomSource random) {
 		int w = 7;
 		int d = 6;
 		int h = 4;
@@ -540,7 +625,6 @@ public final class Undercity {
 			level.setBlock(at.offset(w / 2, dy, d - 1), Blocks.CAVE_AIR.defaultBlockState(), 2);
 		}
 		level.setBlock(at.offset(1, 1, 1), Blocks.CRAFTING_TABLE.defaultBlockState(), 2);
-		level.setBlock(at.offset(w - 2, 1, 1), Blocks.BARREL.defaultBlockState(), 2);
 		level.setBlock(at.offset(2, 1, d - 2), Blocks.BOOKSHELF.defaultBlockState(), 2);
 		level.setBlock(at.offset(w / 2, 3, d / 2), Blocks.LANTERN.defaultBlockState()
 			.setValue(BlockStateProperties.HANGING, true), 2);
@@ -548,6 +632,39 @@ public final class Undercity {
 		level.setBlock(at.offset(0, 2, d / 2), Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST)
 			.setValue(BlockStateProperties.HALF, Half.BOTTOM), 2);
+
+		// TWO BARRELS, and the second one is the point of having two.
+		//
+		// One container per house that always holds a book is a chest with a
+		// different model on it — the player learns after the second house that
+		// every barrel down here is a lore drop, and the searching stops being
+		// searching. With two per house and only one filled, most of what they
+		// open is somebody's flour, and that is what makes finding an account
+		// feel like finding something rather than collecting it.
+		//
+		// A barrel stands upright with no facing to get wrong, which is also
+		// exactly how a household one would sit.
+		BlockPos byTheDoor = at.offset(w - 2, 1, 1);
+		BlockPos inTheCorner = at.offset(w - 2, 1, d - 2);
+		level.setBlock(byTheDoor, Blocks.BARREL.defaultBlockState(), 2);
+		level.setBlock(inTheCorner, Blocks.BARREL.defaultBlockState(), 2);
+		return random.nextBoolean()
+			? new BlockPos[] { byTheDoor, inTheCorner }
+			: new BlockPos[] { inTheCorner, byTheDoor };
+	}
+
+	/**
+	 * The library's own barrel, by the door.
+	 *
+	 * Placed separately from library() rather than inside it, because the
+	 * shelving loop runs the full length of both long walls and would overwrite
+	 * anything standing against them. Simpler to put it down after the room is
+	 * finished than to carve an exception into the loop.
+	 */
+	private static BlockPos libraryStore(ServerLevel level, BlockPos at) {
+		BlockPos store = at.offset(2, 1, 7);
+		level.setBlock(store, Blocks.BARREL.defaultBlockState(), 2);
+		return store;
 	}
 
 	/**

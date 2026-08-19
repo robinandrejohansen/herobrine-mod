@@ -128,7 +128,7 @@ public final class Deeps {
 			final double y = at.y;
 			final double z = at.z;
 			Cadence.in(level.getServer(), when, () ->
-				level.playSound(null, x, y, z, SoundEvents.WARDEN_HEARTBEAT,
+				level.playSound(null, x, y, z, com.bloomlet.herobrine.sound.ModSounds.BREATH,
 					SoundSource.HOSTILE, volume, pitch));
 
 			// Roughly two seconds, never exactly. A metronome is a machine.

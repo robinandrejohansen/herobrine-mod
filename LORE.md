@@ -99,9 +99,34 @@ first screenshot of `go back` and feels sick, the mod worked.
 
 ## The dimension
 
-Never visited. The player never goes there, and there is no portal to build.
-That is deliberate — a place you can visit becomes a level, and a level is not
-frightening. It only ever **leaks**.
+**Never visited — until the very end.** This reversed, deliberately, and the old
+reasoning is kept below because it is still right about almost everything.
+
+> *Never visited. The player never goes there, and there is no portal to build.
+> That is deliberate — a place you can visit becomes a level, and a level is not
+> frightening. It only ever leaks.*
+
+That holds for the whole game. For forty hours the dimension only leaks, there is
+no portal to build, and nothing tells the player it is a place at all.
+
+**What changed is that it opens once, after he is dead, and it is not a level.**
+There is nothing to fight in it and nothing to win. Killing him finishes the
+frame he was cutting, and what is through it is a castle and a city he built,
+laid true, lit, and empty — because **he built it for the family he killed**.
+
+The old objection was that a visitable place becomes a level. The answer is that
+this one has no objective. You walk up a stair past a table laid for four, a book
+where he is writing his own name down so as not to lose it, and four models of
+the homestead built from memory and all of them wrong. Then you go home. Nothing
+is explained and nothing is rewarded.
+
+Which also pays off the last row of the reveal schedule properly. *The signs at
+the start were warnings* is a thing the player works out; this is where they find
+out what he was warning them away from being.
+
+**The colours still hold.** Violet belongs to the thing, so it appears in exactly
+one room — the highest, furthest from the table, where there is least of him
+left. Everything below it is a man's furniture and a man's handwriting.
 
 The leak is the visual language:
 

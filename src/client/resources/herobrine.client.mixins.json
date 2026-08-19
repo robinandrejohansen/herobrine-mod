@@ -3,7 +3,6 @@
 	"package": "com.bloomlet.herobrine.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
-		"ExampleClientMixin",
 		"LivingEntityRenderStateMixin",
 		"LivingEntityRendererMixin",
 		"ClientLevelMixin",

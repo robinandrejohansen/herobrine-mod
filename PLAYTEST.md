@@ -1041,7 +1041,154 @@ and both are things I cannot see from here.
 > pacing is much slower, and judging the *feel* of the slow version needs a
 > normal session.
 
-### A9 — He does not wreck anything
+### A7s — The hunt (HUNTER)
+
+`/herobrine wrath 1000`, then `/herobrine hunt`. **Do this at a base you do not
+mind losing an evening of** — windows, torches, and the field around it.
+
+Build a small house first if you have not got one: it needs about twenty-four
+crafted blocks near you before the mod counts it as somewhere you live. Give it
+ten seconds and check the log for `lives at [x, y, z]`.
+
+**The ladder** — one rung roughly every ten seconds, in this order:
+
+- [ ] **Glass first.** Some of the panes, never all of them, and each one
+      **drops sand**. Not glass — sand. That is deliberate: it costs a furnace
+      trip and never costs you the material
+- [ ] If the house has no glass at all, it goes **straight to the torches**
+      rather than spending the beat doing nothing
+- [ ] **Every torch and lantern in the house goes out**, all dropped at your
+      feet. It should get genuinely dark
+- [ ] **The treeline goes up** — real lightning, in a wood, and it burns.
+      Check the distance: **never within fourteen blocks of anybody and never
+      within twenty-four of the house.** If fire ever reaches your build, tell
+      me immediately, that is the one thing here that must not happen
+- [ ] **Fireballs into the ground.** You see it leave him and cross the yard;
+      the crater appears where it lands, two across and two deep
+- [ ] **No crater ever appears near anything you built.** Pave a yard wall to
+      wall and you should get none at all
+- [ ] Thunder rolls throughout, and on a bare hillside with nothing to wreck
+      you get thunder rather than silence
+
+**Three blows and he goes:**
+
+- [ ] Hit him three times — **sword or arrow, either counts** — and he breaks
+      off. It should be three *separate* connections; one swing is one blow,
+      and a sweeping axe does not spend the lot at once
+- [ ] The first two put him **out of reach again** rather than ending it
+- [ ] Each blow he says something, in chat, **using the name of whoever hit
+      him**. The third is the parting one
+- [ ] It counts as surviving it: `/herobrine status` flips from `hunt STILL
+      OWED` to `hunt survived`, and everybody present pays the same 130 wrath
+      they would have for enduring the whole thing
+- [ ] He is **still not killable** — the health bar does not move, he is
+      driven off
+
+**Nobody home:**
+
+- [ ] Go two hundred blocks away, down a mine, and `/herobrine hunt`
+- [ ] He turns up **in the tunnel with you**, hunting — not standing, and not
+      refused for being underground
+- [ ] Chat: *your house is on fire*
+- [ ] **Walk back and check it is true.** Windows out, lights out, and
+      something actually burning outside. If the chunk was unloaded it happens
+      when you get within range instead — either way it must have happened by
+      the time you are standing there
+- [ ] It survives a **restart**. Quit while owed, come back, walk home
+
+**Indoors — this was broken and is the thing most worth checking:**
+
+- [ ] Stand **inside a house with a window** and `/herobrine provoke`. He is
+      out in the field, and **you can see him through the glass.** Before, this
+      refused outright
+- [ ] Same test with the window replaced by a **solid wall**: the stare is
+      refused, and says so. That is correct — the stare is a sighting
+- [ ] Same test with **iron bars** or a **glass pane**: he is visible
+- [ ] Through **leaves**, a **fence** or a **slab**: he is not. A figure read
+      through a hedge is not a sighting
+- [ ] Now `/herobrine hunt` from inside a **windowless, doorless box.** It
+      still starts — he is placed 24–48 blocks off with no sightline at all,
+      and comes. This one must never refuse
+- [ ] Go **thirty blocks underground** and `/herobrine provoke`. It refuses,
+      and it should — that is a cave, and caves belong to the passage and the
+      glimpse
+- [ ] `/herobrine hunt` at that depth still starts, in the tunnel with you
+
+**The gate:**
+
+- [ ] At HUNTER, `/herobrine locate` says the church is `waiting for a hunt to
+      be survived` — not `waiting for HUNTER`
+- [ ] The church **does not site** until one is survived, however long you wait
+- [ ] And it cannot stall: leave it an hour without ever meeting him and he
+      **comes anyway**, roughly every ninety seconds until one lands. Daylight
+      does not stop this one
+
+---
+
+### A7t — The one who does not sleep (WATCHER onward)
+
+`/herobrine turned` puts one five blocks in front of you, which is the only way
+to see him on demand — honestly he needs a village, a night and a one-in-six
+roll.
+
+**Look at him first, in daylight:**
+
+- [ ] He is a **completely ordinary villager**. Same model, same clothes, same
+      walk. At fifteen blocks there should be nothing at all to see
+- [ ] Get within four blocks: **a black dot in the middle of each green eye.**
+      No villager in the game has one. It is not glowing and it is not red —
+      if it glows, that is the wrong texture
+- [ ] He is **carrying an iron axe**, held across the chest the way villagers
+      hold anything
+- [ ] **Right-click him. Nothing opens.** No trades, no menu, no sound
+- [ ] He **stops and squares up to you** — body and head, not just the head —
+      and follows you with his face as you walk round him
+- [ ] He does **not** attack you, at all, while it is light
+- [ ] He mutters far more often than a villager: every two to five seconds,
+      lower than a normal one
+
+**Then `/time set night`:**
+
+- [ ] Stand where he can see you. He makes **one sound** and comes
+- [ ] He is **faster than walking and slower than sprinting**. You can get
+      away by sprinting, and it costs hunger
+- [ ] Break line of sight and hide — **he keeps coming.** No forget range
+- [ ] **Shut a door on him.** It holds. He does not break in and he does not
+      open it — that is the difference between him and the hunt
+- [ ] `/time set day` mid-chase: **he does not stop.** The morning is not an
+      answer once he has started
+- [ ] Kill him, or let him kill you. Either ends it
+- [ ] Killing him drops **nothing** — no free iron axe
+
+**And nothing else may kill him:**
+
+- [ ] At night, out in the open, let zombies and skeletons find him. **They do
+      not attack him and he takes no damage from them**
+- [ ] Fire, fall damage and a friend's wolf do nothing either
+- [ ] You can still kill him with a sword or a bow
+- [ ] `/kill @e[type=herobrine:turned]` still works
+
+**In a real village:**
+
+- [ ] Sleep in a village from WATCHER on. Some nights nothing happens; the
+      point is that you cannot tell which
+- [ ] **You never see him arrive.** He is standing there when you come back
+      round the well
+- [ ] He is **never on a roof**
+- [ ] **Count your villagers before and after.** None of yours is taken —
+      there is one MORE person, not one fewer. If a trader you use ever
+      disappears, that is a bug and I need to know at once
+- [ ] Night falls, everyone files indoors, **and one of them does not**
+- [ ] At most three alive in the world at a time
+- [ ] One per village per night — standing in a village all night does not
+      produce a queue of them
+
+---
+
+### A9 — He does not wreck anything (before HUNTER)
+
+Everything here is true up to MIMIC. From HUNTER he breaks in and the hunt
+takes the house apart — see A7s — and both are bounded rather than absent.
 
 - [ ] He never breaks blocks
 - [ ] He never opens or takes from chests

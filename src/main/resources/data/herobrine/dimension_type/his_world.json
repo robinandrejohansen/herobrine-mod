@@ -1,15 +1,42 @@
 {
-  "has_skylight": false,
+  "ambient_light": 0.0,
+  "attributes": {
+    "minecraft:audio/ambient_sounds": {
+      "mood": {
+        "block_search_extent": 8,
+        "offset": 2.0,
+        "sound": "minecraft:ambient.cave",
+        "tick_delay": 3000
+      }
+    },
+    "minecraft:gameplay/bed_rule": {
+      "can_set_spawn": "never",
+      "can_sleep": "never",
+      "explodes": true
+    },
+    "minecraft:gameplay/can_start_raid": false,
+    "minecraft:gameplay/respawn_anchor_works": false,
+    "minecraft:visual/ambient_light_color": "#05050a",
+    "minecraft:visual/cloud_color": "#66202024",
+    "minecraft:visual/cloud_height": 160.0,
+    "minecraft:visual/fog_color": "#07070c",
+    "minecraft:visual/fog_start_distance": 8.0,
+    "minecraft:visual/fog_end_distance": 112.0,
+    "minecraft:visual/sky_color": "#000000",
+    "minecraft:visual/sky_light_color": "#8c94b4",
+    "minecraft:visual/sky_light_factor": 0.0
+  },
+  "coordinate_scale": 1.0,
+  "default_clock": "herobrine:his_night",
   "has_ceiling": false,
   "has_ender_dragon_fight": false,
-  "has_fixed_time": true,
-  "coordinate_scale": 1.0,
-  "min_y": -64,
+  "has_skylight": true,
   "height": 384,
-  "logical_height": 384,
   "infiniburn": "#minecraft:infiniburn_overworld",
-  "ambient_light": 0.05,
-  "monster_spawn_light_level": 7,
+  "logical_height": 384,
+  "min_y": -64,
   "monster_spawn_block_light_limit": 0,
-  "skybox": "end"
+  "monster_spawn_light_level": 15,
+  "skybox": "overworld",
+  "timelines": "#herobrine:in_his_world"
 }

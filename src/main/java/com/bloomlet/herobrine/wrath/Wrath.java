@@ -1,6 +1,5 @@
 package com.bloomlet.herobrine.wrath;
 
-import com.bloomlet.herobrine.Config;
 import com.bloomlet.herobrine.HerobrineMod;
 
 import com.mojang.serialization.Codec;
@@ -12,30 +11,36 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The world's memory of you.
+ * WHICH CHAPTER THE WORLD IS IN. Nothing else.
  *
- * Not a difficulty slider. Per LORE.md this is how much you have started to
- * look like the person his brother became — digging, hoarding, going deeper
- * than you need to. Everything he does is a reaction to this number.
+ * This file used to hold two things that both claimed to be progress, and the
+ * second one had to go. There was the story — six chapters, moved by walking
+ * into one of his buildings — and there was WRATH, a running total fed by
+ * sleeping, mining, killing and provoking him, with six thresholds of its own.
  *
- * Stored as a Fabric attachment on the overworld rather than vanilla
- * SavedData: SavedDataType is a record requiring a vanilla DataFixTypes
- * constant, which a mod cannot supply honestly, and passing an unrelated one
- * would hand our data to a datafixer written for something else. Attachments
- * are built for exactly this and take a plain Codec.
+ * The thresholds had already been disconnected when the story moved onto
+ * discovery, and what was left behind was worse than dead code. Four hundred
+ * and forty-five lines, a six-value reason enum, a per-player share, a save
+ * migration and a pace multiplier reached gameplay in exactly ONE place: the
+ * gap between manifestations, shortened by up to forty percent. Nobody can feel
+ * forty percent. Meanwhile Phase.forWrath was still being called to LOG a phase
+ * transition, so a playtest was told the story had advanced to WATCHER four
+ * separate times while it was demonstrably still in RUMOUR.
  *
- * One number per save, held on the overworld, because a haunting that reset
- * when you stepped into the Nether would not be a haunting.
+ * So the number is gone and the one behaviour worth having went to {@link Heat},
+ * which is short, per-player, and falls — see the reasoning there.
+ *
+ * Stored as a Fabric attachment on the overworld rather than vanilla SavedData:
+ * SavedDataType is a record requiring a vanilla DataFixTypes constant, which a
+ * mod cannot supply honestly, and passing an unrelated one would hand our data
+ * to a datafixer written for something else. Attachments are built for exactly
+ * this and take a plain Codec.
+ *
+ * On the overworld rather than per-dimension, because a haunting that reset when
+ * you stepped into the Nether would not be a haunting.
  */
 public final class Wrath {
 	private Wrath() {}
-
-	private static final AttachmentType<Integer> TOTAL =
-		AttachmentRegistry.createPersistent(HerobrineMod.id("wrath"), Codec.INT);
-
-	/** Per-player share, so one player on a server cannot speak for everyone. */
-	private static final AttachmentType<Integer> PLAYER_SHARE =
-		AttachmentRegistry.createPersistent(HerobrineMod.id("wrath_share"), Codec.INT);
 
 	/**
 	 * The phase, told to the client.
@@ -106,73 +111,29 @@ public final class Wrath {
 		HerobrineMod.LOGGER.debug("wrath attachments registered");
 	}
 
-	public static int get(MinecraftServer server) {
-		return server.overworld().getAttachedOrElse(TOTAL, 0);
-	}
-
-	public static int getShare(ServerPlayer player) {
-		return player.getAttachedOrElse(PLAYER_SHARE, 0);
-	}
-
-	/**
-	 * The story's own position, kept rather than derived.
-	 *
-	 * STORY is the phase ordinal; SINCE is the wrath total when it was entered,
-	 * which is what {@link Phase#into} needs to ramp inside a phase.
-	 */
+	/** The story's own position, kept rather than derived. */
 	private static final AttachmentType<Integer> STORY = AttachmentRegistry
 		.createPersistent(HerobrineMod.id("story"), Codec.INT);
-	private static final AttachmentType<Integer> SINCE = AttachmentRegistry
-		.createPersistent(HerobrineMod.id("story_since"), Codec.INT);
 
 	/**
-	 * HOW FAR INTO THE STORY, AND IT IS NO LONGER A FUNCTION OF WRATH.
+	 * WHICH CHAPTER, and only {@link #discovered} moves it.
 	 *
-	 * This used to be Phase.forWrath(get(server)), and that one line was the
-	 * reason a group could play for days and miss the entire middle of the mod.
-	 * Progress came from sleeping, mining and killing — things everybody does
-	 * without meaning to — so the phases advanced whether or not anybody had ever
-	 * walked into one of his buildings. The buildings were a REWARD for
-	 * progressing, so progressing without them was the default.
-	 *
-	 * It is stored now, and only {@link #discovered} moves it. Wrath still exists
-	 * and still matters: it is how angry he is RIGHT NOW, which sets how often
-	 * and how hard the current phase's events land. Two dials — the story and
-	 * his temper — and the player drives both, one by going deeper and one by
-	 * disturbing things.
-	 *
-	 * MIGRATION IS THE DELICATE PART. A world saved before this change has no
-	 * stored phase and a large wrath total, and reading zero would silently throw
-	 * away a campaign. So the first read seeds from the old derivation, and the
-	 * seed is a MAXIMUM against what discovery would give — nobody is ever
-	 * demoted by installing this.
+	 * The migration that used to live here seeded a missing story from the old
+	 * wrath total, so that a world saved before discovery-gating did not lose its
+	 * campaign. It is gone with the total it read — there is nothing left to seed
+	 * from, and a world old enough to need it has been through several releases
+	 * since. A missing story is a new world, and a new world starts at RUMOUR,
+	 * which is the correct and only honest answer now.
 	 */
 	public static Phase phase(MinecraftServer server) {
 		Integer stored = server.overworld().getAttached(STORY);
 		if (stored == null) {
-			Phase seeded = Phase.forWrath(get(server));
-			set(server, seeded);
-			HerobrineMod.LOGGER.info("no stored story — seeded {} from {} wrath",
-				seeded.name(), get(server));
-			return seeded;
+			set(server, Phase.RUMOUR);
+			HerobrineMod.LOGGER.info("no stored story — starting at RUMOUR");
+			return Phase.RUMOUR;
 		}
 		Phase[] all = Phase.values();
 		return all[Math.max(0, Math.min(all.length - 1, stored))];
-	}
-
-	/** Wrath at the moment the current phase began. */
-	public static int since(MinecraftServer server) {
-		return server.overworld().getAttachedOrElse(SINCE, 0);
-	}
-
-	/**
-	 * How deep into the current phase, nought to one.
-	 *
-	 * The single value every event should be scaling on. Early in a phase the
-	 * new thing happens once and quietly; late in it, it is the weather.
-	 */
-	public static float into(MinecraftServer server) {
-		return phase(server).into(get(server), since(server));
 	}
 
 	/**
@@ -226,7 +187,6 @@ public final class Wrath {
 
 	private static void set(MinecraftServer server, Phase phase) {
 		server.overworld().setAttached(STORY, phase.ordinal());
-		server.overworld().setAttached(SINCE, get(server));
 		server.overworld().setAttached(ENTERED, server.overworld().getGameTime());
 	}
 
@@ -240,6 +200,23 @@ public final class Wrath {
 	 *
 	 * Never goes backwards and never skips.
 	 */
+	/**
+	 * Put the story wherever a tester asks for it.
+	 *
+	 * THE MISSING COMMAND, and its absence was worse than an inconvenience: the
+	 * only way to see HUNTER was to play to HUNTER, so the most complicated event
+	 * in the mod could only be reached through three hours of the four before it.
+	 * That is why the hunt shipped with a hit window that had never once run for a
+	 * player on their own.
+	 *
+	 * Backwards as well as forwards, deliberately. Half of testing a chapter is
+	 * watching the one before it hand over.
+	 */
+	public static void jumpTo(MinecraftServer server, Phase phase) {
+		set(server, phase);
+		HerobrineMod.LOGGER.info("story set to {} by command", phase.name());
+	}
+
 	public static void discovered(MinecraftServer server) {
 		Phase now = phase(server);
 		Phase[] all = Phase.values();
@@ -251,50 +228,4 @@ public final class Wrath {
 		HerobrineMod.LOGGER.info("a place was found — the story moves to {}", next.name());
 	}
 
-	/**
-	 * @param player may be null for world-level causes with no single culprit
-	 */
-	public static void add(MinecraftServer server, ServerPlayer player, int amount, Reason reason) {
-		if (amount == 0) {
-			return;
-		}
-		// The pace dial, and this is the only place it can go.
-		//
-		// Every single thing that moves wrath comes through here, so scaling it
-		// once at the door means the whole arc stretches or compresses evenly —
-		// sleeping, killing, defiance, the drift, all of it. Scaling at the call
-		// sites would have meant thirty separate multiplications and one of them
-		// forgotten.
-		//
-		// GAINS ONLY. The ending subtracts the entire total to put the world
-		// back, and scaling that would leave a remainder behind — a world that
-		// had been at 0.5 pace would come out of its ending still half way to
-		// WATCHER, which is not an ending.
-		double rate = Config.get().wrathRate;
-		if (amount > 0 && rate != 1.0) {
-			amount = Math.max(1, (int)Math.round(amount * rate));
-		}
-		Phase before = phase(server);
-
-		int total = Math.max(0, get(server) + amount);
-		server.overworld().setAttached(TOTAL, total);
-		if (player != null) {
-			player.setAttached(PLAYER_SHARE, Math.max(0, getShare(player) + amount));
-		}
-
-		Phase after = Phase.forWrath(total);
-		if (after != before) {
-			HerobrineMod.LOGGER.info("Wrath {} -> phase {} ({})", total, after.name(), reason.name());
-		}
-	}
-
-	/** Why wrath moved. Logged, and later used to weight what he does about it. */
-	public enum Reason {
-		TIME,          // baseline drift; the world remembers you being in it
-		KILL,          // he notices violence
-		DEPTH,         // his territory
-		SLEEP,         // you denied him the dark
-		DEFIANCE,      // you broke something of his — the biggest single jump
-		DEATH          // he is satisfied, briefly
-	}
 }

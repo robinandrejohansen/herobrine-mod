@@ -13,7 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.server.network.Filterable;
 
 /**
@@ -226,40 +226,116 @@ public final class Testimony {
 	};
 
 	/**
-	 * Put the books down, in chests, once everything is cut.
+	 * Put the books down, IN THE BARRELS IN THE HOUSES, once everything is cut.
 	 *
-	 * Spread across separate chests rather than gathered into one, because a
-	 * single chest holding six books is a lore dump and six chests holding one
+	 * This used to place six chests on the open cavern floor, and that one choice
+	 * was doing more damage to the undercity than the perfect dome ever did. A
+	 * chest on open ground is the most artificial object in Minecraft: nobody in
+	 * any world keeps anything in a box in the middle of a street, so six of them
+	 * ringing a square could only read as loot markers — and once the player has
+	 * read them as loot markers, the books inside them are the mod talking rather
+	 * than somebody writing.
+	 *
+	 * A barrel indoors, next to the bread, is the opposite claim. It says this
+	 * was hidden by the person who lived here, in the place a person actually
+	 * hides a thing they cannot throw away.
+	 *
+	 * Spread one per household rather than gathered into one, because a single
+	 * container holding six books is a lore dump and six households holding one
 	 * each is a room somebody has to search. The player who finds two of them and
 	 * leaves has a better story than the player handed all six.
+	 *
+	 * @param spots    one per account, and they are used in order — the last is
+	 *                 the library's, and the last account is the one who has
+	 *                 stopped being frightened
+	 * @param pantries the other barrels, which get nothing but food. Most of what
+	 *                 the player opens down here has to be somebody's flour or
+	 *                 the searching is not searching
 	 */
 	public static void write(ServerLevel level, List<net.minecraft.core.BlockPos> spots,
-	                         RandomSource random) {
-		if (spots.isEmpty()) {
-			return;
-		}
+	                         List<net.minecraft.core.BlockPos> pantries, RandomSource random) {
 		int placed = 0;
 		for (int i = 0; i < ACCOUNTS.length && i < spots.size(); i++) {
 			net.minecraft.core.BlockPos at = spots.get(i);
-			if (!level.getBlockState(at).canBeReplaced()) {
-				continue;
-			}
-			level.setBlock(at, Blocks.CHEST.defaultBlockState(), 3);
-			if (!(level.getBlockEntity(at) instanceof ChestBlockEntity chest)) {
+			BarrelBlockEntity barrel = barrelAt(level, at);
+			if (barrel == null) {
 				continue;
 			}
 			// Slot 4, the middle of the top row, so it is the first thing seen.
-			chest.setItem(4, book(ACCOUNTS[i]));
-			// And something ordinary beside it, because a chest holding only a
-			// book is a delivery. A chest holding a book and somebody's candles
-			// is a chest that belonged to somebody.
-			chest.setItem(random.nextInt(4) == 0 ? 0 : 6,
-				new ItemStack(random.nextBoolean() ? Items.CANDLE : Items.BREAD,
-					1 + random.nextInt(3)));
-			chest.setChanged();
+			barrel.setItem(4, book(ACCOUNTS[i]));
+			// AND THE BREAD GOES IN WITH IT. Not beside it in a different
+			// container and not instead of it — in the same barrel, which is the
+			// entire sentence this is trying to say: whoever wrote this kept it
+			// where they kept their food, because it was the only place in the
+			// house nobody would look twice at.
+			stock(barrel, random);
+			barrel.setChanged();
 			placed++;
 		}
-		HerobrineMod.LOGGER.info("{} accounts left in the undercity", placed);
+		for (net.minecraft.core.BlockPos at : pantries) {
+			BarrelBlockEntity barrel = barrelAt(level, at);
+			if (barrel == null) {
+				continue;
+			}
+			stock(barrel, random);
+			barrel.setChanged();
+		}
+		HerobrineMod.LOGGER.info("{} accounts left in the undercity, in {} pantries",
+			placed, pantries.size() + placed);
+	}
+
+	/**
+	 * What a household forty blocks under a town actually has in.
+	 *
+	 * Bread first and always, because that is what makes the barrel a pantry
+	 * rather than a container the mod filled. Then a couple of things from a
+	 * short list of the dullest items in the game — and dull is the requirement.
+	 * Anything valuable turns the barrel back into loot and the player back into
+	 * somebody looting, and then the book in it is a reward instead of a
+	 * discovery.
+	 *
+	 * No underground farm to grow any of it, and that is deliberately left
+	 * hanging. The town is directly overhead.
+	 */
+	private static final net.minecraft.world.item.Item[] LARDER = {
+		Items.BREAD, Items.WHEAT, Items.CANDLE, Items.BOWL, Items.POTATO,
+		Items.BEETROOT, Items.STRING, Items.PAPER, Items.FLINT,
+	};
+
+	private static void stock(BarrelBlockEntity barrel, RandomSource random) {
+		barrel.setItem(random.nextInt(3) == 0 ? 0 : 6,
+			new ItemStack(Items.BREAD, 2 + random.nextInt(5)));
+		int extras = 1 + random.nextInt(3);
+		for (int i = 0; i < extras; i++) {
+			int slot = 9 + random.nextInt(18);
+			if (!barrel.getItem(slot).isEmpty()) {
+				continue;
+			}
+			barrel.setItem(slot, new ItemStack(
+				LARDER[random.nextInt(LARDER.length)], 1 + random.nextInt(4)));
+		}
+	}
+
+	/**
+	 * The barrel that is already there, or one put down if the spot is empty.
+	 *
+	 * The houses place their own barrels while they are being built, so normally
+	 * this only has to look one up. The fallback exists because this runs last,
+	 * after every tunnel and trap is cut, and a spot that has been carved through
+	 * since is better filled than silently skipped — but a spot that is now solid
+	 * stone is left alone rather than punched open.
+	 */
+	private static @org.jspecify.annotations.Nullable BarrelBlockEntity barrelAt(
+			ServerLevel level, net.minecraft.core.BlockPos at) {
+		if (!level.getBlockState(at).is(Blocks.BARREL)) {
+			if (!level.getBlockState(at).canBeReplaced()) {
+				HerobrineMod.LOGGER.warn("no barrel and no room for one at [{}, {}, {}]",
+					at.getX(), at.getY(), at.getZ());
+				return null;
+			}
+			level.setBlock(at, Blocks.BARREL.defaultBlockState(), 3);
+		}
+		return level.getBlockEntity(at) instanceof BarrelBlockEntity barrel ? barrel : null;
 	}
 
 	private static ItemStack book(Account account) {

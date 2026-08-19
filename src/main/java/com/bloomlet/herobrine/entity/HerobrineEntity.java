@@ -13,7 +13,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import com.bloomlet.herobrine.wrath.Phase;
 import com.bloomlet.herobrine.wrath.Wrath;
-import com.bloomlet.herobrine.wrath.WrathTriggers;
+import com.bloomlet.herobrine.wrath.Heat;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -133,17 +133,53 @@ public class HerobrineEntity extends PathfinderMob {
 	 * you can outwalk is scenery; one you cannot outrun is unfair.
 	 */
 	private static final double HUNT_SPEED = 1.32;
-	/** Break this far away and he stops. Far enough that it costs something. */
-	private static final double OUTRUN = 52.0;
+	/**
+	 * BREAK THIS FAR AWAY, AND HOLD IT, AND HE STOPS.
+	 *
+	 * Fifty-two was about ten seconds of sprinting, tested on a SINGLE TICK —
+	 * one frame beyond the line and the hunt was over for good. Which made the
+	 * whole event optional: hit him once, watch him reposition twelve blocks
+	 * back, hold sprint in a straight line, and it ended before anything had
+	 * happened. The three-blow fight, the ladder, the pauses, none of it ever
+	 * got a chance to run.
+	 *
+	 * EIGHTY-EIGHT AND SUSTAINED. Far enough that it is a real sprint with real
+	 * hunger behind it, and held for three seconds so that a moment's gap — a
+	 * drop off a ledge, a repositioning that lands long, one good burst — is not
+	 * mistaken for an escape. Getting away should be something the player did
+	 * rather than something that happened.
+	 */
+	private static final double OUTRUN = 88.0;
+	/** And it has to hold. Three seconds beyond the line, not one tick. */
+	private static final int OUTRUN_TICKS = 60;
+	private int outrunTicks;
 	/**
 	 * A hunt runs longer than a sighting, and is the only thing that does.
 	 *
-	 * A hundred seconds, up from seventy, now that it has a rhythm rather than
-	 * being one unbroken sprint. Long enough for three or four break-offs, so
-	 * the player gets the pause and the return at least twice — once is an
-	 * incident, twice is a pattern, and the pattern is what they carry.
+	 * AND A HUNT IS NOT ON A CLOCK AT ALL ANY MORE.
+	 *
+	 * It was: three minutes, tuned by arithmetic off watchSpell so that three
+	 * rounds of pausing would fit inside it. Every part of that reasoning was
+	 * sound and the whole thing was still wrong, because it made TIME one of the
+	 * six ways out — and a wall clock competing with the third blow is a wall
+	 * clock that eventually wins. Two hits in at two minutes fifty-five and the
+	 * event was taken away mid-swing, having decided on the player's behalf that
+	 * they had had long enough. Worse, the exit counted: the church opened for
+	 * it, so waiting was a strategy.
+	 *
+	 * A hunt is bounded by WHAT HAPPENS IN IT. He reaches somebody, or somebody
+	 * reaches him, or a round closes — any of those and he is not finished.
+	 * Nothing at all for two minutes and it was never a hunt to begin with, it
+	 * was a boat on a lake, and that is the only case this needs to catch.
+	 *
+	 * So the backstop stops being a length and becomes a STALEMATE, which is
+	 * what it was always trying to be. Note what does NOT reset it: the ladder.
+	 * The house coming apart is him working on the building rather than on the
+	 * player, it fires every thirteen seconds regardless, and letting it count
+	 * as progress would mean nothing ever timed out.
 	 */
-	private static final int HUNT_LIFETIME = 2000;
+	private int stalemate;
+	private static final int STALEMATE_LIMIT = 2400;   // two minutes of nothing
 	/**
 	 * Stuck for this long and he stops trying to walk it.
 	 *
@@ -158,10 +194,36 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final int VAULT_MAX = 4;
 	/** How high he will look for a way up before deciding to fly. */
 	private static final int SCAN = 10;
-	private static final double FLY_SPEED = 0.42;
-	private static final double CLIMB_RATE = 0.38;
-	/** Flight is a way past an obstacle, never a way of travelling. */
-	private static final int FLY_LIMIT = 120;
+	/**
+	 * AND IT IS FAST. IT WAS NOT.
+	 *
+	 * These were 0.42 and 0.38 — a block every two and a half ticks, which is
+	 * about one and a half times a sprint and reads as a hot air balloon. A
+	 * twenty-block tree took two and a half seconds of visible, even ascent, and
+	 * the whole time he was doing it he was the least frightening he has ever
+	 * been: an inevitable thing moving slowly enough to be watched, measured and
+	 * walked away from.
+	 *
+	 * Nineteen and twenty-three blocks a second. A tree is cleared in under a
+	 * second. He is not seen to travel so much as seen to have gone up.
+	 *
+	 * The 3-tick client interpolation is what keeps it from looking like a
+	 * stutter at this rate — the position syncs are smeared, so a hard snap
+	 * arrives as a fast movement rather than a jump. It is the reason this can be
+	 * raised at all.
+	 */
+	private static final double FLY_SPEED = 0.95;
+	private static final double CLIMB_RATE = 1.15;
+	/**
+	 * Flight is a way past an obstacle, never a way of travelling.
+	 *
+	 * Cut from 120 with the speeds — three and a half seconds now buys him some
+	 * sixty blocks of travel, far more than the version that had six seconds and
+	 * crawled. Holding the old budget at the new speed would have made flight the
+	 * cheapest way for him to cross a landscape, which is precisely what this
+	 * constant exists to prevent.
+	 */
+	private static final int FLY_LIMIT = 70;
 
 	/** Where he goes to watch from, and where he comes back to. */
 	private static final double WATCH_NEAR = 26.0;
@@ -221,21 +283,122 @@ public class HerobrineEntity extends PathfinderMob {
 	 *
 	 * He is faster than a sprint, so running is not an escape and was never
 	 * going to be. That leaves exactly one thing the player can do, and it had
-	 * better be a real answer: get out of sight and stay out of it. Eight
-	 * seconds blind and he loses the trail.
+	 * better be a real answer: get out of sight and stay out of it.
+	 *
+	 * AND THE LENGTH OF IT IS NOT KNOWABLE. Eight fixed seconds is a number a
+	 * player learns once and then never fears again — you count to eight behind
+	 * the door and walk out. Twenty to sixty, rolled fresh every time they
+	 * break the sightline, cannot be counted. There is no tick at which the
+	 * silence is safe, so the decision to open the door is always a guess.
 	 *
 	 * Ticked only while he is NOT digging. A player sealed behind stone has not
 	 * escaped him, they have delayed him, and the difference matters — the wall
 	 * coming apart is him still on you. But a player who went round a corner,
 	 * or underwater, or down a hole, has actually broken it, and that deserves
 	 * to work.
+	 *
+	 * WHICH IS WHY goneToGround BELOW HAD TO STOP THE DIGGING RATHER THAN JUST
+	 * BE QUIET ABOUT IT. Every swing of the axe reset this counter, so the
+	 * digging was the only reason a hunt survived a player hiding at all. Take
+	 * the noise away and leave the timer at eight seconds and the event would
+	 * end silently four hundred ticks before the player found the nerve to
+	 * look — they would have been hiding from nothing, and never known.
 	 */
 	private int blindTicks;
-	private static final int LOSE_TRAIL = 160;
+	/** Rolled when the sightline breaks, so it is a different wait each time. */
+	private int loseTrailAt;
+	private static final int LOSE_TRAIL_MIN = 400;
+	private static final int LOSE_TRAIL_SPREAD = 800;
 
 	/** He stops, and lets them watch him stop. */
 	private boolean relenting;
 	private static final int RELENT_TICKS = 50;
+
+	// ---- THREE BLOWS AND HE GOES ------------------------------------------
+	/**
+	 * THE HUNT CAN BE WON, AND THAT IS THE WHOLE OF WHAT WAS MISSING.
+	 *
+	 * Until now the only thing a player could do about a hunt was outlast it,
+	 * hide from it, or run until it timed out — three ways of waiting. Waiting
+	 * is not agency, and an event with no ending you can cause is an event the
+	 * player is a spectator at. Three blows and he breaks off turns a hundred
+	 * seconds of being chased into a fight with a condition on it.
+	 *
+	 * COUNTED IN BLOWS RATHER THAN IN DAMAGE, for the same reason the Reckoning
+	 * is: what somebody is holding decides how the fight LOOKS, never how long
+	 * it lasts. A netherite axe and a stone sword end this in the same three
+	 * connections, so the player who spent an hour on gear beforehand has not
+	 * bought a shorter hunt.
+	 *
+	 * AND IT SCALES WITH THE GROUP IN THE RIGHT DIRECTION. Six people land three
+	 * blows in a few seconds, so a group that stands together ends it almost at
+	 * once — which is the correct reward for grouping and costs nothing, because
+	 * six people together were never the version of this that was frightening.
+	 * One person alone has to land three connections on something faster than a
+	 * sprint, in the dark, while their windows are going. That is where the
+	 * pressure was supposed to be all along.
+	 *
+	 * He does not die and never could — see isInvulnerableTo. He is DRIVEN OFF,
+	 * which is a different sentence, and the difference is exactly what the
+	 * three lines he says on the way out are about.
+	 */
+	private float huntDamage;
+	/**
+	 * How long one exchange stays open once somebody has reached him.
+	 *
+	 * Opened by the first blow and NOT extended by the ones after it, which is
+	 * the balance of the whole thing: a second and a half is two or three swings
+	 * if you commit and one if you flinch, and then he is out of reach again and
+	 * you have to get back to him. Extending it per hit would let somebody hold
+	 * left-click and win the fight standing still.
+	 */
+	private static final int WOUND_WINDOW = 30;
+	/**
+	 * One swing is one blow.
+	 *
+	 * Without this a sweeping-edge axe or two arrows in the same tick would
+	 * spend the whole allowance at once, and the hunt would end before the first
+	 * line had finished printing. Half a second, which is longer than any
+	 * legitimate attack cooldown and shorter than any deliberate second swing.
+	 */
+	private long lastWound = -1000L;
+
+	/**
+	 * How often he takes something apart, and why it is a slow drum.
+	 *
+	 * THIRTEEN SECONDS, up from ten, because the hunt got much longer.
+	 *
+	 * The interval was set against a hundred-second hunt in which the ladder
+	 * only ticked while he was actually chasing — perhaps twenty-five seconds of
+	 * it, so the player saw one rung and sometimes two. Now the hunt is three
+	 * minutes and the ladder runs through the pauses as well, which at ten
+	 * seconds a rung would have been eleven of them: every window in the house,
+	 * three separate woods alight, and three craters in the garden, in one
+	 * visit. That is not the event escalating, it is the event flattening the
+	 * place.
+	 *
+	 * Thirteen gives about eight rungs — two rounds of glass, the torches, two
+	 * strikes in the treeline and two holes. Enough that every rung is seen
+	 * twice, which is what makes it read as a pattern, and not so much that
+	 * there is nothing left to come back for.
+	 *
+	 * Still slow enough that each rung is a separate thing that happened rather
+	 * than part of one continuous noise. The player has to be able to point at
+	 * the window, and then at the torches, and then at the hill, and know they
+	 * were three events.
+	 */
+	private static final int WRECK_EVERY = 260;
+	/**
+	 * And the first one is late.
+	 *
+	 * The opening of a hunt is already the strongest thing in it — he is coming
+	 * and he does not stop — and putting a window through in the first second
+	 * would spend that on spectacle. Six seconds in, when they have decided
+	 * whether to run or to fight, is when the house starts going.
+	 */
+	private static final int WRECK_FIRST = 120;
+	private int wreckIn;
+	private int ladder;
 
 	// ---- BREAKING IN ------------------------------------------------------
 	/**
@@ -317,6 +480,122 @@ public class HerobrineEntity extends PathfinderMob {
 	/** Where he goes the instant a blow lands. Out of sight, not far. */
 	private static final double HIT_BACKOFF_NEAR = 12.0;
 	private static final double HIT_BACKOFF_FAR = 22.0;
+
+	/**
+	 * AND HE DOES NOT LEAVE THE INSTANT HE HAS HIT YOU.
+	 *
+	 * He used to. The blow landed and the same tick put him twelve to twenty-two
+	 * blocks away, out of the view cone, invisible on the way — so the honest
+	 * description of a whole hunt was that something hurt you four times and you
+	 * never once had the chance to raise an arm. Three blows was the way out of
+	 * the event and the event was structured so that you could not reach him.
+	 *
+	 * This is the enderman's arrangement, which is the correct one and has been
+	 * for a decade: it closes, it stays in melee, and it leaves WHEN IT IS HIT.
+	 * The teleport is the reaction to being reached, not a way of preventing it.
+	 * So he stands in it for two to three and a half seconds — long enough for a
+	 * sword, a bow, or somebody's friend arriving late — and only backs off if
+	 * nobody takes it.
+	 *
+	 * A window rather than a fixed pause because a known length is a known
+	 * length, and hitting him should stay a thing you go for rather than a thing
+	 * you have timed.
+	 */
+	private int linger;
+	/**
+	 * Which of the two events opened it, because they end differently.
+	 *
+	 * After HE hits, the round closing is what moves him, and it already does —
+	 * roundOver repositions him to watch from twenty-six to forty-six. Teleporting
+	 * on the way there as well was two blinks in consecutive ticks for one event.
+	 *
+	 * After he IS hit, nothing else will move him, and something has to: the
+	 * provoker override deliberately keeps him on whoever reached him, so a window
+	 * that expired without a reposition would leave him standing in swing range of
+	 * the one person guaranteed to still be swinging.
+	 */
+	private boolean lingerWounded;
+	private static final int LINGER_MIN = 40;
+	private static final int LINGER_SPREAD = 30;
+
+	/** Four seconds. Long enough to matter, short enough not to be the killer. */
+	private static final float AXE_BURNS = 4.0F;
+	/** Six times vanilla's shove. He is not a zombie. */
+	private static final double AXE_SHOVE = 2.4;
+	/** Enough to leave the ground, not enough to make the ground the danger. */
+	private static final double AXE_LIFT = 0.55;
+
+	/**
+	 * WHOEVER JUST SHOT HIM IS WHO HE IS COMING FOR.
+	 *
+	 * The hunt works through a group one at a time and keeps its quarry until it
+	 * has reached them, which is the right default and the reason a fast player
+	 * cannot draw him off their friends. It is the wrong answer to being shot in
+	 * the back. Somebody puts an arrow in him from forty blocks and he carried on
+	 * walking toward a different person entirely — so the correct play in a party
+	 * was to let one friend be chased and plink at him from the treeline forever,
+	 * which is both the safest thing to do and the least interesting.
+	 *
+	 * Reaching him now costs you. He drops what he was doing, and he already
+	 * teleports beside the striker for the reprisal, so this only makes him STAY
+	 * on them once he is there instead of wandering back to his list.
+	 *
+	 * Ten seconds, then his own order resumes. And it clears their struck flag,
+	 * so hitting him puts you back on the list you had got yourself off.
+	 */
+	private @org.jspecify.annotations.Nullable UUID provoker;
+	private int provokedFor;
+	private static final int PROVOKED_TICKS = 200;
+
+	/** Arm's reach, and no further. */
+	private static final double CULL_REACH = 3.0;
+	private static final int CULL_EVERY = 10;
+
+	/**
+	 * IN THE DARK HE DOES NOT WALK IN. HE IS BEHIND YOU.
+	 *
+	 * He was running down into caves on foot, which is the one thing that place
+	 * should never let him do. A tunnel is a corridor with one way in, so a
+	 * pursuer arriving on foot announces himself for ten seconds and then is
+	 * simply present — the player hears the footsteps, watches the entrance, and
+	 * fights something they were completely prepared for. Everything the cave was
+	 * good for is spent before he gets there.
+	 *
+	 * So underground, out of sight, he stops travelling and starts APPEARING. It
+	 * costs him the approach, which is the point: the scariest version of this
+	 * event has no approach at all.
+	 *
+	 * Behind them, two to four blocks, and then he waits. The waiting is not
+	 * politeness — it is the whole effect. Arriving and swinging in the same tick
+	 * is a hit from nowhere, which is unfair and reads as a bug; arriving,
+	 * standing, and letting a line reach their chat is a jumpscare, and the
+	 * difference is entirely in whether the player got to turn around first.
+	 *
+	 * Light rather than depth, so a lit cave is safe and a dark one is not.
+	 * Somebody who torched their tunnel properly has done the one thing the game
+	 * has always asked of them and should get to keep the benefit.
+	 *
+	 * And never inside anything anybody built, same as closeIn. A house is
+	 * answered by taking the house apart, slowly and audibly, and it has to stay
+	 * that way — a figure that steps through walls is a figure nobody can build
+	 * against, and then nobody builds.
+	 */
+	private long stalkedAt = -1000L;
+	private static final int STALK_COOLDOWN = 200;
+	private static final double STALK_NEAR = 6.0;
+	private static final double STALK_FAR = 24.0;
+	private static final int STALK_DARK = 7;
+
+	/**
+	 * He has arrived, and he is letting them notice before he does anything.
+	 *
+	 * Separate from linger, which is the same standing still after the opposite
+	 * event and ends by backing off to watch. This one ends by simply carrying
+	 * on, because he has not done anything yet.
+	 */
+	private int poise;
+	private static final int POISE_MIN = 25;
+	private static final int POISE_SPREAD = 20;
 	/**
 	 * Never Long.MIN_VALUE, and this is why he never once hit anybody.
 	 *
@@ -360,7 +639,20 @@ public class HerobrineEntity extends PathfinderMob {
 
 	public void beginHunt() {
 		this.hunting = true;
+		this.linger = 0;
+		this.provoker = null;
+		this.provokedFor = 0;
+		this.poise = 0;
+		this.huntDamage = 0.0F;
+		this.lingerWounded = false;
 		this.moodTicks = chaseSpell();
+		this.wreckIn = WRECK_FIRST;
+		this.ladder = 0;
+	}
+
+	/** Whether this one is a hunt, for anything that has to tell them apart. */
+	public boolean isHunting() {
+		return this.hunting;
 	}
 
 	/**
@@ -374,6 +666,14 @@ public class HerobrineEntity extends PathfinderMob {
 	 * @return null when everyone present has been reached, which ends the round
 	 */
 	private @org.jspecify.annotations.Nullable Player pickQuarry(List<Player> watchers) {
+		// Somebody reached him recently, and that outranks the running order.
+		if (this.provokedFor > 0 && this.provoker != null) {
+			for (Player watcher : watchers) {
+				if (watcher.getUUID().equals(this.provoker)) {
+					return watcher;
+				}
+			}
+		}
 		Player best = null;
 		double nearest = Double.MAX_VALUE;
 		for (Player watcher : watchers) {
@@ -401,6 +701,7 @@ public class HerobrineEntity extends PathfinderMob {
 	private void roundOver(@org.jspecify.annotations.Nullable Player anybody) {
 		this.struck.clear();
 		this.breakOffs++;
+		this.stalemate = 0;
 		HerobrineMod.LOGGER.info("hunt: round {} of {} — everyone here has been reached",
 			this.breakOffs, MAX_BREAK_OFFS);
 		if (anybody == null) {
@@ -411,10 +712,32 @@ public class HerobrineEntity extends PathfinderMob {
 			this.relent(anybody);
 			return;
 		}
-		if (reappearAt(anybody, WATCH_NEAR, WATCH_FAR, true)) {
-			this.watching = true;
-			this.moodTicks = watchSpell();
+		// THE LONG PAUSE IS NOT CONDITIONAL ANY MORE, AND IT WAS.
+		//
+		// This used to set `watching` and the twenty-to-thirty-second spell only
+		// if the reposition SUCCEEDED — and the reposition asks for a spot that
+		// is in front of the player, twenty-six to forty-six blocks off, and
+		// unobstructed. In woodland, in hills, or anywhere indoors that fails
+		// most of the time.
+		//
+		// And when it failed, the pause did not simply not happen. It fell
+		// through to whatever strike() had left behind a tick earlier, which is
+		// a THIRTY-TO-FIFTY-FIVE-TICK watch — the short step-back he uses
+		// between two people in the same round. So the whole hunt ran on the
+		// two-second version: hit, two seconds, hit, two seconds, hit, gone,
+		// in forty-nine seconds. Exactly what it looked like in play, and the
+		// long pause never once ran.
+		//
+		// Three fallbacks, and the last cannot fail. Somewhere he can be seen
+		// standing is the best version and is still tried first; anywhere at
+		// that distance is the second; and if the terrain will give him neither
+		// he simply stops where he is. Standing still in the wrong place for
+		// half a minute is a far better failure than a hunt that quietly runs
+		// at a tenth of its intended length.
+		if (!reappearAt(anybody, WATCH_NEAR, WATCH_FAR, true)) {
+			reappearAt(anybody, WATCH_NEAR, WATCH_FAR, false);
 		}
+		this.beginWatch(watchSpell());
 	}
 
 	/**
@@ -428,9 +751,32 @@ public class HerobrineEntity extends PathfinderMob {
 		return Math.max(70, 200 - this.breakOffs * 45) + this.random.nextInt(90);
 	}
 
-	/** And how long he stands and watches before coming back. 3–5 seconds. */
+	/**
+	 * And how long he stands and watches before coming back. TWENTY TO THIRTY
+	 * SECONDS.
+	 *
+	 * It was three to five, and three to five is not a pause — it is a gap
+	 * between two attacks. The player never stopped moving, never got to look at
+	 * him, and read the whole hunt as one continuous thing that hit them three
+	 * times. Which is exactly what they reported: attacks, then attacks twice,
+	 * then gone.
+	 *
+	 * Half a minute is long enough to change what it is. He is thirty blocks
+	 * away, standing still, facing you, doing nothing whatever, and it goes on
+	 * long enough that you have to decide what to do with the time — eat, run,
+	 * wall up, or stand there watching him back. Every one of those is a choice
+	 * the short version never gave anybody.
+	 *
+	 * AND IT IS ONLY BEARABLE BECAUSE THE PAUSE IS NOT EMPTY. Half a minute of a
+	 * motionless figure with nothing else happening is dead air, and the player
+	 * would spend it walking away. The ladder runs THROUGH the watch now — see
+	 * pursue — so what they are actually doing with those thirty seconds is
+	 * listening to their own windows go while he stands in the field not moving.
+	 * That is a far worse thirty seconds than being chased, and it is the whole
+	 * reason the long version works.
+	 */
 	private int watchSpell() {
-		return 60 + this.random.nextInt(50);
+		return 400 + this.random.nextInt(200);
 	}
 	// ---- END THE HUNT ----------------------------------------------------
 
@@ -496,6 +842,16 @@ public class HerobrineEntity extends PathfinderMob {
 	 * consequence rather than a message.
 	 */
 	private static final int DEFIANCE_APPROACHED = 25;
+	/**
+	 * And it is paid ONCE per approach, not once per tick.
+	 *
+	 * A hundred ticks. Longer than anybody spends inside seventeen blocks of
+	 * him by accident, short enough that walking him down, backing off and
+	 * walking him down again costs twice — which is the behaviour this is
+	 * actually pricing.
+	 */
+	private static final int DEFIANCE_COOLDOWN = 100;
+	private long lastDefiance = -1000L;
 	private static final int DEFIANCE_STRUCK = 40;
 	/**
 	 * What surviving a hunt costs you, and it is the largest number here.
@@ -739,6 +1095,30 @@ public class HerobrineEntity extends PathfinderMob {
 		// shortest of them were four ticks. A fifth of a second is not a
 		// glimpse, it is a rendering error.
 		this.age++;
+		if (this.provokedFor > 0) {
+			this.provokedFor--;
+		}
+
+		// NOTHING ALIVE STAYS ALIVE IN ARM'S REACH OF HIM.
+		//
+		// The field he crosses on the way to you should look like he crossed it.
+		// Cheap to say and it says a great deal: you come out afterwards and the
+		// two cows by the fence are dead where they stood, which is worse than
+		// being told anything, because nobody told you.
+		//
+		// ARM'S REACH, NOT A RADIUS. Three blocks is the difference between "it
+		// got in his way" and "he emptied my farm from across the paddock" — the
+		// second is not menace, it is somebody's afternoon deleted, and it would
+		// have made the pen next to a base the single worst place to build. He is
+		// not hunting them; they are simply in the way of something that does not
+		// go around.
+		//
+		// Every half second rather than every tick, so it is one small query and
+		// not sixty.
+		if (this.hunting && this.age % CULL_EVERY == 0
+			&& this.level() instanceof ServerLevel field) {
+			this.cull(field);
+		}
 
 		// A fixed lifetime outranks everything. These are not short stares —
 		// they are different events that happen to use the same entity, and
@@ -748,9 +1128,15 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
-		// Gone on his own, before he can become furniture.
-		if (this.age > (this.hunting ? HUNT_LIFETIME : LIFETIME)) {
+		// Gone on his own, before he can become furniture. A stare only.
+		if (!this.hunting && this.age > LIFETIME) {
 			this.vanish("aged out, nobody ever turned round");
+			return;
+		}
+
+		// A hunt ends on its own terms, or it ends because it stopped being one.
+		if (this.hunting && ++this.stalemate > STALEMATE_LIMIT) {
+			this.vanish("hunt: stalemate — nobody has touched anybody in two minutes");
 			return;
 		}
 
@@ -806,6 +1192,23 @@ public class HerobrineEntity extends PathfinderMob {
 		// them.
 		if (this.hunting && !this.relenting) {
 			Player next = this.pickQuarry(watchers);
+			// NOT WHILE HE IS STILL STANDING THERE.
+			//
+			// This is what made the hit window do nothing at all for a solo
+			// player, and the playtest log shows it plainly: "swung at 3.2
+			// blocks, landed=true" and then "round 1 of 3" on the very next line,
+			// three times in a row. Landing a blow marks that player struck, so
+			// one tick later pickQuarry has nobody left, the round closes, and
+			// roundOver teleports him twenty-six to forty-six blocks out to
+			// watch — while the two and a half seconds he was supposed to spend
+			// standing in reach had not begun.
+			//
+			// So a party of four got the window and a person on their own never
+			// did, which is exactly backwards: alone is when you need the chance.
+			// The round waits for the window to close.
+			if (next == null && this.linger > 0) {
+				next = closest;
+			}
 			if (next == null) {
 				this.roundOver(closest);
 				return;
@@ -819,12 +1222,37 @@ public class HerobrineEntity extends PathfinderMob {
 		double standoff = standoff(phase);
 
 		if (closest != null && closestDistance < standoff) {
-			// Everyone who closed in paid for it, not only the one who got
-			// there first. Two people walking him down is twice the defiance,
-			// which is the correct price for twice the pressure.
-			for (Player watcher : watchers) {
-				if (this.distanceTo(watcher) < standoff && watcher instanceof ServerPlayer chaser) {
-					WrathTriggers.defiance(chaser, DEFIANCE_APPROACHED);
+			// THIS WAS BILLING TWENTY-FIVE WRATH A TICK.
+			//
+			// Five hundred a second, for as long as anybody stood inside the
+			// standoff. A single test hunt took a world from nine thousand to
+			// twenty-five thousand in forty-six seconds — the whole ladder from
+			// RUMOUR to SIEGE is eighteen hundred, so this could carry a save
+			// through the entire mod in four seconds and did.
+			//
+			// TWO THINGS WERE WRONG AND ONLY ONE OF THEM IS THE MISSING
+			// COOLDOWN. The other is that it charged at all during a hunt: this
+			// is meant to price WALKING AT HIM, and in a hunt the player did not
+			// approach anything — he closed on them, at his speed, having
+			// arrived uninvited. Being stood next to is not defiance. The hunt
+			// pays its own way, forty a blow and a hundred and thirty for
+			// getting through it.
+			//
+			// So it is the stare's charge only, and it is paid once per approach
+			// rather than per tick. Five seconds is longer than anybody stands
+			// inside seventeen blocks by accident and short enough that walking
+			// him down twice costs twice.
+			if (!this.hunting && this.level() instanceof ServerLevel paying
+				&& paying.getGameTime() >= this.lastDefiance + DEFIANCE_COOLDOWN) {
+				this.lastDefiance = paying.getGameTime();
+				// Everyone who closed in paid for it, not only the one who got
+				// there first. Two people walking him down is twice the
+				// defiance, which is the correct price for twice the pressure.
+				for (Player watcher : watchers) {
+					if (this.distanceTo(watcher) < standoff
+						&& watcher instanceof ServerPlayer chaser) {
+						Heat.noticed(chaser, DEFIANCE_APPROACHED);
+					}
 				}
 			}
 			// AT HUNTER HE DOES NOT GIVE THE GROUND UP.
@@ -1241,25 +1669,148 @@ public class HerobrineEntity extends PathfinderMob {
 	 * that costs hunger, and that is the point — this is the phase where he is
 	 * no longer something that happens to you while you get on with your day.
 	 */
+	// ---- GONE TO GROUND ---------------------------------------------------
+	/**
+	 * THEY HAVE STOPPED MOVING AND HE CANNOT SEE THEM, SO HE STOPS TOO.
+	 *
+	 * What he did before was run at the wall and chop it, and the objection to
+	 * it is not that it was weak — it is that it was INFORMATIVE. An axe on
+	 * stone is a position report delivered four times a second: he is there, he
+	 * is on that side, he is not through yet, and there is nothing you can do
+	 * about any of it. The player sits and listens to a countdown. By the fourth
+	 * second they know everything, and knowing everything is the opposite of
+	 * being hunted.
+	 *
+	 * So the noise stops. He stands where he lost them and he does not announce
+	 * himself again. The room goes quiet, and the quiet says nothing at all —
+	 * whether he is outside the door or forty blocks away and leaving is now a
+	 * thing the player cannot learn without opening it.
+	 *
+	 * NOTHING FILLS THE SILENCE ON PURPOSE, BECAUSE SOMETHING ALREADY DOES.
+	 * A hunt has already put ten of his zombies on the player, and they are
+	 * still pathing, still gathering, still scraping at the outside of a wall
+	 * they also cannot get through. That is the sound in the room — and it is
+	 * the right sound precisely because it is NOT him. It confirms he is near
+	 * and tells you nothing about where.
+	 *
+	 * AND THE HOUSE IS STILL COMING APART. The ladder sits above the watch
+	 * return in pursue and is untouched by this: the glass still goes, the
+	 * torches still go out. He is not hitting the wall, which is the whole
+	 * change — he is simply taking the building away from around them without
+	 * ever saying which side he is on.
+	 *
+	 * THE MOVEMENT TEST IS WHAT SEPARATES HIDING FROM RUNNING. Line of sight
+	 * alone is broken constantly by a hill or a doorframe mid-chase, and a
+	 * chase is not this. Sprinting down a tunnel keeps him coming; sitting
+	 * still in the dark is what makes him stop.
+	 */
+	private @org.jspecify.annotations.Nullable BlockPos quarryWas;
+	private int quarryStill;
+	/** Two seconds of not going anywhere. */
+	private static final int GONE_TO_GROUND = 40;
+	/** Shifting about a room is still standing still. */
+	private static final double DRIFT = 3.0;
+	/**
+	 * AND A HOLE IS NOT A HOUSE.
+	 *
+	 * The silence is a reward for having BUILT something, and it has to be,
+	 * because it is the one behaviour here that lets a player win by doing
+	 * nothing. A room somebody put up and sealed has earned him standing outside
+	 * it saying nothing. A pit and a pillar of dirt have earned no such thing —
+	 * they are the same move, which is to stand where his feet cannot follow and
+	 * wait for the event to run out, and answering that with a respectful pause
+	 * would make the cheapest possible play the strongest one in the mod.
+	 *
+	 * Hearth.built is the test and it separates them without being told to: the
+	 * box it counts in is thirteen by seven by thirteen, so a hut's floor alone
+	 * clears the twenty-four it wants, while thirty blocks of tower only ever has
+	 * seven of itself inside the window. Cave stone is not counted at all.
+	 *
+	 * Measured ONCE, on the tick they go still, rather than every tick — it walks
+	 * eleven hundred blocks and the answer cannot change while they are not
+	 * moving, which is the only time it is ever asked.
+	 */
+	private boolean sheltered;
+	/** So the log says it once rather than forty times a second. */
+	private boolean wentQuiet;
+
+	/**
+	 * Once a tick, and only from pursue.
+	 *
+	 * Split from the question below so the question can be asked twice in a tick
+	 * without the answer changing — a predicate that quietly advances a counter
+	 * is the kind of thing that works until somebody reads it in two places.
+	 */
+	private void takeStock(Player quarry) {
+		BlockPos now = quarry.blockPosition();
+		if (this.quarryWas == null || !now.closerThan(this.quarryWas, DRIFT)) {
+			this.quarryWas = now;
+			this.quarryStill = 0;
+		} else {
+			this.quarryStill++;
+		}
+		if (this.quarryStill == 0) {
+			this.wentQuiet = false;
+		}
+		if (this.quarryStill == GONE_TO_GROUND
+			&& quarry instanceof ServerPlayer theirs
+			&& this.level() instanceof ServerLevel around) {
+			this.sheltered = com.bloomlet.herobrine.manifest.Hearth.built(
+				around, theirs.blockPosition())
+				>= com.bloomlet.herobrine.manifest.Hearth.ENOUGH;
+		}
+	}
+
+	/** Have they stopped, is he blind to them, and did they build it? */
+	private boolean goneToGround(Player quarry) {
+		return this.quarryStill > GONE_TO_GROUND
+			&& !this.hasLineOfSight(quarry)
+			&& this.sheltered;
+	}
+	// ---- END GONE TO GROUND -----------------------------------------------
+
 	private void pursue(@org.jspecify.annotations.Nullable Player quarry, double distance) {
 		if (quarry == null) {
 			this.vanish("hunt: nobody left to follow");
 			return;
 		}
+		this.takeStock(quarry);
+
 		// The outrun check is skipped while he is watching, because he chose
 		// that distance himself and it would be absurd for him to give up on
 		// account of it.
-		if (!this.watching && distance > OUTRUN) {
+		if (this.watching || distance <= OUTRUN) {
+			this.outrunTicks = 0;
+		} else if (++this.outrunTicks > OUTRUN_TICKS) {
 			this.vanish("hunt: outrun");
 			return;
 		}
 
 		// Has he lost them?
-		if (this.hasLineOfSight(quarry) || this.breaking != null) {
+		//
+		// NOT WHILE HE IS WATCHING, and that was cutting hunts short in exactly
+		// the wrong place. The blind timer ran through the whole pause — so he
+		// would stop at thirty blocks, send ten of them, and then lose the trail
+		// because the player quite reasonably took cover from the things he had
+		// just sent. The hunt ended mid-approach and everything he sent went
+		// with him.
+		//
+		// He is not looking for them during a pause. He chose that distance, he
+		// is standing still in it, and HE IS WATCHING THROUGH WHAT HE SENT —
+		// there are ten pairs of his eyes converging on the player and the idea
+		// that a wall between him and them counts as having lost them is
+		// nonsense. Hiding is still an answer; it is an answer to being CHASED.
+		if (this.hasLineOfSight(quarry) || this.breaking != null || this.watching) {
 			this.blindTicks = 0;
-		} else if (++this.blindTicks > LOSE_TRAIL) {
-			// Slipped rather than endured, and worth less accordingly.
-			this.relent(quarry, DEFIANCE_EVADED);
+		} else {
+			if (++this.blindTicks == 1) {
+				this.loseTrailAt = LOSE_TRAIL_MIN
+					+ this.random.nextInt(LOSE_TRAIL_SPREAD);
+			}
+			if (this.blindTicks > this.loseTrailAt) {
+				// Slipped rather than endured, and worth less accordingly.
+				this.relent(quarry, DEFIANCE_EVADED);
+			}
 		}
 
 		if (this.relenting) {
@@ -1272,8 +1823,79 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
+		// AND THE HOUSE IS COMING APART WHILE HE DOES IT — INCLUDING WHILE HE
+		// IS STANDING STILL.
+		//
+		// This sat below the watch until the watch was three seconds long, and
+		// the reasoning then was that the pause should stay a pause. At twenty
+		// to thirty seconds that reasoning inverts completely: half a minute of
+		// a motionless figure and nothing else happening is dead air, and the
+		// player spends it walking away.
+		//
+		// So the ladder runs through the watch, and it is the best beat in the
+		// event. He is thirty blocks off, not moving, not approaching — and the
+		// windows go anyway. Nothing is coming at them and it is happening
+		// regardless, which is a far worse thirty seconds than being chased.
+		//
+		// Above the watch return rather than below it, and only that.
+		//
+		// AND NOT DURING THE RECKONING. takeTheBlow turns `hunting` on without
+		// going through beginHunt — because whatever he was doing, he is doing
+		// this now — which left wreckIn at zero and would have fired a rung of
+		// the ladder EVERY TICK for the whole of the last fight in the mod. The
+		// ending has its own escalation in arsenal(), and it does not need the
+		// windows as well.
+		if (this.hits == 0 && --this.wreckIn <= 0
+			&& this.level() instanceof ServerLevel wrecking
+			&& quarry instanceof ServerPlayer theirs) {
+			this.wreckIn = WRECK_EVERY;
+			this.ladder = com.bloomlet.herobrine.manifest.TheHunt.wreck(
+				wrecking, theirs, this, this.ladder);
+		}
+
 		if (this.watching) {
 			this.watch(quarry);
+			return;
+		}
+
+		// HE HAS JUST HIT SOMEBODY AND HE IS STILL STANDING THERE.
+		//
+		// Above the look control on purpose: this sets its own, because during
+		// the window the head is the only thing that should move at all. He is
+		// not walking, not digging, not repositioning — he landed the blow and
+		// he is waiting to see whether anybody does anything about it.
+		//
+		// The horizontal damping rather than a hard zero leaves gravity alone,
+		// so a window that opens on a slope or half off a ledge settles instead
+		// of pinning him in the air.
+		if (this.linger > 0) {
+			this.getNavigation().stop();
+			this.setDeltaMovement(this.getDeltaMovement().multiply(0.6, 1.0, 0.6));
+			this.getLookControl().setLookAt(quarry, 90.0F, 90.0F);
+			if (--this.linger <= 0 && this.lingerWounded
+				&& reappearAt(quarry, HIT_BACKOFF_NEAR, HIT_BACKOFF_FAR, false)) {
+				this.beginWatch(30 + this.random.nextInt(25));
+			}
+			return;
+		}
+
+		// HE IS ALREADY BEHIND THEM AND HE IS WAITING TO BE NOTICED.
+		//
+		// Ends by carrying on rather than by backing off, which is the whole
+		// difference from the block above: nothing has happened to anybody yet.
+		if (this.poise > 0) {
+			--this.poise;
+			this.getNavigation().stop();
+			this.setDeltaMovement(this.getDeltaMovement().multiply(0.6, 1.0, 0.6));
+			this.getLookControl().setLookAt(quarry, 90.0F, 90.0F);
+			return;
+		}
+
+		// In the dark, out of sight, at a distance he could have walked — he
+		// does not walk it.
+		if (!this.hasLineOfSight(quarry)
+			&& distance >= STALK_NEAR && distance <= STALK_FAR
+			&& this.stalkTo(quarry)) {
 			return;
 		}
 
@@ -1303,6 +1925,30 @@ public class HerobrineEntity extends PathfinderMob {
 		// Already over it.
 		if (this.flying) {
 			this.glide(quarry);
+			return;
+		}
+
+		// Or he has lost them, and says nothing about it.
+		//
+		// Above the digging rather than folded into its condition, because he
+		// has to put the axe DOWN as well as not pick it up — a player who
+		// seals the last block while he is mid-swing should hear the swinging
+		// stop, and stopBreaking is what clears the cracks off the block he was
+		// working on. Below the ladder and the watch, both of which carry on.
+		if (this.goneToGround(quarry)) {
+			if (this.level() instanceof ServerLevel quiet) {
+				this.stopBreaking(quiet);
+			}
+			if (!this.wentQuiet) {
+				this.wentQuiet = true;
+				HerobrineMod.LOGGER.info(
+					"hunt: {} went to ground at {} blocks — he stops, {}s until he gives up",
+					quarry.getName().getString(), (int) distance,
+					(this.loseTrailAt - this.blindTicks) / 20);
+			}
+			this.getNavigation().stop();
+			this.setDeltaMovement(Vec3.ZERO);
+			this.getLookControl().setLookAt(quarry, 90.0F, 90.0F);
 			return;
 		}
 
@@ -1346,11 +1992,20 @@ public class HerobrineEntity extends PathfinderMob {
 		} else if (++this.stuckTicks > STUCK_LIMIT) {
 			this.stuckTicks = 0;
 			// Beaten by the terrain rather than by a wall — a ravine, a lake
-			// edge, a path that loops. Going over it is better than vanishing,
-			// because the player gets to SEE him solve it, and a pursuer you
-			// watched come over the ridge is worse than one that was simply
-			// closer when you looked again.
-			this.takeOff();
+			// edge, a path that loops, a pillar of dirt, forty blocks of cave.
+			//
+			// ARRIVING BEATS FLYING WHERE IT IS POSSIBLE. Flight was the only
+			// answer here and it is the right one for a ravine, where the player
+			// watches him come over the ridge and that is worse than finding him
+			// closer. It is the wrong one for the two cases people actually use,
+			// because a tower and a hole are both solved by going up or down
+			// somewhere he can stand, and neither is solved by circling.
+			//
+			// So: try to arrive, and keep the wings for when there is nowhere in
+			// their own air to arrive into.
+			if (!this.closeIn(quarry)) {
+				this.takeOff();
+			}
 		}
 		this.lastDistance = distance;
 
@@ -1363,8 +2018,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// end a hunt in which nothing had happened to anybody.
 		if (--this.moodTicks <= 0) {
 			if (reappearAt(quarry, WATCH_NEAR, WATCH_FAR, true)) {
-				this.watching = true;
-				this.moodTicks = watchSpell();
+				this.beginWatch(watchSpell());
 				HerobrineMod.LOGGER.info("hunt: paused, watching from {} blocks",
 					String.format("%.0f", this.distanceTo(quarry)));
 			} else {
@@ -1404,7 +2058,7 @@ public class HerobrineEntity extends PathfinderMob {
 			for (ServerPlayer survivor : here.getEntitiesOfClass(ServerPlayer.class,
 					this.getBoundingBox().inflate(WATCH_RANGE),
 					other -> other.isAlive() && !other.isSpectator())) {
-				WrathTriggers.defiance(survivor, defiance);
+				Heat.noticed(survivor, defiance);
 			}
 		}
 		// AND HE LEAVES SOMETHING WHERE HE BROKE OFF, if he is holding anything
@@ -1424,6 +2078,76 @@ public class HerobrineEntity extends PathfinderMob {
 	}
 
 	/**
+	 * ONE OF THREE, AND HE SAYS SOMETHING ABOUT IT.
+	 *
+	 * The first two put him out of reach again — the same answer a sword has
+	 * always got from him — so the player cannot simply stand in one place and
+	 * swing three times. They have to connect three separate times, on something
+	 * that keeps moving behind them, which is a real thing to have done.
+	 *
+	 * The third ends the hunt EARLY, and early is the reward. The hundred
+	 * seconds he was going to spend are the price of not fighting back, and a
+	 * group that drives him off in twenty has bought their windows back — the
+	 * ladder only climbs while a pursuit is actually running.
+	 *
+	 * It still counts as survived, and it still costs them wrath. relent() pays
+	 * DEFIANCE_ENDURED to everybody present exactly as it does at the end of a
+	 * full-length hunt, because hitting him three times is not a way of avoiding
+	 * his attention — it is the loudest way there is of getting it.
+	 */
+	private void tookOne(ServerLevel level, ServerPlayer striker, float damage) {
+		this.lastWound = level.getGameTime();
+		this.stalemate = 0;      // somebody reached him: not a stalemate
+		this.poise = 0;          // no standing about being noticed now
+		this.provoker = striker.getUUID();
+		this.provokedFor = PROVOKED_TICKS;
+		this.struck.remove(striker.getUUID());   // back on the list
+
+		double enough = Math.max(1.0, Config.get().damageToBreakOff);
+		float before = this.huntDamage;
+		// A floor, so a weapon that does almost nothing still does something and
+		// an unarmed fist cannot stall the event forever.
+		this.huntDamage += Math.max(1.0F, damage);
+		boolean last = this.huntDamage >= enough;
+
+		com.bloomlet.herobrine.manifest.TheHunt.wounded(level);
+		this.anger(level);
+
+		// THE THREE REGISTERS ARE FIRST, WORSE, AND GOING — and they now key off
+		// how far through him you are rather than off a blow count, because six
+		// blows firing six taunts is chat noise and a line that lands once a
+		// campaign has to be rare to land at all.
+		int register = 0;
+		if (before <= 0.0F) {
+			register = 1;
+		} else if (before < enough / 2.0 && this.huntDamage >= enough / 2.0) {
+			register = 2;
+		}
+		if (last) {
+			register = 3;
+		}
+		if (register > 0) {
+			com.bloomlet.herobrine.manifest.TheHunt.taunt(level, striker, register);
+		}
+
+		if (last) {
+			HerobrineMod.LOGGER.info("hunt: driven off on {} damage, the last from {}",
+				String.format("%.0f", this.huntDamage), striker.getName().getString());
+			this.relent(striker);
+			return;
+		}
+		// AND HE STAYS FOR A MOMENT, rather than being gone before the swing has
+		// finished animating. Only opened, never extended — see WOUND_WINDOW.
+		if (this.linger <= 0) {
+			this.linger = WOUND_WINDOW;
+		}
+		this.lingerWounded = true;
+		HerobrineMod.LOGGER.info("hunt: {} of {} damage, last {} from {}",
+			String.format("%.0f", this.huntDamage), (int) enough,
+			String.format("%.1f", damage), striker.getName().getString());
+	}
+
+	/**
 	 * Standing off, watching, doing nothing at all.
 	 *
 	 * The whole value of this is that it is a PAUSE in something that was
@@ -1431,18 +2155,232 @@ public class HerobrineEntity extends PathfinderMob {
 	 * off, and he is not approaching — which gives the player just long enough
 	 * to think it might be over.
 	 */
-	private void watch(Player quarry) {
+	/**
+	 * AND THE SKY KEEPS GOING WHILE HE STANDS THERE.
+	 *
+	 * The ladder covers the pause, but on a beat of thirteen seconds, and half a
+	 * minute of standing needs punctuation finer than that. This is the cheapest
+	 * thing in the whole event and does the most for it: one bolt every three to
+	 * five seconds, visual only, and every third or so lands ON him.
+	 *
+	 * The one on him is the point. He is a shape at thirty blocks in the rain
+	 * and hard to be sure of — until the field goes white and for one frame
+	 * there is no question at all about what is standing in it. Nothing else
+	 * here can silhouette him on demand.
+	 *
+	 * Visual only, always. Real bolts belong to the treeline rung, which has two
+	 * distance checks and a fire cap behind it; this fires next to the player
+	 * every few seconds and could not carry those safely.
+	 */
+	private static final int WATCH_BOLT_MIN = 60;
+	private static final int WATCH_BOLT_SPREAD = 40;
+	private int boltIn;
+
+	// ---- WHAT HE DOES WITH THE HALF MINUTE --------------------------------
+	/**
+	 * HE IS NOT STANDING STILL. HE IS BUSY, AND NOT WITH YOU.
+	 *
+	 * The long pause was right and the motionless figure in it was not. Twenty
+	 * to thirty seconds of a thing that does not move a pixel does not read as
+	 * menace — it reads as a mob that has got stuck, which is the single worst
+	 * thing this event could be mistaken for. The player's honest thought at
+	 * fifteen seconds is "is it broken", and once they have thought that the
+	 * hunt cannot get it back.
+	 *
+	 * So he WORKS. He paces the ring at thirty-odd blocks, never closing, and he
+	 * throws fire at the country around them while he does it — the treeline,
+	 * the far field, anything out there that is not theirs. Something is being
+	 * destroyed the entire time and none of it is aimed at the player.
+	 *
+	 * THAT IS A WORSE HALF MINUTE THAN BEING CHASED, and the reason is that
+	 * being chased is a problem with a solution. This has none. He is not coming,
+	 * so there is nothing to run from; he is not stopping, so there is nothing to
+	 * wait out; and the horizon is going up while they watch. The only thing on
+	 * offer is to stand there and see how much of it is left afterwards.
+	 *
+	 * AND HIS HEAD NEVER LEAVES THEM. The body follows the path round the ring
+	 * and the face stays pointed at the player the whole way — the one image this
+	 * entity was built around, and the reason getMaxHeadYRot is a hundred and
+	 * fifty degrees instead of the seventy-five a neck allows. Walking one way,
+	 * looking at you, setting fire to something else.
+	 */
+	/**
+	 * TWO MOODS, AND HE PICKS ONE PER PAUSE.
+	 *
+	 * The first version had him amble round the ring at half a walking pace,
+	 * lobbing fire into the country behind himself, for half a minute. Which
+	 * reads exactly as what it was: a mob whose AI has come apart. Slow movement
+	 * with no destination is the single most broken-looking thing an entity can
+	 * do, and it undid everything the long pause was for.
+	 *
+	 * So the pause is now one of two things, rolled when it begins, and they are
+	 * opposites on purpose:
+	 *
+	 *   CIRCLING — he RUNS the ring, fast, never closing, and puts fire into the
+	 *     ground around them the whole way. Kinetic and loud. What it says is
+	 *     that he is working, and that the reason he has not come yet is that he
+	 *     has not chosen to.
+	 *
+	 *   STILL — he does not move at all. And then he is somewhere else on the
+	 *     ring, without crossing the ground between. Three times, in silence,
+	 *     and then he comes. Nothing is thrown and nothing is said.
+	 *
+	 * The contrast is the point. A player who has had the circling one twice
+	 * knows what a pause looks like, and the third time he simply stands there
+	 * and starts vanishing is a different event wearing the same shape.
+	 */
+	private static final double CIRCLE_PACE = 1.05;
+	/** How long he holds one bearing before choosing another. 2–4 seconds. */
+	private static final int LEG_MIN = 40;
+	private static final int LEG_SPREAD = 40;
+	private int legTicks;
+	/** And how often something in the distance goes up. 4–7 seconds. */
+	private static final int RAZE_MIN = 80;
+	private static final int RAZE_SPREAD = 60;
+	private int razeIn;
+
+	/** Which of the two this pause is. Rolled once, when the pause begins. */
+	private boolean circling;
+	/** The still mood: how many times he has moved without crossing anything. */
+	private int blinksLeft;
+	private int blinkIn;
+	private static final int BLINK_MIN = 110;
+	private static final int BLINK_SPREAD = 50;
+	private static final int BLINKS = 3;
+
+	/**
+	 * A pause begins. ONE PLACE, so the mood can never be left unset.
+	 *
+	 * Three separate call sites used to set `watching` by hand and the mood
+	 * would have had to be remembered at every one of them. This is the kind of
+	 * thing that is correct on the day and wrong a fortnight later.
+	 */
+	private void beginWatch(int ticks) {
+		this.watching = true;
+		this.moodTicks = ticks;
+		this.circling = this.random.nextBoolean();
+		this.blinksLeft = BLINKS;
+		this.blinkIn = BLINK_MIN;
+		this.legTicks = 0;
+		this.razeIn = 0;
+	}
+
+	private void working(Player quarry) {
+		// THE HEAD DISOBEYS THE BODY in both moods. Only the look control, never
+		// the yaw — setting yRot as well is what made him crab sideways across
+		// the field the last time both were driven at once.
+		this.getLookControl().setLookAt(quarry.getX(), quarry.getEyeY(), quarry.getZ(),
+			90.0F, 90.0F);
+
+		if (this.circling) {
+			// A new bearing every few seconds, or as soon as he runs out of
+			// path. Re-picked rather than continuous, so he moves in legs —
+			// run, stop, look, run — which is what somebody working a perimeter
+			// looks like. A smooth orbit would read as a machine on a rail.
+			if (--this.legTicks <= 0 || this.getNavigation().isDone()) {
+				this.legTicks = LEG_MIN + this.random.nextInt(LEG_SPREAD);
+				this.pace(quarry);
+			}
+			if (--this.razeIn <= 0 && this.level() instanceof ServerLevel here
+				&& quarry instanceof ServerPlayer theirs) {
+				this.razeIn = RAZE_MIN + this.random.nextInt(RAZE_SPREAD);
+				// Mostly fire, and one in three a bolt he has aimed — which is
+				// the only attack in the mod with a dodge in it, because the
+				// ground marks itself a second and a half first.
+				if (this.random.nextInt(3) == 0) {
+					com.bloomlet.herobrine.manifest.TheHunt.callDown(here, theirs);
+				} else {
+					com.bloomlet.herobrine.manifest.TheHunt.raze(here, this, theirs);
+				}
+			}
+			return;
+		}
+
+		// STILL. Dead still — the navigation is stopped rather than merely
+		// unused, because a mob with a stale path shuffles, and a shuffle is the
+		// difference between somebody standing there and somebody idling.
 		this.getNavigation().stop();
 		this.setDeltaMovement(Vec3.ZERO);
-		float yaw = (float)(net.minecraft.util.Mth.atan2(
-			quarry.getZ() - this.getZ(), quarry.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
-		this.setYRot(yaw);
-		this.yHeadRot = yaw;
-		this.setYBodyRot(yaw);
+		if (--this.blinkIn > 0 || this.blinksLeft <= 0) {
+			return;
+		}
+		this.blinkIn = BLINK_MIN + this.random.nextInt(BLINK_SPREAD);
+		this.blinksLeft--;
+		// AND THIS IS WHERE HE SENDS. He does not come — things rise out of the
+		// ground between the two of you while he stands there and watches it
+		// happen. The distance is the whole menace; joining in would spend it.
+		if (this.level() instanceof ServerLevel here && quarry instanceof ServerPlayer theirs) {
+			com.bloomlet.herobrine.manifest.TheHunt.send(here, this, theirs);
+		}
+		// Somewhere else on the same ring, without crossing the ground between.
+		// reappearAt already goes through blink, so he is invisible for the move
+		// and what the player sees is an absence and then a presence.
+		if (reappearAt(quarry, WATCH_NEAR, WATCH_FAR, true)) {
+			HerobrineMod.LOGGER.debug("hunt: still — moved, {} left", this.blinksLeft);
+		}
+	}
+
+	/**
+	 * Somewhere else on the same ring, and never nearer.
+	 *
+	 * The whole value of the pause is that he is not closing, so the walk has to
+	 * be measured from the PLAYER rather than from him: any step that would put
+	 * him inside the watching band is refused outright. He can circle all night
+	 * and the distance between them does not change, which is exactly the thing
+	 * that makes it unbearable to look at.
+	 */
+	private void pace(Player quarry) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		double from = Math.atan2(this.getZ() - quarry.getZ(), this.getX() - quarry.getX());
+		for (int attempt = 0; attempt < 12; attempt++) {
+			// A short arc either way, so he works round the ring rather than
+			// teleport-walking to the far side of it.
+			double swing = (0.25 + this.random.nextDouble() * 0.55)
+				* (this.random.nextBoolean() ? 1 : -1);
+			double range = WATCH_NEAR + this.random.nextDouble() * (WATCH_FAR - WATCH_NEAR);
+			int x = (int)Math.round(quarry.getX() + Math.cos(from + swing) * range);
+			int z = (int)Math.round(quarry.getZ() + Math.sin(from + swing) * range);
+			BlockPos column = new BlockPos(x, this.blockPosition().getY(), z);
+			if (!here.isLoaded(column)) {
+				continue;
+			}
+			int y = here.getHeight(
+				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+			BlockPos at = new BlockPos(x, y, z);
+			if (at.distToCenterSqr(quarry.getX(), at.getY(), quarry.getZ())
+				< WATCH_NEAR * WATCH_NEAR) {
+				continue;   // that would be closing, and he is not closing
+			}
+			if (this.getNavigation().moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5,
+					CIRCLE_PACE)) {
+				return;
+			}
+		}
+		// Nowhere to walk — a ledge, an island, a pit. Standing still for one
+		// leg is a far better failure than sliding at a wall, and he gets
+		// another bearing in two seconds anyway.
+		this.getNavigation().stop();
+	}
+
+	private void watch(Player quarry) {
+		if (--this.boltIn <= 0 && this.level() instanceof ServerLevel sky) {
+			this.boltIn = WATCH_BOLT_MIN + this.random.nextInt(WATCH_BOLT_SPREAD);
+			// One in three lands on him. The rest come down around the player,
+			// which keeps the storm about THEM rather than turning into a
+			// spotlight that points at him every few seconds.
+			boolean onHim = this.random.nextInt(3) == 0;
+			com.bloomlet.herobrine.manifest.TheHunt.overhead(sky,
+				onHim ? this.blockPosition() : quarry.blockPosition(), onHim);
+		}
+
+		this.working(quarry);
 
 		if (--this.moodTicks > 0) {
 			return;
 		}
+		this.getNavigation().stop();
 		this.watching = false;
 		this.moodTicks = chaseSpell();
 		// And then he is close. Out of their view for the move itself, because
@@ -1673,8 +2611,11 @@ public class HerobrineEntity extends PathfinderMob {
 			this.getX(), this.getY() + 1.0, this.getZ(), 140, 0.8, 1.2, 0.8, 0.12);
 		here.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
 			this.getX(), this.getY() + 1.0, this.getZ(), 90, 1.2, 1.4, 1.2, 0.03);
-		here.playSound(null, this.getX(), this.getY(), this.getZ(),
-			SoundEvents.WARDEN_DEATH, this.getSoundSource(), 3.0F, 0.5F);
+		// The biggest moment in the mod, and the only time it happens. It should
+		// be audible from wherever anybody on the server happens to be standing,
+		// and it should come back off the hills afterwards.
+		com.bloomlet.herobrine.sound.ModSounds.roll(here, this.blockPosition(),
+			com.bloomlet.herobrine.sound.ModSounds.GONE, 5.0F, 1.0F);
 
 		net.minecraft.server.MinecraftServer server = here.getServer();
 		// Clear, and stop raining. Skies will not undo a storm it did not start
@@ -1682,7 +2623,9 @@ public class HerobrineEntity extends PathfinderMob {
 		// dropping is what releases both — but the current storm has five
 		// minutes left on it and would sit there over the ending.
 		server.setWeatherParameters(6000, 0, false, false);
-		Wrath.add(server, null, -Wrath.get(server), Wrath.Reason.DEATH);
+		// The total that used to be zeroed here does not exist any more. Nothing
+		// replaces it: the story stays where it is because the story is what the
+		// player earned, and heat expires on its own within the minute.
 
 		// And something to walk back to in the morning.
 		ServerPlayer killer = source.getEntity() instanceof ServerPlayer who
@@ -1804,21 +2747,130 @@ public class HerobrineEntity extends PathfinderMob {
 		Vec3 flat = new Vec3(quarry.getX() - this.getX(), 0.0, quarry.getZ() - this.getZ());
 		double away = flat.length();
 
-		// High enough to clear the ground at both ends, which is the cheap
-		// approximation of clearing everything between.
-		double ceiling = Math.max(this.getY(), quarry.getY()) + 3.0;
-		double y = this.getY() < ceiling
-			? Math.min(ceiling, this.getY() + CLIMB_RATE)
-			: this.getY();
+		// CLIMB TO CLEAR, THEN COME DOWN ON THEM.
+		//
+		// The old version aimed at one fixed ceiling for the whole flight and
+		// then landed the moment it was horizontally close, which is fine over a
+		// wall and completely wrong for anything ABOVE him — see below. Two
+		// heights instead: while there is ground to cross, three above the
+		// higher of the two of them, which clears whatever is between; once he
+		// is over them, their own level, so the last thing he does is descend
+		// onto the branch rather than hover above it.
+		double want = away > 3.0
+			? Math.max(this.getY(), quarry.getY()) + 3.0
+			: quarry.getY();
+		double gap = want - this.getY();
+		double y = this.getY() + Math.signum(gap) * Math.min(CLIMB_RATE, Math.abs(gap));
 
-		Vec3 step = away < 1.0E-4 ? Vec3.ZERO : flat.normalize().scale(FLY_SPEED);
+		// UP FIRST, THEN ACROSS. NOT BOTH.
+		//
+		// Climbing and crossing on the same tick is what made this a drift, and
+		// no amount of speed would have fixed it: the resultant of the two is a
+		// long shallow diagonal, so he eased away from the ground, eased over the
+		// obstacle and eased down the far side as one continuous lazy arc. Every
+		// frame of it looked like floating.
+		//
+		// Held apart, the same movement becomes three decisions a player can
+		// read: he goes straight up, he crosses, he comes down on them. Fast and
+		// separated is the difference between a thing arriving and a thing
+		// approaching — and only one of those is worth being afraid of.
+		//
+		// Two blocks of tolerance so the last of a climb blends into the
+		// crossing rather than stopping dead and starting again.
+		boolean rising = gap > 2.0;
+		Vec3 step = rising || away < 1.0E-4
+			? Vec3.ZERO
+			: flat.normalize().scale(FLY_SPEED);
 		this.snapTo(this.getX() + step.x, y, this.getZ() + step.z, this.getYRot(), 0.0F);
 		this.setDeltaMovement(Vec3.ZERO);
 
-		boolean overhead = this.getY() - quarry.getY() > 1.0;
-		if ((away < 2.5 && !overhead) || ++this.flyTicks > FLY_LIMIT) {
+		// AND HE ONLY LANDS WHEN HE HAS ACTUALLY REACHED THEM.
+		//
+		// This was `away < 2.5 && !overhead`, where `away` is HORIZONTAL and
+		// `overhead` meant "more than a block above them". A player up a tree is
+		// horizontally on top of him and vertically above, so both halves were
+		// true the instant he left the ground: he took off, climbed nothing, and
+		// landed. Then he was stuck under the tree, so he took off again. Then
+		// he landed again.
+		//
+		// What that looked like in play was him standing under you doing
+		// nothing, occasionally chipping one block out of the trunk — which is
+		// the single worst thing this entity can look like, because a pursuer
+		// you have beaten by climbing a tree is not a pursuer.
+		//
+		// Level with them, within a block and a half either way, is what having
+		// arrived means. Nothing else counts.
+		boolean level = Math.abs(this.getY() - quarry.getY()) <= 1.5;
+		if (away < 2.5 && level) {
 			this.land();
+			return;
 		}
+		if (++this.flyTicks > FLY_LIMIT) {
+			// OUT OF TIME AND STILL NOT THERE. Landing here is what produced the
+			// stalemate — he drops back to the ground under whatever they are
+			// standing on and starts the whole cycle again.
+			//
+			// So if the flight ran out with them still out of reach, he stops
+			// playing by the geometry. He is not there, and then he is beside
+			// them. Which is the oldest rule in this mod applied to the one
+			// situation that was quietly exempt from it.
+			if (level || !this.alongside(quarry)) {
+				this.land();
+			}
+		}
+	}
+
+	/**
+	 * HE IS NOT THERE, AND THEN HE IS BESIDE YOU.
+	 *
+	 * The safety net under every piece of geometry nobody thought of: a tree, a
+	 * one-block pillar, a boat, a ledge on a cliff, a hole in a roof. The flight
+	 * gets six seconds to solve it honestly — the player should get to WATCH him
+	 * come, because a figure climbing toward you is worth far more than one that
+	 * appears — and if six seconds was not enough, the geometry stops being
+	 * allowed to matter.
+	 *
+	 * Which is not a cheat so much as the rest of the mod finally applying here.
+	 * He goes through rock. He relocates behind you when you charge him. He does
+	 * not obey doors. The one thing he was still obeying was gravity, and a
+	 * player who worked out that a tree beats him had found the only place in
+	 * forty hours where the answer was "he gives up".
+	 *
+	 * Standing room only — a block they could stand in themselves, at their own
+	 * level, close but not inside them. If there is nowhere, he lands and tries
+	 * the honest way again.
+	 *
+	 * @return true if he got there
+	 */
+	private boolean alongside(Player quarry) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return false;
+		}
+		BlockPos them = quarry.blockPosition();
+		for (int attempt = 0; attempt < 24; attempt++) {
+			double angle = this.random.nextDouble() * Math.PI * 2.0;
+			double range = 1.6 + this.random.nextDouble() * 2.4;
+			BlockPos at = them.offset(
+				(int)Math.round(Math.cos(angle) * range),
+				this.random.nextInt(3) - 1,
+				(int)Math.round(Math.sin(angle) * range));
+			if (!ConfinedPlacement.canStand(here, at) || at.closerThan(them, 1.2)) {
+				continue;
+			}
+			this.flying = false;
+			this.setNoGravity(false);
+			this.flyTicks = 0;
+			this.stuckTicks = 0;
+			this.lastDistance = Double.MAX_VALUE;
+			float yaw = (float)(net.minecraft.util.Mth.atan2(
+				quarry.getZ() - at.getZ(), quarry.getX() - at.getX())
+				* (180.0 / Math.PI)) - 90.0F;
+			this.blink(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, yaw);
+			HerobrineMod.LOGGER.info("hunt: could not reach {} the honest way — "
+				+ "went to them instead", quarry.getName().getString());
+			return true;
+		}
+		return false;
 	}
 
 	private void land() {
@@ -1837,8 +2889,132 @@ public class HerobrineEntity extends PathfinderMob {
 	 * The player loses him behind a hill, and the next time they check over
 	 * their shoulder the gap has halved.
 	 */
+	/**
+	 * Whatever was standing there is not standing there now.
+	 *
+	 * Killed properly rather than discarded, so it drops what it would have
+	 * dropped and a player who finds the bodies can pick up the beef. A pen
+	 * quietly emptied with no items in it reads as a despawn bug; a pen full of
+	 * dead cows and their drops reads as something having come through.
+	 *
+	 * Animals only — no villagers, and nothing anybody tamed. A dead dog is a
+	 * different and much crueller event than this is reaching for, and it is one
+	 * the mod already has a place for elsewhere.
+	 */
+	private void cull(ServerLevel field) {
+		java.util.List<net.minecraft.world.entity.animal.Animal> near =
+			field.getEntitiesOfClass(net.minecraft.world.entity.animal.Animal.class,
+				this.getBoundingBox().inflate(CULL_REACH),
+				beast -> beast.isAlive()
+					&& !(beast instanceof net.minecraft.world.entity.TamableAnimal tame
+						&& tame.isTame()));
+		for (net.minecraft.world.entity.animal.Animal beast : near) {
+			beast.hurtServer(field, this.damageSources().mobAttack(this), Float.MAX_VALUE);
+		}
+		if (!near.isEmpty()) {
+			HerobrineMod.LOGGER.info("hunt: {} killed where they stood", near.size());
+		}
+	}
+
 	private boolean reappearNear(Player quarry) {
 		return reappearAt(quarry, 12.0, 24.0, false);
+	}
+
+	/**
+	 * Straight to behind their shoulder, in the dark, saying so as he lands.
+	 *
+	 * Deliberately NOT gated on being stuck the way closeIn is. Being stuck means
+	 * the terrain beat him; this is the case where the terrain would not have
+	 * beaten him at all and walking is simply the worse answer. He could get
+	 * there. He should not be seen getting there.
+	 */
+	private boolean stalkTo(Player quarry) {
+		if (!(this.level() instanceof ServerLevel here)
+			|| !(quarry instanceof ServerPlayer theirs)) {
+			return false;
+		}
+		long now = here.getGameTime();
+		if (now < this.stalkedAt + STALK_COOLDOWN) {
+			return false;
+		}
+		if (here.getMaxLocalRawBrightness(theirs.blockPosition()) > STALK_DARK) {
+			return false;
+		}
+		BlockPos at = ConfinedPlacement.nearby(here, theirs, 2.0, 4.0, true, false);
+		if (at == null
+			|| com.bloomlet.herobrine.manifest.Hearth.built(here, at)
+				>= com.bloomlet.herobrine.manifest.Hearth.ENOUGH) {
+			return false;   // a wall is answered by taking the wall apart
+		}
+		this.stalkedAt = now;
+		if (this.flying) {
+			this.land();
+		}
+		this.stopBreaking(here);
+		this.blink(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, this.getYRot());
+		this.lastDistance = Double.MAX_VALUE;
+		this.stuckTicks = 0;
+		this.poise = POISE_MIN + this.random.nextInt(POISE_SPREAD);
+		com.bloomlet.herobrine.manifest.TheHunt.found(here, theirs);
+		return true;
+	}
+
+	/**
+	 * HE COMES TO YOU — up the pillar, or down into the cave.
+	 *
+	 * The two places a pursuer on foot simply loses, and neither of them is a
+	 * base. A tower of dirt is not a build and a hole is not a build; they are
+	 * both the same move, which is to stand somewhere his feet cannot follow and
+	 * wait for the event to expire. Flying was the old answer and it is a worse
+	 * one twice over — the glide has been a bug farm for its whole life, and
+	 * watching him circle below you for twenty seconds is not frightening.
+	 *
+	 * NOT reappearAt, because reappearAt asks the heightmap for the top of the
+	 * column and would put him in the field above your cave every single time.
+	 * ConfinedPlacement.nearby floods through the air you are actually standing
+	 * in, so it can only ever return somewhere connected to you.
+	 *
+	 * Two to seven blocks, and it does not care whether you are looking. He is
+	 * not sneaking up; he is arriving, and he should be inside reach the moment
+	 * he does — otherwise this just moves the stalemate closer.
+	 *
+	 * SIGHT IS NOT REQUIRED, deliberately. Round the corner of the same cave is
+	 * a perfectly good place to turn up, and demanding a clear line would refuse
+	 * every twisting tunnel in the game — which is most of them, and exactly
+	 * where somebody hiding from him will be.
+	 */
+	private boolean closeIn(Player quarry) {
+		if (!(this.level() instanceof ServerLevel here)
+			|| !(quarry instanceof ServerPlayer theirs)) {
+			return false;
+		}
+		BlockPos at = ConfinedPlacement.nearby(here, theirs, 2.0, 7.0, false, false);
+		if (at == null) {
+			return false;
+		}
+		// AND NOT INSIDE SOMEBODY'S HOUSE.
+		//
+		// The shelter test on goneToGround covers the player who seals up and
+		// stays still; it does nothing for the player who seals up and keeps
+		// moving, and that one would have had him materialise in the kitchen.
+		// A wall is answered by taking the wall apart, which he already does and
+		// which the player can hear coming — the whole reason a build is worth
+		// putting up is that getting through it is work. Stepping through it is
+		// not a scare, it is the end of anybody bothering to build.
+		if (com.bloomlet.herobrine.manifest.Hearth.built(here, at)
+			>= com.bloomlet.herobrine.manifest.Hearth.ENOUGH) {
+			return false;
+		}
+		if (this.flying) {
+			this.land();
+		}
+		this.stopBreaking(here);
+		this.blink(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, this.getYRot());
+		this.lastDistance = Double.MAX_VALUE;
+		HerobrineMod.LOGGER.info("hunt: beaten on foot — he arrives {} blocks from {}",
+			(int) Math.sqrt(at.distSqr(theirs.blockPosition())),
+			theirs.getName().getString());
+		return true;
 	}
 
 	/**
@@ -1894,11 +3070,56 @@ public class HerobrineEntity extends PathfinderMob {
 				continue;
 			}
 
-			this.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, this.getYRot(), 0.0F);
+			this.blink(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, this.getYRot());
 			this.lastDistance = Double.MAX_VALUE;
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * HE IS NOT SEEN CROSSING THE FIELD, AND HE WAS.
+	 *
+	 * Every relocation in this class called snapTo, which is a server-side
+	 * teleport and reads on the client as nothing of the kind. The position
+	 * arrives as a sync packet, and InterpolationHandler smears it over three
+	 * ticks — so a forty-block jump is drawn as forty blocks of travel in a
+	 * seventh of a second. The player sees a figure DRAG across their view and
+	 * stop, which tells them exactly where he went, that he moved rather than
+	 * reappeared, and that this is an entity being teleported by a mod.
+	 *
+	 * That is the single oldest rule here broken by a rendering default: he is
+	 * never seen arriving, and he had been visibly arriving all along.
+	 *
+	 * THE FIX IS NOT TO TURN INTERPOLATION OFF. Setting the handler's length to
+	 * zero does stop the smear — interpolateTo snaps outright at zero — but it
+	 * is a property of the entity rather than of the move, so it would also snap
+	 * his WALKING. Position updates reach the client about three times a second;
+	 * interpolation is what turns those into a walk, and without it the figure
+	 * that comes across the field at you stutters.
+	 *
+	 * So the streak is hidden instead of prevented. He goes invisible, moves,
+	 * and comes back a fifth of a second later — which is not a workaround, it
+	 * is the behaviour this mod has always claimed: he is not there, and then he
+	 * is somewhere else. Whatever the renderer does in between now happens to
+	 * something nobody can see.
+	 */
+	private static final int BLINK_TICKS = 4;
+
+	private void blink(double x, double y, double z, float yaw) {
+		this.setInvisible(true);
+		this.snapTo(x, y, z, yaw, 0.0F);
+		if (this.level() instanceof ServerLevel here) {
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), BLINK_TICKS, () -> {
+				// He may have discarded himself in the meantime — the hunt can
+				// end on any of the four ticks this waits.
+				if (this.isAlive()) {
+					this.setInvisible(false);
+				}
+			});
+		} else {
+			this.setInvisible(false);
+		}
 	}
 
 	/** Nothing solid between their eye and where his head would be. */
@@ -2037,6 +3258,12 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 		this.lastStruck = now;
+		// Read BEFORE the blow, because the blow ends with him somewhere else.
+		// The log printed distanceTo AFTER the backoff teleport, so a hit
+		// delivered at arm's length was reported as "swung at 18.1 blocks" —
+		// which reads as him hitting through half a field and sent me looking
+		// for a reach bug that was never there.
+		double reach = this.distanceTo(player);
 		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
 
 		// ONE PERSON. Not a swipe that catches whoever is standing about.
@@ -2057,6 +3284,53 @@ public class HerobrineEntity extends PathfinderMob {
 				RECKONING_DAMAGE);
 		} else {
 			landed = this.doHurtTarget(here, player);
+		}
+
+		// AND THE AXE BURNS.
+		//
+		// He has carried a diamond axe since the first version and it has been
+		// purely cosmetic the whole time — the damage came from ATTACK_DAMAGE and
+		// the item in his hand meant nothing. A weapon nobody can feel is set
+		// dressing, and four seconds of burning is the cheapest way to make the
+		// thing in his hand matter: you back off from the blow already alight,
+		// and putting yourself out is one more thing to be doing while he is
+		// still there.
+		//
+		// Only on a blow that LANDED, so armour and a totem still answer it, and
+		// only behind the fire switch — somebody who turned fire off did so to
+		// keep it out of their world, and their world includes them.
+		if (landed && Config.get().scorch) {
+			player.igniteForSeconds(AXE_BURNS);
+		}
+
+		// AND IT SENDS YOU.
+		//
+		// doHurtTarget applies vanilla's knockback, which is about four tenths of
+		// a block and is calibrated for a zombie. Being hit by him should not
+		// feel like being hit by a zombie. This is the one moment in the whole
+		// event where he actually touches you, and it should be unmistakable
+		// which of you is stronger.
+		//
+		// Set rather than added, so the direction is his and not the sum of his
+		// and vanilla's. hurtMarked is what carries a server-side velocity change
+		// to a player's client in 26.2 — without it the server believes they were
+		// thrown and their screen shows them standing still, which is the worst
+		// of both.
+		//
+		// The lift is deliberately small next to the shove. A high arc is a long
+		// fall and a long fall is fall damage, and "he hit me once and the ground
+		// killed me" is a bad death — it reads as the mod misfiring rather than
+		// as him. Flat and far is the read: you are somewhere else now, you got
+		// there fast, and you are on fire.
+		if (landed) {
+			Vec3 push = new Vec3(player.getX() - this.getX(), 0.0, player.getZ() - this.getZ());
+			if (push.lengthSqr() < 1.0E-4) {
+				push = new Vec3(-Math.sin(Math.toRadians(this.getYRot())), 0.0,
+					Math.cos(Math.toRadians(this.getYRot())));
+			}
+			push = push.normalize().scale(AXE_SHOVE);
+			player.setDeltaMovement(push.x, AXE_LIFT, push.z);
+			player.hurtMarked = true;
 		}
 
 		// AND THEN HE IS NOT THERE. He does not stand and trade.
@@ -2087,22 +3361,44 @@ public class HerobrineEntity extends PathfinderMob {
 			// toward you, and knowing he is going to get to everybody, is a
 			// different thing entirely.
 			this.struck.add(player.getUUID());
-			if (reappearAt(player, HIT_BACKOFF_NEAR, HIT_BACKOFF_FAR, false)) {
-				this.watching = true;
-				this.moodTicks = 30 + this.random.nextInt(25);
-			}
+			this.stalemate = 0;
+			// He backs off at the END of the window now, in pursue, and only if
+			// nobody reached him inside it.
+			this.linger = LINGER_MIN + this.random.nextInt(LINGER_SPREAD);
+			this.lingerWounded = false;
 		}
 		// Logged with the answer, not just the attempt. "He is not hitting me"
 		// has two completely different causes — he never got in range, or he
 		// swung and the damage was refused (creative, invulnerable, a totem) —
 		// and they are indistinguishable from the outside.
 		HerobrineMod.LOGGER.info("hunt: swung at {} blocks from {}, landed={}",
-			String.format("%.1f", this.distanceTo(player)),
-			player.getName().getString(), landed);
+			String.format("%.1f", reach), player.getName().getString(), landed);
 	}
 
 	private void vanish(String why) {
 		HerobrineMod.LOGGER.info("stare over after {} ticks: {}", this.age, why);
+		// A HUNT IS OVER, HOWEVER IT ENDED, AND THAT IS WHAT SITES THE CHURCH.
+		//
+		// Marked here rather than in relent() because relent is only one of the
+		// four ways out — three blows, a hundred seconds endured, outrun across
+		// a field, or lost down a hole all arrive at this method and all of them
+		// are surviving it. Picking a favourite among those would be the mod
+		// having an opinion about how they were supposed to play it.
+		//
+		// `witnessed` is the one guard: a hunt that was placed and never seen by
+		// anybody — they logged out, they died in the first seconds — did not
+		// happen to a person, and opening the next chapter for it would be the
+		// story advancing on nothing.
+		if (this.hunting && this.level() instanceof ServerLevel done) {
+			com.bloomlet.herobrine.manifest.TheHunt.endured(done, this.witnessed);
+			// AND THE SKY GOES WITH HIM. The storm arrived because he did, and
+			// leaving it running for another quarter of an hour undoes exactly
+			// the causality that made the arrival work.
+			com.bloomlet.herobrine.manifest.TheHunt.passes(done);
+			// Everything he sent goes with him. Ten armed zombies left standing
+			// in somebody's base after the event is not a scare, it is a mess.
+			com.bloomlet.herobrine.manifest.TheHunt.dismiss(done);
+		}
 		// Otherwise the half-cracked block keeps its overlay for as long as the
 		// chunk stays loaded, which is a very odd souvenir to leave behind.
 		if (this.level() instanceof ServerLevel clearing) {
@@ -2190,7 +3486,7 @@ public class HerobrineEntity extends PathfinderMob {
 
 		if (source.getEntity() instanceof ServerPlayer attacker) {
 			// Swinging at him is the loudest possible defiance.
-			WrathTriggers.defiance(attacker, DEFIANCE_STRUCK);
+			Heat.noticed(attacker, DEFIANCE_STRUCK);
 			// Something is left standing where he was.
 			//
 			// Swinging at him and having him simply not be there is the correct
@@ -2207,14 +3503,10 @@ public class HerobrineEntity extends PathfinderMob {
 			// will be no fire at all, which is the right outcome.
 			this.scorch(level, 3);
 
-			// Mid-hunt he does not leave, he only gets out of reach.
-			//
-			// Fleeing on a hit would hand the player a way to end a hunt with
-			// one swing, and would undo the entire point of the phase: the
-			// thing that will not stop turning out to stop the moment you show
-			// it a sword. He reappears behind them and keeps coming.
+			// Mid-hunt he does not leave, he only gets out of reach — until the
+			// third one, and then he does.
 			if (this.hunting) {
-				this.reappearNear(attacker);
+				this.tookOne(level, attacker, damage);
 				return false;
 			}
 			// Whoever swung is not necessarily the only one here, so the same
@@ -2406,7 +3698,7 @@ public class HerobrineEntity extends PathfinderMob {
 		this.watching = false;
 		this.struck.clear();
 
-		WrathTriggers.defiance(striker, DEFIANCE_STRUCK);
+		Heat.noticed(striker, DEFIANCE_STRUCK);
 		this.anger(level);
 
 		if (this.hits >= Config.get().blowsToKill) {
@@ -2443,8 +3735,13 @@ public class HerobrineEntity extends PathfinderMob {
 		level.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
 			this.getX(), this.getY() + 1.0, this.getZ(),
 			4 * stage, 0.4, 0.6, 0.4, 0.01);
-		level.playSound(null, this.getX(), this.getY(), this.getZ(),
-			SoundEvents.WARDEN_ANGRY, this.getSoundSource(), 1.0F, 0.6F + stage * 0.15F);
+		// AND IT ROLLS AWAY ACROSS THE COUNTRY. Volume three rather than one,
+		// because one is sixteen blocks and the loudest thing in the mod could
+		// not be heard from the far side of a field — and then it comes back off
+		// the hills a beat later. See ModSounds.roll.
+		com.bloomlet.herobrine.sound.ModSounds.roll(level, this.blockPosition(),
+			com.bloomlet.herobrine.sound.ModSounds.ANGER,
+			3.0F, 1.06F - stage * 0.06F);
 		// More of it every act, and still refused wherever it would spread.
 		this.scorch(level, stage * 2);
 	}
@@ -2504,7 +3801,11 @@ public class HerobrineEntity extends PathfinderMob {
 		double dx = facing.getX() - (this.anchor.getX() + 0.5);
 		double dz = facing.getZ() - (this.anchor.getZ() + 0.5);
 		float yaw = (float)(net.minecraft.util.Mth.atan2(dz, dx) * (180.0 / Math.PI)) - 90.0F;
-		this.snapTo(this.anchor.getX() + 0.5, this.anchor.getY(), this.anchor.getZ() + 0.5, yaw, 0.0F);
+		// Through blink, not snapTo. This one is the whole "chase him and he is
+		// behind you" trick, and it was the most visible instance of the streak:
+		// the player charges him, and instead of finding empty ground they watch
+		// him slide back past their shoulder to where they started.
+		this.blink(this.anchor.getX() + 0.5, this.anchor.getY(), this.anchor.getZ() + 0.5, yaw);
 
 		this.relocations++;
 		this.unseenTicks = 0;

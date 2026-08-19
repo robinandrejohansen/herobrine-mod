@@ -1,7 +1,13 @@
 {
   "entity.herobrine.herobrine": "Herobrine",
   "entity.herobrine.infected": "Infected",
+  "entity.herobrine.turned": "Villager",
   "death.attack.herobrine.reckoning": "%1$s should not have done that",
   "death.attack.herobrine.reckoning.player": "%1$s should not have done that",
-  "block.herobrine.effigy": "Effigy"
+  "block.herobrine.effigy": "Effigy",
+  "subtitles.herobrine.breath": "Something breathes",
+  "subtitles.herobrine.anger": "Herobrine is hurt",
+  "subtitles.herobrine.gone": "The pressure leaves",
+  "subtitles.herobrine.his_world": "Something hums",
+  "subtitles.herobrine.the_way": "The way opens"
 }

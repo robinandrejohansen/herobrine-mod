@@ -6,7 +6,7 @@ import java.util.List;
 import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.wrath.Phase;
 import com.bloomlet.herobrine.wrath.Wrath;
-import com.bloomlet.herobrine.wrath.WrathTriggers;
+import com.bloomlet.herobrine.wrath.Heat;
 
 import com.mojang.serialization.Codec;
 
@@ -77,7 +77,7 @@ public final class Signs {
 				// his message is what summons the next thing. The player's own
 				// reaction drives the escalation, which is a far better engine
 				// than a timer.
-				WrathTriggers.defiance(breaker, DEFIANCE_BROKEN);
+				Heat.noticed(breaker, DEFIANCE_BROKEN);
 				HerobrineMod.LOGGER.info("sign broken at [{}, {}, {}] — defiance",
 					pos.getX(), pos.getY(), pos.getZ());
 			}

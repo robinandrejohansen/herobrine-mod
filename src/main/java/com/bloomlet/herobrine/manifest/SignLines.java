@@ -339,8 +339,10 @@ public final class SignLines {
 		if (player.getStats().getValue(Stats.CUSTOM.get(Stats.DEATHS)) >= MANY_DEATHS) {
 			groups.add(DYING);
 		}
-		// Their personal share only climbs this high through defiance.
-		if (Wrath.getShare(player) > 120) {
+		// Only provoking him gets it this high, and it falls back down again — so
+		// this reads "they have been at it recently" rather than "they have been
+		// playing a while", which is what the old cumulative share amounted to.
+		if (com.bloomlet.herobrine.wrath.Heat.of(player) > 60) {
 			groups.add(DEFIANT);
 		}
 		if (phase.atLeast(Phase.MIMIC)) {

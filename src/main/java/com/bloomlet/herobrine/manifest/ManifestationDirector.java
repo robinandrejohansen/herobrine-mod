@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.wrath.Phase;
+import com.bloomlet.herobrine.wrath.Heat;
 import com.bloomlet.herobrine.wrath.Wrath;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -84,8 +85,16 @@ public final class ManifestationDirector {
 	 * visited more than the one quietly farming next to them, and on a server
 	 * that difference is the whole point: he is coming for someone specific.
 	 */
+	/**
+	 * Somebody who has been provoking him gets seen to sooner.
+	 *
+	 * Was the per-player wrath share over 250, capped at triple. That share only
+	 * ever climbed, so a player four hours in was permanently at the cap and the
+	 * dial had stopped being a dial. Heat falls, so this can now go up AND back
+	 * down — which is the entire reason the number was worth keeping.
+	 */
 	private static double attentionFactor(ServerPlayer player) {
-		return 1.0 + Math.min(2.0, Wrath.getShare(player) / 250.0);
+		return 1.0 + 2.0 * Heat.scale(player);
 	}
 
 	private static void onTick(MinecraftServer server) {
@@ -235,7 +244,7 @@ public final class ManifestationDirector {
 	 * flat however good the individual events were. Six steps across a campaign
 	 * is a staircase, not a shape.
 	 *
-	 * Wrath.into is nought at the start of a phase and one at the end of it, and
+	 * Heat is nought when he has been left alone and one when he has not, and
 	 * the window closes to sixty per cent across that. The new thing therefore
 	 * arrives once and quietly when the story turns, and by the end of the same
 	 * chapter it is the weather — without a single new event existing.
@@ -245,9 +254,11 @@ public final class ManifestationDirector {
 	 * meant to be felt as a tightening rather than noticed as a number.
 	 */
 	private static int windowFor(ServerPlayer player, RandomSource random) {
-		float deep = Wrath.into(((ServerLevel)player.level()).getServer());
-		double tighten = 1.0 - 0.4 * deep;
-		return Math.max(40, (int)(window(random) * tighten / attentionFactor(player)));
+		// One dial, applied once. This used to multiply Wrath.into here AND the
+		// per-player share inside attentionFactor — two readings of the same
+		// climbing total, compounding, which is how the gap between events could
+		// quietly collapse to the forty-tick floor and stay there.
+		return Math.max(40, (int)(window(random) / attentionFactor(player)));
 	}
 
 	private static int window(RandomSource random) {

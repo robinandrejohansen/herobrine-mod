@@ -47,6 +47,34 @@ public final class ModBlocks {
 			.sound(SoundType.DEEPSLATE)
 			.requiresCorrectToolForDrops());
 
+	/**
+	 * The way through, standing in the frame he did not live to finish.
+	 *
+	 * No item form and no loot table, unlike the Effigy — see TheWayBlock. It is
+	 * registered as a block only, so it cannot be picked up, crafted or carried
+	 * home, and the one place it exists is where the mod put it.
+	 *
+	 * Indestructible on purpose. A player who broke their own way through in a
+	 * moment of curiosity would have deleted the ending, and there is no honest
+	 * way to give it back to them.
+	 */
+	public static final Block THE_WAY = registerBlockOnly("the_way",
+		BlockBehaviour.Properties.of()
+			.mapColor(MapColor.COLOR_BLACK)
+			.noCollision()
+			.noOcclusion()
+			.noLootTable()
+			.strength(-1.0F, 3600000.0F)
+			.lightLevel(state -> 11)
+			.sound(SoundType.GLASS)
+			.pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));
+
+	private static Block registerBlockOnly(String name, BlockBehaviour.Properties properties) {
+		ResourceKey<Block> key = ResourceKey.create(Registries.BLOCK, HerobrineMod.id(name));
+		return Registry.register(BuiltInRegistries.BLOCK, key,
+			new TheWayBlock(properties.setId(key)));
+	}
+
 	private static Block register(String name, BlockBehaviour.Properties properties) {
 		ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, HerobrineMod.id(name));
 		Block block = new Block(properties.setId(blockKey));

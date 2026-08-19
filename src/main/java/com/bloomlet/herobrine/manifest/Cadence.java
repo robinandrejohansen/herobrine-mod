@@ -52,7 +52,20 @@ public final class Cadence {
 		if (pending.isEmpty()) {
 			return;
 		}
+		// DRAINED FIRST, RUN AFTER, and that is not tidiness.
+		//
+		// This used to call the action from inside the iteration, which works
+		// perfectly right up until an action schedules something of its own —
+		// and then the append lands in the list being iterated and the next
+		// hasNext() throws ConcurrentModificationException. Nothing in the mod
+		// nested a schedule for a long time, so the fault sat here harmless;
+		// the first thing that did it was the city, which queues a house a tick
+		// from inside a stage that was itself queued.
+		//
+		// Anything scheduled while these are running simply lands in `pending`
+		// and fires on a later tick, which is what a caller expects anyway.
 		long now = server.overworld().getGameTime();
+		List<Runnable> due = new ArrayList<>();
 		Iterator<Pending> it = pending.iterator();
 		while (it.hasNext()) {
 			Pending next = it.next();
@@ -60,7 +73,10 @@ public final class Cadence {
 				continue;
 			}
 			it.remove();
-			next.action().run();
+			due.add(next.action());
+		}
+		for (Runnable action : due) {
+			action.run();
 		}
 	}
 }

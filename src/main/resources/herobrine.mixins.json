@@ -1,15 +1,17 @@
 {
-	"required": true,
-	"package": "com.bloomlet.herobrine.mixin",
-	"compatibilityLevel": "JAVA_25",
-	"mixins": [
-		"ExampleMixin",
-		"PlayerInfoEntriesAccessor"
-	],
-	"injectors": {
-		"defaultRequire": 1
-	},
-	"overwrites": {
-		"requireAnnotations": true
-	}
+  "required": true,
+  "package": "com.bloomlet.herobrine.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "HisFireballMixin",
+    "HisSkeletonMixin",
+    "PlayerInfoEntriesAccessor",
+    "QuietDeathsMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
 }

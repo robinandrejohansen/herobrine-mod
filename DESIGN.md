@@ -361,6 +361,29 @@ The line between horror and an annoying mod. Non-negotiable.
   bedrock swinging forever. That bargain is what keeps this the wrong side of
   frightening instead of the wrong side of griefing, and it is the same one
   the torches make.
+- **THE HUNT TAKES THE WINDOWS, THE LIGHTS AND THE FIELD — never the house.**
+  The second deliberate exception, and it is drawn in the same place as the
+  first. Glass goes, and it drops **sand**: nothing is lost and it still costs
+  a trip to a furnace, which is the whole calibration of the event in one
+  line. Torches and lanterns go and drop themselves. Lightning burns the
+  treeline, never within fourteen blocks of a player or twenty-four of
+  anybody's house, so what goes up is a wood at a distance. Fireballs put
+  holes in the ground, and refuse outright if there is anything crafted within
+  four blocks — which does mean a base paved wall to wall gets no craters at
+  all, and that is the correct failure.
+
+  He does not touch a wall, a roof, a chest, a bed or a workbench, and no rung
+  of the ladder can reach one. `huntWrecks` turns the lot off and `huntFire`
+  turns off only the burning; the chapter still completes either way, because
+  what sites the church is surviving a hunt and not being wrecked by one.
+- **No villager is ever removed, and the turned one is an ADDITION.** The
+  obvious way to build a villager who has gone wrong is to pick a resident and
+  replace him, and it is ruled out for the same reason village decay never
+  touches the people: deleting somebody's cleric to stage a fright costs them
+  hours of trading with no warning, no counter-play and no way to undo it. So
+  the village gains a person rather than losing one. Indistinguishable from
+  inside the game — nobody counts villagers — and it means the event can happen
+  a dozen times over a campaign without ever emptying a village.
 - **Everything he places is removable** and drops normally.
 - **THE ENDING IS EXEMPT, and knowingly.** Act three of the Reckoning throws
   real lightning that burns and hurts, and his death leaves a scorched ring,

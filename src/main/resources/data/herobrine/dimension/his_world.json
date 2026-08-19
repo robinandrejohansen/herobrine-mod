@@ -2,10 +2,10 @@
   "type": "herobrine:his_world",
   "generator": {
     "type": "minecraft:noise",
-    "settings": "minecraft:nether",
+    "settings": "minecraft:overworld",
     "biome_source": {
       "type": "minecraft:fixed",
-      "biome": "minecraft:basalt_deltas"
+      "biome": "minecraft:dark_forest"
     }
   }
 }

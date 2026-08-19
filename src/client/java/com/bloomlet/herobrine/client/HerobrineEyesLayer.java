@@ -35,4 +35,28 @@ public class HerobrineEyesLayer<S extends HumanoidRenderState, M extends Humanoi
 	public RenderType renderType() {
 		return EYES;
 	}
+
+	/**
+	 * AND WHEN HE IS NOT THERE, HIS EYES ARE NOT THERE EITHER.
+	 *
+	 * Vanilla's EyesLayer deliberately ignores invisibility — it is why an
+	 * invisible spider is still two red dots in a cave, which is a good effect
+	 * and completely wrong here.
+	 *
+	 * He goes invisible for four ticks around every relocation, so that the
+	 * client's position interpolation smears something nobody can see rather
+	 * than dragging him bodily across the player's view (see
+	 * HerobrineEntity.blink). Without this override that fix makes the problem
+	 * WORSE: the body vanishes and a pair of white eyes streaks across the field
+	 * on its own, which is both more visible and more obviously a bug.
+	 */
+	@Override
+	public void submit(com.mojang.blaze3d.vertex.PoseStack poseStack,
+	                   net.minecraft.client.renderer.SubmitNodeCollector collector,
+	                   int lightCoords, S state, float yRot, float xRot) {
+		if (state.isInvisible) {
+			return;
+		}
+		super.submit(poseStack, collector, lightCoords, state, yRot, xRot);
+	}
 }

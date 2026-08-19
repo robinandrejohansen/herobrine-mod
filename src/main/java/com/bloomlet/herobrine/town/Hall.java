@@ -203,7 +203,7 @@ public final class Hall {
 			case 'd' -> bed(level, at, facing, random);
 			case 'K' -> chest(level, at, facing, random, Loot.Tier.TOWN_TRADE);
 			case 'C' -> chest(level, at, facing, random, Loot.Tier.TOWN_HOME);
-			case 'A' -> put(level, at, Blocks.BARREL.defaultBlockState());
+			case 'A' -> Blueprint.barrel(level, at, random, Loot.Tier.TOWN_ARMS);
 			case 'T' -> table(level, at);
 			// Benches look AT the table, not all one way. A stair chair seats
 			// you facing where its step points, so the one west of a table

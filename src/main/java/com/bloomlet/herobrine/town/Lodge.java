@@ -261,7 +261,7 @@ public final class Lodge {
 			case 'c' -> put(level, at, Blocks.CRAFTING_TABLE.defaultBlockState());
 			case 'F' -> put(level, at, Blocks.FURNACE.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
-			case 'A' -> put(level, at, Blocks.BARREL.defaultBlockState());
+			case 'A' -> Blueprint.barrel(level, at, random, Loot.Tier.TOWN_HOME);
 			case 'S' -> put(level, at, Blocks.BOOKSHELF.defaultBlockState());
 			case 'P' -> put(level, at, potted(random));
 			case 'T' -> table(level, at);

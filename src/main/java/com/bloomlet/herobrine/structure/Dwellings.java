@@ -154,10 +154,30 @@ public final class Dwellings {
 		TOWN("town", Phase.WATCHER, 340, 620),
 		TOWER("house_two", Phase.TRESPASSER, 450, 800),
 		GAOL("house_three", Phase.MIMIC, 550, 950),
-		CHURCH("house_four", Phase.HUNTER, 650, 1100),
+		/**
+		 * AND THIS ONE IS NOT SITED UNTIL A HUNT HAS BEEN SURVIVED.
+		 *
+		 * Every other place waits on time and on the one before it. The church
+		 * waits on something that has to be got THROUGH, and that single line
+		 * is what turns HUNTER from a phase with a nasty random event in it into
+		 * a chapter with a middle.
+		 *
+		 * Before this, the hunt was one weight of fourteen in a pool of forty:
+		 * a group could pass the whole of HUNTER without drawing it, and the
+		 * church would arrive anyway, on a clock, having asked nothing of
+		 * anybody. The building that comes after the worst night in the mod
+		 * ought to be the thing that night was for.
+		 *
+		 * It cannot stall, because the hunt is now owed rather than rolled for
+		 * — see TheHunt. Once the chapter has had its hour he stops waiting to
+		 * be drawn and simply comes.
+		 */
+		CHURCH("house_four", Phase.HUNTER, 650, 1100, true),
 		THRESHOLD("threshold", Phase.SIEGE, 800, 1300);
 
 		final Phase from;
+		/** Whether a hunt has to have happened first. Only the church. */
+		final boolean afterAHunt;
 		/**
 		 * How far out this one goes, and IT CLIMBS.
 		 *
@@ -184,7 +204,12 @@ public final class Dwellings {
 		final AttachmentType<Boolean> rifled;
 
 		Place(String key, Phase from, int near, int far) {
+			this(key, from, near, far, false);
+		}
+
+		Place(String key, Phase from, int near, int far, boolean afterAHunt) {
 			this.from = from;
+			this.afterAHunt = afterAHunt;
 			this.near = near;
 			this.far = far;
 			this.site = AttachmentRegistry.createPersistent(
@@ -284,6 +309,13 @@ public final class Dwellings {
 				// does not conjure the next one: that waits until this chapter
 				// has been lived in.
 				if (!Wrath.settled(server)) {
+					return;
+				}
+				// AND THE CHURCH ALSO WAITS ON A HUNT. Not "was offered one" —
+				// survived one. Nothing else in the sequence asks the players
+				// for anything, and this asks for the only thing HUNTER has.
+				if (place.afterAHunt
+					&& !com.bloomlet.herobrine.manifest.TheHunt.survived(server)) {
 					return;
 				}
 				BlockPos picked = pick(overworld, place);
@@ -521,7 +553,19 @@ public final class Dwellings {
 		// Early on it is the sky and a figure. From MIMIC he walks in.
 		boolean hunting = phase.atLeast(Phase.MIMIC);
 		com.bloomlet.herobrine.manifest.Skies.turn(level);
-		com.bloomlet.herobrine.entity.HauntingSpawner.place(level, inside, hunting, false);
+		// THE ARGUMENTS WERE THE WRONG WAY ROUND, AND HE HAS NEVER ONCE HUNTED
+		// HERE. place() takes (ignoreLight, hunting) and this passed
+		// (hunting, false) — so from MIMIC the flag went into the LIGHT check
+		// and the hunting flag was hard false. Every "he comes home" in the
+		// mod's history has been him standing there watching, while the line
+		// below printed "hunting" and everybody believed it.
+		//
+		// ignoreLight is true outright now rather than riding on the phase.
+		// This event is a clock running out while somebody is inside a building
+		// they have lit; whether the ground outside is dark is not a question
+		// worth asking, and asking it meant the whole beat silently failed in
+		// daylight.
+		com.bloomlet.herobrine.entity.HauntingSpawner.place(level, inside, true, hunting);
 		HerobrineMod.LOGGER.info("he came home to {} while {} was still there ({})",
 			place.name().toLowerCase(java.util.Locale.ROOT), inside.getName().getString(),
 			hunting ? "hunting" : "watching");
@@ -682,7 +726,16 @@ public final class Dwellings {
 			}
 			reached = false;
 			if (at == null) {
-				lines.add(String.format("%-11s waiting for  %s", name, place.from.name()));
+				// Which of the two things it is waiting on, because "waiting for
+				// HUNTER" printed at HUNTER is the single most confusing line
+				// this command has ever produced.
+				String on = !phase.atLeast(place.from)
+					? place.from.name()
+					: place.afterAHunt && !com.bloomlet.herobrine.manifest.TheHunt
+						.survived(level.getServer())
+						? "a hunt to be survived"
+						: "this chapter to have had its time";
+				lines.add(String.format("%-11s waiting for  %s", name, on));
 			} else {
 				BlockPos pos = BlockPos.of(at);
 				lines.add(String.format("%-11s OUT THERE    x %d z %d",

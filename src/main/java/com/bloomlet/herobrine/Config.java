@@ -32,8 +32,6 @@ public final class Config {
 	// ---- the whole thing ---------------------------------------------------
 	/** Off, and nothing below matters. */
 	public boolean enabled = true;
-	/** How fast wrath climbs. 0.5 doubles the game's length; 2.0 halves it. */
-	public double wrathRate = 1.0;
 
 	// ---- what he does ------------------------------------------------------
 	public boolean traces = true;
@@ -66,6 +64,43 @@ public final class Config {
 	public boolean breakIn = true;
 	/** He takes torches. They drop; you can put them straight back. */
 	public boolean takeTheLight = true;
+	/**
+	 * The hunt takes the house apart around you: glass, then lights, then the
+	 * treeline, then holes in the ground.
+	 *
+	 * Off leaves the pursuit exactly as it was — he still comes, he still breaks
+	 * in, he still cannot be outwalked — and the house is simply left alone. The
+	 * chapter still completes, because what sites the church is surviving a
+	 * hunt rather than being wrecked by one.
+	 */
+	public boolean huntWrecks = true;
+	/**
+	 * And the treeline rung is real lightning that really burns.
+	 *
+	 * Its own switch, separate from the rest of the ladder, because it is the
+	 * only part of the hunt that can spread. It is already refused within
+	 * fourteen blocks of any player and twenty-four of anybody's house, so what
+	 * burns is a wood at a distance — but "no fire near my base ever" is a
+	 * reasonable thing to want and should not cost somebody the whole event.
+	 */
+	public boolean huntFire = true;
+	/**
+	 * HOW MUCH DAMAGE drives him off a hunt. Not how many hits.
+	 *
+	 * It was three blows, and three blows is not a fight — it is three taps, and
+	 * because he teleports out of reach after every one of them the skill it
+	 * actually tested was patience. A stone sword and a netherite axe drove him
+	 * off in exactly the same three swings, so nothing a player had done all game
+	 * mattered here, which is the one place it should.
+	 *
+	 * Forty is about six blows with a diamond sword, four or five if they land
+	 * crits, more with something worse. What you brought decides how long this
+	 * takes, and that is the whole reason to have brought it.
+	 *
+	 * (The old `blowsToBreakOff` is gone. An existing config file simply has a
+	 * key nothing reads any more, and this defaults in beside it.)
+	 */
+	public double damageToBreakOff = 40.0;
 	/** He leaves fires. Already refuses to light near anything flammable. */
 	public boolean scorch = true;
 	/**
@@ -83,8 +118,50 @@ public final class Config {
 	public boolean longerNights = true;
 	/** The SIEGE night that never ends. Separable from longer nights. */
 	public boolean endlessNight = true;
+	/**
+	 * One of the villagers has gone wrong.
+	 *
+	 * Nothing is taken from a village to do it — an extra person is added
+	 * rather than a resident replaced — so this costs nobody a trade. Off for
+	 * anybody who wants the village to stay the one place in the world where
+	 * nothing happens.
+	 */
+	public boolean theTurning = true;
+	/**
+	 * What is already living in his world: armed skeletons that throw fire,
+	 * zombies in enchanted plate, charged creepers, and his eyes on all of it.
+	 *
+	 * Off leaves the dimension's mobs entirely vanilla. The place is still dark,
+	 * still storming and still his — it simply is not defended.
+	 */
+	public boolean hisHost = true;
+	/**
+	 * The keep — the one competent building he ever put up, and the only thing
+	 * standing in his world.
+	 *
+	 * Off leaves the dimension as bare forest. There is nothing to find in it
+	 * then, which is a reasonable thing to want only if you are testing.
+	 */
+	public boolean hisKeep = true;
 	/** Every animal turns on you at SIEGE. */
 	public boolean hostileAnimals = true;
+	/**
+	 * NOBODY IS TOLD WHEN SOMEBODY DIES.
+	 *
+	 * The death message is the one thing in vanilla that settles an argument for
+	 * everybody at once, in yellow, with the cause spelled out — and this whole
+	 * mod is built on nobody being able to corroborate anything. You still get
+	 * your own death screen; the rest of the server gets nothing, and the only
+	 * way they find out is somebody saying it out loud.
+	 *
+	 * ALL deaths, not only his. If only his were quiet then silence would MEAN
+	 * him, which is a perfect notification for the one thing nobody should ever
+	 * be certain about.
+	 *
+	 * Off restores vanilla exactly. Worth having as a switch because a server
+	 * that runs on chat rather than voice will genuinely want the messages.
+	 */
+	public boolean quietDeaths = true;
 	/** Fog, sky colour, the red rain. Client-side only; changes no spawning. */
 	public boolean atmosphere = true;
 
@@ -152,8 +229,8 @@ public final class Config {
 			if (read != null) {
 				active = read;
 			}
-			HerobrineMod.LOGGER.info("config loaded: enabled={} breakIn={} wrathRate={}",
-				active.enabled, active.breakIn, active.wrathRate);
+			HerobrineMod.LOGGER.info("config loaded: enabled={} breakIn={} damageToBreakOff={}",
+				active.enabled, active.breakIn, active.damageToBreakOff);
 		} catch (IOException | JsonSyntaxException broken) {
 			HerobrineMod.LOGGER.warn("config at {} could not be read, using defaults: {}",
 				path, broken.getMessage());

@@ -15,7 +15,7 @@ import com.bloomlet.herobrine.manifest.Journal;
 import com.bloomlet.herobrine.manifest.Possession;
 import com.bloomlet.herobrine.manifest.Signs;
 import com.bloomlet.herobrine.wrath.Wrath;
-import com.bloomlet.herobrine.wrath.WrathTriggers;
+import com.bloomlet.herobrine.wrath.Heat;
 
 import net.fabricmc.api.ModInitializer;
 
@@ -47,19 +47,29 @@ public class HerobrineMod implements ModInitializer {
 		Cadence.register();
 		Feral.register();
 		Skies.register();
+		com.bloomlet.herobrine.manifest.HisWeather.register();
+		com.bloomlet.herobrine.manifest.HisHost.register();
+		com.bloomlet.herobrine.structure.Keep.register();
 		Nights.register();
 		TheHerd.register();
 		Villages.register();
+		com.bloomlet.herobrine.manifest.TheTurning.register();
 		Signs.register();
 		Journal.register();
 		Possession.register();
 		com.bloomlet.herobrine.manifest.Mimicry.register();
 		Breach.register();
+		// Before Dwellings, which now asks TheHunt whether the church may be
+		// sited — and asking a class that has not initialised is what silently
+		// threw a saved wrath total away for a fortnight. See Wrath.register.
+		com.bloomlet.herobrine.manifest.Hearth.register();
+		com.bloomlet.herobrine.manifest.TheHunt.register();
 		Dwellings.register();
 		TheDogKnows.register();
 		ModEntities.register();
 		com.bloomlet.herobrine.block.ModBlocks.register();
-		WrathTriggers.register();
+		com.bloomlet.herobrine.sound.ModSounds.register();
+		Heat.register();
 		ManifestationDirector.register();
 		HerobrineCommand.register();
 

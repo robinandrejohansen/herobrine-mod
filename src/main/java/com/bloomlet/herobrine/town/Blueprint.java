@@ -421,4 +421,34 @@ public final class Blueprint {
 	public static void put(ServerLevel level, BlockPos at, BlockState state) {
 		level.setBlock(at, state, 2);
 	}
+
+	/**
+	 * A BARREL WITH SOMETHING IN IT.
+	 *
+	 * Every barrel in the town was placed by a palette line and then never
+	 * touched again, so a walled settlement with a forge, a market and a hall
+	 * had a dozen containers in it that all opened onto nothing. That is worse
+	 * than having no barrels: an empty container reads as an unfinished mod,
+	 * where no container at all reads as a room.
+	 *
+	 * Here rather than four copies in four buildings, because it was already
+	 * the same line of code four times and would have become the same bug four
+	 * times. Every one of them passes the tier of the room it is standing in,
+	 * which is the only part that differs — the smith's holds iron, the hall's
+	 * holds what the watch is issued, the lodges hold dinner.
+	 *
+	 * Loot.store rather than Loot.scatter, deliberately: a barrel is a store
+	 * cupboard and a chest is a strongbox, so the barrels get fewer stacks and
+	 * never the enchanted roll. The chests stay the prize.
+	 */
+	public static void barrel(ServerLevel level, BlockPos at,
+	                          net.minecraft.util.RandomSource random,
+	                          com.bloomlet.herobrine.structure.Loot.Tier tier) {
+		level.setBlock(at, net.minecraft.world.level.block.Blocks.BARREL
+			.defaultBlockState(), 2);
+		if (level.getBlockEntity(at)
+				instanceof net.minecraft.world.level.block.entity.BarrelBlockEntity store) {
+			com.bloomlet.herobrine.structure.Loot.store(store, random, tier);
+		}
+	}
 }

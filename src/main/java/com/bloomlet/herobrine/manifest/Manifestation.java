@@ -150,7 +150,11 @@ public enum Manifestation {
 	THE_HUNT(Phase.HUNTER, 14) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
-			HauntingSpawner.Outcome outcome = HauntingSpawner.place(level, player, false, true);
+			// Through TheHunt rather than straight to the spawner, because the
+			// hunt is the one event with things to do besides placing him: it
+			// works underground now, and if the player is nowhere near their
+			// house then the house has its own evening while they are out.
+			HauntingSpawner.Outcome outcome = TheHunt.begin(level, player);
 			if (outcome == HauntingSpawner.Outcome.PLACED) {
 				return true;
 			}

@@ -49,6 +49,33 @@ public final class Ground {
 		return topOf(level, x, z) + 1;
 	}
 
+	/**
+	 * IS THERE DRY LAND HERE, OR IS THIS THE SEABED?
+	 *
+	 * topOf answers "what is the highest thing you could stand on", and it does
+	 * that by scanning DOWN past anything that is not footing — which includes
+	 * water. Over an ocean it therefore returns the sea floor, cheerfully, with
+	 * no indication that there are thirty blocks of sea on top of it.
+	 *
+	 * Every caller that builds something has to ask this as well, and until now
+	 * none of them did. The keep sited over water put its courtyard floor at the
+	 * seabed, cleared the inside to air, ran its curtain eleven blocks up — five
+	 * short of the surface — and the sea came straight back in over the top. A
+	 * castle in a bowl, underwater, with a city drowning around it.
+	 *
+	 * Two tests rather than one. Above sea level catches the open ocean; no fluid
+	 * in the block above the footing catches everything else — a lake in a hollow
+	 * on a hill, a river, a spring.
+	 */
+	public static boolean dry(ServerLevel level, int x, int z) {
+		int top = topOf(level, x, z);
+		if (top <= level.getSeaLevel()) {
+			return false;
+		}
+		return level.getFluidState(new BlockPos(x, top, z)).isEmpty()
+			&& level.getFluidState(new BlockPos(x, top + 1, z)).isEmpty();
+	}
+
 	private static boolean isFooting(BlockState state) {
 		if (state.isAir() || !state.isSolid()) {
 			return false;   // grass tufts, flowers, snow layers, water

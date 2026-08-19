@@ -62,10 +62,88 @@ public final class ConfinedPlacement {
 	}
 
 	/**
+	 * IS THERE ACTUALLY ROCK OVER THEM, OR IS IT A ROOF?
+	 *
+	 * {@link #isConfined} is one line — no sky overhead — and that line was doing
+	 * two completely different jobs. Underground it is exactly right: the surface
+	 * placement's whole vocabulary is distance against a horizon, and a horizon is
+	 * not a thing a cave has. INSIDE A HOUSE it is catastrophically wrong, because
+	 * a house is on the surface with the horizon still out there — it just has a
+	 * plank between the player and the sky.
+	 *
+	 * The consequence was that standing in your own base disabled the two events
+	 * that most want to find you in it. He would not stand in the field outside
+	 * and look in at the window, and a hunt could not start at all. A player at
+	 * home was safe from the only two things in the mod that are supposed to come
+	 * to your home.
+	 *
+	 * So this measures the THICKNESS of what is above them rather than merely its
+	 * existence. One column, from over their head to the surface, counting solid
+	 * material. A roof is one or two blocks; a floor above a floor above a roof is
+	 * four or five. Thirty blocks down a mineshaft is twenty-something, and there
+	 * is no building anybody makes that reads like that.
+	 *
+	 * Six is the line, which comfortably clears a three-storey base and refuses
+	 * anything genuinely buried.
+	 */
+	private static final int ROOF_AT_MOST = 6;
+
+	public static boolean buried(ServerLevel level, ServerPlayer player) {
+		if (level.canSeeSky(player.blockPosition())) {
+			return false;
+		}
+		int x = player.getBlockX();
+		int z = player.getBlockZ();
+		int surface = level.getHeight(
+			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
+		int solid = 0;
+		// From over their head, so the block they are standing under does not
+		// count twice, up to whatever the heightmap calls the top.
+		for (int y = player.getBlockY() + 2; y <= surface; y++) {
+			if (level.getBlockState(new BlockPos(x, y, z)).isSolidRender()) {
+				solid++;
+				if (solid > ROOF_AT_MOST) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * @return somewhere he can stand, in the player's own space, behind them
 	 *         and in view — or null, which simply means a quiet night.
 	 */
 	public static @Nullable BlockPos find(ServerLevel level, ServerPlayer player) {
+		return nearby(level, player, MIN_DISTANCE, MAX_DISTANCE, true, true);
+	}
+
+	/**
+	 * SOMEWHERE HE CAN STAND THAT IS REACHABLE THROUGH AIR FROM WHERE THEY ARE.
+	 *
+	 * Generalised out of {@link #find} for the hunt, which needs the same
+	 * flood-fill and none of the same manners. The stare wants distance, wants
+	 * to be behind them and wants to be seen. Arriving mid-hunt wants the
+	 * opposite of the first two: close enough to swing at, and it does not care
+	 * in the slightest whether they are looking.
+	 *
+	 * The reason this exists at all rather than the hunt reusing reappearAt is
+	 * that reappearAt places by HEIGHTMAP — it asks the world for the top of the
+	 * column and puts him there. Forty blocks down a cave that is the surface,
+	 * which is why he could never follow anybody underground: he was being sent
+	 * to a field directly above their head, every time, and then losing them.
+	 *
+	 * A flood-fill through passable space cannot make that mistake, because it
+	 * only ever reaches somewhere connected to the air the player is breathing.
+	 * The same property handles the other half of it for free: on top of a
+	 * pillar the only standable node it can reach is the pillar, so he arrives
+	 * ON the pillar rather than in the field below it.
+	 *
+	 * @param requireBehind out of their view cone
+	 * @param requireSight  and with a clear line to where they stand
+	 */
+	public static @Nullable BlockPos nearby(ServerLevel level, ServerPlayer player,
+			double min, double max, boolean requireBehind, boolean requireSight) {
 		BlockPos start = player.blockPosition();
 		Vec3 eye = player.getEyePosition();
 		Vec3 look = player.getViewVector(1.0F).normalize();
@@ -91,10 +169,10 @@ public final class ConfinedPlacement {
 			// inside the radius where he dissolves on sight, so he would have
 			// arrived and instantly left.
 			double actual = Math.sqrt(pos.distSqr(start));
-			if (actual >= MIN_DISTANCE && actual <= MAX_DISTANCE
+			if (actual >= min && actual <= max
 				&& canStand(level, pos)
-				&& isBehind(player, look, pos)
-				&& hasLineOfSight(level, eye, pos)) {
+				&& (!requireBehind || isBehind(player, look, pos))
+				&& (!requireSight || hasLineOfSight(level, eye, pos))) {
 				candidates.add(pos);
 			}
 
@@ -112,12 +190,21 @@ public final class ConfinedPlacement {
 		if (candidates.isEmpty()) {
 			return null;
 		}
-		// Furthest wins: the far end of the corridor beats three blocks
-		// behind your shoulder, which would read as an ambush rather than a
-		// figure that was already standing there.
+		// Furthest wins WHEN HE IS MEANT TO HAVE BEEN THERE ALL ALONG: the far
+		// end of the corridor beats three blocks behind your shoulder, which
+		// would read as an ambush rather than a figure already standing there.
+		//
+		// Nearest wins when he is ARRIVING, which is the hunt. The whole point
+		// of that placement is to be inside swinging distance, so the far end
+		// of the corridor is the one answer that fails at the only thing it was
+		// asked to do. requireBehind separates them: a placement that does not
+		// care about being seen is a placement that is not pretending.
 		BlockPos best = candidates.get(0);
 		for (BlockPos pos : candidates) {
-			if (pos.distSqr(start) > best.distSqr(start)) {
+			boolean better = requireBehind
+				? pos.distSqr(start) > best.distSqr(start)
+				: pos.distSqr(start) < best.distSqr(start);
+			if (better) {
 				best = pos;
 			}
 		}
