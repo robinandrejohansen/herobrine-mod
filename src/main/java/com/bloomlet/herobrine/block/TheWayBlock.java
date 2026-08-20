@@ -92,11 +92,37 @@ public class TheWayBlock extends Block {
 		// second, through no decision of theirs.
 		BlockPos landing = com.bloomlet.herobrine.structure.TheWay.landing(bound, player);
 		player.setPortalCooldown();
+
+		// HIS DOOR, HIS SOUND. DO_NOTHING rather than PLAY_PORTAL_SOUND, because
+		// that constant plays vanilla's nether travel cue and a player who has
+		// been to the nether has heard it a hundred times.
+		//
+		// Outbound is pitched down and homebound up, off the same asset, so the
+		// direction is audible without a second file that could drift from the
+		// first. Going somewhere worse should sound lower than coming back.
+		boolean leaving = !here.dimension().equals(HIS_WORLD);
+		float pitch = leaving ? 0.82F : 1.14F;
+
+		// Where they LEFT, before they are gone, and audible to whoever is still
+		// standing there. On a server this is most of the point: the rest of the
+		// group does not follow, they just hear the room change and then find
+		// themselves alone next to a frame with nobody in it.
+		here.playSound(null, pos, com.bloomlet.herobrine.sound.ModSounds.CROSSING,
+			net.minecraft.sounds.SoundSource.HOSTILE, 1.1F, pitch);
+
 		player.teleport(new TeleportTransition(bound,
 			new net.minecraft.world.phys.Vec3(landing.getX() + 0.5, landing.getY(),
 				landing.getZ() + 0.5),
 			net.minecraft.world.phys.Vec3.ZERO, player.getYRot(), player.getXRot(),
-			TeleportTransition.PLAY_PORTAL_SOUND));
+			TeleportTransition.DO_NOTHING));
+
+		// AND AGAIN ON THE FAR SIDE, after the teleport, so the tail of it is the
+		// first thing they hear in the new place rather than the last thing they
+		// heard in the old one. Two and a half seconds is about what a dimension
+		// change costs, which means the crossing covers the load instead of
+		// leaving them in silence looking at chunks arriving.
+		bound.playSound(null, landing, com.bloomlet.herobrine.sound.ModSounds.CROSSING,
+			net.minecraft.sounds.SoundSource.HOSTILE, 1.1F, pitch);
 		HerobrineMod.LOGGER.info("{} went through, to {}", player.getName().getString(),
 			bound.dimension().identifier());
 	}

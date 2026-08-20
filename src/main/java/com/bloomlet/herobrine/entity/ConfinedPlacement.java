@@ -115,7 +115,7 @@ public final class ConfinedPlacement {
 	 *         and in view — or null, which simply means a quiet night.
 	 */
 	public static @Nullable BlockPos find(ServerLevel level, ServerPlayer player) {
-		return nearby(level, player, MIN_DISTANCE, MAX_DISTANCE, true, true);
+		return nearby(level, player, MIN_DISTANCE, MAX_DISTANCE, true, true, 256);
 	}
 
 	/**
@@ -141,9 +141,16 @@ public final class ConfinedPlacement {
 	 *
 	 * @param requireBehind out of their view cone
 	 * @param requireSight  and with a clear line to where they stand
+	 * @param maxBelow      how far under them he will settle for. THE OTHER HALF
+	 *                      of the tree problem: even once leaves count as a floor,
+	 *                      an unbounded search will happily return the ground,
+	 *                      because the ground is nearer to the trunk than the
+	 *                      branch is. Arriving BELOW somebody who climbed to get
+	 *                      away from you is not arriving.
 	 */
 	public static @Nullable BlockPos nearby(ServerLevel level, ServerPlayer player,
-			double min, double max, boolean requireBehind, boolean requireSight) {
+			double min, double max, boolean requireBehind, boolean requireSight,
+			int maxBelow) {
 		BlockPos start = player.blockPosition();
 		Vec3 eye = player.getEyePosition();
 		Vec3 look = player.getViewVector(1.0F).normalize();
@@ -170,6 +177,7 @@ public final class ConfinedPlacement {
 			// arrived and instantly left.
 			double actual = Math.sqrt(pos.distSqr(start));
 			if (actual >= min && actual <= max
+				&& pos.getY() >= start.getY() - maxBelow
 				&& canStand(level, pos)
 				&& (!requireBehind || isBehind(player, look, pos))
 				&& (!requireSight || hasLineOfSight(level, eye, pos))) {
@@ -226,10 +234,21 @@ public final class ConfinedPlacement {
 	 * guessed at.
 	 */
 	public static boolean canStand(ServerLevel level, BlockPos pos) {
+		// blocksMotion RATHER THAN isFaceSturdy, and LEAVES ARE THE REASON.
+		//
+		// isFaceSturdy was itself a fix — isSolid demands a full cube, so he
+		// refused slabs, stairs, paths and most cave floor. But leaves fail
+		// isFaceSturdy too, and a player up a tree is standing on leaves. So every
+		// candidate at branch height was rejected and the only spot the search
+		// would accept was the GROUND UNDER THE TREE: he arrived at the bottom of
+		// it, which is precisely the stalemate the arrival exists to end.
+		//
+		// blocksMotion is the honest question — can a body stand on this — and it
+		// is true for leaves, slabs, stairs, fences and chests, all of which hold a
+		// player up perfectly well.
 		return passable(level, pos)
 			&& passable(level, pos.above())
-			&& level.getBlockState(pos.below())
-				.isFaceSturdy(level, pos.below(), Direction.UP);
+			&& level.getBlockState(pos.below()).blocksMotion();
 	}
 
 	private static boolean isBehind(ServerPlayer player, Vec3 look, BlockPos pos) {

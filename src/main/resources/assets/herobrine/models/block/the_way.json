@@ -1,6 +1,15 @@
 {
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "herobrine:block/the_way"
-  }
+    "textures": {
+        "particle": "herobrine:block/the_way",
+        "portal": "herobrine:block/the_way"
+    },
+    "elements": [
+        {   "from": [ 0, 0, 7 ],
+            "to": [ 16, 16, 9 ],
+            "faces": {
+                "north": { "uv": [ 0, 0, 16, 16 ], "texture": "#portal" },
+                "south": { "uv": [ 0, 0, 16, 16 ], "texture": "#portal" }
+            }
+        }
+    ]
 }

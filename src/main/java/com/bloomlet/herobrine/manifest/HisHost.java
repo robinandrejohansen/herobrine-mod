@@ -515,8 +515,15 @@ public final class HisHost {
 	 * hardcoded Protection IV on everything would be legible as a mod within a
 	 * minute.
 	 */
-	private static void enchant(ItemStack stack, RandomSource random,
-	                            RegistryAccess access, int power) {
+	/**
+	 * Public, because the shelter after a hunt wants the same roll.
+	 *
+	 * A second enchanting helper would drift from this one, and the whole reason
+	 * this uses vanilla's own enchantItem is that what comes out has to be
+	 * indistinguishable from what a player's own table produces.
+	 */
+	public static void enchant(ItemStack stack, RandomSource random,
+	                           RegistryAccess access, int power) {
 		try {
 			EnchantmentHelper.enchantItem(random, stack, power, access,
 				access.lookup(Registries.ENCHANTMENT)

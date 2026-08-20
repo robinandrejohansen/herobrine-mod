@@ -51,6 +51,24 @@ public final class ModSounds {
 	/** The frame closing over him. Thin and clean — white is his colour. */
 	public static final SoundEvent THE_WAY = register("the_way");
 
+
+	/**
+	 * GOING THROUGH THE DOOR, which was vanilla's nether travel sound.
+	 *
+	 * TeleportTransition.PLAY_PORTAL_SOUND — the most recognisable two seconds of
+	 * audio in Minecraft, on the one structure in this mod that exists to feel
+	 * unprecedented. A player crossing into his world heard the thing they have
+	 * heard every time they have ever gone to the nether, which undoes the frame,
+	 * the texture and the whole ending in a single cue.
+	 *
+	 * ONE ASSET, PITCHED BOTH WAYS at the call site: down going out, up coming
+	 * home. The same crossing is not the same experience in both directions and a
+	 * second file would be the wrong way to say so — pitch carries direction on
+	 * its own, and it means the two can never drift apart.
+	 */
+	public static final SoundEvent CROSSING = register("crossing");
+
+
 	// ---- AND IT COMES BACK OFF THE HILLS ----------------------------------
 	/**
 	 * PLAYED ONCE, HEARD FOUR TIMES.

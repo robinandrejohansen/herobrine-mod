@@ -36,20 +36,46 @@ public final class TheWay {
 	/**
 	 * Raise it, standing, over the ground he died on.
 	 *
-	 * Obsidian for the frame and crying obsidian at the corners — the second is
-	 * the only block in the game that reads as a portal that has been WEPT over,
-	 * and the corners are where a person would have had to stand to build it.
+	 * NOT OBSIDIAN. It was obsidian with crying obsidian at the corners, and the
+	 * reasoning for the second block was sound — it is the only thing in the game
+	 * that reads as a portal somebody has WEPT over. The reasoning for the first
+	 * was not reasoning at all, it was habit: an obsidian frame with a swirling
+	 * interior IS a nether portal, to every player who has ever built one, and no
+	 * amount of custom texture in the middle survives a silhouette they have
+	 * recognised ten thousand times. The one structure in the mod that has to
+	 * read as unprecedented was quoting vanilla's most familiar object.
+	 *
+	 * So it is black and white, like what is inside it.
+	 *
+	 * DARK POSTS UNDER A PALE BEAM, which is architecture rather than pattern —
+	 * polished deepslate for the uprights, calcite across the lintel and the sill.
+	 * Checkering the whole ring was the other candidate and it reads as graphic
+	 * design; a white beam held up by black posts reads as something that was
+	 * BUILT, by somebody, on purpose.
+	 *
+	 * REINFORCED DEEPSLATE AT THE FOUR CORNERS, doing the job crying obsidian
+	 * used to. It is the only block in Minecraft a player cannot obtain by any
+	 * means, and vanilla places it in exactly one place — the ancient cities,
+	 * around something nobody has explained. A player who knows that reads the
+	 * corners as evidence. A player who does not simply cannot mine them, which
+	 * says the same thing more slowly.
+	 *
+	 * And no blackstone anywhere near it. Blackstone is the second most
+	 * nether-flavoured stone in the game and it was holding up the frame, the
+	 * step and the whole landing chamber.
 	 */
 	public static void open(ServerLevel level, BlockPos site) {
 		for (int dx = -WIDTH; dx <= WIDTH; dx++) {
 			for (int dy = 0; dy <= HEIGHT; dy++) {
 				BlockPos at = site.offset(dx, dy, 0);
-				boolean edge = Math.abs(dx) == WIDTH || dy == 0 || dy == HEIGHT;
-				boolean corner = Math.abs(dx) == WIDTH && (dy == 0 || dy == HEIGHT);
-				if (corner) {
-					level.setBlock(at, Blocks.CRYING_OBSIDIAN.defaultBlockState(), 2);
-				} else if (edge) {
-					level.setBlock(at, Blocks.OBSIDIAN.defaultBlockState(), 2);
+				boolean upright = Math.abs(dx) == WIDTH;
+				boolean beam = dy == 0 || dy == HEIGHT;
+				if (upright && beam) {
+					level.setBlock(at, Blocks.REINFORCED_DEEPSLATE.defaultBlockState(), 2);
+				} else if (upright) {
+					level.setBlock(at, Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 2);
+				} else if (beam) {
+					level.setBlock(at, Blocks.CALCITE.defaultBlockState(), 2);
 				} else {
 					level.setBlock(at, ModBlocks.THE_WAY.defaultBlockState(), 2);
 				}
@@ -60,7 +86,7 @@ public final class TheWay {
 			for (int dz = -1; dz <= 1; dz++) {
 				BlockPos under = site.offset(dx, -1, dz);
 				if (!level.getBlockState(under).isSolid()) {
-					level.setBlock(under, Blocks.POLISHED_BLACKSTONE.defaultBlockState(), 2);
+					level.setBlock(under, Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 2);
 				}
 			}
 		}
@@ -124,12 +150,12 @@ public final class TheWay {
 			boolean shell = away >= r || pos.getY() <= site.getY() - 2
 				|| pos.getY() >= site.getY() + HEIGHT + 3;
 			level.setBlock(pos, shell
-				? Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState()
+				? Blocks.DEEPSLATE_TILES.defaultBlockState()
 				: Blocks.AIR.defaultBlockState(), 2);
 		}
 		for (BlockPos pos : BlockPos.betweenClosed(
 				site.offset(-r + 1, -1, -r + 1), site.offset(r - 1, -1, r - 1))) {
-			level.setBlock(pos, Blocks.POLISHED_BLACKSTONE.defaultBlockState(), 2);
+			level.setBlock(pos, Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 2);
 		}
 		// The way back, facing the room, so it is the first thing they see when
 		// they turn round. Nobody is stranded here.

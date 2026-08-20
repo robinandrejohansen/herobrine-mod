@@ -29,6 +29,7 @@ public class HerobrineRenderer
 	public HerobrineRenderer(EntityRendererProvider.Context context) {
 		super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5F);
 		this.addLayer(new HerobrineEyesLayer<>(this));
+		this.addLayer(new HerobrineWoundLayer<>(this, TEXTURE));
 	}
 
 	@Override
@@ -39,5 +40,27 @@ public class HerobrineRenderer
 	@Override
 	public Identifier getTextureLocation(HumanoidRenderState state) {
 		return TEXTURE;
+	}
+
+	/**
+	 * Copies the fade across, because the layer cannot see the entity.
+	 *
+	 * Worked out from a TIMESTAMP the server synced once rather than from a
+	 * counter it syncs every tick — see HerobrineEntity.WOUNDED. The client has
+	 * the same game clock, so subtracting is free and exact.
+	 */
+	@Override
+	public void extractRenderState(HerobrineEntity entity, HumanoidRenderState state,
+	                               float partialTicks) {
+		super.extractRenderState(entity, state, partialTicks);
+		Long hit = entity.getAttached(HerobrineEntity.WOUNDED);
+		float fade = 0.0F;
+		if (hit != null) {
+			long since = entity.level().getGameTime() - hit;
+			if (since >= 0 && since < HerobrineEntity.WOUND_FLASH) {
+				fade = 1.0F - (float)since / HerobrineEntity.WOUND_FLASH;
+			}
+		}
+		((Wounded)state).herobrine$wound(fade);
 	}
 }

@@ -3,6 +3,7 @@
   "package": "com.bloomlet.herobrine.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "HisBlastMixin",
     "HisFireballMixin",
     "HisSkeletonMixin",
     "PlayerInfoEntriesAccessor",

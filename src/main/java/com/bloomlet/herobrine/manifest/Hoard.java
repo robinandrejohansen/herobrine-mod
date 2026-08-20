@@ -12,6 +12,8 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import org.jspecify.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
@@ -294,69 +296,213 @@ public final class Hoard {
 	}
 
 	/**
-	 * A MARKER WHERE HE BROKE OFF, WITH A CHEST UNDER IT.
+	 * A SHELTER WHERE HE BROKE OFF, WITH THE CHEST INSIDE IT.
 	 *
 	 * Only ever after a hunt, which is what makes it read as an exchange rather
 	 * than as loot. The player has just survived something; this is what is
 	 * standing there when they come back to the spot.
 	 *
-	 * The headstone carries somebody else's name and the chest carries the
-	 * player's own belongings, and putting those two things one block apart is
-	 * the entire point of siting it here.
+	 * IT WAS A SLAB WITH A CHEST BURIED UNDER IT and that was too small to be
+	 * read. Half a metre of stone in a field is indistinguishable from terrain,
+	 * and the thing it was competing with for attention was a storm that had just
+	 * finished. A building is unmissable from any direction, and — more to the
+	 * point — it is the only structure in the mod that was put up FOR the player
+	 * rather than against them.
+	 *
+	 * Five by five outside, three by three in, a door on the side they were last
+	 * standing on. Mossy and cracked, so it reads as having been there a while
+	 * rather than as having appeared, which is the same lie the rest of his
+	 * buildings tell.
+	 *
+	 * BUILT ONCE. See HerobrineEntity.relent for the reason that has to be said
+	 * out loud: this used to run on every tick of the full stop, and because each
+	 * pass asked the heightmap for the ground that the previous pass had raised,
+	 * it produced a column of chests fifty blocks high with the player's
+	 * belongings scattered up it. The guard is in relent, and the extra check
+	 * below is a second lock on the same door.
 	 */
-	public static void grave(ServerLevel level, BlockPos where, ServerPlayer player) {
+	public static void shelter(ServerLevel level, BlockPos where, ServerPlayer player) {
 		ItemStack map = chart(level);
-		if (size(level) == 0 && map.isEmpty()) {
-			return;
-		}
 		RandomSource random = level.getRandom();
 		BlockPos ground = level.getHeightmapPos(
 			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, where);
-		BlockPos hole = ground.below();
-		if (!level.getBlockState(ground).canBeReplaced()
-			|| level.getBlockState(hole).isAir()) {
+
+		// Belt and braces. If something already put one here, this is a repeat
+		// call and the honest thing to do is nothing at all.
+		if (!level.getBlockState(ground.below()).isSolid()
+			|| level.getBlockState(ground.above()).is(Blocks.CHEST)) {
 			return;
 		}
 
-		level.setBlock(hole, Blocks.CHEST.defaultBlockState(), 3);
-		if (level.getBlockEntity(hole) instanceof ChestBlockEntity chest) {
-			int slot = 0;
-			// The map first, so it is the thing they see when the lid comes up.
-			if (!map.isEmpty()) {
-				chest.setItem(slot++, map);
-			}
-			int given = 0;
-			while (slot < chest.getContainerSize() && given < 4) {
-				ItemStack stack = draw(level, random);
-				if (stack == null) {
-					break;
+		// The floor has to be somewhere a five by five will sit without hanging
+		// off a cliff. Four corners on solid ground is enough of a test — a
+		// perfectly level plot would refuse most of the overworld.
+		for (int dx = -2; dx <= 2; dx += 4) {
+			for (int dz = -2; dz <= 2; dz += 4) {
+				if (!level.getBlockState(ground.offset(dx, -1, dz)).isSolid()) {
+					return;
 				}
-				chest.setItem(slot++, stack);
-				given++;
-			}
-			chest.setChanged();
-		}
-		level.setBlock(ground, Blocks.STONE_BRICK_SLAB.defaultBlockState(), 3);
-		BlockPos sign = ground.above();
-		if (level.getBlockState(sign).canBeReplaced()) {
-			level.setBlock(sign, Blocks.OAK_SIGN.defaultBlockState()
-				.setValue(BlockStateProperties.ROTATION_16, random.nextInt(16)), 3);
-			if (level.getBlockEntity(sign)
-					instanceof net.minecraft.world.level.block.entity.SignBlockEntity plate) {
-				String[] lines = SignLines.grave(
-					com.bloomlet.herobrine.wrath.Wrath.phase(level.getServer()),
-					player, null, random);
-				net.minecraft.world.level.block.entity.SignText text =
-					new net.minecraft.world.level.block.entity.SignText();
-				for (int row = 0; row < 4; row++) {
-					text = text.setMessage(row, net.minecraft.network.chat.Component.literal(
-						row < lines.length ? lines[row] : ""));
-				}
-				plate.setText(text, true);
-				plate.setWaxed(true);
 			}
 		}
-		HerobrineMod.LOGGER.info("a grave at [{}, {}, {}] with some of it back",
+
+		Direction facing = Direction.fromYRot(player.getYRot()).getOpposite();
+		hut(level, ground, facing, random);
+
+		BlockPos chest = ground.above().relative(facing.getOpposite());
+		level.setBlock(chest, Blocks.CHEST.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.ChestBlock.FACING, facing), 3);
+		if (level.getBlockEntity(chest) instanceof ChestBlockEntity box) {
+			fill(level, box, map, random);
+		}
+		headstone(level, ground, facing, player, random);
+		HerobrineMod.LOGGER.info("a shelter at [{}, {}, {}] with some of it back",
 			ground.getX(), ground.getY(), ground.getZ());
 	}
+
+	/** Walls, roof, door, and a light so it can be found after dark. */
+	private static void hut(ServerLevel level, BlockPos floor, Direction facing,
+	                        RandomSource random) {
+		for (BlockPos pos : BlockPos.betweenClosed(
+				floor.offset(-2, 0, -2), floor.offset(2, 3, 2))) {
+			int dx = pos.getX() - floor.getX();
+			int dz = pos.getZ() - floor.getZ();
+			int dy = pos.getY() - floor.getY();
+			boolean wall = Math.abs(dx) == 2 || Math.abs(dz) == 2;
+			if (dy == 3) {
+				// A flat roof of planks, oversailing by nothing, because eaves on
+				// a three by three read as a doll's house.
+				level.setBlock(pos, Blocks.OAK_PLANKS.defaultBlockState(), 3);
+			} else if (wall) {
+				level.setBlock(pos, stone(random), 3);
+			} else {
+				level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+			}
+		}
+		// The floor, under the room only, so the walls keep their footing.
+		for (BlockPos pos : BlockPos.betweenClosed(
+				floor.offset(-1, -1, -1), floor.offset(1, -1, 1))) {
+			level.setBlock(pos, Blocks.COBBLESTONE.defaultBlockState(), 3);
+		}
+		// The door faces the way they were last looking, so they walk in rather
+		// than round.
+		BlockPos door = floor.relative(facing, 2);
+		level.setBlock(door, Blocks.OAK_DOOR.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.DoorBlock.FACING, facing.getOpposite())
+			.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
+				net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER), 3);
+		level.setBlock(door.above(), Blocks.OAK_DOOR.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.DoorBlock.FACING, facing.getOpposite())
+			.setValue(net.minecraft.world.level.block.DoorBlock.HALF,
+				net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 3);
+		// One lantern, hung. Not his soul lantern — this building is not his.
+		level.setBlock(floor.offset(0, 2, 0), Blocks.LANTERN.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.LanternBlock.HANGING, true), 3);
+	}
+
+	/** Mossy, cracked or plain, so no two walls are the same age. */
+	private static BlockState stone(RandomSource random) {
+		int roll = random.nextInt(10);
+		if (roll < 4) {
+			return Blocks.MOSSY_STONE_BRICKS.defaultBlockState();
+		}
+		if (roll < 7) {
+			return Blocks.CRACKED_STONE_BRICKS.defaultBlockState();
+		}
+		return Blocks.STONE_BRICKS.defaultBlockState();
+	}
+
+	/**
+	 * THE NAME OUTSIDE AND THEIR OWN THINGS IN.
+	 *
+	 * Kept from the version this replaces, because it was the best thing about
+	 * it: the sign carries somebody else's name and the chest carries the
+	 * player's belongings, and one block apart is the whole sentence.
+	 */
+	private static void headstone(ServerLevel level, BlockPos floor, Direction facing,
+	                             ServerPlayer player, RandomSource random) {
+		BlockPos post = floor.relative(facing, 3);
+		BlockPos plate = post.above();
+		if (!level.getBlockState(post).canBeReplaced()
+			|| !level.getBlockState(plate).canBeReplaced()) {
+			return;
+		}
+		level.setBlock(post, Blocks.COBBLESTONE_WALL.defaultBlockState(), 3);
+		level.setBlock(plate, Blocks.OAK_SIGN.defaultBlockState()
+			.setValue(BlockStateProperties.ROTATION_16, random.nextInt(16)), 3);
+		if (level.getBlockEntity(plate)
+				instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign) {
+			String[] lines = SignLines.grave(
+				com.bloomlet.herobrine.wrath.Wrath.phase(level.getServer()),
+				player, null, random);
+			net.minecraft.world.level.block.entity.SignText text =
+				new net.minecraft.world.level.block.entity.SignText();
+			for (int row = 0; row < 4; row++) {
+				text = text.setMessage(row, net.minecraft.network.chat.Component.literal(
+					row < lines.length ? lines[row] : ""));
+			}
+			sign.setText(text, true);
+			sign.setWaxed(true);
+		}
+	}
+
+	/**
+	 * The map, then what he took, then something he did not.
+	 *
+	 * THE ENCHANTED PIECE IS NEW and it is the reason to open the box even on a
+	 * hunt where he had stolen nothing. It goes through HisHost.enchant, which is
+	 * vanilla's own enchantItem — so what comes out is whatever that piece could
+	 * legitimately have rolled, and a player reading it sees the same names and
+	 * combinations their own table produces. A hardcoded Sharpness V would be
+	 * legible as a mod inside a minute.
+	 *
+	 * One or two pieces, at a power somebody would need thirty levels for. It is
+	 * payment for having survived, and it should be worth more than the walk.
+	 */
+	private static void fill(ServerLevel level, ChestBlockEntity box,
+	                         ItemStack map, RandomSource random) {
+		int slot = 0;
+		if (!map.isEmpty()) {
+			box.setItem(slot++, map);   // first, so it is what they see
+		}
+		int given = 0;
+		while (slot < box.getContainerSize() && given < 4) {
+			ItemStack stack = draw(level, random);
+			if (stack == null) {
+				break;
+			}
+			box.setItem(slot++, stack);
+			given++;
+		}
+		net.minecraft.core.RegistryAccess access = level.registryAccess();
+		int pieces = 1 + random.nextInt(2);
+		for (int i = 0; i < pieces && slot < box.getContainerSize(); i++) {
+			ItemStack kit = new ItemStack(REWARDS[random.nextInt(REWARDS.length)]);
+			com.bloomlet.herobrine.manifest.HisHost.enchant(kit, random, access,
+				18 + random.nextInt(15));
+			box.setItem(slot++, kit);
+		}
+		box.setChanged();
+	}
+
+	/**
+	 * Iron and diamond, never netherite.
+	 *
+	 * Diamond because surviving him should be worth a real piece; not netherite
+	 * because that requires a trip he may not have made yet, and handing somebody
+	 * the best armour in the game for their first hunt flattens everything after
+	 * it. A mix of tools and weapons so the draw is not always the same slot in
+	 * their inventory.
+	 */
+	private static final net.minecraft.world.item.Item[] REWARDS = {
+		net.minecraft.world.item.Items.DIAMOND_SWORD,
+		net.minecraft.world.item.Items.DIAMOND_AXE,
+		net.minecraft.world.item.Items.DIAMOND_PICKAXE,
+		net.minecraft.world.item.Items.DIAMOND_CHESTPLATE,
+		net.minecraft.world.item.Items.DIAMOND_HELMET,
+		net.minecraft.world.item.Items.DIAMOND_BOOTS,
+		net.minecraft.world.item.Items.IRON_SWORD,
+		net.minecraft.world.item.Items.IRON_CHESTPLATE,
+		net.minecraft.world.item.Items.IRON_LEGGINGS,
+		net.minecraft.world.item.Items.BOW,
+	};
 }

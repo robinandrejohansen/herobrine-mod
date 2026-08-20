@@ -439,12 +439,55 @@ def the_way():
 	return normalise(out, 0.72)
 
 
+def crossing():
+	"""GOING THROUGH IT, WHICH IS NOT THE SAME AS OPENING IT.
+
+	`the_way` is the frame lighting — one event, once, at the end of a fight.
+	This is the two and a half seconds a person spends inside it, and it was
+	vanilla's nether travel sound: the single most familiar audio cue in the game
+	attached to the one door in the mod that is supposed to be unprecedented.
+
+	A PRESSURE CHANGE RATHER THAN A WHOOSH. The low FM layer rises through the
+	first half and then falls further than it started, so the sound arrives
+	somewhere lower than it left — the ear reads that as descent regardless of
+	which way the player is actually travelling. Over it, a noise wash whose
+	filter opens wide and then shuts almost completely, which is the part that
+	feels like a room being replaced by a different room.
+
+	The reverb is the largest in the file and it is deliberately still ringing
+	when the tone has gone, because the last half second should be the new place
+	rather than the crossing. Long enough to cover the chunk load, which is a
+	practical concern and also the honest reason it works: nobody has ever heard
+	silence on the far side of this.
+
+	Pitched at the call site rather than here — down going out, up coming home,
+	so the same asset carries the direction. See TheWayBlock.
+	"""
+	out = buf(2.6)
+	fm(out, 88.0, 1.51, 12.0, 0.7, seed=131, carrier_to=290.0, index_to=2.0,
+	   drift=0.03)
+	fall = buf(2.6)
+	fm(fall, 260.0, 2.49, 9.0, 0.55, seed=149, carrier_to=33.0, index_to=0.2)
+	shape(fall, [(0, 0), (0.45, 0.2), (0.6, 1.0), (1, 0.15)])
+	mix(out, fall, 0.8)
+	wash = buf(2.6)
+	noise(wash, 1.0, seed=163)
+	resonant(wash, 260.0, 3.2, cutoff_to=4200.0)
+	shape(wash, [(0, 0.1), (0.4, 0.9), (0.62, 0.5), (1, 0.02)])
+	mix(out, wash, 0.34)
+	resonant(out, 3000.0, 2.4, cutoff_to=190.0)
+	shape(out, [(0, 0), (0.06, 0.9), (0.5, 1.0), (0.72, 0.4), (1, 0)])
+	reverb(out, 1.0, 0.52)
+	return normalise(out, 0.8)
+
+
 SOUNDS = {
 	'breath': (breath, False),
 	'anger': (anger, False),
 	'gone': (gone, False),
 	'his_world': (his_world, True),
 	'the_way': (the_way, False),
+	'crossing': (crossing, False),
 }
 
 

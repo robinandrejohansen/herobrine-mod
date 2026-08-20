@@ -884,7 +884,7 @@ public final class TheHunt {
 			|| state.is(net.minecraft.tags.BlockTags.REPLACEABLE);
 	}
 
-	private static boolean anythingBuiltNear(ServerLevel level, BlockPos middle) {
+	public static boolean anythingBuiltNear(ServerLevel level, BlockPos middle) {
 		for (BlockPos pos : BlockPos.betweenClosed(
 				middle.offset(-4, -2, -4), middle.offset(4, 3, 4))) {
 			if (DwellTracker.isBuilt(level, pos)) {
@@ -924,20 +924,48 @@ public final class TheHunt {
 
 	private static final int SENDS_MIN = 7;
 	private static final int SENDS_SPREAD = 4;
+	/** And three more on every return. */
+	private static final int SENDS_PER_ROUND = 3;
 	/** Between you and him, mostly. Near enough to be a problem at once. */
 	private static final int SENT_NEAR = 7;
 	private static final int SENT_FAR = 16;
 	/** However long the hunt runs, never more than this alive at once. */
-	private static final int SENT_CAP = 12;
+	private static final int SENT_CAP = 16;
 
+	/**
+	 * HOW MANY OF HIS ARE STILL ON THEIR FEET.
+	 *
+	 * The thing the pause was missing. It used to run on a clock — twenty to
+	 * thirty seconds and he walked back in, whether the player had killed all ten
+	 * of them or run in a circle and ignored every one. So the wave was scenery:
+	 * fighting it changed nothing and neither did not fighting it.
+	 *
+	 * With a count, the pause becomes a PHASE somebody clears. Kill them and he
+	 * comes back early, which is the deal being offered; leave them alive and he
+	 * stands out there for as long as his patience lasts, and they keep coming at
+	 * you the whole time.
+	 *
+	 * Counted around the PLAYER rather than around him, because they are the
+	 * player's problem and he is thirty blocks away by construction.
+	 */
+	public static int stillStanding(ServerLevel level, ServerPlayer quarry) {
+		return level.getEntitiesOfClass(net.minecraft.world.entity.monster.zombie.Zombie.class,
+			quarry.getBoundingBox().inflate(64.0),
+			z -> z.isAlive() && Boolean.TRUE.equals(z.getAttached(SENT))).size();
+	}
+
+	/**
+	 * @param round which break-off this is, nought upward. THE WAVE GROWS WITH
+	 *              IT — three more each time — because a boss that sends the same
+	 *              ten every phase is a boss whose second phase is easier than
+	 *              its first, the player now having the measure of it.
+	 */
 	public static void send(ServerLevel level, net.minecraft.world.entity.LivingEntity him,
-	                        ServerPlayer quarry) {
+	                        ServerPlayer quarry, int round) {
 		if (!Config.get().huntWrecks) {
 			return;
 		}
-		int alive = level.getEntitiesOfClass(net.minecraft.world.entity.monster.zombie.Zombie.class,
-			quarry.getBoundingBox().inflate(64.0),
-			z -> Boolean.TRUE.equals(z.getAttached(SENT))).size();
+		int alive = stillStanding(level, quarry);
 		if (alive >= SENT_CAP) {
 			return;
 		}
@@ -946,7 +974,8 @@ public final class TheHunt {
 		// the player's instinct is to back away from him — which is the one
 		// direction the rest of them are also arriving from.
 		double toward = Math.atan2(him.getZ() - quarry.getZ(), him.getX() - quarry.getX());
-		int wanted = Math.min(SENDS_MIN + random.nextInt(SENDS_SPREAD), SENT_CAP - alive);
+		int wanted = Math.min(SENDS_MIN + round * SENDS_PER_ROUND
+			+ random.nextInt(SENDS_SPREAD), SENT_CAP - alive);
 		int made = 0;
 
 		for (int attempt = 0; attempt < wanted * 6 && made < wanted; attempt++) {
@@ -973,6 +1002,42 @@ public final class TheHunt {
 			HerobrineMod.LOGGER.info("hunt: {} sent for {}",
 				made, quarry.getName().getString());
 		}
+	}
+
+	/**
+	 * AND ONE AT THE PERSON.
+	 *
+	 * SmallFireball rather than the ghast's LargeFireball, and that is the "not so
+	 * much" — five points and it sets them alight, against a ghast's six plus an
+	 * explosion. It is also the safe choice for a reason worth writing down: a
+	 * large fireball explodes, and an exploding projectile aimed at a player
+	 * standing in their own base is a hole in their floor. This mod has already
+	 * burned a whole dimension down once by being casual about fire that spreads.
+	 *
+	 * LED, not aimed at where they are. Five ticks of their own velocity added to
+	 * the target, so a player sprinting in a straight line gets hit and a player
+	 * changing direction does not. That is the difference between a projectile
+	 * that is dodgeable and a projectile that is decorative — and the old one was
+	 * neither, since it was never pointed at anybody.
+	 */
+	private static void atThem(ServerLevel level, net.minecraft.world.entity.LivingEntity him,
+	                           ServerPlayer quarry) {
+		Vec3 from = him.getEyePosition();
+		Vec3 lead = quarry.getDeltaMovement().scale(LEAD_TICKS);
+		Vec3 along = quarry.getEyePosition().add(lead.x, 0.0, lead.z).subtract(from);
+		if (along.lengthSqr() < 1.0E-4) {
+			return;
+		}
+		net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball ball =
+			new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(
+				level, him, along.normalize());
+		ball.snapTo(from.x, from.y, from.z, 0.0F, 0.0F);
+		ball.shoot(along.x, along.y, along.z, BALL_SPEED, AIM_AT_THEM);
+		level.addFreshEntity(ball);
+		level.playSound(null, him.blockPosition(), SoundEvents.BLAZE_SHOOT,
+			SoundSource.HOSTILE, 2.4F, 0.45F);
+		HerobrineMod.LOGGER.debug("hunt: one at {}, {} blocks",
+			quarry.getName().getString(), (int)along.length());
 	}
 
 	private static boolean raise(ServerLevel level, BlockPos at, ServerPlayer quarry,
@@ -1233,12 +1298,37 @@ public final class TheHunt {
 	/** Never nearer than this to anybody. They must be able to step out of it. */
 	private static final int RAZE_CLEAR_OF_PEOPLE = 5;
 
+	/** Ghast pace. It was 1.25 and eighteen blocks took a second and a half. */
+	private static final float BALL_SPEED = 1.9F;
+	/** Straight at them. Not perfect — a fireball you cannot dodge is a tax. */
+	private static final float AIM_AT_THEM = 0.5F;
+	/** And loose enough at the landscape to still read as shelling. */
+	private static final float AIM_AT_GROUND = 1.0F;
+	/** How far ahead of a running player he throws. */
+	private static final double LEAD_TICKS = 5.0;
+
 	public static void raze(ServerLevel level, net.minecraft.world.entity.LivingEntity him,
 	                        ServerPlayer quarry) {
-		if (!Config.get().huntWrecks || !Config.get().huntFire) {
+		if (!Config.get().huntWrecks) {
 			return;
 		}
 		RandomSource random = level.getRandom();
+
+		// ONE IN THREE COMES STRAIGHT AT THEM, and the absence of this was the
+		// whole complaint. Every shot was aimed at a ground square at least five
+		// blocks clear of every player, so the player could not be hit by one even
+		// in principle — they were watching a fireworks display about themselves.
+		//
+		// Not gated on huntFire, unlike the shelling below. huntFire is the switch
+		// for "he sets my landscape alight"; a fireball thrown at a person is an
+		// attack, and turning off forest fires should not disarm him.
+		if (random.nextInt(3) == 0) {
+			atThem(level, him, quarry);
+			return;
+		}
+		if (!Config.get().huntFire) {
+			return;
+		}
 		// Outward from the PLAYER through him and onward, so whatever he throws
 		// at is on the far side of him. The player is never between him and the
 		// thing he is aiming at.
@@ -1266,13 +1356,13 @@ public final class TheHunt {
 				new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(
 					level, him, along.normalize());
 			ball.snapTo(from.x, from.y, from.z, 0.0F, 0.0F);
-			// Lobbed rather than fired flat, and slowly. The arc is what makes it
-			// readable from the side — the player is not being shot at, they are
-			// watching somebody shell a hillside.
-			// Flatter and faster than the old lob, because it is now crossing
-			// eighteen blocks rather than fifty and an arc that slow would give
-			// them four seconds to stroll out of it.
-			ball.shoot(along.x, along.y + along.length() * 0.08, along.z, 1.25F, 3.0F);
+			// Ghast pace, and a third of the old scatter. Inaccuracy three meant a
+			// shot at eighteen blocks could land nine off target, so "he is
+			// shelling the treeline" and "he is throwing fire at nothing" looked
+			// identical. It still arcs slightly, because the arc is what makes a
+			// ground shot readable from the side.
+			ball.shoot(along.x, along.y + along.length() * 0.08, along.z,
+				BALL_SPEED, AIM_AT_GROUND);
 			level.addFreshEntity(ball);
 			level.playSound(null, him.blockPosition(), SoundEvents.BLAZE_SHOOT,
 				SoundSource.HOSTILE, 2.4F, 0.5F);
