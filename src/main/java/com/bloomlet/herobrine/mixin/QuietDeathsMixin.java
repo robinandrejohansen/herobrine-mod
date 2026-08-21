@@ -1,6 +1,7 @@
 package com.bloomlet.herobrine.mixin;
 
 import com.bloomlet.herobrine.Config;
+import com.bloomlet.herobrine.HerobrineMod;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -52,6 +53,19 @@ public abstract class QuietDeathsMixin {
 				+ "broadcastSystemMessage(Lnet/minecraft/network/chat/Component;Z)V"))
 	private void herobrine$tellNobody(PlayerList players, Component message, boolean overlay) {
 		if (Config.get().enabled && Config.get().quietDeaths) {
+			// THE PLAYERS ARE KEPT IN THE DARK. THE LOG IS NOT.
+			//
+			// This feature ate its own diagnostic. A playtest reported "he killed
+			// me" and there was no way to find out what had — the vanilla death
+			// message is the only thing in the game that names the cause, and this
+			// swallows it before anybody sees it. Half an hour went on ruling out
+			// the fireball, the bolts, the fall and the zombies by reading code.
+			//
+			// So the sentence still reaches nobody in the game and goes to the
+			// server log instead, where it costs the illusion nothing: a player
+			// cannot read it, and the person trying to work out which of six new
+			// hazards is killing people can.
+			HerobrineMod.LOGGER.info("quietly: {}", message.getString());
 			return;
 		}
 		players.broadcastSystemMessage(message, overlay);

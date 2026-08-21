@@ -733,7 +733,12 @@ public final class HauntingSpawner {
 		him.setAnchor(player.blockPosition());
 		// No glimpse timer. This is the one thing in a tunnel that does not
 		// resolve itself by standing still — see HerobrineEntity's hunt.
-		him.beginHunt();
+		//
+		// PROWLING RATHER THAN HUNTING. He is down the passage looking for them; the
+		// hunt starts when they see him, or when the minute is up. Underground that
+		// minute is the best version of it — a corridor with something moving about
+		// at the far end of it, and no way to know whether it has noticed you.
+		him.beginProwl();
 		level.addFreshEntity(him);
 		ManifestationDirector.noteLocation(spot);
 		him.announceArrival();
@@ -827,7 +832,7 @@ public final class HauntingSpawner {
 		// to it, so the ground you gave up is the ground he takes.
 		herobrine.setAnchor(player.blockPosition());
 		if (hunting) {
-			herobrine.beginHunt();
+			herobrine.beginProwl();
 		}
 		level.addFreshEntity(herobrine);
 		// Say where he is, which the stare never did.

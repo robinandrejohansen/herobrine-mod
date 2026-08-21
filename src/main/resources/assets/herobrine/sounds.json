@@ -53,5 +53,14 @@
         "name": "herobrine:crossing"
       }
     ]
+  },
+  "hum": {
+    "category": "hostile",
+    "subtitle": "subtitles.herobrine.hum",
+    "sounds": [
+      {
+        "name": "herobrine:hum"
+      }
+    ]
   }
 }

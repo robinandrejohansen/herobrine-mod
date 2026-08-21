@@ -68,6 +68,21 @@ public final class ModSounds {
 	 */
 	public static final SoundEvent CROSSING = register("crossing");
 
+	/**
+	 * THE VILLAGER NOISE, WITH SOMETHING WRONG IN THE THROAT.
+	 *
+	 * Vanilla's "hmm" is the most recognisably friendly sound in Minecraft, which
+	 * is the entire reason to ruin it. Same closed-mouth hum, two thirds the pitch,
+	 * nasal formants only so it never becomes a groan — and a break in the middle
+	 * where the note fails and comes back a semitone under.
+	 *
+	 * It is deliberately NOT a monster sound. Nothing about it growls or rasps: the
+	 * moment it does, the player files it under "hostile mob" and stops listening.
+	 * The first one has to be ambiguous — did that sound off, or am I imagining it —
+	 * and it should only be obviously wrong once there are twelve of them.
+	 */
+	public static final SoundEvent HUM = register("hum");
+
 
 	// ---- AND IT COMES BACK OFF THE HILLS ----------------------------------
 	/**

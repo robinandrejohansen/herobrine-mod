@@ -481,6 +481,63 @@ def crossing():
 	return normalise(out, 0.8)
 
 
+def hum():
+	"""THE VILLAGER NOISE, WITH SOMETHING WRONG IN THE THROAT.
+
+	Vanilla's "hmm" is a closed-mouth hum, about two tenths of a second, mid-range
+	and almost cheerful — and it is the single most recognisable friendly sound in
+	the game. Which is exactly why it is worth ruining: a crowd of villagers is not
+	frightening, and a crowd of villagers making a sound that is ALMOST that is.
+
+	FOUR THINGS DONE TO IT, and each one is small on purpose. Drop the fundamental
+	from speech into chest range. Nasal formants only — a closed mouth, so it is
+	still a hum rather than a groan. A break in the middle where the note fails and
+	comes back a semitone under, which is what a hum does when the throat producing
+	it is damaged. And a wet edge of noise under the whole thing.
+	
+	NOT A MONSTER SOUND. Nothing here growls, screams or rasps; the moment it does
+	the player files it under "hostile mob" and stops listening. It has to stay
+	close enough to the original that the first one is ambiguous — did that sound
+	off, or am I imagining it — and only obviously wrong once there are twelve.
+
+	Longer than vanilla's, at half a second, because the failure in the middle needs
+	somewhere to happen.
+	"""
+	out = buf(0.55)
+
+	voice = buf(0.55)
+	# Two thirds the pitch of a villager, wavering, with the break at 45%.
+	fm(voice, 118.0, 1.0, 2.4, 0.9, seed=307, carrier_to=104.0, index_to=1.4,
+	   drift=0.05)
+	under = buf(0.55)
+	fm(under, 111.0, 1.0, 2.0, 0.6, seed=311, carrier_to=98.0, index_to=1.1,
+	   drift=0.06)
+	shape(under, [(0, 0), (0.42, 0), (0.5, 1.0), (1, 0.9)])
+	shape(voice, [(0, 1.0), (0.42, 1.0), (0.5, 0.15), (0.62, 0.5), (1, 0.4)])
+	mix(voice, under, 0.85)
+
+	# The wet edge. Very little of it — this is a throat, not a rattle.
+	spit = buf(0.55)
+	noise(spit, 1.0, seed=313)
+	lowpass(spit, 1100.0)
+	shape(spit, [(0, 0.6), (0.45, 0.2), (0.55, 1.0), (1, 0)])
+	mix(voice, spit, 0.13)
+
+	# NASAL: one low formant and one at two and a half, nothing above. A mouth
+	# that never opens.
+	for freq, gain in ((250.0, 1.0), (620.0, 0.5)):
+		band = list(voice)
+		resonant(band, freq, 7.0)
+		if freq > 400.0:
+			highpass(band, 300.0)
+		mix(out, band, gain)
+
+	shape(out, [(0, 0), (0.05, 1.0), (0.85, 0.7), (1, 0)])
+	lowpass(out, 1600.0)
+	reverb(out, 0.45, 0.2)
+	return normalise(out, 0.7)
+
+
 SOUNDS = {
 	'breath': (breath, False),
 	'anger': (anger, False),
@@ -488,6 +545,7 @@ SOUNDS = {
 	'his_world': (his_world, True),
 	'the_way': (the_way, False),
 	'crossing': (crossing, False),
+	'hum': (hum, False),
 }
 
 

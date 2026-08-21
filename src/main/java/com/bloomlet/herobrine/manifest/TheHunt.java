@@ -173,6 +173,26 @@ public final class TheHunt {
 	 * runs its natural course, which is the old behaviour and is harmless.
 	 */
 	private static boolean ours;
+	/**
+	 * WHICH HUNT'S SKY THIS IS.
+	 *
+	 * passes() does not clear the weather, it SCHEDULES the clearing — minutes
+	 * later, so the last of the storm fades instead of stopping between one step
+	 * and the next. Which is right, and which means the callback outlives the hunt
+	 * that booked it.
+	 *
+	 * The playtest caught what that costs: hunt one ended at 11:03:59, hunt two
+	 * opened its own storm at 11:05:08, and at 11:05:33 hunt one's callback came
+	 * due and put the sky back — twenty-five seconds into somebody else's hunt.
+	 * The `ours` flag could not catch it because it had already been handed to the
+	 * second storm.
+	 *
+	 * So the sky is stamped when he takes it, and a scheduled clearing only acts if
+	 * the stamp is still the one it was booked under. A later hunt silently voids
+	 * an earlier hunt's cleanup, which is exactly the intent — that storm is not
+	 * over, it has been replaced.
+	 */
+	private static int skyOwner;
 	private static final int THUNDER_STOPS = 600;
 	private static final int RAIN_STOPS = 1800;
 
@@ -182,8 +202,9 @@ public final class TheHunt {
 			return;
 		}
 		ours = false;
+		final int mine = skyOwner;
 		Cadence.in(server, THUNDER_STOPS, () -> {
-			if (server.overworld().isThundering()) {
+			if (mine == skyOwner && server.overworld().isThundering()) {
 				// Rain kept, thunder dropped. The weather is still there; the
 				// thing that made it dangerous is not.
 				server.setWeatherParameters(0, RAIN_STOPS + 600, true, false);
@@ -191,7 +212,7 @@ public final class TheHunt {
 			}
 		});
 		Cadence.in(server, RAIN_STOPS, () -> {
-			if (server.overworld().isRaining()) {
+			if (mine == skyOwner && server.overworld().isRaining()) {
 				// Cleared over a long spell rather than switched off, so the
 				// last of it fades instead of stopping between one step and the
 				// next.
@@ -233,7 +254,13 @@ public final class TheHunt {
 	}
 
 	private static void onTick(MinecraftServer server) {
-		if (++tickCounter % DUE_INTERVAL != 0) {
+		// THE GNAWING RUNS ON ITS OWN CLOCK, well inside the owed interval.
+		if (++tickCounter % GNAW_INTERVAL == 0 && Config.get().theHunt) {
+			for (ServerLevel level : server.getAllLevels()) {
+				gnaw(level);
+			}
+		}
+		if (tickCounter % DUE_INTERVAL != 0) {
 			return;
 		}
 		if (!Config.get().enabled || !Config.get().theHunt) {
@@ -276,13 +303,57 @@ public final class TheHunt {
 		if (outcome != HauntingSpawner.Outcome.PLACED) {
 			return outcome;
 		}
-		if (home) {
+		// NOTHING YET. HE IS ONLY OUT THERE.
+		//
+		// The storm, the bolts and the burning used to fire here, at placement — so
+		// a hunt announced itself in the same instant it existed and every one of
+		// them opened identically. They belong to {@link #begins}, which runs when
+		// the prowl turns into a hunt: either because somebody held his eye, or
+		// because the minute ran out. See HerobrineEntity.beginProwl.
+		//
+		// `home` is deliberately not carried across. It is asked again at the other
+		// end, because a minute of prowling is long enough for somebody to have run
+		// out of their own front door — and where they are standing when it starts is
+		// the answer that matters.
+		return outcome;
+	}
+
+	/**
+	 * THE MOMENT IT ACTUALLY STARTS, and the sky goes with it.
+	 *
+	 * @param spotted true if they held his eye and brought it on themselves, false
+	 *                if the minute simply ran out. He knows the difference and it is
+	 *                the only thing he says about it.
+	 */
+	public static void begins(ServerLevel level, ServerPlayer player, boolean spotted) {
+		if (Hearth.home(player)) {
 			arrives(level, player);
 		} else {
 			awayFromHome(level, player);
 		}
-		return outcome;
+		String[] pool = spotted ? SEEN_ME : NEVER_LOOKED;
+		player.sendSystemMessage(Component.literal(
+			"§8§o" + pool[level.getRandom().nextInt(pool.length)]));
+		HerobrineMod.LOGGER.info("the hunt begins on {} ({})",
+			player.getName().getString(), spotted ? "he was seen" : "never spotted");
 	}
+
+	/** They looked. He is not going to pretend that did not happen. */
+	private static final String[] SEEN_ME = {
+		"there we are",
+		"you kept looking",
+		"now we both know",
+		"you could have walked away from that",
+		"say it out loud so it is real",
+	};
+
+	/** They never looked up, and he has been there the whole minute. */
+	private static final String[] NEVER_LOOKED = {
+		"i have been here a while",
+		"you never once looked up",
+		"i watched you finish what you were doing",
+		"i was close enough to touch you twice",
+	};
 
 	// ---- HE ARRIVES WITH THE WEATHER ---------------------------------------
 	/**
@@ -327,6 +398,7 @@ public final class TheHunt {
 		}
 		Skies.turn(level);
 		ours = true;
+		skyOwner++;
 		RandomSource random = level.getRandom();
 		BlockPos from = player.blockPosition();
 		int bolts = OPENING_BOLTS_MIN + random.nextInt(OPENING_BOLTS_SPREAD);
@@ -948,20 +1020,35 @@ public final class TheHunt {
 	 * Counted around the PLAYER rather than around him, because they are the
 	 * player's problem and he is thirty blocks away by construction.
 	 */
+	/** Is this one of his? Asked before anything is done to a mob on his behalf. */
+	public static boolean isHis(net.minecraft.world.entity.Entity what) {
+		return Boolean.TRUE.equals(what.getAttached(SENT));
+	}
+
 	public static int stillStanding(ServerLevel level, ServerPlayer quarry) {
-		return level.getEntitiesOfClass(net.minecraft.world.entity.monster.zombie.Zombie.class,
+		// Mob rather than Zombie, because the waves are not all zombies any more —
+		// wave one is a crowd of the turned. Filtering on the attachment rather than
+		// the class is what makes a new wave type free: mark it SENT and every count,
+		// every dismissal and the whole gate below already understand it.
+		return level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class,
 			quarry.getBoundingBox().inflate(64.0),
-			z -> z.isAlive() && Boolean.TRUE.equals(z.getAttached(SENT))).size();
+			m -> m.isAlive() && Boolean.TRUE.equals(m.getAttached(SENT))).size();
 	}
 
 	/**
-	 * @param round which break-off this is, nought upward. THE WAVE GROWS WITH
-	 *              IT — three more each time — because a boss that sends the same
-	 *              ten every phase is a boss whose second phase is easier than
-	 *              its first, the player now having the measure of it.
+	 * @param wave which of the three this is, one upward. THE CROWD GROWS WITH IT —
+	 *             three more each time — because a boss that sends the same ten
+	 *             every phase is a boss whose second phase is easier than its
+	 *             first, the player now having the measure of it.
+	 *
+	 *             AND IT CHANGES WHAT ARRIVES. One is the small ones with axes,
+	 *             which teaches the player what a wave is. Two is a crowd of
+	 *             villagers — the frightening one precisely because it is not a
+	 *             monster: the most familiar friendly silhouette in the game,
+	 *             a dozen of it, walking. Three is not decided.
 	 */
 	public static void send(ServerLevel level, net.minecraft.world.entity.LivingEntity him,
-	                        ServerPlayer quarry, int round) {
+	                        ServerPlayer quarry, int wave) {
 		if (!Config.get().huntWrecks) {
 			return;
 		}
@@ -974,7 +1061,7 @@ public final class TheHunt {
 		// the player's instinct is to back away from him — which is the one
 		// direction the rest of them are also arriving from.
 		double toward = Math.atan2(him.getZ() - quarry.getZ(), him.getX() - quarry.getX());
-		int wanted = Math.min(SENDS_MIN + round * SENDS_PER_ROUND
+		int wanted = Math.min(SENDS_MIN + Math.max(0, wave - 1) * SENDS_PER_ROUND
 			+ random.nextInt(SENDS_SPREAD), SENT_CAP - alive);
 		int made = 0;
 
@@ -991,7 +1078,18 @@ public final class TheHunt {
 			if (!com.bloomlet.herobrine.entity.ConfinedPlacement.canStand(level, at)) {
 				continue;
 			}
-			if (raise(level, at, quarry, random)) {
+			// WAVE ONE IS THE SMALL ONES, WAVE TWO IS THE CROWD.
+			//
+			// Swapped after seeing them in that order. The turned are the better
+			// scare and that is exactly why they should not open: the first wave
+			// arrives while the player is still working out that a wave is a thing
+			// that happens, and spending the villagers there wastes them on somebody
+			// who is busy reading the rules. Small things with axes teach the rule.
+			// Then the rule is broken by a crowd of people.
+			boolean up = wave >= 2
+				? raiseTurned(level, at, quarry)
+				: raise(level, at, quarry, random);
+			if (up) {
 				made++;
 			}
 		}
@@ -999,8 +1097,9 @@ public final class TheHunt {
 			level.playSound(null, quarry.blockPosition(),
 				com.bloomlet.herobrine.sound.ModSounds.BREATH,
 				SoundSource.HOSTILE, 2.2F, 0.7F);
-			HerobrineMod.LOGGER.info("hunt: {} sent for {}",
-				made, quarry.getName().getString());
+			HerobrineMod.LOGGER.info("hunt: wave {} — {} {} sent for {}",
+				wave, made, wave >= 2 ? "of the turned" : "small ones",
+				quarry.getName().getString());
 		}
 	}
 
@@ -1038,6 +1137,49 @@ public final class TheHunt {
 			SoundSource.HOSTILE, 2.4F, 0.45F);
 		HerobrineMod.LOGGER.debug("hunt: one at {}, {} blocks",
 			quarry.getName().getString(), (int)along.length());
+	}
+
+	/**
+	 * WAVE ONE: A CROWD OF THE TURNED, AND NOT ONE OF THEM IS A MONSTER.
+	 *
+	 * The best thing in the whole event and it is almost free, because the mob
+	 * already exists — TurnedEntity is the villager who does not sleep and comes
+	 * at you with an axe after dark. Twelve of it, in the rain, walking.
+	 *
+	 * WHY VILLAGERS AND NOT SOMETHING WITH TEETH. Every hostile silhouette in
+	 * Minecraft is a promise: the player reads "zombie" and instantly knows the
+	 * damage, the speed, the reach and how many hits it takes. A villager is the
+	 * opposite promise — it is the one shape in the game that has never once been a
+	 * threat — so a dozen of them closing in has no rules attached to it at all,
+	 * and the player has to work out what is happening while it happens.
+	 *
+	 * THEY ARE SILENT IN VANILLA'S VOICE. setSilent kills the villager sound set
+	 * outright, and what replaces it is ours: the same closed-mouth hum, two thirds
+	 * the pitch, with the note failing in the middle. See ModSounds.HUM. One of them
+	 * doing that is ambiguous. Twelve is not.
+	 *
+	 * Marked SENT like everything else he brings, so they go when he goes — as
+	 * chickens, standing where the crowd was.
+	 */
+	private static boolean raiseTurned(ServerLevel level, BlockPos at, ServerPlayer quarry) {
+		com.bloomlet.herobrine.entity.TurnedEntity one =
+			com.bloomlet.herobrine.entity.ModEntities.TURNED.create(
+				level, EntitySpawnReason.EVENT);
+		if (one == null) {
+			return false;
+		}
+		one.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5,
+			level.getRandom().nextFloat() * 360.0F, 0.0F);
+		one.setSilent(true);          // vanilla's "hmm" never plays
+		one.setTarget(quarry);
+		one.setAttached(SENT, true);
+		one.setPersistenceRequired();
+		if (!level.addFreshEntity(one)) {
+			return false;
+		}
+		level.playSound(null, at, com.bloomlet.herobrine.sound.ModSounds.HUM,
+			SoundSource.HOSTILE, 1.1F, 0.94F + level.getRandom().nextFloat() * 0.12F);
+		return true;
 	}
 
 	private static boolean raise(ServerLevel level, BlockPos at, ServerPlayer quarry,
@@ -1130,21 +1272,97 @@ public final class TheHunt {
 	 * never really there, and the moment he stops looking at you there is
 	 * nothing in the field.
 	 */
+	/** A block a second, and only ever one — a gnawing rather than a demolition. */
+	private static final int GNAW_INTERVAL = 20;
+	/** Below this they can simply walk to you and none of this applies. */
+	private static final int OUT_OF_REACH = 3;
+
+	/**
+	 * THEY START EATING WHATEVER IS HOLDING YOU UP.
+	 *
+	 * Being somewhere they cannot path to was a complete answer, and it should
+	 * never be one: a tree, a pillar, a one-block ledge, and a dozen armed things
+	 * mill about underneath you until the event expires. He arrives for that case
+	 * himself now, which fixes HIM and leaves them looking stupid.
+	 *
+	 * So they take the perch apart from below. One block a second across the whole
+	 * horde rather than one each — sixteen of them clearing a tree in a second
+	 * would be a chainsaw, and what this wants is the sound of something steadily
+	 * chewing while you decide whether to jump.
+	 *
+	 * NOTHING ANYBODY BUILT. Same promise the rest of the mod keeps: a wall is
+	 * answered by him breaking it, slowly and audibly, and if these could eat
+	 * masonry there would be no reason to build any. So they only ever take
+	 * NATURAL blocks — the trunk, the branch, the stone under your boots — which
+	 * is exactly the set of things somebody hiding up a tree is relying on.
+	 */
+	private static void gnaw(ServerLevel level) {
+		java.util.List<net.minecraft.world.entity.Mob> theirs =
+			level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class,
+				new net.minecraft.world.phys.AABB(-30000000, level.getMinY(), -30000000,
+					30000000, level.getMaxY(), 30000000),
+				z -> z.isAlive() && Boolean.TRUE.equals(z.getAttached(SENT)));
+		if (theirs.isEmpty()) {
+			return;
+		}
+		for (net.minecraft.world.entity.Mob z : theirs) {
+			if (!(z.getTarget() instanceof ServerPlayer up)
+				|| up.getY() - z.getY() < OUT_OF_REACH) {
+				continue;
+			}
+			// Down from their feet to the first thing actually bearing weight —
+			// six is enough for a branch and short enough that somebody on a
+			// mountainside is not having the mountain removed.
+			for (int down = 1; down <= 6; down++) {
+				BlockPos at = up.blockPosition().below(down);
+				if (!level.getBlockState(at).isSolid()) {
+					continue;
+				}
+				if (!diggable(level, at)
+					|| com.bloomlet.herobrine.manifest.DwellTracker.isBuilt(level, at)) {
+					break;   // masonry is his job, not theirs
+				}
+				level.destroyBlock(at, false, z);
+				level.playSound(null, at, SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR,
+					SoundSource.HOSTILE, 1.4F, 0.7F);
+				return;      // ONE. See the interval above.
+			}
+		}
+	}
+
 	public static void dismiss(ServerLevel level) {
 		int gone = 0;
-		for (net.minecraft.world.entity.monster.zombie.Zombie z
+		for (net.minecraft.world.entity.Mob z
 				: level.getEntitiesOfClass(
-					net.minecraft.world.entity.monster.zombie.Zombie.class,
+					net.minecraft.world.entity.Mob.class,
 					new net.minecraft.world.phys.AABB(-30000000, level.getMinY(), -30000000,
 						30000000, level.getMaxY(), 30000000),
 					mob -> Boolean.TRUE.equals(mob.getAttached(SENT)))) {
 			level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
 				z.getX(), z.getY() + 0.6, z.getZ(), 18, 0.3, 0.5, 0.3, 0.02);
+			// AND WHAT IS LEFT STANDING THERE IS A CHICKEN.
+			//
+			// They used to simply stop existing, which is the honest reading — they
+			// were never really there — and it plays as a despawn bug. Sixteen armed
+			// things converging on you, and then a field of chickens, is a far worse
+			// sentence: it says the horde was never the point, that he can do this to
+			// anything, and it leaves you standing in the evidence.
+			//
+			// PERSISTENT, so they never despawn. They are the only thing in the mod
+			// that outlives the event that made them, and a player who keeps finding
+			// them years later around the places he was driven off is the whole joke.
+			net.minecraft.world.entity.animal.chicken.Chicken left =
+				EntityTypes.CHICKEN.create(level, EntitySpawnReason.EVENT);
+			if (left != null) {
+				left.snapTo(z.getX(), z.getY(), z.getZ(), z.getYRot(), 0.0F);
+				left.setPersistenceRequired();
+				level.addFreshEntity(left);
+			}
 			z.discard();
 			gone++;
 		}
 		if (gone > 0) {
-			HerobrineMod.LOGGER.info("hunt: {} of his went with him", gone);
+			HerobrineMod.LOGGER.info("hunt: {} of his left as chickens", gone);
 		}
 	}
 
@@ -1421,6 +1639,161 @@ public final class TheHunt {
 		bolt.setVisualOnly(!real);
 		bolt.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0.0F, 0.0F);
 		level.addFreshEntity(bolt);
+		scar(level, at);
+	}
+
+	/**
+	 * AND EVERY ONE OF THEM LEAVES A MARK NOW.
+	 *
+	 * Only the aimed bolt did — callDown digs a proper three-deep divot — and that
+	 * fires on one pause in three. Every other bolt in the event, and there are six
+	 * to nine on arrival alone, was pure light: a storm that flashed all night and
+	 * left a landscape you could not tell had been struck.
+	 *
+	 * Smaller than a divot on purpose. A crater is an ATTACK and belongs to the one
+	 * he aimed; this is weather, and weather leaves scorch and a scuff. Two across,
+	 * one deep, most of it left alone — so twenty of them over a hunt read as a
+	 * field that has been hit twenty times rather than as a quarry.
+	 *
+	 * Same three guards as everything else that touches ground: mobGriefing off
+	 * means nothing happens, and nothing anybody placed is ever taken.
+	 */
+	private static void scar(ServerLevel level, BlockPos at) {
+		if (!level.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)
+			|| !level.isLoaded(at)) {
+			return;
+		}
+		RandomSource random = level.getRandom();
+		BlockPos ground = null;
+		for (int down = 0; down <= 3 && ground == null; down++) {
+			BlockPos maybe = at.below(down);
+			if (level.getBlockState(maybe).isSolid()) {
+				ground = maybe;
+			}
+		}
+		if (ground == null) {
+			return;
+		}
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dz = -1; dz <= 1; dz++) {
+				BlockPos pos = ground.offset(dx, 0, dz);
+				if (random.nextInt(3) != 0 || !diggable(level, pos)
+					|| com.bloomlet.herobrine.manifest.DwellTracker.isBuilt(level, pos)) {
+					continue;
+				}
+				// Scooped, not cratered — and the floor under it goes dead, which
+				// is what says something came down here rather than that a mob dug.
+				level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+				BlockPos under = pos.below();
+				if (level.getBlockState(under).isSolid() && diggable(level, under)
+					&& !com.bloomlet.herobrine.manifest.DwellTracker.isBuilt(level, under)) {
+					level.setBlock(under, Blocks.COARSE_DIRT.defaultBlockState(), 3);
+				}
+			}
+		}
+	}
+
+	// ---- #9: WHAT HE DOES TO THE GROUND WHILE HE IS STANDING STILL ---------
+	/**
+	 * THE PLACE GOES WRONG AROUND YOU WHILE HE WATCHES.
+	 *
+	 * The pause is the best beat in the event and it was also the emptiest: a
+	 * motionless figure at thirty blocks, ten things converging, and a landscape
+	 * that stayed exactly as pretty as it was before he arrived. He is supposed to
+	 * be the reason the world looks like this.
+	 *
+	 * SO IT SPREADS RATHER THAN EXPLODING. Nothing here is an attack and nothing
+	 * here can hurt anybody — it is the grass dying, the bark going, the flowers
+	 * turning to sticks. The player is fighting the horde and notices, four seconds
+	 * later, that the field they are fighting in has changed colour.
+	 *
+	 * THE PALE GARDEN PALETTE, because the game already owns a haunted wood and it
+	 * would be perverse to invent a worse one. Pale moss for grass, pale hanging
+	 * moss under the leaves, dead bush where anything was flowering, bark stripped
+	 * off the trunks. A player who has seen a pale garden reads it instantly; one
+	 * who has not simply sees the colour drain out of the ground.
+	 *
+	 * DELIBERATELY NOT MOVEMENT AND NOT A TARGET. It changes no state he acts on —
+	 * he stands exactly as still, stares exactly as long, sends exactly the same
+	 * wave — so it cannot conflict with the watch, with the horde, or with the
+	 * moment he decides to come back in. It is only ever blocks.
+	 */
+	private static final int BLIGHT_NEAR = 4;
+	private static final int BLIGHT_FAR = 16;
+	private static final int BLIGHT_TRIES = 14;
+
+	public static void blight(ServerLevel level, ServerPlayer quarry) {
+		if (!Config.get().huntWrecks
+			|| !level.getGameRules().get(
+				net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
+			return;
+		}
+		RandomSource random = level.getRandom();
+		int touched = 0;
+		for (int attempt = 0; attempt < BLIGHT_TRIES; attempt++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = BLIGHT_NEAR + random.nextDouble() * (BLIGHT_FAR - BLIGHT_NEAR);
+			int x = quarry.blockPosition().getX() + (int)Math.round(Math.cos(angle) * range);
+			int z = quarry.blockPosition().getZ() + (int)Math.round(Math.sin(angle) * range);
+			if (!level.isLoaded(new BlockPos(x, level.getSeaLevel(), z))) {
+				continue;
+			}
+			int y = level.getHeight(
+				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
+			for (int dy = 0; dy <= 6 && touched < 3; dy++) {
+				if (wither(level, new BlockPos(x, y - dy, z))) {
+					touched++;
+				}
+			}
+			if (touched >= 3) {
+				return;
+			}
+		}
+	}
+
+	/** One block, turned to whatever the dead version of itself is. */
+	private static boolean wither(ServerLevel level, BlockPos at) {
+		if (com.bloomlet.herobrine.manifest.DwellTracker.isBuilt(level, at)) {
+			return false;      // never anything anybody put there
+		}
+		net.minecraft.world.level.block.state.BlockState was = level.getBlockState(at);
+		net.minecraft.world.level.block.Block block = was.getBlock();
+		if (block == Blocks.GRASS_BLOCK || block == Blocks.MOSS_BLOCK) {
+			level.setBlock(at, Blocks.PALE_MOSS_BLOCK.defaultBlockState(), 3);
+			return true;
+		}
+		if (block == Blocks.SHORT_GRASS || block == Blocks.TALL_GRASS
+			|| block == Blocks.FERN || block == Blocks.LARGE_FERN
+			|| was.is(net.minecraft.tags.BlockTags.FLOWERS)) {
+			level.setBlock(at, Blocks.DEAD_BUSH.defaultBlockState(), 3);
+			return true;
+		}
+		if (was.is(net.minecraft.tags.BlockTags.LEAVES)) {
+			// Left standing, with the moss hanging out of the underside of it.
+			BlockPos under = at.below();
+			if (level.getBlockState(under).isAir()) {
+				level.setBlock(under, Blocks.PALE_HANGING_MOSS.defaultBlockState(), 3);
+				return true;
+			}
+			return false;
+		}
+		if (block == Blocks.OAK_LOG) {
+			level.setBlock(at, Blocks.STRIPPED_OAK_LOG.defaultBlockState()
+				.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS,
+					was.getValue(
+						net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS)),
+				3);
+			return true;
+		}
+		if (block == Blocks.BIRCH_LOG) {
+			level.setBlock(at, Blocks.STRIPPED_BIRCH_LOG.defaultBlockState()
+				.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS,
+					was.getValue(
+						net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS)),
+				3);
+			return true;
+		}
+		return false;
 	}
 
 	// ---- WHAT HE SAYS WHEN HE IS HURT --------------------------------------
@@ -1456,6 +1829,91 @@ public final class TheHunt {
 	 * you" is four words and it is the best thing in this file, because the mod
 	 * has spent the whole game earning the player's willingness to believe it.
 	 */
+	/**
+	 * WHAT HE SAYS BEFORE HE DOES IT.
+	 *
+	 * A tell, asked for by name, and three rules came with it.
+	 *
+	 * NO SOUND. Every other line he speaks rolls a cue off the hills, and on a tell
+	 * that is exactly wrong — a noise announcing an announcement is a cutscene, and
+	 * it tells the player to stop and listen at the moment they should be deciding
+	 * what to do. This arrives silently in the corner of the screen while they are
+	 * already busy, and finding it there is the whole effect.
+	 *
+	 * WHISPERED TO ONE PERSON, like `found` and unlike `taunt`. A warning read by
+	 * five people is four people being told about somebody else's problem.
+	 *
+	 * AND IT IS THE ADULT REGISTER. Everything else he says is restrained on
+	 * purpose — four lowercase words, never an outright threat, signs that could
+	 * have been anybody. That restraint is what makes him work and it is also why
+	 * these can go where they go: he has spent forty hours never once saying what
+	 * he wants, so the first time he describes it in bodily detail it lands like a
+	 * different thing has started speaking. Physical, unhurried, specific about
+	 * what a person is made of. Not slasher-film — a slasher enjoys the audience.
+	 * These are said to somebody he has already decided about.
+	 */
+	private static final String[][] TELLS = {
+		// 0 — the wave is on its way. About THEM, not about him.
+		{
+			"they have been under there a long time",
+			"they can smell where you have been bleeding",
+			"they do not stop when you break them",
+			"they were people last week",
+			"count them if you like",
+			"they are hungrier than i am",
+			"do not let them get behind you",
+		},
+		// 1 — he has finished waiting and is walking in.
+		{
+			"i am walking now",
+			"i want to hear the small bones first",
+			"hold still it is easier that way",
+			"there is a great deal of blood in a person",
+			"you will be tired long before i am",
+			"i have been deciding how to start",
+			"i am going to take my time",
+			"look at your hands while you still have them",
+		},
+		// 2 — the sky. Said once, when the storm turns.
+		{
+			"the ground is mine tonight",
+			"nothing out here is going to help you",
+			"i have opened the sky over your house",
+			"there will not be anywhere dry",
+		},
+	};
+
+	/**
+	 * @param moment 0 the wave, 1 he is coming in, 2 the sky
+	 */
+	/** He is not a narrator. Thirty seconds between anything he says. */
+	private static final int TELL_COOLDOWN = 600;
+	private static long lastTold = -10000L;
+
+	public static void tell(ServerLevel level, ServerPlayer quarry, int moment) {
+		// THIRTEEN OF THESE LANDED IN ONE HUNT and that is a different character
+		// from the one they were written for. Every wave says something and every
+		// return from a pause says something, so a five-minute fight with four
+		// waves and half a dozen repositions produced a running commentary.
+		//
+		// The lines are good BECAUSE they are rare — he has spent the whole game
+		// saying nothing, and a thing that comments on its own fight is a thing you
+		// have got the measure of. Half a minute apart, and the ones that lose the
+		// race are simply dropped rather than queued: a warning that arrives late is
+		// about a moment that has already happened.
+		long now = level.getGameTime();
+		if (now < lastTold + TELL_COOLDOWN) {
+			return;
+		}
+		lastTold = now;
+		String[] pool = TELLS[Math.max(0, Math.min(TELLS.length - 1, moment))];
+		String line = pool[level.getRandom().nextInt(pool.length)];
+		// No roll, no cue, nothing played. See above.
+		quarry.sendSystemMessage(Component.literal("§8§o" + line));
+		HerobrineMod.LOGGER.info("hunt: tell {} to {} — \"{}\"",
+			moment, quarry.getName().getString(), line);
+	}
+
 	private static final String[] FOUND = {
 		"look behind you",
 		"found you",
@@ -1527,11 +1985,16 @@ public final class TheHunt {
 				here.sendSystemMessage(Component.literal("§8§o" + line));
 			}
 		}
-		// Rolled rather than played. A taunt that only the person being taunted
-		// can hear is a private message; this one has to reach the rest of the
-		// group standing back, and then come off the treeline behind them.
-		com.bloomlet.herobrine.sound.ModSounds.roll(level, striker.blockPosition(),
-			com.bloomlet.herobrine.sound.ModSounds.ANGER, 3.4F, 0.86F);
+		// SILENT. THIS IS THE THIRD TIME IT HAS BEEN ASKED FOR.
+		//
+		// The line used to roll ANGER off the hills behind the player, which is the
+		// sound that kept getting reported as "the enderman echo when he is hurt".
+		// It was never the hit sound — that was removed two builds ago — it was the
+		// TAUNT announcing itself, and a threat that arrives with its own fanfare is
+		// a threat somebody wrote rather than something that happened.
+		//
+		// The words are the whole event. They land in chat, in his own register,
+		// with nothing telling the player to look at them.
 		HerobrineMod.LOGGER.info("hunt: blow {} from {} — \"{}\"",
 			blow, striker.getName().getString(), line);
 	}

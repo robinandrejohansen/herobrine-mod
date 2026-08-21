@@ -47,12 +47,22 @@ SCALE = 4
 # region for the brow line finds a solid black row at y=13, and the row under it
 # is the eyes: white at x=9, green at x=10, then a gap for the nose, green at
 # x=13, white at x=14. Two pixels per eye, one row tall.
-EYES = [
-	# (white pixel, green pixel) — outer to inner, so the pupil goes on the
-	# green one and the white stays as the corner of the eye it already is.
-	((9, 14), (10, 14)),
-	((14, 14), (13, 14)),
-]
+# TWO BY TWO, NOT TWO BY ONE.
+#
+# A villager's eye is two pixels wide and ONE tall, and at that height it reads
+# as a slit however white it is — which is why the last pass still looked like an
+# ordinary villager with a dot in it. The eye has to be a SQUARE before any of
+# this registers from across a field.
+#
+# AND IT GROWS DOWNWARD, NOT UP. The first attempt took the brow row at y=13 to
+# buy the height, and the reference says otherwise: the dark brow is still there
+# above the eyes, and the white starts under it and runs down toward the nose.
+# That is the whole face in the photograph — a heavy line, then two white squares
+# hanging off it. Eating the brow removes the thing the eyes are hanging from.
+#
+# Top-left of a two-by-two, in base pixels. Row 14 is the eye row vanilla draws;
+# 15 is the cheek under it, which is what gets taken instead.
+EYES = [(9, 14), (13, 14)]
 
 # The iris he is given, and it is the villager's own green.
 #
@@ -63,7 +73,12 @@ EYES = [
 # vanilla green is what makes the pupil the entire message.
 IRIS = (56, 148, 56, 255)
 WHITE = (238, 238, 238, 255)
-PUPIL = (8, 8, 8, 255)
+# GREEN, not black. A black pupil reads as a doll — the eye is dead and painted
+# on. A saturated green one reads as LIT, which is the difference between a
+# thing that has been made and a thing that is looking at you. Picked off the
+# reference: white sclera the full width of the socket, and a two-by-two of
+# something switched on in the middle of it.
+PUPIL = (54, 214, 84, 255)
 
 
 def client_jar():
@@ -109,13 +124,22 @@ def main():
 	big = [[base[y // SCALE][x // SCALE] for x in range(width * SCALE)]
 	       for y in range(height * SCALE)]
 
-	for white, green in EYES:
-		block(big, white, WHITE)
-		block(big, green, IRIS)
-		# THE PUPIL, dead centre of the iris and half its width. Two by two out
-		# of four by four: any bigger and the eye is simply black at three
-		# blocks, which reads as a hole rather than as somebody looking at you.
-		pupil(big, green)
+	for eye in EYES:
+		# THE WHOLE SQUARE WHITE, AND THE GREEN GOES IN THE MIDDLE OF IT.
+		#
+		# It used to paint the inner cell as a solid green iris with the pupil
+		# inside it, which is how a villager's eye is actually built — and it is
+		# the wrong reference. The eye wanted here is the one from the photograph:
+		# a wide WHITE eye with one small green square dead centre, so the white
+		# is the whole shape and the green is a point inside it.
+		#
+		# The difference matters at distance. A half-green eye is a villager
+		# squinting. A white eye with a dot in it is a pupil, and a pupil is the
+		# only thing that reads as looking AT you from across a field.
+		for dx in range(2):
+			for dy in range(2):
+				block(big, (eye[0] + dx, eye[1] + dy), WHITE)
+		pupil_in(big, eye)
 
 	path = os.path.join(OUT, 'villager.png')
 	pngio.write(path, width * SCALE, height * SCALE, big)
@@ -129,10 +153,23 @@ def block(px, at, colour):
 			px[y][x] = colour
 
 
-def pupil(px, at):
-	x0, y0 = at[0] * SCALE + SCALE // 4, at[1] * SCALE + SCALE // 4
-	for y in range(y0, y0 + SCALE // 2):
-		for x in range(x0, x0 + SCALE // 2):
+def pupil_in(px, eye):
+	"""A two-by-two, centred on the seam of the two cells that make one eye.
+
+	Centred across the PAIR rather than inside one of them, because the eye is
+	two base pixels wide and a pupil in either half is an eye looking sideways.
+	Two by two out of the eight by four the pair covers: any bigger and it is a
+	hole rather than somebody looking at you, any smaller and it is gone at three
+	blocks, which is the range this has to work at.
+	"""
+	# Dead centre of the eight-by-eight the square covers, three across. Two was
+	# right in a two-by-one eye and disappears in a two-by-two; four is half the
+	# width and reads as a hole. Three is the largest thing that still looks like
+	# a pupil rather than a missing pixel.
+	x0 = eye[0] * SCALE + SCALE - 1
+	y0 = eye[1] * SCALE + SCALE - 1
+	for y in range(y0, y0 + 3):
+		for x in range(x0, x0 + 3):
 			px[y][x] = PUPIL
 
 

@@ -93,14 +93,21 @@ public final class Config {
 	 * off in exactly the same three swings, so nothing a player had done all game
 	 * mattered here, which is the one place it should.
 	 *
-	 * Forty is about six blows with a diamond sword, four or five if they land
-	 * crits, more with something worse. What you brought decides how long this
-	 * takes, and that is the whole reason to have brought it.
+	 * SIXTY, ACROSS THREE WAVES — ten, then twenty, then thirty. The total is the
+	 * only number here because the three shares come off it: cross a sixth of it
+	 * and he withdraws and sends the first wave, cross half and he sends a bigger
+	 * one, and the last thirty are what actually drives him off.
+	 *
+	 * That shape is why it is not one threshold any more. Forty in one block meant
+	 * a hunt was over the first time anything went wrong, and a mercy at three
+	 * hearts ended one at SEVEN damage in — which read, correctly, as the shortest
+	 * hunt in the game. Now the early exits move him to the next phase instead of
+	 * out of the event.
 	 *
 	 * (The old `blowsToBreakOff` is gone. An existing config file simply has a
 	 * key nothing reads any more, and this defaults in beside it.)
 	 */
-	public double damageToBreakOff = 40.0;
+	public double damageToBreakOff = 60.0;
 	/** He leaves fires. Already refuses to light near anything flammable. */
 	public boolean scorch = true;
 	/**

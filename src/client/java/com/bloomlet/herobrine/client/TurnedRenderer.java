@@ -48,6 +48,32 @@ public class TurnedRenderer
 		super(context, new VillagerModel(context.bakeLayer(ModelLayers.VILLAGER)), 0.5F);
 		this.items = context.getItemModelResolver();
 		this.addLayer(new CrossedArmsItemLayer<>(this));
+		swellTheNose(this.getModel());
+	}
+
+	/**
+	 * A BIGGER NOSE, AND IT IS THE CHEAPEST WAY TO MAKE A FACE WRONG.
+	 *
+	 * Asked for off the reference, where the nose is unmistakably heavier than a
+	 * villager's — and the villager nose is the single most recognisable feature in
+	 * Minecraft, so any change to it registers instantly even at distance.
+	 *
+	 * SCALED RATHER THAN REMODELLED. `nose` is a named child of `head`, so the mesh
+	 * could be rebuilt with a larger cube — but a larger cube samples a larger UV
+	 * rectangle and would start pulling in whatever pixels sit next to the nose on
+	 * the sheet. Scaling the baked part stretches the SAME texels over more space,
+	 * which is both safe and exactly the look: not a different nose, that nose,
+	 * swollen.
+	 *
+	 * A third wider and a fifth longer. Deliberately modest — double it and this
+	 * stops being an uncanny villager and becomes a cartoon, and the whole effect
+	 * rests on the player not being able to say immediately what is wrong.
+	 */
+	private static void swellTheNose(VillagerModel model) {
+		net.minecraft.client.model.geom.ModelPart nose = model.getHead().getChild("nose");
+		nose.xScale = 1.35F;
+		nose.yScale = 1.2F;
+		nose.zScale = 1.45F;
 	}
 
 	@Override

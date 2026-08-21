@@ -29,7 +29,6 @@ public class HerobrineRenderer
 	public HerobrineRenderer(EntityRendererProvider.Context context) {
 		super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5F);
 		this.addLayer(new HerobrineEyesLayer<>(this));
-		this.addLayer(new HerobrineWoundLayer<>(this, TEXTURE));
 	}
 
 	@Override
@@ -48,19 +47,19 @@ public class HerobrineRenderer
 	 * Worked out from a TIMESTAMP the server synced once rather than from a
 	 * counter it syncs every tick — see HerobrineEntity.WOUNDED. The client has
 	 * the same game clock, so subtracting is free and exact.
+	 *
+	 * This replaced a bespoke render layer that drew him black. See WOUND_FLASH for
+	 * why black could never have worked on a black skin.
 	 */
 	@Override
 	public void extractRenderState(HerobrineEntity entity, HumanoidRenderState state,
 	                               float partialTicks) {
 		super.extractRenderState(entity, state, partialTicks);
 		Long hit = entity.getAttached(HerobrineEntity.WOUNDED);
-		float fade = 0.0F;
-		if (hit != null) {
-			long since = entity.level().getGameTime() - hit;
-			if (since >= 0 && since < HerobrineEntity.WOUND_FLASH) {
-				fade = 1.0F - (float)since / HerobrineEntity.WOUND_FLASH;
-			}
-		}
-		((Wounded)state).herobrine$wound(fade);
+		long since = hit == null ? Long.MAX_VALUE : entity.level().getGameTime() - hit;
+		// Vanilla's own field, so the body is tinted by the same code that tints
+		// every other mob in the game — and RenderTypes.eyes() ignores the overlay,
+		// so his eyes stay lit straight through it.
+		state.hasRedOverlay = since >= 0 && since < HerobrineEntity.WOUND_FLASH;
 	}
 }
