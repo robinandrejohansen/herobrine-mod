@@ -44,10 +44,25 @@ DEPTH = 2
 # material in it, and at any distance it reads as a hole in the world rather
 # than as something occupying the frame. A near-black with a trace of blue in
 # it, and a white pulled slightly cool, gives the surface a temperature.
-DARK = (6, 6, 9, 255)
-MID = (52, 54, 62, 255)
-PALE = (198, 202, 212, 255)
-BRIGHT = (244, 246, 250, 255)
+# AND IT IS NOT GREY ANY MORE.
+#
+# Four steps of neutral grey is the cheapest thing a portal can be: no hue
+# anywhere in it, so the eye reads flat noise rather than depth, and at any
+# distance it is a television with no signal in a stone frame.
+#
+# A RAMP WITH A HUE IN IT INSTEAD, and the hue turns as it brightens. Nearly
+# black with violet buried in it, up through a deep indigo, out to a cold lilac,
+# and only the very top of it goes white. Light that changes colour as it gets
+# brighter is what every real glow does and what no flat palette can fake — it
+# is the whole difference between something lit and something coloured in.
+#
+# Not the nether's magenta. That purple is warm and saturated and belongs to a
+# block everybody has already made a hundred of. This one is cold, and the white
+# at the top of it is his — the same white as the eyes.
+DARK = (9, 6, 20, 255)
+MID = (46, 32, 84, 255)
+PALE = (148, 126, 214, 255)
+BRIGHT = (236, 230, 255, 255)
 
 
 def hashed(x, y, z):

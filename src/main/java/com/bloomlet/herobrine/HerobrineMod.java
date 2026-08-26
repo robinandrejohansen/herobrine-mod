@@ -70,6 +70,9 @@ public class HerobrineMod implements ModInitializer {
 		com.bloomlet.herobrine.block.ModBlocks.register();
 		com.bloomlet.herobrine.sound.ModSounds.register();
 		Heat.register();
+		com.bloomlet.herobrine.manifest.Whereabouts.register();
+		com.bloomlet.herobrine.manifest.Demonstration.register();
+		com.bloomlet.herobrine.manifest.Dread.register();
 		ManifestationDirector.register();
 		HerobrineCommand.register();
 

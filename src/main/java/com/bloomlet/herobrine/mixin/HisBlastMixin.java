@@ -1,9 +1,7 @@
 package com.bloomlet.herobrine.mixin;
 
 import com.bloomlet.herobrine.entity.HerobrineEntity;
-import com.bloomlet.herobrine.manifest.TheHunt;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball;
 import net.minecraft.world.level.Level;
@@ -62,10 +60,13 @@ public abstract class HisBlastMixin {
 			return;
 		}
 		Vec3 at = hit.getLocation();
-		// Somebody who turned mobGriefing off has said they do not want terrain
-		// touched, and anything a player placed is off the table regardless.
-		boolean digs = here.getGameRules().get(GameRules.MOB_GRIEFING)
-			&& !TheHunt.anythingBuiltNear(here, BlockPos.containing(at));
+		// The gamerule and nothing else. There used to be a second condition —
+		// anythingBuiltNear — and it read as "anything a player placed is off the
+		// table", which is not what it did: DwellTracker is a material list, so it
+		// meant his fireballs could not scratch a plank anywhere in the world,
+		// including a village, a mineshaft and his own house. Somebody who turned
+		// mobGriefing off has said what they want. Everybody else gets the fireball.
+		boolean digs = here.getGameRules().get(GameRules.MOB_GRIEFING);
 		here.explode(ball, at.x, at.y, at.z, BLAST,
 			digs ? Level.ExplosionInteraction.MOB : Level.ExplosionInteraction.NONE);
 	}

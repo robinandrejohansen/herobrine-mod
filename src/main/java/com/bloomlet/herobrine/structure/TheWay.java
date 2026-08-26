@@ -8,6 +8,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
 /**
  * THE FRAME, AND WHAT IS ON THE OTHER SIDE OF IT.
@@ -30,30 +32,42 @@ public final class TheWay {
 	private TheWay() {}
 
 	/** Five wide, five high. Big enough to be a door and not an arch. */
-	private static final int WIDTH = 2;
-	private static final int HEIGHT = 4;
+	/** Half the opening, so the piers stand at two and three. */
+	private static final int HALF = 2;
+	/** How tall the way itself is. */
+	private static final int TALL = 4;
+	/** How deep the piers are, front to back. Thickness is what sells masonry. */
+	private static final int DEPTH = 1;
+	/** And how far the threshold and the cornice reach past all of it. */
+	private static final int REACH = 4;
 
 	/**
-	 * Raise it, standing, over the ground he died on.
+	 * A GATE, NOT A FRAME.
 	 *
-	 * NOT OBSIDIAN. It was obsidian with crying obsidian at the corners, and the
-	 * reasoning for the second block was sound — it is the only thing in the game
-	 * that reads as a portal somebody has WEPT over. The reasoning for the first
-	 * was not reasoning at all, it was habit: an obsidian frame with a swirling
-	 * interior IS a nether portal, to every player who has ever built one, and no
-	 * amount of custom texture in the middle survives a silhouette they have
-	 * recognised ten thousand times. The one structure in the mod that has to
-	 * read as unprecedented was quoting vanilla's most familiar object.
+	 * Five blocks of deepslate in a rectangle with a light in the middle is what a
+	 * portal looks like when nobody designed it. It is the shape the Nether portal
+	 * already owns, at half the size, in different stone — and next to anything
+	 * else in this mod it read as a placeholder that got shipped.
 	 *
-	 * So it is black and white, like what is inside it.
+	 * This is a piece of architecture. Nine across, eight up, three deep, standing
+	 * on its own threshold: two thick piers with a chiselled base and a chiselled
+	 * cap, a lintel across them, a corbelled cornice over that, and lanterns
+	 * hanging in the shadow underneath. It is the only thing on his land that was
+	 * BUILT rather than dug or thrown up, and it should be the only thing that
+	 * looks it.
 	 *
-	 * DARK POSTS UNDER A PALE BEAM, which is architecture rather than pattern —
-	 * polished deepslate for the uprights, calcite across the lintel and the sill.
-	 * Checkering the whole ring was the other candidate and it reads as graphic
-	 * design; a white beam held up by black posts reads as something that was
-	 * BUILT, by somebody, on purpose.
+	 * SEVEN STONES, not one. Deepslate brick, cracked deepslate brick, deepslate
+	 * tile, polished and chiselled deepslate, tuff brick, polished tuff. Every one
+	 * of them is a cold grey-blue and none of them is the same grey-blue, which is
+	 * the entire difference between masonry and a texture repeated four hundred
+	 * times.
 	 *
-	 * REINFORCED DEEPSLATE AT THE FOUR CORNERS, doing the job crying obsidian
+	 * AMETHYST IN THE PIERS. One block set into the face of each, at eye height,
+	 * lit from the portal beside it. It is the only warm-coloured thing in the
+	 * structure and it is the same violet as the way itself — so the stone reads
+	 * as something built AROUND the light rather than a wall with a hole in it.
+	 *
+	 * REINFORCED DEEPSLATE STILL AT THE FOUR CORNERS, doing the job crying obsidian
 	 * used to. It is the only block in Minecraft a player cannot obtain by any
 	 * means, and vanilla places it in exactly one place — the ancient cities,
 	 * around something nobody has explained. A player who knows that reads the
@@ -61,39 +75,170 @@ public final class TheWay {
 	 * says the same thing more slowly.
 	 *
 	 * And no blackstone anywhere near it. Blackstone is the second most
-	 * nether-flavoured stone in the game and it was holding up the frame, the
-	 * step and the whole landing chamber.
+	 * nether-flavoured stone in the game and it was holding up the frame, the step
+	 * and the whole landing chamber.
 	 */
 	public static void open(ServerLevel level, BlockPos site) {
-		for (int dx = -WIDTH; dx <= WIDTH; dx++) {
-			for (int dy = 0; dy <= HEIGHT; dy++) {
-				BlockPos at = site.offset(dx, dy, 0);
-				boolean upright = Math.abs(dx) == WIDTH;
-				boolean beam = dy == 0 || dy == HEIGHT;
-				if (upright && beam) {
-					level.setBlock(at, Blocks.REINFORCED_DEEPSLATE.defaultBlockState(), 2);
-				} else if (upright) {
-					level.setBlock(at, Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 2);
-				} else if (beam) {
-					level.setBlock(at, Blocks.CALCITE.defaultBlockState(), 2);
+		net.minecraft.util.RandomSource random = level.getRandom();
+
+		// THE THRESHOLD. A gate standing on the floor is a doorway; a gate standing
+		// on its own step is a building, and the step is what tells you which way
+		// you are meant to approach from.
+		for (int dx = -REACH; dx <= REACH; dx++) {
+			for (int dz = -DEPTH - 1; dz <= DEPTH + 1; dz++) {
+				BlockPos at = site.offset(dx, -1, dz);
+				boolean rim = Math.abs(dx) == REACH || Math.abs(dz) == DEPTH + 1;
+				if (rim) {
+					level.setBlock(at, Blocks.DEEPSLATE_BRICK_STAIRS.defaultBlockState()
+						.setValue(BlockStateProperties.HORIZONTAL_FACING, outward(dx, dz)), 2);
 				} else {
-					level.setBlock(at, ModBlocks.THE_WAY.defaultBlockState(), 2);
+					level.setBlock(at, paving(random), 2);
+					// Not in the doorway. Nothing grows where he walks.
+					if (Math.abs(dx) > 1 && random.nextInt(4) == 0) {
+						level.setBlock(at.above(),
+							Blocks.PALE_MOSS_CARPET.defaultBlockState(), 2);
+					}
 				}
 			}
 		}
-		// A step up to it, so it does not read as a hole in the air.
-		for (int dx = -WIDTH; dx <= WIDTH; dx++) {
-			for (int dz = -1; dz <= 1; dz++) {
-				BlockPos under = site.offset(dx, -1, dz);
-				if (!level.getBlockState(under).isSolid()) {
-					level.setBlock(under, Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 2);
+
+		// THE PIERS. Two blocks thick and three deep, which is what stops them
+		// being a line of blocks seen edge-on from every angle but one.
+		for (int side = -1; side <= 1; side += 2) {
+			for (int out = HALF; out <= HALF + 1; out++) {
+				for (int dz = -DEPTH; dz <= DEPTH; dz++) {
+					for (int up = 0; up <= TALL; up++) {
+						level.setBlock(site.offset(side * out, up, dz),
+							pier(random, up), 2);
+					}
+				}
+			}
+			// The jewel, set into the INNER face at eye height — the one the way
+			// itself lights. On the outside edge it was a purple block on a grey
+			// wall; here it is the same violet as the light beside it, and the
+			// stone reads as something built around the light rather than a wall
+			// with a hole in it.
+			level.setBlock(site.offset(side * HALF, 2, 0),
+				Blocks.AMETHYST_BLOCK.defaultBlockState(), 2);
+			// And the corners of the opening, which cannot be taken out.
+			level.setBlock(site.offset(side * HALF, 0, 0),
+				Blocks.REINFORCED_DEEPSLATE.defaultBlockState(), 2);
+			level.setBlock(site.offset(side * HALF, TALL, 0),
+				Blocks.REINFORCED_DEEPSLATE.defaultBlockState(), 2);
+		}
+
+		// THE LINTEL, spanning both piers, and a chiselled band over it.
+		for (int dx = -HALF - 1; dx <= HALF + 1; dx++) {
+			for (int dz = -DEPTH; dz <= DEPTH; dz++) {
+				level.setBlock(site.offset(dx, TALL + 1, dz), pier(random, TALL + 1), 2);
+				level.setBlock(site.offset(dx, TALL + 2, dz),
+					Blocks.CHISELED_DEEPSLATE.defaultBlockState(), 2);
+			}
+		}
+
+		// THE CORNICE. Stairs turned outward all the way round, one block proud of
+		// everything under them — the single detail that throws a shadow, and the
+		// reason this reads as a gate from two hundred blocks instead of a slab.
+		for (int dx = -REACH; dx <= REACH; dx++) {
+			for (int dz = -DEPTH - 1; dz <= DEPTH + 1; dz++) {
+				boolean edge = Math.abs(dx) >= HALF + 1 || Math.abs(dz) == DEPTH + 1;
+				if (!edge) {
+					continue;
+				}
+				level.setBlock(site.offset(dx, TALL + 3, dz),
+					Blocks.TUFF_BRICK_STAIRS.defaultBlockState()
+						.setValue(BlockStateProperties.HORIZONTAL_FACING, outward(dx, dz)), 2);
+				// And what grows on a ledge nobody has been up to in a long time.
+				BlockPos under = site.offset(dx, TALL + 2, dz);
+				if (level.getBlockState(under).isAir() && random.nextInt(3) == 0) {
+					level.setBlock(under,
+						Blocks.PALE_HANGING_MOSS.defaultBlockState(), 2);
 				}
 			}
 		}
+		for (int dx = -HALF; dx <= HALF; dx++) {
+			for (int dz = -DEPTH; dz <= DEPTH; dz++) {
+				level.setBlock(site.offset(dx, TALL + 3, dz),
+					Blocks.DEEPSLATE_TILE_SLAB.defaultBlockState(), 2);
+			}
+		}
+
+		// A LIGHT IN THE SHADOW UNDER THE LINTEL. Soul lanterns, because the flame
+		// is the one cold blue in the game and it is the only lamp that does not
+		// make a stone doorway look welcoming.
+		for (int sx = -1; sx <= 1; sx += 2) {
+			for (int sz = -1; sz <= 1; sz += 2) {
+				// Under the cornice, at the four corners. Inside the opening they
+				// were buried in the piers; out here they light the whole face of
+				// it and the overhang gives them something to hang from.
+				BlockPos hook = site.offset(sx * (HALF + 1), TALL + 2, sz * (DEPTH + 1));
+				if (level.getBlockState(hook).isAir()) {
+					level.setBlock(hook, Blocks.SOUL_LANTERN.defaultBlockState()
+						.setValue(BlockStateProperties.HANGING, true), 2);
+				}
+			}
+		}
+
+		// AND THE WAY ITSELF, last, so nothing overwrites it.
+		for (int dx = -HALF + 1; dx <= HALF - 1; dx++) {
+			for (int dy = 0; dy <= TALL; dy++) {
+				level.setBlock(site.offset(dx, dy, 0),
+					ModBlocks.THE_WAY.defaultBlockState(), 2);
+			}
+		}
+
+		// What has grown up the front of it since anybody last used it.
+		for (int side = -1; side <= 1; side += 2) {
+			for (int up = 1; up < TALL; up++) {
+				BlockPos face = site.offset(side * (HALF + 2), up, 0);
+				if (level.getBlockState(face).isAir() && random.nextInt(3) != 0) {
+					level.setBlock(face, Blocks.VINE.defaultBlockState().setValue(
+						net.minecraft.world.level.block.VineBlock.PROPERTY_BY_DIRECTION
+							.get(side > 0 ? Direction.WEST : Direction.EAST), true), 2);
+				}
+			}
+		}
+
 		level.playSound(null, site, com.bloomlet.herobrine.sound.ModSounds.THE_WAY,
 			net.minecraft.sounds.SoundSource.HOSTILE, 4.0F, 0.5F);
 		HerobrineMod.LOGGER.info("the way is open at [{}, {}, {}]",
 			site.getX(), site.getY(), site.getZ());
+	}
+
+	/** Whichever way is out, for a stair on the rim of something square. */
+	private static Direction outward(int dx, int dz) {
+		return Math.abs(dx) >= Math.abs(dz)
+			? (dx > 0 ? Direction.EAST : Direction.WEST)
+			: (dz > 0 ? Direction.SOUTH : Direction.NORTH);
+	}
+
+	/**
+	 * The pier stone. Chiselled at the foot and the cap, brick between, and one
+	 * course in five is cracked or tuff — so no two piers are laid the same and
+	 * neither of them is a column of one texture.
+	 */
+	private static BlockState pier(net.minecraft.util.RandomSource random, int up) {
+		if (up == 0 || up == TALL) {
+			return Blocks.CHISELED_DEEPSLATE.defaultBlockState();
+		}
+		return switch (random.nextInt(9)) {
+			case 0, 1 -> Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState();
+			case 2 -> Blocks.TUFF_BRICKS.defaultBlockState();
+			case 3 -> Blocks.POLISHED_DEEPSLATE.defaultBlockState();
+			case 4 -> Blocks.DEEPSLATE_TILES.defaultBlockState();
+			default -> Blocks.DEEPSLATE_BRICKS.defaultBlockState();
+		};
+	}
+
+	/** And the floor of it, which is older than the gate standing on it. */
+	private static BlockState paving(net.minecraft.util.RandomSource random) {
+		return switch (random.nextInt(8)) {
+			case 0, 1 -> Blocks.DEEPSLATE_BRICKS.defaultBlockState();
+			case 2 -> Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState();
+			case 3 -> Blocks.POLISHED_TUFF.defaultBlockState();
+			case 4 -> Blocks.CALCITE.defaultBlockState();
+			default -> Blocks.DEEPSLATE_TILES.defaultBlockState();
+		};
 	}
 
 	/**
@@ -144,11 +289,11 @@ public final class TheWay {
 	private static void chamber(ServerLevel level, BlockPos site) {
 		int r = 7;
 		for (BlockPos pos : BlockPos.betweenClosed(
-				site.offset(-r, -2, -r), site.offset(r, HEIGHT + 3, r))) {
+				site.offset(-r, -2, -r), site.offset(r, TALL + 4, r))) {
 			double away = Math.max(Math.abs(pos.getX() - site.getX()),
 				Math.abs(pos.getZ() - site.getZ()));
 			boolean shell = away >= r || pos.getY() <= site.getY() - 2
-				|| pos.getY() >= site.getY() + HEIGHT + 3;
+				|| pos.getY() >= site.getY() + TALL + 4;
 			level.setBlock(pos, shell
 				? Blocks.DEEPSLATE_TILES.defaultBlockState()
 				: Blocks.AIR.defaultBlockState(), 2);

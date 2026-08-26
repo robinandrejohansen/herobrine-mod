@@ -147,18 +147,24 @@ public enum Manifestation {
 	 * own: every event before this one is something that happens to you while
 	 * you get on with your day, and this is the one that will not let you.
 	 */
-	THE_HUNT(Phase.HUNTER, 14) {
+	/**
+	 * THE HUNT IS NOT AN EVENT ANY MORE AND THIS NO LONGER SCHEDULES IT.
+	 *
+	 * It used to be one of twenty-two things the director could roll, gated on
+	 * HUNTER, weighted at fourteen, subject to a window and a suppression list —
+	 * and all of that was answering the wrong question. "Is it time for a hunt" is
+	 * not a thing the mod should ever have had an opinion about.
+	 *
+	 * He lives somewhere now and walks around, and if he sees you he hunts you.
+	 * See Whereabouts and HerobrineEntity.spots. The trigger is proximity and bad
+	 * luck, which is a rule a player can hold in their head and play against.
+	 *
+	 * The entry stays so that the config switch, the ordinal and every saved
+	 * suppression list keep working. It simply never runs.
+	 */
+	THE_HUNT(Phase.HUNTER, 0) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
-			// Through TheHunt rather than straight to the spawner, because the
-			// hunt is the one event with things to do besides placing him: it
-			// works underground now, and if the player is nowhere near their
-			// house then the house has its own evening while they are out.
-			HauntingSpawner.Outcome outcome = TheHunt.begin(level, player);
-			if (outcome == HauntingSpawner.Outcome.PLACED) {
-				return true;
-			}
-			ManifestationDirector.refused(outcome.reason());
 			return false;
 		}
 	},

@@ -87,15 +87,15 @@ public final class Homestead {
 	private static final String[] GROUND = {
 		"                             ",
 		"                             ",
-		"  ################# ~~~~~~~~ ",
-		"  #...............# ~~~~~~~~ ",
-		"  #...............# ~~~~~~~~ ",
-		"  #...............# ~~~~~~~~ ",
-		"  #...............# ~~~~~~~~ ",
-		"  #...............# ~~~~~~~~ ",
-		"  #...............# ~~~~~~~~ ",
-		"  #...............# ~~~~~~~~ ",
-		"  #...............# ~~~~~~~~ ",
+		"  #################          ",
+		"  #...............#          ",
+		"  #...............#          ",
+		"  #...............#          ",
+		"  #...............#          ",
+		"  #...............#          ",
+		"  #...............#          ",
+		"  #...............#          ",
+		"  #...............#          ",
 		"  #...............#          ",
 		"  #...............#          ",
 		"  #...............# OOO      ",
@@ -113,15 +113,15 @@ public final class Homestead {
 	private static final String[] COURSE_ONE = {
 		"                             ",
 		"                             ",
-		"  ################# ffffffff ",
-		"  #AFc1   PWB  B P# f      f ",
-		"  #    h   W     3# f k    f ",
-		"  #   hTh         # f      f ",
-		"  #L   h   W x    # G      f ",
-		"  #S     x W      # f    k f ",
-		"  #SS    qrWMMMMMM# f      f ",
-		"  #WWW WWWWW  we  # f  k   f ",
-		"  #A      CW    x # ffffffff ",
+		"  #################          ",
+		"  #AFc1   PWB  B P#          ",
+		"  #    h   W     3#          ",
+		"  #   hTh         #          ",
+		"  #L   h   W x    #          ",
+		"  #S     x W      #          ",
+		"  #SS    qrWMMMMMM#          ",
+		"  #WWW WWWWW  we  #          ",
+		"  #A      CW    x #          ",
 		"  #A   x   WB     #          ",
 		"  #  l     W x  C #          ",
 		"  #      2 W     4# OOO      ",
@@ -279,8 +279,10 @@ public final class Homestead {
 			}
 		}
 		gable(level, origin, random);
+		wing(level, origin, random);
 		chimney(level, origin, random);
 		porch(level, origin, random);
+		trim(level, origin, random);
 		cellar(level, origin, random);
 		HerobrineMod.LOGGER.info("homestead raised at [{}, {}, {}]",
 			origin.getX(), origin.getY(), origin.getZ());
@@ -297,7 +299,11 @@ public final class Homestead {
 	 */
 	private static void levelGround(ServerLevel level, BlockPos origin) {
 		for (int z = HOUSE_Z0 - 1; z <= HOUSE_Z1 + 1; z++) {
-			for (int x = HOUSE_X0 - 1; x <= HOUSE_X1 + 1; x++) {
+			// AND THE WING, which stands eight blocks past the old east wall.
+			// Levelling only the main block left the whole workshop hanging off
+			// the side of whatever the terrain happened to do out there.
+			int east = z >= WING_Z0 - 1 && z <= WING_Z1 + 1 ? WING_X1 + 1 : HOUSE_X1 + 1;
+			for (int x = HOUSE_X0 - 1; x <= east; x++) {
 				BlockPos floor = origin.offset(x, 0, z);
 
 				// Down to whatever the ground actually was, in cobblestone.
@@ -623,6 +629,246 @@ public final class Homestead {
 	}
 
 	/**
+	 * THE EAST WING, AND THE REASON THE HOUSE NEEDED ONE.
+	 *
+	 * Seventeen by thirteen under one ridge is a hall, and a hall is one room you
+	 * take in from the doorway. Nothing in it is discovered — you see all of it at
+	 * once and then you are finished with the building.
+	 *
+	 * A second mass fixes that on its own, and it fixes it in the way real houses
+	 * do: somebody needed more room, so they put more room on the side, and it does
+	 * not match. The wing is lower, its ridge crosses the main one, its walls are
+	 * timber over stone where the house is stone throughout, and the only way into
+	 * it is a door punched through what used to be an outside wall. You have to go
+	 * round a corner to find out it is there.
+	 *
+	 * IT IS THE WORKSHOP. The house is where the family ate; this is where the work
+	 * was done, and the difference in what is standing in the two rooms says more
+	 * about who lived here than any of the books do.
+	 *
+	 * Built as code rather than mapped, because the character maps are validated on
+	 * class load against one width and one depth — a wing bolted into them means
+	 * editing every layer of every row, and a miscount there silently shifts half
+	 * the house sideways.
+	 */
+	private static final int WING_X0 = 19;
+	private static final int WING_X1 = 26;
+	private static final int WING_Z0 = 4;
+	private static final int WING_Z1 = 11;
+	/** Lower than the house, which is what stops it reading as one building. */
+	private static final int WING_EAVE = 4;
+
+	private static void wing(ServerLevel level, BlockPos origin, RandomSource random) {
+		int mid = (WING_Z0 + WING_Z1) / 2;
+
+		for (int x = WING_X0; x <= WING_X1; x++) {
+			for (int z = WING_Z0; z <= WING_Z1; z++) {
+				boolean wall = x == WING_X0 || x == WING_X1
+					|| z == WING_Z0 || z == WING_Z1;
+				boolean corner = (x == WING_X0 || x == WING_X1)
+					&& (z == WING_Z0 || z == WING_Z1);
+				// A floor of two woods, laid in no pattern, the way a floor put
+				// down out of what was left over actually looks.
+				set(level, origin.offset(x, 0, z), random.nextInt(4) == 0
+					? Blocks.DARK_OAK_PLANKS.defaultBlockState()
+					: Blocks.SPRUCE_PLANKS.defaultBlockState());
+				for (int y = 1; y <= 3; y++) {
+					BlockPos at = origin.offset(x, y, z);
+					if (!wall) {
+						set(level, at, Blocks.AIR.defaultBlockState());
+						continue;
+					}
+					if (corner) {
+						// Stripped log posts at the corners. One block, and it is
+						// the whole difference between a shed and a frame.
+						set(level, at, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState());
+					} else if (y == 1) {
+						set(level, at, weathered(random));      // stone to the waist
+					} else {
+						set(level, at, random.nextInt(5) == 0
+							? Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
+							: Blocks.SPRUCE_PLANKS.defaultBlockState());
+					}
+				}
+			}
+		}
+
+		// WINDOWS, and shutters on the ones that still have them.
+		for (int z : new int[] { WING_Z0 + 2, WING_Z1 - 2 }) {
+			hole(level, origin.offset(WING_X1, 2, z), Blocks.GLASS_PANE.defaultBlockState());
+			set(level, origin.offset(WING_X1 + 1, 2, z),
+				Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
+					.setValue(BlockStateProperties.OPEN, true));
+		}
+		hole(level, origin.offset(WING_X0 + 3, 2, WING_Z0),
+			Blocks.GLASS_PANE.defaultBlockState());
+
+		// THE DOOR THROUGH WHAT USED TO BE AN OUTSIDE WALL.
+		for (int y = 1; y <= 2; y++) {
+			set(level, origin.offset(HOUSE_X1, y, mid), Blocks.AIR.defaultBlockState());
+			set(level, origin.offset(WING_X0, y, mid), Blocks.AIR.defaultBlockState());
+		}
+		// Hung facing east, into the workshop. The map's door() helper is hard
+		// wired to north for the front of the house and places both halves off
+		// the lower call, so the second call was a no-op and the first would have
+		// hung this one sideways in the wall.
+		BlockState leaf = Blocks.SPRUCE_DOOR.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST);
+		set(level, origin.offset(WING_X0, 1, mid), leaf.setValue(
+			BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER));
+		set(level, origin.offset(WING_X0, 2, mid), leaf.setValue(
+			BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER));
+		set(level, origin.offset(HOUSE_X1, 3, mid),
+			Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState());
+
+		// WHAT THE WORK WAS. Nothing here is decoration — a smith's corner, a
+		// stone bench, wool being made, and a fire that has been out a long time.
+		set(level, origin.offset(WING_X0 + 1, 1, WING_Z0 + 1),
+			Blocks.SMITHING_TABLE.defaultBlockState());
+		set(level, origin.offset(WING_X0 + 2, 1, WING_Z0 + 1),
+			Blocks.ANVIL.defaultBlockState());
+		set(level, origin.offset(WING_X0 + 1, 1, WING_Z0 + 2),
+			Blocks.GRINDSTONE.defaultBlockState());
+		set(level, origin.offset(WING_X1 - 1, 1, WING_Z0 + 1),
+			Blocks.STONECUTTER.defaultBlockState());
+		set(level, origin.offset(WING_X1 - 1, 1, WING_Z1 - 1),
+			Blocks.LOOM.defaultBlockState());
+		set(level, origin.offset(WING_X1 - 2, 1, WING_Z1 - 1),
+			Blocks.CARTOGRAPHY_TABLE.defaultBlockState());
+		set(level, origin.offset(WING_X0 + 1, 1, WING_Z1 - 1),
+			Blocks.CAULDRON.defaultBlockState());
+		set(level, origin.offset(WING_X0 + 2, 1, WING_Z1 - 1),
+			Blocks.COMPOSTER.defaultBlockState());
+		for (int i = 0; i < 3; i++) {
+			set(level, origin.offset(WING_X1 - 1, 1 + i, WING_Z0 + 3),
+				Blocks.BARREL.defaultBlockState());
+		}
+		set(level, origin.offset(WING_X0 + 4, 1, mid + 1),
+			Blocks.HAY_BLOCK.defaultBlockState());
+		chest(level, origin.offset(WING_X0 + 4, 1, WING_Z1 - 1), null, random);
+
+		// The fire that heated the work, and it is out.
+		BlockPos hearth = origin.offset(WING_X0 + 3, 1, WING_Z0 + 1);
+		set(level, hearth, Blocks.CAMPFIRE.defaultBlockState()
+			.setValue(BlockStateProperties.LIT, false));
+		for (int dx = -1; dx <= 1; dx++) {
+			set(level, hearth.offset(dx, -1, 0), Blocks.COBBLESTONE.defaultBlockState());
+		}
+
+		// Light, hung rather than stuck to the walls.
+		for (int z : new int[] { WING_Z0 + 2, WING_Z1 - 2 }) {
+			BlockPos hook = origin.offset(WING_X0 + 4, 3, z);
+			set(level, hook, Blocks.SPRUCE_FENCE.defaultBlockState());
+			set(level, hook.below(), Blocks.LANTERN.defaultBlockState()
+				.setValue(BlockStateProperties.HANGING, true));
+		}
+
+		// AND ITS OWN ROOF, crossing the main one rather than continuing it.
+		for (int h = 0; h <= 2; h++) {
+			int y = WING_EAVE + h;
+			int near = WING_Z0 - 1 + h * 2;
+			int far = WING_Z1 + 1 - h * 2;
+			for (int x = WING_X0 - 1; x <= WING_X1 + 1; x++) {
+				slate(level, origin.offset(x, y, near), Direction.NORTH, true, random);
+				slate(level, origin.offset(x, y, near + 1), Direction.NORTH, false, random);
+				slate(level, origin.offset(x, y, far), Direction.SOUTH, true, random);
+				slate(level, origin.offset(x, y, far - 1), Direction.SOUTH, false, random);
+			}
+			for (int z = near + 2; z <= far - 2; z++) {
+				set(level, origin.offset(WING_X1, y, z),
+					Blocks.SPRUCE_PLANKS.defaultBlockState());
+			}
+		}
+		for (int x = WING_X0 - 1; x <= WING_X1 + 1; x++) {
+			slate(level, origin.offset(x, WING_EAVE + 2, mid), Direction.NORTH, false, random);
+		}
+	}
+
+	/** Take a block out and put a smaller one back, which is what a window is. */
+	private static void hole(ServerLevel level, BlockPos at, BlockState pane) {
+		set(level, at, pane);
+	}
+
+	/**
+	 * WHAT TURNS A BOX INTO A BUILDING, AND IT IS ALL ONE BLOCK THICK.
+	 *
+	 * Posts at the corners, boxes under the windows, a paved apron at the foot of
+	 * the walls, ivy up the side nobody uses and a light either side of the door.
+	 * None of it is structural and all of it is the difference between a shape and
+	 * a place — a flat wall has no scale, and the moment there is something small
+	 * on it the eye has something to measure the rest against.
+	 */
+	private static void trim(ServerLevel level, BlockPos origin, RandomSource random) {
+		// Corner posts, full height, on both masses.
+		for (int x : new int[] { HOUSE_X0, HOUSE_X1 }) {
+			for (int z : new int[] { HOUSE_Z0, HOUSE_Z1 }) {
+				for (int y = 1; y <= 4; y++) {
+					set(level, origin.offset(x, y, z),
+						Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState());
+				}
+			}
+		}
+
+		// A paved apron, so the walls meet the ground on something.
+		for (int x = HOUSE_X0 - 1; x <= WING_X1 + 1; x++) {
+			for (int z = HOUSE_Z0 - 1; z <= HOUSE_Z1 + 1; z++) {
+				boolean rim = x == HOUSE_X0 - 1 || z == HOUSE_Z0 - 1 || z == HOUSE_Z1 + 1
+					|| (x == HOUSE_X1 + 1 && (z < WING_Z0 - 1 || z > WING_Z1 + 1))
+					|| x == WING_X1 + 1;
+				if (!rim) {
+					continue;
+				}
+				BlockPos at = origin.offset(x, 0, z);
+				if (!level.getBlockState(at).isSolid()) {
+					continue;
+				}
+				set(level, at, switch (random.nextInt(6)) {
+					case 0, 1 -> Blocks.MOSSY_COBBLESTONE.defaultBlockState();
+					case 2 -> Blocks.ANDESITE.defaultBlockState();
+					case 3 -> Blocks.GRAVEL.defaultBlockState();
+					default -> Blocks.COBBLESTONE.defaultBlockState();
+				});
+			}
+		}
+
+		// Window boxes on the south face — a trapdoor shelf with something dead
+		// in it. Nobody has watered these since whatever happened here.
+		for (int x = HOUSE_X0 + 3; x <= HOUSE_X1 - 3; x += 4) {
+			BlockPos ledge = origin.offset(x, 1, HOUSE_Z1 + 1);
+			if (!level.getBlockState(ledge).isAir()) {
+				continue;
+			}
+			set(level, ledge, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH)
+				.setValue(BlockStateProperties.OPEN, true));
+			set(level, ledge.above(), random.nextBoolean()
+				? Blocks.POTTED_DEAD_BUSH.defaultBlockState()
+				: Blocks.POTTED_FERN.defaultBlockState());
+		}
+
+        // Ivy up the north side, which is the side that never sees the sun and
+        // the side nobody has any reason to walk along.
+		for (int x = HOUSE_X0; x <= HOUSE_X1; x++) {
+			for (int y = 1; y <= 4; y++) {
+				BlockPos face = origin.offset(x, y, HOUSE_Z0 - 1);
+				if (level.getBlockState(face).isAir() && random.nextInt(3) != 0) {
+					set(level, face, Blocks.VINE.defaultBlockState().setValue(
+						net.minecraft.world.level.block.VineBlock
+							.PROPERTY_BY_DIRECTION.get(Direction.SOUTH), true));
+				}
+			}
+		}
+
+		// And a light either side of the door.
+		for (int side = -1; side <= 1; side += 2) {
+			BlockPos post = origin.offset(DOOR_X + side * 2, 4, HOUSE_Z1 + 2);
+			set(level, post, Blocks.LANTERN.defaultBlockState()
+				.setValue(BlockStateProperties.HANGING, true));
+		}
+	}
+
+	/**
 	 * A chimney, up the outside of the north wall.
 	 *
 	 * Rises from the hearth inside and stands a good way clear of the ridge,
@@ -705,13 +951,26 @@ public final class Homestead {
 		// taking one back out the cellar is a sealed box nobody can reach.
 		set(level, hole, Blocks.AIR.defaultBlockState());
 
-		// A pillar beside the shaft, so the ladder has something to hang on.
-		// Carved back out of the room after it is hollowed, not before.
-		for (int y = -1; y >= -3; y--) {
-			set(level, origin.offset(5, y, 11), Blocks.COBBLESTONE.defaultBlockState());
-			set(level, origin.offset(5, y, 12), Blocks.LADDER.defaultBlockState()
-				.setValue(LadderBlock.FACING, Direction.SOUTH));
-		}
+		// A STAIR DOWN, NOT A LADDER — AND THE FLOOR PLANE IS WHY IT MATTERED.
+		//
+		// The house floor is the block layer at y=0, so a body stands at y=1 and the
+		// cellar floor is at y=-3. That is a four-block drop, and a ladder is not a
+		// route: ground pathfinding offers +1 up and no rungs, so he could FALL into
+		// his own undercroft and never get out of it.
+		//
+		// Four treads, each exactly one down and one across, walkable in both
+		// directions, landing on the block Undercroft.dig opens from.
+		//
+		//   y=+1  ░        ← the house, standing on the floor
+		//   y= 0  ▓░       ← through the hole at z=12
+		//   y=-1   ▓░      ← z=13
+		//   y=-2    ▓░     ← z=14
+		//   y=-3     ▓▒▒▒  ← turn east onto the cellar floor
+		//
+		set(level, origin.offset(5, 0, 13), Blocks.AIR.defaultBlockState());
+		set(level, origin.offset(5, -1, 12), Blocks.COBBLESTONE.defaultBlockState());
+		set(level, origin.offset(5, -2, 13), Blocks.COBBLESTONE.defaultBlockState());
+		set(level, origin.offset(5, -3, 14), Blocks.COBBLESTONE.defaultBlockState());
 
 		// And then it stops being a cellar.
 		//

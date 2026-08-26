@@ -101,7 +101,22 @@ public final class Reckoning {
 		BlockPos site = new BlockPos(where.getX(),
 			Ground.topOf(level, where.getX(), where.getZ()) + 1, where.getZ());
 
-		com.bloomlet.herobrine.structure.TheWay.open(level, site);
+		// THE TOWER CLOSES OVER ITSELF, and that is where the way out is.
+		//
+		// A portal opening on the spot he died is a fine ending and it wastes the
+		// fifteen hours before it: nobody knows the ending exists until it is in
+		// front of them. The tower has been standing broken on the skyline since
+		// the first day, in two halves that cannot reach each other, and killing
+		// him is what brings them together.
+		//
+		// Which turns the last fight from "the final boss" into "the door".
+		//
+		// The old behaviour survives as the fallback. If the tower never got sited
+		// — no dry ground near his house, a world where his place was never raised
+		// — then a portal here is far better than no ending at all.
+		if (!com.bloomlet.herobrine.structure.Spire.join(level, random)) {
+			com.bloomlet.herobrine.structure.TheWay.open(level, site);
+		}
 		burning(level, site, random);
 
 		// Experience, and a great deal of it. The one straightforwardly

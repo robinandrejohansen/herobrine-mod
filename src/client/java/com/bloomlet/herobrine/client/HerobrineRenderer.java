@@ -61,5 +61,21 @@ public class HerobrineRenderer
 		// every other mob in the game — and RenderTypes.eyes() ignores the overlay,
 		// so his eyes stay lit straight through it.
 		state.hasRedOverlay = since >= 0 && since < HerobrineEntity.WOUND_FLASH;
+
+		// AND THE ARM, FROM THE SAME KIND OF STAMP.
+		//
+		// attackTime is what HumanoidModel.setupAttackAnimation reads, and vanilla
+		// fills it from getAttackAnim — which is fed by updateSwingTime, which
+		// nothing calls for a mob in 26.2. So it was always zero and he swung a
+		// sword without moving.
+		//
+		// Ramped up over the first two thirds and back down over the last, because
+		// setupAttackAnimation treats it as a progress value and a swing that
+		// stops at full extension reads as a mob freezing mid-blow.
+		Long swung = entity.getAttached(HerobrineEntity.SWUNG);
+		float ago = swung == null ? Float.MAX_VALUE
+			: entity.level().getGameTime() - swung + partialTicks;
+		state.attackTime = ago < 0.0F || ago >= HerobrineEntity.SWING_SHOWS ? 0.0F
+			: 1.0F - Math.abs(ago / HerobrineEntity.SWING_SHOWS - 0.35F) / 0.65F;
 	}
 }

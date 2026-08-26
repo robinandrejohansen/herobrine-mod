@@ -308,7 +308,23 @@ public final class Dwellings {
 				// Finding a place still advances the story at once. It simply
 				// does not conjure the next one: that waits until this chapter
 				// has been lived in.
-				if (!Wrath.settled(server)) {
+				//
+				// EXCEPT THE HOMESTEAD, WHICH IS NOT A CHAPTER. It is where he
+				// LIVES, and the whole mod now hangs off that being true from the
+				// first minute — he walks out from it, the first player is handed a
+				// map to it, and everything he does is measured from it.
+				//
+				// Under the dues floor it was not even SITED for twenty minutes on
+				// a new world, so for the first twenty minutes of every game there
+				// was no him at all: no address, no wandering, no map, nothing. The
+				// symptom is a completely silent log and a mod that appears not to
+				// be installed, which is the worst possible first impression and
+				// took a playtest to notice.
+				//
+				// The floor is right for the other five. Those are story beats and
+				// the pacing exists so a lucky group cannot burn three chapters in
+				// an hour. His house is not a beat; it is the setting.
+				if (place != Place.HOMESTEAD && !Wrath.settled(server)) {
 					return;
 				}
 				// AND THE CHURCH ALSO WAITS ON A HUNT. Not "was offered one" —
@@ -805,6 +821,24 @@ public final class Dwellings {
 	}
 
 
+	/**
+	 * WHERE THE HOMESTEAD IS GOING TO BE, chosen long before it is built.
+	 *
+	 * origin() below only answers once the place has actually been raised, which is
+	 * when a player first walks near it — and that is too late for the one thing
+	 * that needs it. He has to LIVE somewhere from the first minute of the world,
+	 * not from whenever somebody happens to wander past his address.
+	 *
+	 * The site is picked during RUMOUR, immediately, and is what the map in the
+	 * grave points at. Handing it to Whereabouts means he is out there from the
+	 * start, walking around a house that has not been built yet — which is also
+	 * the honest reading, since he is the reason it is there.
+	 */
+	public static @org.jspecify.annotations.Nullable BlockPos homesteadSite(ServerLevel level) {
+		Long packed = level.getServer().overworld().getAttached(Place.HOMESTEAD.site);
+		return packed == null ? null : BlockPos.of(packed);
+	}
+
 	/** Where it actually stands, once raised. */
 	public static @org.jspecify.annotations.Nullable BlockPos origin(ServerLevel level) {
 		Long packed = level.getServer().overworld().getAttached(ORIGIN);
@@ -823,7 +857,23 @@ public final class Dwellings {
 	 * often enough to matter, and a house standing in water is not eerie, it is
 	 * broken.
 	 */
+	/**
+	 * ONCE. RAISED WAS DECLARED, READ, AND NEVER WRITTEN.
+	 *
+	 * The flag has existed the whole time and nothing ever set it, so raised()
+	 * answered false forever and this could be entered twice. It did not matter
+	 * while only the approach path called it — the tick raises each place once and
+	 * moves on. It matters now that Whereabouts builds his house up front: the
+	 * house went up at world creation, and then the tick walked past thirty seconds
+	 * later and built a SECOND one forty blocks away.
+	 *
+	 * A playtest found two homesteads. Setting the flag it already has is the whole
+	 * fix.
+	 */
 	public static boolean raise(ServerLevel level, BlockPos near) {
+		if (raised(level)) {
+			return false;
+		}
 		for (int attempt = 0; attempt < 24; attempt++) {
 			int x = near.getX() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
 			int z = near.getZ() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
@@ -834,6 +884,7 @@ public final class Dwellings {
 			Homestead.build(level, origin, level.getRandom());
 			ServerLevel overworld = level.getServer().overworld();
 			overworld.setAttached(ORIGIN, origin.asLong());
+			overworld.setAttached(RAISED, true);
 			return true;
 		}
 		HerobrineMod.LOGGER.warn("no buildable ground for the homestead near [{}, {}]",

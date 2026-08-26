@@ -107,7 +107,17 @@ public final class Config {
 	 * (The old `blowsToBreakOff` is gone. An existing config file simply has a
 	 * key nothing reads any more, and this defaults in beside it.)
 	 */
-	public double damageToBreakOff = 60.0;
+	/**
+	 * FORTY, AND IT IS THE WHOLE FIGHT NOW.
+	 *
+	 * Sixty was set when the middle of the hunt was three waves of other things —
+	 * most of that number was spent on a crowd rather than on him, so sixty of his
+	 * health was really about twenty-five of yours plus a lot of zombies.
+	 *
+	 * With the crowd gone every point of it is him, in reach, swinging. Forty is
+	 * longer than sixty was and it is all teeth.
+	 */
+	public double damageToBreakOff = 40.0;
 	/** He leaves fires. Already refuses to light near anything flammable. */
 	public boolean scorch = true;
 	/**

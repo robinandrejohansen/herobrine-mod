@@ -495,6 +495,10 @@ public final class HauntingSpawner {
 				continue;
 			}
 
+			// ONE OF HIM. See HerobrineEntity.anyLoaded.
+			if (HerobrineEntity.anyLoaded(level)) {
+				return Outcome.ALREADY_NEARBY;
+			}
 			HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
 			if (him == null) {
 				return Outcome.NO_FOOTING;
@@ -579,6 +583,10 @@ public final class HauntingSpawner {
 				continue;
 			}
 
+			// ONE OF HIM. See HerobrineEntity.anyLoaded.
+			if (HerobrineEntity.anyLoaded(level)) {
+				return Outcome.ALREADY_NEARBY;
+			}
 			HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
 			if (him == null) {
 				return Outcome.NO_FOOTING;
@@ -638,6 +646,10 @@ public final class HauntingSpawner {
 		// No light check at all, deliberately. A cave a player has torched is
 		// still a cave, and refusing to appear in the one they have lit would
 		// mean he only ever turns up where they cannot see him.
+		// ONE OF HIM. See HerobrineEntity.anyLoaded.
+		if (HerobrineEntity.anyLoaded(level)) {
+			return Outcome.ALREADY_NEARBY;
+		}
 		HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
 		if (him == null) {
 			return Outcome.NO_FOOTING;
@@ -721,6 +733,10 @@ public final class HauntingSpawner {
 			// one-block crawl, a boat on an underground lake. The last resort
 			// applies here too rather than losing the chapter to it.
 			return unseen(level, player);
+		}
+		// ONE OF HIM. See HerobrineEntity.anyLoaded.
+		if (HerobrineEntity.anyLoaded(level)) {
+			return Outcome.ALREADY_NEARBY;
 		}
 		HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
 		if (him == null) {
@@ -818,6 +834,10 @@ public final class HauntingSpawner {
 
 	private static Outcome spawnAt(ServerLevel level, ServerPlayer player, BlockPos pos,
 	                               boolean hunting) {
+		// ONE OF HIM. See HerobrineEntity.anyLoaded.
+		if (HerobrineEntity.anyLoaded(level)) {
+			return Outcome.ALREADY_NEARBY;
+		}
 		HerobrineEntity herobrine = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
 		if (herobrine == null) {
 			return Outcome.NO_FOOTING;
