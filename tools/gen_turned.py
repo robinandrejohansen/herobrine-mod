@@ -60,9 +60,48 @@ SCALE = 4
 # That is the whole face in the photograph — a heavy line, then two white squares
 # hanging off it. Eating the brow removes the thing the eyes are hanging from.
 #
-# Top-left of a two-by-two, in base pixels. Row 14 is the eye row vanilla draws;
-# 15 is the cheek under it, which is what gets taken instead.
-EYES = [(9, 14), (13, 14)]
+# THREE WIDE, AND THEY GO TO THE EDGE OF THE FACE.
+#
+# The head's front face is base x 8..15 — eight pixels, no more. Two-wide eyes at
+# 9 and 13 left a pixel of cheek outside each one, and that margin is what kept
+# reading as "a villager with big eyes" rather than as staring. Three wide, from
+# the outside edge inward, uses every pixel there is: 8.9.10, then 11.12 for the
+# nose, then 13.14.15. It is not so much that the eyes got bigger as that the
+# FACE ran out, which is the thing that makes a stare a stare.
+LEFT = 8
+RIGHT = 13
+EYE_WIDE = 3
+EYE_TALL = 2
+
+# AND THEY MOVED UP, TAKING THE BROW WITH THEM.
+#
+# A villager's forehead is enormous — the hood sits high and there are five clear
+# rows above the brow line. Eyes low on a face that tall read as sleepy, which is
+# the exact opposite of what this is for. Everything shifts up one: the brow to
+# 12, the eyes to 13 and 14, and row 15 goes back to being the cheek it always
+# was in the vanilla art.
+#
+# The brow has to be REDRAWN rather than moved, because the eyes now occupy the
+# row it used to be on. Without it the eyes hang off nothing, and the heavy line
+# above them is the thing this whole face is meant to be hanging from.
+BROW_Y = 12
+EYE_Y = 13
+# NEAR BLACK, AND IT HAS TO BE.
+#
+# The first pass used the vanilla brow brown (58,42,32) and it vanished — because
+# the ashen curve takes the forehead down to about the same value, so a brow
+# painted in the original colour lands on top of a forehead that is now exactly
+# as dark as it is. Nothing was wrong with the line; there was simply no contrast
+# left for it to sit in.
+#
+# So it is drawn against the NEW palette rather than the old one: darker than
+# anything the curve can produce, which is what puts a hard shadow over the eyes
+# and gives them something to hang from.
+BROW = (12, 12, 16, 255)
+# How big the dark point is, in upscaled pixels. Three out of the twelve the
+# socket covers — a quarter of the eye, which is about a real one and is small
+# enough that the white around it is unmistakably the shape you are reading.
+PUPIL_WIDE = 3
 
 # The iris he is given, and it is the villager's own green.
 #
@@ -73,12 +112,55 @@ EYES = [(9, 14), (13, 14)]
 # vanilla green is what makes the pupil the entire message.
 IRIS = (56, 148, 56, 255)
 WHITE = (238, 238, 238, 255)
-# GREEN, not black. A black pupil reads as a doll — the eye is dead and painted
-# on. A saturated green one reads as LIT, which is the difference between a
-# thing that has been made and a thing that is looking at you. Picked off the
-# reference: white sclera the full width of the socket, and a two-by-two of
-# something switched on in the middle of it.
-PUPIL = (54, 214, 84, 255)
+# BLACK, AND SMALL, WHICH REVERSES WHAT THIS COMMENT USED TO SAY.
+#
+# It argued for green: a black pupil reads as a doll, a lit one reads as
+# something looking back. That reasoning was sound for a two-by-two eye where the
+# pupil was most of the socket — at that size a dark centre really did read as a
+# hole. It stops being true once the eye is three wide and edge to edge, because
+# now the WHITE is the shape and the pupil is a point inside it, and a small dark
+# point in a large white eye is the most direct way a face has of pointing at
+# something. Green at that size read as glowing, which is a different creature.
+#
+# Not pure black. A hair of blue, the same cold neutral as the brow, so the two
+# dark features on the face belong to each other.
+PUPIL = (14, 14, 18, 255)
+
+
+def ashen(c):
+	"""Black and grey, and the green eyes are painted on afterwards.
+
+	SAME MAN, NO COLOUR. Every thread on him is the vanilla villager's — the same
+	robe, the same hood, the same apron folds — put through a curve rather than
+	redrawn, so at any distance he is still the silhouette of somebody you walked
+	past this morning. Nothing about his SHAPE says anything is wrong.
+
+	A gamma above one is what makes it black rather than merely grey: it pushes
+	the midtones down hard and leaves the highlights alone, so the brown robe goes
+	to near-black while the pale trim stays readable as trim. A flat desaturation
+	would have given a uniformly mid-grey man, and mid-grey is the one value that
+	reads as a texture that failed to load.
+
+	The last line puts a hair of blue in the greys. A dead neutral looks like a
+	rendering fault; a cold neutral looks like a colour somebody chose — and it
+	also puts the green in his eyes a very long way from anything else on him.
+	"""
+	if c[3] == 0:
+		return c
+	lum = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+	v = (lum / 255.0) ** 1.55 * 0.78
+	g = int(max(0, min(255, round(v * 255))))
+	return (g, g, min(255, int(g * 1.07)), c[3])
+
+
+# WHERE THE HEAD STOPS, READ OFF THE FILE RATHER THAN GUESSED.
+#
+# Scanning villager.png for rows with any opaque pixel gives the net exactly: the
+# head cube and its hat occupy rows 0 to 17, then rows 18 and 19 are empty, then
+# the body, arms and legs start at 20. A gap of two blank rows is not a
+# coincidence, it is the seam between the two halves of the model, and it means
+# the split can be a single number with nothing straddling it.
+HEAD_ROWS = 18
 
 
 def client_jar():
@@ -121,10 +203,30 @@ def main():
 	# Nearest-neighbour, so it is still Minecraft. Anything smoothed would make
 	# him the one soft-edged person in the village, which is the exact opposite
 	# of the effect.
+	# THE CLOTHES ONLY. THE HEAD KEEPS ITS OWN COLOUR.
+	#
+	# Running the curve over everything made a grey man, and a grey man is a
+	# different character — he reads as a wraith, or as a texture that failed. The
+	# thing that actually unsettles is a perfectly ordinary villager's head, the
+	# same colour as the ones you have traded with for forty hours, sitting on top
+	# of clothes that have gone black. One half normal is what makes the other half
+	# legible as wrong; both halves wrong is just a new mob.
+	#
+	# The curve runs BEFORE the upscale — one pass over four thousand pixels rather
+	# than sixty-five thousand — and before the eyes, which are painted after and
+	# are therefore untouched by it.
+	base = [[ashen(base[y][x]) if y >= HEAD_ROWS else base[y][x]
+	         for x in range(width)] for y in range(height)]
+
 	big = [[base[y // SCALE][x // SCALE] for x in range(width * SCALE)]
 	       for y in range(height * SCALE)]
 
-	for eye in EYES:
+	# The brow, one row higher than vanilla put it, drawn across both sockets AND
+	# the bridge between them so it reads as a single line rather than two dashes.
+	for x in range(LEFT, RIGHT + EYE_WIDE):
+		block(big, (x, BROW_Y), BROW)
+
+	for eye in (LEFT, RIGHT):
 		# THE WHOLE SQUARE WHITE, AND THE GREEN GOES IN THE MIDDLE OF IT.
 		#
 		# It used to paint the inner cell as a solid green iris with the pupil
@@ -136,9 +238,9 @@ def main():
 		# The difference matters at distance. A half-green eye is a villager
 		# squinting. A white eye with a dot in it is a pupil, and a pupil is the
 		# only thing that reads as looking AT you from across a field.
-		for dx in range(2):
-			for dy in range(2):
-				block(big, (eye[0] + dx, eye[1] + dy), WHITE)
+		for dx in range(EYE_WIDE):
+			for dy in range(EYE_TALL):
+				block(big, (eye + dx, EYE_Y + dy), WHITE)
 		pupil_in(big, eye)
 
 	path = os.path.join(OUT, 'villager.png')
@@ -166,10 +268,16 @@ def pupil_in(px, eye):
 	# right in a two-by-one eye and disappears in a two-by-two; four is half the
 	# width and reads as a hole. Three is the largest thing that still looks like
 	# a pupil rather than a missing pixel.
-	x0 = eye[0] * SCALE + SCALE - 1
-	y0 = eye[1] * SCALE + SCALE - 1
-	for y in range(y0, y0 + 3):
-		for x in range(x0, x0 + 3):
+	# Dead centre of the twelve-by-eight the socket now covers. Five across rather
+	# than three: the eye grew by half again in both directions, and a pupil that
+	# did not grow with it would be a big eye with a small dot in it, which reads
+	# as surprise. Matched to the socket, it reads as attention.
+	wide = EYE_WIDE * SCALE
+	tall = EYE_TALL * SCALE
+	x0 = eye * SCALE + (wide - PUPIL_WIDE) // 2
+	y0 = EYE_Y * SCALE + (tall - PUPIL_WIDE) // 2
+	for y in range(y0, y0 + PUPIL_WIDE):
+		for x in range(x0, x0 + PUPIL_WIDE):
 			px[y][x] = PUPIL
 
 

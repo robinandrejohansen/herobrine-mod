@@ -63,165 +63,227 @@ public final class Testimony {
 	 * has stopped asking, one is keeping a tally, one is writing to somebody who
 	 * is not coming, and one is not frightened any more.
 	 */
+	/**
+	 * WHAT THEY ARE NOW: SIX PEOPLE WHO GOT OUT, AND NONE OF THEM SAW IT.
+	 *
+	 * These were accounts of SIGHTINGS — a figure at the treeline, a man in the
+	 * west field who did not wave back — written by a cult that had made a doctrine
+	 * out of looking. That was a good document for a town with people still in it.
+	 * There are no people in it any more. The doors are shut, the lamps are lit,
+	 * and everybody who is still breathing is forty blocks underneath.
+	 *
+	 * So these are what the survivors wrote. Six of them, one night each, and the
+	 * thing they all have in common is the thing that makes it work:
+	 *
+	 *   NOT ONE OF THEM SAW WHAT DID IT.
+	 *
+	 * They heard it through a floor. They found the door open. They came back from
+	 * the field. One of them was holding the other end of a rope. Every account
+	 * stops at the same wall — the writer describes with total precision everything
+	 * up to the moment, and then has nothing, because there was nothing to see.
+	 *
+	 * THAT IS WHY IT IS SIX AND NOT ONE. A single unreliable narrator is a man who
+	 * might be mistaken. Six people, separately, in their own words, all going
+	 * blank at exactly the same point, is not six mistakes — it is the shape of the
+	 * thing pressed into six different pieces of paper, and the reader assembles it
+	 * without anybody having described it once.
+	 *
+	 * AND THE HORROR IS IN THE INVENTORY. Nobody writes "it was terrible". They
+	 * write what was in the room, in the order they found it, because that is what
+	 * people actually do — and a list of objects is worse than any adjective. The
+	 * one who counts the boots is the worst page down here and it never raises its
+	 * voice once.
+	 */
 	private static final Account[] ACCOUNTS = {
-		new Account("what I saw, by Aldis", new String[] {
+		new Account("what was under the floor", new String[] {
 			"""
-			I am writing this so that
-			I cannot change it later.
+			I am setting this down
+			because I am the only one
+			who was awake and I will
+			not be believed later.
 
-			Third of the month, near
-			dusk. A man standing at
-			the top of the west field
-			where there is no path.
-
-			I waved. I want that
-			written down. I waved,
-			because I thought it was
-			Corwin.""",
+			It began under the boards.
+			Not footsteps. A dragging,
+			the length of the room and
+			back, the length of the
+			room and back, for the
+			part of an hour it takes
+			to talk yourself out of
+			getting up.""",
 			"""
-			He did not wave back and
-			he did not move and I
-			looked away because the
-			dog wanted feeding.
+			Then it stopped, and the
+			ladder to the loft moved.
 
-			When I looked again he
-			was not there.
+			I did not go up. I want
+			that written in my own
+			hand rather than said
+			about me afterwards. I
+			did not go up.
 
-			That is all it was. I know
-			how it reads. I have read
-			it back four times and it
-			still reads like nothing."""
+			In the morning the loft
+			was empty and the window
+			was still latched from the
+			inside and there was no
+			ladder against the house.""",
 		}),
-		new Account("the mine, not a man", new String[] {
+
+		new Account("the door was open", new String[] {
 			"""
-			They keep saying they see
-			a man. I have never seen
-			a man.
+			I came in from the low
+			field at dusk, the same as
+			every day of my life.
 
-			What I hear is digging,
-			under the floor, at hours
-			when the shaft is shut and
-			I have the only key.
+			The door was open. Not
+			forced. Open, the way you
+			leave it when you are
+			carrying something in both
+			hands and mean to come
+			straight back.
 
-			A man does not explain
-			digging. The mine explains
-			digging.""",
+			The fire was still going.
+			The pot was still on it.""",
 			"""
-			Aldis asked me what is
-			doing the digging then,
-			if not a man.
+			Three bowls out. Three
+			spoons. Two of the bowls
+			had been started.
 
-			I said the earth settles.
+			I have been asked what I
+			found upstairs and I have
+			stopped answering, so I
+			will write it once and
+			then this book goes in the
+			barrel.
 
-			He asked why the earth
-			settles in strokes of three
-			and then stops when you
-			put your ear to it.
-
-			I have not answered him."""
+			I found the ceiling.""",
 		}),
-		new Account("a tally", new String[] {
+
+		new Account("a list, in the order found", new String[] {
 			"""
-			I have stopped writing
-			what it looks like. Everyone
-			writes what it looks like
-			and it never matches.
+			The gate, shut and pegged.
+			The dog, not barking, and
+			the dog always barked.
 
-			So: a count. One mark for
-			every time, one line for
-			every week.
+			Both boots by the step,
+			which is how I knew he was
+			inside, because a man does
+			not walk the valley in his
+			stockings.
 
-			|||| ||
-			||| |
-			|||| |||| ||
-			|||| |||| |||| ||||""",
+			The scythe, hung up. The
+			hands still on it.""",
 			"""
-			|||| |||| |||| |||| ||||
-			|||| |||| |||| |||| ||||
+			I have gone over this list
+			every night since and it
+			is always the same list and
+			it never explains itself.
 
-			I am not going to write the
-			number out. Anyone can
-			count.
+			Everything was where it
+			was supposed to be. That
+			is the part I cannot get
+			past. Nothing was knocked
+			over. Nothing was taken.
 
-			What I will write is that
-			the lines get longer and
-			nobody has any theory
-			that survives the counting."""
+			It was tidy in there.""",
 		}),
-		new Account("to Marta", new String[] {
+
+		new Account("to Marta, who will not read this", new String[] {
 			"""
-			Marta,
+			You asked me to hold the
+			rope while you went down
+			for the bucket. Eleven
+			feet of well and I have
+			pulled you up out of it
+			forty times.
 
-			You were right to go and I
-			am not writing to argue
-			with you.
-
-			The others have made a
-			room under the square. I
-			said it was foolish and then
-			I helped dig it, which tells
-			you where I am.""",
+			It went slack. Not cut and
+			not dropped. Slack, the way
+			it goes when somebody at
+			the other end has decided
+			to let go, except you had
+			it round your wrist.""",
 			"""
-			We meet because it is the
-			only hour of the week I am
-			not frightened. That is the
-			whole of it. Not devotion.
-			Company.
+			I hauled it up. It came up
+			easily and it came up
+			whole and it came up
+			wearing your bracelet.
 
-			If you are reading this you
-			came back, and I would
-			give a great deal to know
-			why."""
+			I have been down that well
+			four times since. There is
+			eleven feet of it and then
+			there is water and then
+			there is the bottom, and I
+			have had my hands on all
+			three.
+
+			There is nowhere for you
+			to be.""",
 		}),
-		new Account("the seventh", new String[] {
+
+		new Account("the seventh house", new String[] {
 			"""
-			We were six at the table
-			and I counted seven
-			shadows on the wall.
+			We went along the row in
+			the morning, six of us,
+			because nobody had come out
+			for the water.
 
-			I said nothing. I want to be
-			honest about that. I said
-			nothing for the rest of the
-			evening and I walked home
-			with Corwin and I said
-			nothing then either.""",
+			Six houses. I will not
+			write what was in them. It
+			was the same thing six
+			times and doing it once is
+			a murder and doing it six
+			times before anybody woke
+			is not a man.""",
 			"""
-			I have counted every week
-			since. It is six. It has been
-			six every week since.
+			The seventh was mine.
 
-			Which means either I
-			cannot count, or it was
-			there once and has not
-			come back.
+			They were sitting up. All
+			of them, in a row on the
+			bed, facing the door, and
+			they had been arranged that
+			way because people do not
+			die sitting up in a row.
 
-			I do not know which of
-			those I would prefer."""
+			They were waiting for me to
+			come in and see it. That is
+			what it was for.""",
 		}),
-		new Account("no longer afraid", new String[] {
+
+		new Account("we are not going back up", new String[] {
 			"""
-			The others are still writing
-			down what they saw as
-			though the writing changes
-			it.
+			There are forty-one of us
+			down here and between us we
+			have lost two hundred and
+			six.
 
-			I have stopped. Not because
-			I stopped seeing him.
-			Because I have understood
-			what he is doing and it is
-			very simple.""",
+			Not one of us saw it. I
+			have asked every single
+			person in this chamber and
+			I have written down every
+			answer and the answers are
+			a floor, a door, a rope, a
+			row of them sitting up.
+
+			Nobody saw it.""",
 			"""
-			He is not hunting anybody.
-			He is waiting.
+			They say up there that it
+			was fought off. That thirty
+			men went up the valley and
+			finished it and there is a
+			stone with the names on.
 
-			Every one of us has thought
-			about leaving. He knows
-			that. He does not have to
-			do anything at all except be
-			at the top of the field until
-			we go.
+			We have read the stone. We
+			put two of those names on
+			it ourselves.
 
-			I am not going to go."""
+			It was not fought off. It
+			was PUT somewhere, and the
+			man who put it there is
+			still sitting on the lid,
+			and one day he will get
+			tired.
+
+			Grow the wheat. Keep the
+			lamps lit. Do not go up.""",
 		}),
 	};
 
@@ -338,14 +400,99 @@ public final class Testimony {
 		return level.getBlockEntity(at) instanceof BarrelBlockEntity barrel ? barrel : null;
 	}
 
+	/**
+	 * Lines a written book draws before it stops, and it stops silently.
+	 *
+	 * These pages are hard-wrapped by hand — the writer chose where every line
+	 * breaks, which is most of why they read like somebody's handwriting rather
+	 * than a paragraph. That makes LINES the limit rather than characters, and it
+	 * makes overflow invisible: the page looks finished and the last thing on it
+	 * is simply not there.
+	 *
+	 * Thirteen, matching what the original twelve entries were written to.
+	 */
+	private static final int LINES = 13;
+
+	/**
+	 * One entry, across as many leaves as its lines need.
+	 *
+	 * Split on the blank lines the writer already put in, so a break never lands
+	 * mid-thought. Anything that will not fit is given its own leaf rather than
+	 * being cut — a survivor's account that stops in the middle of the sentence
+	 * about the loft is worse than no account at all.
+	 */
+	private static List<String> leaves(String page) {
+		List<String> out = new ArrayList<>();
+		StringBuilder leaf = new StringBuilder();
+		int lines = 0;
+		for (String para : page.split("\n\n")) {
+			int high = para.split("\n").length;
+			if (lines > 0 && lines + high + 1 > LINES) {
+				out.add(leaf.toString());
+				leaf.setLength(0);
+				lines = 0;
+			}
+			if (lines > 0) {
+				leaf.append("\n\n");
+				lines++;
+			}
+			leaf.append(para);
+			lines += high;
+		}
+		if (leaf.length() > 0) {
+			out.add(leaf.toString());
+		}
+		return out;
+	}
+
+	/**
+	 * THIRTY-TWO CHARACTERS, AND GOING OVER DISCONNECTS THE PLAYER.
+	 *
+	 * A written book's title is written to the wire by Utf8String with a hard cap
+	 * of 32, and nothing checks it on the way in. A 33-character title compiles,
+	 * builds, boots, generates, saves — and then the first person to OPEN the chest
+	 * gets
+	 *
+	 *     EncoderException: String too big (was 33 characters, max 32)
+	 *
+	 * on container_set_content, which does not throw an error in the chest, it
+	 * severs the connection. "Internal Exception ... Failed to encode packet" and
+	 * they are on the title screen. The chest also fails to serialise on save, so
+	 * the item quietly vanishes from the world as well.
+	 *
+	 * Two of the titles written this week were 33. Both crashed. It presented as
+	 * "the map is not in the chest", which is exactly what it looks like from
+	 * inside the game, and it cost an evening.
+	 *
+	 * So no title reaches a book without coming through here. Trimming at a word
+	 * boundary rather than mid-word, because a title cut to "an inventory of the sec"
+	 * is a bug report of its own — and it SHOUTS in the log, because a silently
+	 * shortened title is a thing nobody notices until it is in a release.
+	 */
+	private static final int TITLE_FITS = 32;
+
+	private static String title(String wanted) {
+		if (wanted.length() <= TITLE_FITS) {
+			return wanted;
+		}
+		int cut = wanted.lastIndexOf(' ', TITLE_FITS);
+		String short_ = wanted.substring(0, cut > 12 ? cut : TITLE_FITS).trim();
+		com.bloomlet.herobrine.HerobrineMod.LOGGER.warn(
+			"book title was {} characters and the wire allows {} — \"{}\" became \"{}\"",
+			wanted.length(), TITLE_FITS, wanted, short_);
+		return short_;
+	}
+
 	private static ItemStack book(Account account) {
 		List<Filterable<Component>> pages = new ArrayList<>();
 		for (String page : account.pages()) {
-			pages.add(Filterable.passThrough(Component.literal(page.stripIndent())));
+			for (String leaf : leaves(page.stripIndent().trim())) {
+				pages.add(Filterable.passThrough(Component.literal(leaf)));
+			}
 		}
 		ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
 		book.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
-			Filterable.passThrough(account.who()),
+			Filterable.passThrough(title(account.who())),
 			"—",
 			0,
 			pages,

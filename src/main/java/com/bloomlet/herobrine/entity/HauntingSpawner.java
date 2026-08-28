@@ -172,13 +172,45 @@ public final class HauntingSpawner {
 	 * thing; if he is with someone else you get a noise instead, and the
 	 * director already falls through to the other manifestations.
 	 */
-	private static boolean existsAnywhere(ServerLevel level) {
-		for (ServerLevel other : level.getServer().getAllLevels()) {
-			if (!other.getEntities(ModEntities.HEROBRINE, e -> true).isEmpty()) {
-				return true;
-			}
-		}
-		return false;
+	/**
+	 * ONE AT A TIME, WHERE THEY CAN SEE.
+	 *
+	 * This was existsAnywhere, and it swept EVERY LEVEL ON THE SERVER — so one
+	 * Herobrine standing anywhere, including in his own dimension, made place(),
+	 * glimpse(), passage(), atPlace() and hunt() all return ALREADY_NEARBY. Which
+	 * quietly deleted the three heaviest things in the mod: THE_STARE at weight
+	 * eighteen, THE_GLIMPSE at twelve and THE_PASSAGE at fourteen. The content of
+	 * the two chapters you unlock by finding his house could not happen, because
+	 * finding his house is what put a resident in it.
+	 *
+	 * Rule 3 in this file's own header — "ONE AT A TIME" — was written when he was a
+	 * visitor. It is right about what it is protecting: two of him in one clearing
+	 * is a category error the mod has avoided since the first version. It was wrong
+	 * about the radius, and now that he lives on the far side of the way it was
+	 * wrong about the dimension as well.
+	 *
+	 * So: this level, and near this player. Comfortably wider than WATCH_RANGE, so
+	 * there is no encounter in which two of him could both be relevant — and no
+	 * longer any way for somebody four thousand blocks off, or in another world
+	 * entirely, to switch the haunting off.
+	 */
+	/**
+	 * ONE PER LEVEL, WHICH IS WHAT I SHOULD HAVE WRITTEN THE FIRST TIME.
+	 *
+	 * The version before this was a hundred and ninety-two block box around the
+	 * player, and the reasoning was that two of him in one clearing is the thing
+	 * being prevented. Which is true and is not the whole rule: it also means a
+	 * player who walks two hundred blocks away from him gets a SECOND one placed,
+	 * and in his own world — where he holds station over the keep and the player is
+	 * off exploring — that is most of the time.
+	 *
+	 * The dimension is the right unit. It keeps what the change to this method was
+	 * for — him standing in his own world no longer switches off the stares in the
+	 * overworld, which is what existsAnywhere did — while restoring the actual
+	 * invariant: there is one of him in a world, or none.
+	 */
+	private static boolean existsNear(ServerLevel level, ServerPlayer player) {
+		return HerobrineEntity.oneIn(level) != null;
 	}
 	/** Above this, the position is in front of the player and unusable. */
 	private static final double IN_VIEW_DOT = 0.25;
@@ -256,7 +288,7 @@ public final class HauntingSpawner {
 			return Outcome.BAD_PLAYER;
 		}
 
-		if (existsAnywhere(level)) {
+		if (existsNear(level, player)) {
 			return Outcome.ALREADY_NEARBY;
 		}
 
@@ -453,7 +485,7 @@ public final class HauntingSpawner {
 		if (player.isSpectator() || !player.isAlive()) {
 			return Outcome.BAD_PLAYER;
 		}
-		if (existsAnywhere(level)) {
+		if (existsNear(level, player)) {
 			return Outcome.ALREADY_NEARBY;
 		}
 		// Underground, or it is not this event. Above ground he has the stare,
@@ -495,8 +527,8 @@ public final class HauntingSpawner {
 				continue;
 			}
 
-			// ONE OF HIM. See HerobrineEntity.anyLoaded.
-			if (HerobrineEntity.anyLoaded(level)) {
+			// ONE OF HIM. See HerobrineEntity.outInTheOverworld.
+			if (HerobrineEntity.outInTheOverworld(level)) {
 				return Outcome.ALREADY_NEARBY;
 			}
 			HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
@@ -549,7 +581,7 @@ public final class HauntingSpawner {
 		if (player.isSpectator() || !player.isAlive()) {
 			return Outcome.BAD_PLAYER;
 		}
-		if (existsAnywhere(level)) {
+		if (existsNear(level, player)) {
 			return Outcome.ALREADY_NEARBY;
 		}
 
@@ -583,8 +615,8 @@ public final class HauntingSpawner {
 				continue;
 			}
 
-			// ONE OF HIM. See HerobrineEntity.anyLoaded.
-			if (HerobrineEntity.anyLoaded(level)) {
+			// ONE OF HIM. See HerobrineEntity.outInTheOverworld.
+			if (HerobrineEntity.outInTheOverworld(level)) {
 				return Outcome.ALREADY_NEARBY;
 			}
 			HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
@@ -632,7 +664,7 @@ public final class HauntingSpawner {
 		if (player.isSpectator() || !player.isAlive()) {
 			return Outcome.BAD_PLAYER;
 		}
-		if (existsAnywhere(level)) {
+		if (existsNear(level, player)) {
 			return Outcome.ALREADY_NEARBY;
 		}
 		if (!ConfinedPlacement.isConfined(level, player)) {
@@ -646,8 +678,8 @@ public final class HauntingSpawner {
 		// No light check at all, deliberately. A cave a player has torched is
 		// still a cave, and refusing to appear in the one they have lit would
 		// mean he only ever turns up where they cannot see him.
-		// ONE OF HIM. See HerobrineEntity.anyLoaded.
-		if (HerobrineEntity.anyLoaded(level)) {
+		// ONE OF HIM. See HerobrineEntity.outInTheOverworld.
+		if (HerobrineEntity.outInTheOverworld(level)) {
 			return Outcome.ALREADY_NEARBY;
 		}
 		HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
@@ -694,7 +726,7 @@ public final class HauntingSpawner {
 		if (player.isSpectator() || !player.isAlive()) {
 			return Outcome.BAD_PLAYER;
 		}
-		if (existsAnywhere(level)) {
+		if (existsNear(level, player)) {
 			return Outcome.ALREADY_NEARBY;
 		}
 		if (!ConfinedPlacement.buried(level, player)) {
@@ -734,8 +766,8 @@ public final class HauntingSpawner {
 			// applies here too rather than losing the chapter to it.
 			return unseen(level, player);
 		}
-		// ONE OF HIM. See HerobrineEntity.anyLoaded.
-		if (HerobrineEntity.anyLoaded(level)) {
+		// ONE OF HIM. See HerobrineEntity.outInTheOverworld.
+		if (HerobrineEntity.outInTheOverworld(level)) {
 			return Outcome.ALREADY_NEARBY;
 		}
 		HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
@@ -834,8 +866,8 @@ public final class HauntingSpawner {
 
 	private static Outcome spawnAt(ServerLevel level, ServerPlayer player, BlockPos pos,
 	                               boolean hunting) {
-		// ONE OF HIM. See HerobrineEntity.anyLoaded.
-		if (HerobrineEntity.anyLoaded(level)) {
+		// ONE OF HIM. See HerobrineEntity.outInTheOverworld.
+		if (HerobrineEntity.outInTheOverworld(level)) {
 			return Outcome.ALREADY_NEARBY;
 		}
 		HerobrineEntity herobrine = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);

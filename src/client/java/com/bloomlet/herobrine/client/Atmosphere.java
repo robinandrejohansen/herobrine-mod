@@ -124,8 +124,33 @@ public final class Atmosphere {
 			case HUNTER -> 0.40F;
 			case SIEGE -> 0.56F;
 		};
+		// AND HIS GROUND IS DARK WHATEVER CHAPTER IT IS.
+		//
+		// Added to the base rather than multiplied into the result, so it survives
+		// RUMOUR — where the phase term is deliberately nought and a multiplier
+		// would be nought as well. Walking up to his house on the first morning of
+		// a world is meant to be the darkest thing in it.
+		base += DARK_AT_HIS * near();
+		// The early-out AFTER the addition. Above it, a RUMOUR world returned zero
+		// before his ground had been consulted and the whole effect was dead in the
+		// four chapters that need it most.
 		if (base <= 0.0F) {
 			return 0.0F;
+		}
+		// AND THE SECOND DIMMER, WHICH I MISSED THE FIRST TIME.
+		//
+		// Damping near() covered his GROUND and left the CHAPTER term at full
+		// strength, and that term is much the bigger of the two: at SIEGE it is
+		// 0.56, times 1.2 for the permanent rain, which takes SKY_LIGHT_FACTOR down
+		// to about a fifth. On top of a dimension whose own light is already
+		// authored down to almost nothing, that is the same darkness counted twice —
+		// so the place would have gone black again by HUNTER no matter what the
+		// dimension type said.
+		//
+		// His world does not need the mood system. It IS the mood.
+		if (level.dimension().equals(
+				com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+			base *= HIS_SIDE;
 		}
 		float weather = level.isThundering() ? 1.55F : level.isRaining() ? 1.2F : 1.0F;
 		return Math.min(0.82F, base * weather);
@@ -141,13 +166,18 @@ public final class Atmosphere {
 	 * the same and the world stops being a place.
 	 */
 	private static float pall() {
-		return switch (phase()) {
+		float base = switch (phase()) {
 			case RUMOUR, WATCHER -> 0.0F;
 			case TRESPASSER -> 0.15F;
 			case MIMIC -> 0.32F;
 			case HUNTER -> 0.5F;
 			case SIEGE -> 0.68F;
 		};
+		// Capped short of full grey even at his door in a SIEGE storm. Past about
+		// nine tenths the biome stops having any say at all and the world in front
+		// of you is one flat colour, which stops being weather and starts being a
+		// broken shader.
+		return Math.min(0.88F, base + GREY_AT_HIS * near());
 	}
 
 	/**
@@ -167,12 +197,23 @@ public final class Atmosphere {
 	 * The colour and the darkness do the work. They always did.
 	 */
 	private static float closeness() {
-		return switch (phase()) {
+		float base = switch (phase()) {
 			case RUMOUR, WATCHER, TRESPASSER -> 1.0F;
 			case MIMIC -> 0.95F;
 			case HUNTER -> 0.85F;
 			case SIEGE -> 0.75F;
 		};
+		// THE ONE PLACE THE DISTANCE IS ALLOWED TO BE HEAVY.
+		//
+		// The note above is right that heavy fog everywhere reads as low resolution
+		// rather than as weather — it was tried and it did not survive an evening.
+		// What makes it work here is that it is LOCAL: there is unfogged world
+		// behind you the whole way in, so the eye has the comparison and reads the
+		// murk as a property of the place instead of a property of the game.
+		//
+		// Floored, not subtracted freely. Below about four tenths the house itself
+		// starts disappearing, and the point is to walk toward it.
+		return Math.max(0.42F, base - SHUTS_IN_AT_HIS * near());
 	}
 
 	/**
@@ -273,6 +314,67 @@ public final class Atmosphere {
 	 * tick anyway, so the world changes the moment the phase does, without
 	 * anything having to notice and rebuild.
 	 */
+	// ---- HIS GROUND -------------------------------------------------------
+	//
+	// One number from the server — see Whereabouts.NEAR_HIS — and it goes into the
+	// same three layers the phase drives. Which is the whole reason this was worth
+	// doing as an input rather than as a separate effect: the fog, the colour and
+	// the light already agree with each other, and a second system painting its own
+	// murk on top would have put a seam back exactly where the comment at the top
+	// of this file explains it was removed from.
+
+	/** How far toward grey his ground pulls the world. */
+	private static final float GREY_AT_HIS = 0.55F;
+	/** How much of the light it takes. */
+	private static final float DARK_AT_HIS = 0.30F;
+	/** And how much of the view distance closes up. */
+	private static final float SHUTS_IN_AT_HIS = 0.50F;
+
+	/**
+	 * Nought to one. Nought everywhere but the ground around his house, his tower,
+	 * and the keep on the other side.
+	 *
+	 * No coordinates ever reach the client. It is handed a single float and has no
+	 * way to turn it back into a position, which is deliberate: "distance to his
+	 * house" on the client would be one mod away from being a compass.
+	 */
+	/**
+	 * HALF STRENGTH ON HIS OWN SIDE, AND THAT IS NOT A COMPROMISE.
+	 *
+	 * These three terms were built against the OVERWORLD — a bright baseline with
+	 * plenty of light and distance to eat into, where taking half the view and a
+	 * third of the light is the difference between a field and a bad field. His
+	 * world starts with none of that: the dimension type already sets its own fog,
+	 * its own near-black ambient light and a permanent storm. Applying the full
+	 * overworld ramp on top of that is not atmosphere on atmosphere, it is the same
+	 * effect counted twice, and what came out the other side was unnavigable.
+	 *
+	 * So the keep still murks up as you approach it — that part is right and it is
+	 * the same language as his house — at about half the amount, because everything
+	 * underneath it is already doing the job.
+	 */
+	private static final float HIS_SIDE = 0.45F;
+
+	private static float near() {
+		if (!com.bloomlet.herobrine.Config.get().enabled
+			|| !com.bloomlet.herobrine.Config.get().atmosphere) {
+			return 0.0F;
+		}
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null || client.level == null) {
+			return 0.0F;
+		}
+		Float in = client.player.getAttached(
+			com.bloomlet.herobrine.manifest.Whereabouts.NEAR_HIS);
+		if (in == null) {
+			return 0.0F;
+		}
+		float held = net.minecraft.util.Mth.clamp(in, 0.0F, 1.0F);
+		return client.level.dimension().equals(
+			com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)
+			? held * HIS_SIDE : held;
+	}
+
 	private static Phase phase() {
 		// Switched off reports RUMOUR rather than being checked in six places.
 		// Every layer here is already neutral at RUMOUR — that is the phase

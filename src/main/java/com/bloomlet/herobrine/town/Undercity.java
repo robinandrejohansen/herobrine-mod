@@ -55,6 +55,23 @@ public final class Undercity {
 	private static final int SPAN = 21;
 	private static final int HEIGHT = 13;
 
+	/**
+	 * Where the library floor is, worked out from the square above it.
+	 *
+	 * Derived rather than stored, the same way the tower's summit is: the chamber
+	 * hangs a fixed DEPTH under the town centre and the library sits at a fixed
+	 * offset inside it, so both numbers already exist and a third copy in an
+	 * attachment would only be the one that goes stale.
+	 *
+	 * Public because the map chain needs somewhere deliberate to leave the town's
+	 * map, and the library is the only room down here that means anything: it is
+	 * where the survivors keep what they have written.
+	 */
+	public static BlockPos libraryAt(BlockPos square) {
+		return new BlockPos(square.getX(), square.getY() - DEPTH, square.getZ())
+			.offset(-13, 0, -13);
+	}
+
 	public static void dig(ServerLevel level, BlockPos square, BlockPos crypt,
 	                       RandomSource random) {
 		BlockPos floor = new BlockPos(square.getX(), square.getY() - DEPTH, square.getZ());
@@ -140,7 +157,6 @@ public final class Undercity {
 		// pantry at home. He keeps it on the shelf with the others, in the room
 		// where they meet, because he no longer minds who reads it.
 		accounts.add(libraryStore(level, libraryAt));
-		people(level, floor, random);
 
 		HerobrineMod.LOGGER.info("undercity opened at [{}, {}, {}]",
 			floor.getX(), floor.getY(), floor.getZ());
@@ -152,16 +168,196 @@ public final class Undercity {
 		// as items counting down to despawning. Nothing is carved after this.
 		Testimony.write(level, accounts, pantries, random);
 
-		// AND A THIRD WAY IN, WHICH IS THE ONLY ONE THAT IS EARNED.
+		// THE GAUNTLET IS GONE AND A FARM STANDS IN ITS PLACE.
 		//
-		// The stair and the well are both simply found. This is a hundred and
-		// forty blocks of gauntlet, and it exists because a cult that is still
-		// meeting needs a door the congregation can use and a stranger cannot.
-		// Cut outward from the chamber wall so the far end surfaces somewhere
-		// else entirely — which also means it is discovered from the far end,
-		// by somebody who has no idea what it leads to.
-		Trial.cut(level, floor.relative(net.minecraft.core.Direction.EAST, SPAN + 3)
-			.above(), net.minecraft.core.Direction.EAST, random);
+		// A hundred and forty blocks of four-block jumps over open lava used to run
+		// east out of this wall, on the reasoning that a cult still meeting needs a
+		// door a stranger cannot use. The reasoning was sound and the thing it
+		// produced was a platforming level, and a platforming level is the one shape
+		// that cannot be in this place: everything else down here is people quietly
+		// getting on with living under a town that thinks they are dead, and you
+		// cannot read that while counting your jumps.
+		//
+		// What replaces it answers the same question better. HOW ARE THEY STILL
+		// ALIVE? Not "they are hard to reach" — that explains the door and not the
+		// dinner. They are alive because they grew food down here, in the dark, for
+		// years, and the evidence of that is worth ten times a gauntlet: a lit farm
+		// under a town is the single most convincing thing a hidden settlement can
+		// have in it, because nobody builds one unless they mean to stay.
+		smallholding(level, floor, random);
+
+		// AND THE PEOPLE GO IN LAST OF ALL.
+		//
+		// This used to run before the library shelves, the farm, the grove and the
+		// pens, and the log said so every time: "Villager suffocated in a wall".
+		// The grove plants an oak by choosing a floor square and stacking logs on
+		// it, and nothing asked whether somebody was standing there — so a villager
+		// placed thirty lines earlier got a tree through them.
+		//
+		// The file already knew the rule. Testimony.write carries a comment saying
+		// the books go down last because boring a passage after a chest existed
+		// drove through it. Entities are the same problem with a worse symptom: a
+		// chest in a wall is invisible, and a villager in a wall is a death message.
+		people(level, floor, random);
+	}
+
+	/** How far out from the chamber the workings run. */
+	private static final int FARM = 14;
+
+	/**
+	 * WHAT THEY HAVE BEEN EATING, AND IT IS THE ANSWER TO THE OBVIOUS QUESTION.
+	 *
+	 * Three things, in three bays cut off the chamber, and each one is a different
+	 * kind of proof:
+	 *
+	 *   THE FIELD. Tilled soil, water down the middle, four crops at every stage of
+	 *   growth. Staggered on purpose — a field where everything is ripe at once is a
+	 *   screenshot, and a field with seedlings in one row and stubble in the next is
+	 *   somebody's rota. It is the stubble that says years.
+	 *
+	 *   THE GROVE. Trees, underground, under lanterns. This is the one that stops
+	 *   people in the doorway: a tree needs light and there is no sky, so somebody
+	 *   worked out the light and then waited a decade for the wood. Nothing says
+	 *   patience like a full grown oak in a cellar.
+	 *
+	 *   THE PENS. Mushroom stems, composters, barrels. The unglamorous half, and the
+	 *   half that makes the other two believable.
+	 */
+	private static void smallholding(ServerLevel level, BlockPos floor,
+	                                 RandomSource random) {
+		field(level, floor.relative(net.minecraft.core.Direction.EAST, SPAN - 4), random);
+		grove(level, floor.relative(net.minecraft.core.Direction.WEST, SPAN - 4), random);
+		pens(level, floor.relative(net.minecraft.core.Direction.NORTH, SPAN - 5), random);
+		HerobrineMod.LOGGER.info("they have been feeding themselves down here");
+	}
+
+	private static void field(ServerLevel level, BlockPos middle, RandomSource random) {
+		for (int dx = -6; dx <= 6; dx++) {
+			for (int dz = -4; dz <= 4; dz++) {
+				BlockPos at = middle.offset(dx, 0, dz);
+				if (!level.getBlockState(at.above(2)).isSolid()
+					&& !level.getBlockState(at.above(3)).isSolid()) {
+					continue;      // outside the cut chamber
+				}
+				// A channel down the middle so every row is within four of water,
+				// which is the actual rule farmland obeys and reads as competence.
+				if (dz == 0) {
+					level.setBlock(at, Blocks.WATER.defaultBlockState(), 2);
+					continue;
+				}
+				level.setBlock(at, Blocks.FARMLAND.defaultBlockState()
+					.setValue(BlockStateProperties.MOISTURE, 7), 2);
+				BlockPos crop = at.above();
+				if (!level.getBlockState(crop).isAir()) {
+					continue;
+				}
+				// STAGGERED. Every row a different age, and one row in five bare,
+				// because a rota has gaps in it and a decoration does not.
+				int age = random.nextInt(8);
+				if (age == 0 && random.nextBoolean()) {
+					continue;
+				}
+				level.setBlock(crop, switch (Math.abs(dz) % 4) {
+					case 0, 1 -> Blocks.WHEAT.defaultBlockState()
+						.setValue(BlockStateProperties.AGE_7, age % 8);
+					case 2 -> Blocks.CARROTS.defaultBlockState()
+						.setValue(BlockStateProperties.AGE_7, age % 8);
+					default -> Blocks.POTATOES.defaultBlockState()
+						.setValue(BlockStateProperties.AGE_7, age % 8);
+				}, 2);
+			}
+		}
+		// The light it lives under, on posts, because farmland underground is a
+		// claim and the lanterns are the receipt.
+		for (int dx = -5; dx <= 5; dx += 5) {
+			for (int dz = -3; dz <= 3; dz += 6) {
+				BlockPos post = middle.offset(dx, 1, dz);
+				level.setBlock(post, Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+				level.setBlock(post.above(), Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+				level.setBlock(post.above(2), Blocks.LANTERN.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	private static void grove(ServerLevel level, BlockPos middle, RandomSource random) {
+		for (int i = 0; i < 7; i++) {
+			int dx = random.nextInt(11) - 5;
+			int dz = random.nextInt(9) - 4;
+			BlockPos root = middle.offset(dx, 0, dz);
+			if (!level.getBlockState(root.above()).isAir()
+				|| !level.getBlockState(root).isSolid()) {
+				continue;
+			}
+			level.setBlock(root, Blocks.PODZOL.defaultBlockState(), 2);
+			// Short, because the chamber is thirteen high and a full canopy would
+			// go through the ceiling — and a tree that has been topped to fit the
+			// room is more convincing than one that fits by luck.
+			int tall = 3 + random.nextInt(2);
+			for (int up = 1; up <= tall; up++) {
+				level.setBlock(root.above(up), Blocks.OAK_LOG.defaultBlockState(), 2);
+			}
+			for (int lx = -2; lx <= 2; lx++) {
+				for (int lz = -2; lz <= 2; lz++) {
+					for (int ly = tall - 1; ly <= tall + 1; ly++) {
+						if (Math.abs(lx) + Math.abs(lz) + Math.abs(ly - tall) > 3) {
+							continue;
+						}
+						BlockPos leaf = root.offset(lx, ly, lz);
+						if (level.getBlockState(leaf).isAir()) {
+							level.setBlock(leaf, Blocks.OAK_LEAVES.defaultBlockState()
+								.setValue(BlockStateProperties.PERSISTENT,
+									true), 2);
+						}
+					}
+				}
+			}
+			if (random.nextBoolean()) {
+				level.setBlock(root.above(tall + 2), Blocks.LANTERN.defaultBlockState()
+					.setValue(BlockStateProperties.HANGING, true), 2);
+			}
+		}
+		// Undergrowth, so it is a wood rather than seven trees in a row.
+		for (int i = 0; i < 40; i++) {
+			BlockPos at = middle.offset(random.nextInt(13) - 6, 1, random.nextInt(11) - 5);
+			if (!level.getBlockState(at).isAir()
+				|| !level.getBlockState(at.below()).isSolid()) {
+				continue;
+			}
+			level.setBlock(at, switch (random.nextInt(5)) {
+				case 0 -> Blocks.FERN.defaultBlockState();
+				case 1 -> Blocks.BROWN_MUSHROOM.defaultBlockState();
+				case 2 -> Blocks.RED_MUSHROOM.defaultBlockState();
+				case 3 -> Blocks.MOSS_CARPET.defaultBlockState();
+				default -> Blocks.SHORT_GRASS.defaultBlockState();
+			}, 2);
+		}
+	}
+
+	private static void pens(ServerLevel level, BlockPos middle, RandomSource random) {
+		for (int dx = -4; dx <= 4; dx++) {
+			for (int dz = -3; dz <= 3; dz++) {
+				BlockPos at = middle.offset(dx, 1, dz);
+				if (!level.getBlockState(at).isAir()) {
+					continue;
+				}
+				boolean edge = Math.abs(dx) == 4 || Math.abs(dz) == 3;
+				if (edge) {
+					level.setBlock(at, Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+					continue;
+				}
+				if (random.nextInt(4) == 0) {
+					level.setBlock(at, random.nextBoolean()
+						? Blocks.BROWN_MUSHROOM_BLOCK.defaultBlockState()
+						: Blocks.MUSHROOM_STEM.defaultBlockState(), 2);
+				}
+			}
+		}
+		// The working end: somewhere to put the waste and somewhere to keep the
+		// seed, which is the pair of blocks that says this is a system.
+		level.setBlock(middle.offset(0, 1, 0), Blocks.COMPOSTER.defaultBlockState(), 2);
+		level.setBlock(middle.offset(1, 1, 0), Blocks.BARREL.defaultBlockState()
+			.setValue(BlockStateProperties.FACING, net.minecraft.core.Direction.UP), 2);
+		level.setBlock(middle.offset(-1, 1, 0), Blocks.HAY_BLOCK.defaultBlockState(), 2);
 	}
 
 	/**
@@ -685,18 +881,56 @@ public final class Undercity {
 				net.minecraft.world.entity.npc.villager.VillagerProfession.SHEPHERD,
 			};
 
+	/** How many spots each of them is allowed to try before giving up. */
+	private static final int LOOKS_FOR_A_SPOT = 24;
+
+	/**
+	 * Somewhere a person can actually stand.
+	 *
+	 * A chamber this size is not empty ground. There are pillars, five houses, a
+	 * library, a pool, streets, and now a field, a grove and a set of pens — and
+	 * the old placement was a random polar coordinate with NO TEST AT ALL. It put
+	 * villagers inside walls perfectly often, and Minecraft has a message for that
+	 * which it prints straight into the chat of whoever is standing nearby.
+	 *
+	 * Two clear blocks over something solid. That is the whole test and it is the
+	 * one that was missing.
+	 */
+	private static boolean roomToStand(ServerLevel level, BlockPos feet) {
+		return level.getBlockState(feet).isAir()
+			&& level.getBlockState(feet.above()).isAir()
+			&& level.getBlockState(feet.below()).isSolid();
+	}
+
 	private static void people(ServerLevel level, BlockPos floor, RandomSource random) {
+		int placed = 0;
 		for (int i = 0; i < 9; i++) {
-			double angle = random.nextDouble() * Math.PI * 2.0;
-			double range = 5.0 + random.nextDouble() * (SPAN - 8);
-			int x = floor.getX() + (int)Math.round(Math.cos(angle) * range);
-			int z = floor.getZ() + (int)Math.round(Math.sin(angle) * range);
+			BlockPos feet = null;
+			for (int look = 0; look < LOOKS_FOR_A_SPOT && feet == null; look++) {
+				double angle = random.nextDouble() * Math.PI * 2.0;
+				double range = 5.0 + random.nextDouble() * (SPAN - 8);
+				BlockPos at = new BlockPos(
+					floor.getX() + (int)Math.round(Math.cos(angle) * range),
+					floor.getY(),
+					floor.getZ() + (int)Math.round(Math.sin(angle) * range));
+				// A block either side of the floor line as well, because the chamber
+				// is not perfectly flat — the streets and the pens sit a course up.
+				for (int dy = 0; dy <= 1 && feet == null; dy++) {
+					if (roomToStand(level, at.above(dy))) {
+						feet = at.above(dy);
+					}
+				}
+			}
+			if (feet == null) {
+				continue;      // nowhere for this one. better than a wall.
+			}
 
 			Mob villager = EntityTypes.VILLAGER.create(level, EntitySpawnReason.STRUCTURE);
 			if (villager == null) {
 				continue;
 			}
-			villager.snapTo(x + 0.5, floor.getY(), z + 0.5,
+			placed++;
+			villager.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5,
 				random.nextFloat() * 360.0F, 0.0F);
 			villager.setPersistenceRequired();
 			// THE SAME TRADES AS THE TOWN ABOVE, and that is the whole point.
@@ -713,6 +947,7 @@ public final class Undercity {
 			}
 			level.addFreshEntity(villager);
 		}
+		HerobrineMod.LOGGER.info("{} of them are still down there", placed);
 	}
 
 	private static BlockState paving(RandomSource random) {

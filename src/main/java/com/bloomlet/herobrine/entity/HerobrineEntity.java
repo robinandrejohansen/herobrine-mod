@@ -88,16 +88,36 @@ public class HerobrineEntity extends PathfinderMob {
 	/** Get closer than this and he will not let you get closer still. */
 	private static final double TOO_CLOSE = 17.0;
 
+	// ---- WHICH SIDE OF THE WAY HE IS ON -----------------------------------
+	//
+	// THE ONE THING THAT DECIDES WHAT HE IS, AND IT REPLACES THE PHASE LADDER
+	// FOR EVERY QUESTION ABOUT HIM.
+	//
+	// The ladder used to answer "how much Herobrine do you get" — six rungs of
+	// slowly increasing presence, unlocked by finding his buildings. That was
+	// right when he could be anywhere. It is redundant now that GEOGRAPHY answers
+	// it: he lives on the far side of the way and nothing on this side is him
+	// being here, it is an apparition. There is nothing left to ration.
+	//
+	// So the ladder keeps exactly one job — the six buildings, in order, in the
+	// overworld — and everything about HIM reads this instead.
+	private boolean hisGround() {
+		return this.level().dimension().equals(
+			com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD);
+	}
+
 	/**
-	 * How close he lets anybody get before he reacts, by phase.
+	 * How close he lets anybody get before he reacts.
 	 *
-	 * Seventeen for most of the mod. At HUNTER it collapses to seven, and the
-	 * collapse is the content: a player who has spent hours learning that
-	 * seventeen blocks is the wall walks straight through it and keeps going,
-	 * and nothing happens. That is a far louder change than any new sound.
+	 * Seventeen out here, seven on his own ground. Which is the same collapse the
+	 * phase ladder used to deliver at HUNTER, and the collapse was always the
+	 * content — a player who has learned that seventeen blocks is the wall walks
+	 * through it and keeps going and nothing happens. It now happens at a door
+	 * instead of at a chapter, which is a better place for it: you chose to be
+	 * there.
 	 */
-	private double standoff(Phase phase) {
-		return holdsGround(phase) ? 7.0 : TOO_CLOSE;
+	private double standoff() {
+		return this.hisGround() ? 7.0 : TOO_CLOSE;
 	}
 
 	/**
@@ -109,8 +129,8 @@ public class HerobrineEntity extends PathfinderMob {
 	 * you in the first place, and a player would read that as the mod losing
 	 * its nerve. If he came for you, he does not retreat.
 	 */
-	private boolean holdsGround(Phase phase) {
-		return phase.atLeast(Phase.HUNTER) || this.hunting;
+	private boolean holdsGround() {
+		return this.hisGround() || this.hunting;
 	}
 
 	/** Arm's length. He is gone before anybody finds out what is here. */
@@ -838,7 +858,24 @@ public class HerobrineEntity extends PathfinderMob {
 		return best;
 	}
 
+	/**
+	 * HE DOES NOT DO THIS ON THIS SIDE, AND THAT IS THE WHOLE CHANGE.
+	 *
+	 * The opening is the run-up to a hunt — he gets behind you, waits to be found,
+	 * and turning round starts it. Out here there is nothing for it to run up to:
+	 * the fight is in his world, so being spotted in the overworld resolves the only
+	 * way an apparition can. He is not there any more.
+	 *
+	 * Guarding HERE rather than at the hunt is deliberate. Gate the hunt alone and
+	 * the player gets the entire approach — the figure behind them, the line in the
+	 * chat, the turn — and then nothing, which reads as the mod breaking off. This
+	 * way the beat that cannot pay off never starts.
+	 */
 	private void beginOpening() {
+		if (!this.hisGround()) {
+			this.vanish("seen, on the wrong side of the way");
+			return;
+		}
 		this.opening = OPEN_HELD;
 		this.openStep = 0;
 		this.getNavigation().stop();
@@ -1783,6 +1820,90 @@ public class HerobrineEntity extends PathfinderMob {
 	}
 	// ---- END THE MARK -----------------------------------------------------
 
+	// ---- OVER THE KEEP ----------------------------------------------------
+	//
+	// HE LIVES IN HIS OWN WORLD AND CIRCLES HIS OWN CASTLE.
+	//
+	// The whole shape of the mod turns on this. He was resident in the OVERWORLD —
+	// a house, a tower, a property round, errands — which put the strongest thing
+	// in the game on the wrong side of the door, and everything that followed was a
+	// consequence: the overworld had to be survivable so he had to be defanged, the
+	// atmosphere could not run because he was already standing in it, and the
+	// dimension was somewhere you went once and never again.
+	//
+	// So he is over there, and the way through is the only way to him. What is on
+	// this side is his HOUSE — empty, weathered, with his address on a map — and
+	// the traces, and the stares. None of which can kill anybody.
+	//
+	// AND HE IS IN THE AIR, WHICH IS NOT DECORATION. On the ground he is a figure
+	// you can be at arm's length from before you have decided anything. Twenty-four
+	// blocks up, circling, is a thing you see from the landing and walk toward for
+	// two minutes knowing exactly what it is — and the whole of that walk is spent
+	// looking up at it. It is also the honest reading of somewhere he owns: he has
+	// nothing to hide from and nothing to sneak up on.
+
+	/** How high over the keep floor he holds. */
+	private static final double PATROL_UP = 24.0;
+	/** And the ring, re-rolled every eight to eighteen seconds. */
+	private static final double PATROL_IN = 16.0;
+	private static final double PATROL_OUT = 34.0;
+	/** Slower than the duel's ring. He is not chasing anything. */
+	private static final double PATROL_PACE = 0.55;
+	/** How far off he still turns his head to somebody. */
+	private static final double PATROL_NOTICES = 72.0;
+
+	/**
+	 * @return true when this owns the tick
+	 */
+	private boolean patrol() {
+		// Anything with his attention outranks it — a duel, the opening, a hunt.
+		// This is what he does when nothing does.
+		if (this.hunting || this.busyWith != null || this.opening > 0 || this.fleeing
+			|| !(this.level() instanceof ServerLevel his)
+			|| !his.dimension().equals(
+				com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+			return false;
+		}
+		BlockPos keep = com.bloomlet.herobrine.structure.Keep.site(his);
+		if (keep == null) {
+			return false;      // nothing built yet, so nothing to circle
+		}
+		this.takeOff();
+		this.setNoGravity(true);
+		this.setDeltaMovement(Vec3.ZERO);
+		if (--this.orbitFor <= 0) {
+			this.orbitFor = 160 + this.random.nextInt(200);
+			this.orbitWay = this.random.nextBoolean() ? 1 : -1;
+			this.orbitWide = PATROL_IN + this.random.nextDouble() * (PATROL_OUT - PATROL_IN);
+		}
+		this.orbit += this.orbitWay * ORBIT_SPEED * PATROL_PACE;
+		// A long slow rise and fall on top of the circle, so the path never closes
+		// on itself and he never reads as being on rails.
+		double want = keep.getY() + PATROL_UP + Math.sin(this.age * 0.015) * 4.0;
+		double toX = keep.getX() + 0.5 + Math.cos(this.orbit) * this.orbitWide;
+		double toZ = keep.getZ() + 0.5 + Math.sin(this.orbit) * this.orbitWide;
+		// Facing along the circle, not at the middle of it — a man flying sideways
+		// round a tower is a prop; a man flying the way he is going is flying.
+		float bearing = (float) Math.toDegrees(
+			-Math.atan2(toX - this.getX(), toZ - this.getZ()));
+		this.snapTo(
+			this.getX() + net.minecraft.util.Mth.clamp(
+				toX - this.getX(), -HOVER_PACE, HOVER_PACE),
+			this.getY() + net.minecraft.util.Mth.clamp(want - this.getY(), -0.3, 0.3),
+			this.getZ() + net.minecraft.util.Mth.clamp(
+				toZ - this.getZ(), -HOVER_PACE, HOVER_PACE),
+			bearing, 0.0F);
+		// AND THE HEAD GOES WITH WHOEVER TURNED UP. The body keeps its bearing, so
+		// what the player sees from the ground is somebody who has not altered
+		// course by a degree and is looking straight down at them.
+		Player below = his.getNearestPlayer(this, PATROL_NOTICES);
+		if (below != null) {
+			this.getLookControl().setLookAt(below, 90.0F, 90.0F);
+		}
+		return true;
+	}
+	// ---- END OVER THE KEEP ------------------------------------------------
+
 	/** Has he got them — in front and in range, or simply too close to miss? */
 	private boolean spots(Player them) {
 		if (!this.hasLineOfSight(them)) {
@@ -1911,15 +2032,49 @@ public class HerobrineEntity extends PathfinderMob {
 		return this.present && !this.hunting ? 1 : super.getMaxFallDistance();
 	}
 
-	public static boolean anyLoaded(ServerLevel level) {
-		// A performance in the End does not count as him being out — the two are
-		// different worlds and the overworld should carry on without him.
+	/**
+	 * IS HE OUT IN THE OVERWORLD. NOT "does he exist".
+	 *
+	 * THE NAME WAS A TRAP AND IT CAUGHT ME. `anyLoaded(level)` reads as "is there
+	 * one of him in this level", and its first line is a hard `return false` for
+	 * every dimension that is not the overworld. Which was correct for the caller it
+	 * was written for — a performance in the End should not count as him being out —
+	 * and is a landmine for anybody who reads the signature and believes it.
+	 *
+	 * I used it as the guard on the placement over the keep. It returned false every
+	 * time, once a second, for as long as anybody stood in his world. The playtest
+	 * log is a wall of "hunt: going over" at one a second, each line a different
+	 * entity taking off for the first time.
+	 *
+	 * So it keeps its behaviour and loses its misleading name. What the placement
+	 * actually wanted is oneIn(level), below.
+	 */
+	public static boolean outInTheOverworld(ServerLevel level) {
 		if (level.dimension() != net.minecraft.world.level.Level.OVERWORLD) {
 			return false;
 		}
-		return !level.getEntitiesOfClass(HerobrineEntity.class,
+		return oneIn(level) != null;
+	}
+
+	/**
+	 * The one of him in THIS level, if there is one. No dimension opinion at all.
+	 *
+	 * @return him, or null — and returning the entity rather than a boolean is what
+	 *         lets a caller that finds a second one do something about it
+	 */
+	public static @org.jspecify.annotations.Nullable HerobrineEntity oneIn(
+			ServerLevel level) {
+		for (HerobrineEntity him : all(level)) {
+			return him;
+		}
+		return null;
+	}
+
+	/** Every one of him in this level, which should always be nought or one. */
+	public static java.util.List<HerobrineEntity> all(ServerLevel level) {
+		return level.getEntitiesOfClass(HerobrineEntity.class,
 			new net.minecraft.world.phys.AABB(-30000000, level.getMinY(), -30000000,
-				30000000, level.getMaxY(), 30000000)).isEmpty();
+				30000000, level.getMaxY(), 30000000));
 	}
 
 	public boolean isPresent() {
@@ -3189,6 +3344,12 @@ public class HerobrineEntity extends PathfinderMob {
 	 * seconds of every hunt would still be clairvoyant.
 	 */
 	public void beginHunt(@org.jspecify.annotations.Nullable Player on) {
+		// AND THE BACKSTOP, for the debug command and anything added later. The
+		// opening above is the path that matters; this is the one that guarantees it.
+		if (!this.hisGround()) {
+			this.vanish("the fight is not on this side");
+			return;
+		}
 		this.hunting = true;
 		this.lungeIn = LUNGE_EVERY;
 		this.backOff = 0;
@@ -3726,33 +3887,6 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final int MAX_RELOCATIONS = 2;
 
 	/**
-	 * How likely he is to reappear behind you rather than simply leave,
-	 * as a one-in-N chance, by phase.
-	 *
-	 * Not always, for the same reason the arrival cue is not always: a
-	 * reliable response is a rule, and a rule you have learned is a mechanic
-	 * rather than a fright. Not knowing whether chasing him will make him
-	 * vanish or put him at your back is worse than either certainty.
-	 *
-	 * It rises with wrath because his tolerance for being chased should fall.
-	 * Early he mostly gets out of your way; by MIMIC he almost always answers.
-	 *
-	 * The end of this curve is not "always relocates" — it is that he stops
-	 * retreating at all. See DESIGN.md: at HUNTER he should hold his ground
-	 * when you close, and that moment lands precisely because the player spent
-	 * hours learning that he never does.
-	 */
-	private static int relocateChanceIn(Phase phase) {
-		if (phase.atLeast(Phase.MIMIC)) {
-			return 1;    // always
-		}
-		if (phase.atLeast(Phase.TRESPASSER)) {
-			return 2;
-		}
-		return 3;
-	}
-
-	/**
 	 * How often his arrival makes a sound, one in N.
 	 *
 	 * Not always, on purpose. A reliable cue becomes a tell — players learn
@@ -4117,6 +4251,11 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 
+		// HE IS OVER HIS OWN CASTLE, AND THAT IS WHERE HE LIVES NOW.
+		if (this.patrol()) {
+			return;
+		}
+
 		// THE PROWL, AND IT SITS ABOVE THE STARE ON PURPOSE.
 		//
 		// Everything below this line is built on "being looked at makes him leave",
@@ -4232,9 +4371,7 @@ public class HerobrineEntity extends PathfinderMob {
 			this.onThe = closest.getUUID();
 		}
 
-		Phase phase = this.level() instanceof ServerLevel now
-			? Wrath.phase(now.getServer()) : Phase.RUMOUR;
-		double standoff = standoff(phase);
+		double standoff = this.standoff();
 
 		if (closest != null && closestDistance < standoff) {
 			// THIS WAS BILLING TWENTY-FIVE WRATH A TICK.
@@ -4298,7 +4435,7 @@ public class HerobrineEntity extends PathfinderMob {
 			// The guard belonged out here rather than in there. Skipping the branch
 			// lets the tick fall through to pursue, which is the only code that
 			// knows how a hunt ends.
-			if (holdsGround(phase) && !this.brokenOff
+			if (holdsGround() && !this.brokenOff
 				&& closest instanceof ServerPlayer near) {
 				this.closeOn(near, closestDistance);
 				return;
@@ -4378,8 +4515,7 @@ public class HerobrineEntity extends PathfinderMob {
 			// By HUNTER he simply looks back for as long as you care to stand
 			// there, which is only frightening because of how briefly he used
 			// to allow it.
-			int allowed = this.level() instanceof ServerLevel here
-				? staredDown(Wrath.phase(here.getServer())) : 0;
+			int allowed = this.staredDown();
 			// `held`, not `seen`. Being on somebody's screen is not being
 			// looked at, and spending the allowance on the first is what left
 			// nothing for the second.
@@ -4406,25 +4542,15 @@ public class HerobrineEntity extends PathfinderMob {
 	 * method: at first he cannot be held in the eye at all, and by the end he
 	 * does not mind being seen.
 	 */
-	private static int staredDown(Phase phase) {
-		return switch (phase) {
-			// Long enough to register, and no longer.
-			//
-			// Twelve ticks was under the threshold at which a person can see
-			// anything they were not already looking at — by the time the
-			// figure has reached the client and been drawn, half of it is gone,
-			// and the player's honest report was "I saw nothing". A sighting
-			// nobody perceives is not a subtle sighting, it is a missing one.
-			//
-			// Thirty is a second and a half: enough to turn your head and find
-			// a shape, nowhere near enough to study it. That gap is where the
-			// doubt lives.
-			case RUMOUR, WATCHER -> 70;
-			case TRESPASSER -> 110;
-			case MIMIC -> 200;
-			case HUNTER, SIEGE -> 0;
-		};
+	private int staredDown() {
+		// ZERO MEANS NEVER, and on his own ground he is never stared down. Out here
+		// a second and a half — see the note below, which was written about the
+		// early chapters and is now simply about being an apparition.
+		return this.hisGround() ? 0 : APPARITION;
 	}
+
+	/** A second and a half. */
+	private static final int APPARITION = 70;
 
 	/**
 	 * He breaks your line of sight, and then he is not there.
@@ -7522,8 +7648,10 @@ public class HerobrineEntity extends PathfinderMob {
 		if (this.level() instanceof ServerLevel clearing) {
 			this.stopBreaking(clearing);
 		}
-		if (this.witnessed && this.level() instanceof ServerLevel burning
-			&& Wrath.phase(burning.getServer()).atLeast(Phase.TRESPASSER)) {
+		// SEEN IS THE ONLY CONDITION. It was `witnessed && phase >= TRESPASSER`, and
+		// the phase half of that was rationing how much of him you got — which is
+		// the job geography has now. Somebody watched him go; there is a mark.
+		if (this.witnessed && this.level() instanceof ServerLevel burning) {
 			this.scorch(burning);
 		}
 
@@ -8103,8 +8231,11 @@ public class HerobrineEntity extends PathfinderMob {
 			|| !(this.level() instanceof ServerLevel server)) {
 			return false;
 		}
-		Phase phase = Wrath.phase(server.getServer());
-		if (this.random.nextInt(relocateChanceIn(phase)) != 0) {
+		// ONE IN TWO, ALWAYS. This used to climb from a third to a certainty across
+		// the ladder; the ladder no longer describes him. Half the time he is
+		// somewhere else a moment later and half the time he is simply gone, which is
+		// the whole of what an apparition needs to do.
+		if (this.random.nextInt(2) != 0) {
 			return false;   // this time he simply goes
 		}
 		// The anchor may have been mined out, flooded, or built over since.

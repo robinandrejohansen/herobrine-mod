@@ -151,6 +151,77 @@ public final class Keep {
 		return WALL + HisCity.REACH + 24;
 	}
 
+	/**
+	 * A CHEST WHERE YOU COME OUT, WITH THE WAY TO THE CASTLE IN IT.
+	 *
+	 * The dimension has one landmark and it is eighty to a hundred blocks from the
+	 * arrival in a random direction, through a dark forest, in permanent rain, with
+	 * a garrison in it. That is a fair walk if you know where you are going and it
+	 * is a coin toss if you do not — and the first thing a player does on stepping
+	 * out of a portal is turn round on the spot looking for a reason to go
+	 * anywhere.
+	 *
+	 * So the reason is on the floor in front of them. Same grammar as the overworld
+	 * chain: you do not get told where things are, you FIND the note that says.
+	 *
+	 * SITED, NOT BUILT, is the timing and it is deliberate. This runs the instant
+	 * the keep's position is chosen, which is the first tick anybody is over here —
+	 * so the chest is waiting before they have finished loading in, and nobody
+	 * watches it appear.
+	 */
+	private static void arrival(ServerLevel his, BlockPos came, BlockPos keep) {
+		his.getChunk(came.getX() >> 4, came.getZ() >> 4);
+		for (int ring = 1; ring <= 4; ring++) {
+			for (int dx = -ring; dx <= ring; dx++) {
+				for (int dz = -ring; dz <= ring; dz++) {
+					if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) {
+						continue;
+					}
+					for (int dy = 0; dy >= -2; dy--) {
+						BlockPos at = came.offset(dx, dy, dz);
+						if (his.getBlockState(at).is(Blocks.CHEST)) {
+							return;      // already been through this door
+						}
+						if (!his.getBlockState(at).isAir()
+							|| !his.getBlockState(at.below()).isSolid()
+							|| !his.getBlockState(at.above()).isAir()) {
+							continue;
+						}
+						his.setBlock(at, Blocks.CHEST.defaultBlockState(), 3);
+						his.setBlock(at.above(), Blocks.SOUL_LANTERN.defaultBlockState()
+							.setValue(net.minecraft.world.level.block.state.properties
+								.BlockStateProperties.HANGING, false), 3);
+						if (!(his.getBlockEntity(at)
+								instanceof net.minecraft.world.level.block.entity
+									.ChestBlockEntity box)) {
+							return;
+						}
+						net.minecraft.world.item.ItemStack map =
+							net.minecraft.world.item.MapItem.create(his, keep.getX(),
+								keep.getZ(), (byte) 3, true, true);
+						net.minecraft.world.level.saveddata.maps.MapItemSavedData
+							.addTargetDecoration(map, keep, "+",
+								net.minecraft.world.level.saveddata.maps
+									.MapDecorationTypes.RED_MARKER);
+						map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+							net.minecraft.network.chat.Component.literal(
+								"he is building something"));
+						box.setItem(13, map);
+						// And enough to walk there on. Not a haul — the city pays,
+						// and a full chest at the door would mean never leaving it.
+						com.bloomlet.herobrine.structure.Loot.scatter(box,
+							his.getRandom(), com.bloomlet.herobrine.structure.Loot.Tier.TOWER);
+						HerobrineMod.LOGGER.info(
+							"the way to the keep was left at the crossing, [{}, {}, {}]",
+							at.getX(), at.getY(), at.getZ());
+						return;
+					}
+				}
+			}
+		}
+		HerobrineMod.LOGGER.info("nowhere at the crossing to leave the way to the keep");
+	}
+
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Keep::onTick);
 	}
@@ -177,6 +248,7 @@ public final class Keep {
 			his.setAttached(SITE, site.asLong());
 			HerobrineMod.LOGGER.info("the keep will stand at [{}, {}]",
 				site.getX(), site.getZ());
+			arrival(his, first.blockPosition(), site);
 			return;
 		}
 

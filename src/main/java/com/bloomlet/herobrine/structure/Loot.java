@@ -99,6 +99,12 @@ public final class Loot {
 		 * what happens if that stops being true.
 		 */
 		TOWN_ARMS,
+		/** A working barrel: what somebody kept to hand rather than what they owned. */
+		TOWN_TOOLS,
+		/** His city, on the far side of the way. The only pool that pays. */
+		HIS_CITY,
+		/** Up the tower, past the gap. Paid for in height rather than in distance. */
+		TOWER,
 	}
 
 	private record Entry(Item item, int min, int max, int weight, boolean worn) {}
@@ -226,6 +232,28 @@ public final class Loot {
 		new Entry(Items.FISHING_ROD, 1, 1, 4, true),
 		new Entry(Items.CLOCK, 1, 1, 2, false),
 		new Entry(Items.COMPASS, 1, 1, 2, false),
+		// WIDENED, because twelve entries is not a house.
+		//
+		// The old list read as a food cupboard with two boots in it, and every
+		// house in the town drew from it — so by the fourth one the player knew
+		// exactly what was in the fifth. These are the things that make a home
+		// specifically rather than a store: something to write with, something to
+		// light, something to put a plant in, and a cake nobody ate.
+		new Entry(Items.CANDLE, 1, 4, 6, false),
+		new Entry(Items.PAPER, 1, 5, 5, false),
+		new Entry(Items.BOOK, 1, 2, 5, false),
+		new Entry(Items.FLOWER_POT, 1, 2, 5, false),
+		new Entry(Items.BOWL, 1, 3, 5, false),
+		new Entry(Items.GLASS_BOTTLE, 1, 2, 4, false),
+		new Entry(Items.SWEET_BERRIES, 2, 7, 4, false),
+		new Entry(Items.EGG, 1, 4, 4, false),
+		new Entry(Items.SUGAR, 1, 4, 3, false),
+		new Entry(Items.HONEY_BOTTLE, 1, 2, 3, false),
+		new Entry(Items.INK_SAC, 1, 3, 3, false),
+		new Entry(Items.WOODEN_HOE, 1, 1, 3, true),
+		new Entry(Items.SHEARS, 1, 1, 3, true),
+		new Entry(Items.BUCKET, 1, 1, 3, false),
+		new Entry(Items.CAKE, 1, 1, 1, false),
 	};
 
 	/**
@@ -241,6 +269,162 @@ public final class Loot {
 	 * player cannot craft. It is not better than iron and it does not need to be:
 	 * it is the piece that says this came from somewhere.
 	 */
+	/**
+	 * THE BARREL BY THE DOOR, AND IT IS TOOLS RATHER THAN TREASURE.
+	 *
+	 * Every pool in this file until now answered "what was this person worth" —
+	 * bread, iron, a leather chestplate. This one answers "what were they in the
+	 * middle of", which is a completely different and much better question for a
+	 * town that has been walked out of. A barrel with a half-worn iron pickaxe, a
+	 * bucket, a lead and forty torches in it is not loot. It is somebody's kit,
+	 * put down.
+	 *
+	 * ALL OF IT WORN, or nearly. `worn` puts real damage on a tool, and that is
+	 * what stops this being a supply drop: an iron axe at sixty per cent is a gift
+	 * AND a reminder that the last person to hold it used it a lot and is not here.
+	 * A pristine set would read as a chest the mod put down for you.
+	 *
+	 * AND NOTHING IN IT IS BETTER THAN IRON. The forge pool is where value lives.
+	 * This is where usefulness lives, and the two want to stay separate — a barrel
+	 * that might hold diamond turns the whole town into a slot machine and players
+	 * stop reading the buildings and start opening containers.
+	 */
+	private static final Entry[] TOOLS_POOL = {
+		new Entry(Items.TORCH, 6, 20, 10, false),
+		new Entry(Items.STICK, 4, 14, 9, false),
+		new Entry(Items.IRON_PICKAXE, 1, 1, 8, true),
+		new Entry(Items.IRON_AXE, 1, 1, 8, true),
+		new Entry(Items.IRON_SHOVEL, 1, 1, 8, true),
+		new Entry(Items.COAL, 3, 10, 8, false),
+		new Entry(Items.STONE_PICKAXE, 1, 1, 7, true),
+		new Entry(Items.STONE_AXE, 1, 1, 7, true),
+		new Entry(Items.SHEARS, 1, 1, 6, true),
+		new Entry(Items.IRON_HOE, 1, 1, 6, true),
+		new Entry(Items.BUCKET, 1, 1, 6, false),
+		new Entry(Items.FLINT_AND_STEEL, 1, 1, 5, true),
+		new Entry(Items.IRON_INGOT, 1, 4, 5, false),
+		new Entry(Items.LADDER, 4, 12, 5, false),
+		new Entry(Items.STRING, 2, 8, 5, false),
+		new Entry(Items.FLINT, 2, 6, 5, false),
+		new Entry(Items.LEAD, 1, 2, 4, false),
+		new Entry(Items.BRUSH, 1, 1, 4, true),
+		new Entry(Items.FISHING_ROD, 1, 1, 4, true),
+		new Entry(Items.PAPER, 2, 7, 4, false),
+		new Entry(Items.GLASS_BOTTLE, 1, 3, 4, false),
+		new Entry(Items.BOWL, 1, 3, 3, false),
+		new Entry(Items.CANDLE, 2, 6, 3, false),
+		new Entry(Items.FLOWER_POT, 1, 2, 3, false),
+		new Entry(Items.NAME_TAG, 1, 1, 2, false),
+		new Entry(Items.SPYGLASS, 1, 1, 2, true),
+		new Entry(Items.SHIELD, 1, 1, 2, true),
+		new Entry(Items.LANTERN, 1, 2, 2, false),
+	};
+
+	/**
+	 * WHAT IS IN A CUPBOARD IN HIS CITY, AND IT IS THE ONLY POOL THAT PAYS.
+	 *
+	 * Every other pool in this file is deliberately poor, and that is right for
+	 * the overworld: those buildings are somebody's farmhouse and somebody's
+	 * village, and putting diamonds in them would turn a story into a loot run.
+	 *
+	 * This is on the far side of the way, past a portal under a house, in a town
+	 * with a castle over it, and the player got here on purpose. A poor chest at
+	 * the end of that is not restraint, it is the mod failing to notice what it
+	 * asked of somebody. THE JOURNEY HAS TO PAY OR NOBODY MAKES IT TWICE.
+	 *
+	 * THREE THINGS IN EVERY CHEST, roughly, and they are three different kinds of
+	 * good so no single chest is a disappointment:
+	 *
+	 *   FOOD THAT IS ACTUALLY WORTH CARRYING. Golden carrots and cooked meat, not
+	 *   bread and rotten flesh. A player who crossed over is a player who is going
+	 *   to be down here a while and the food is what lets them stay.
+	 *
+	 *   TOOLS ONE RUNG ABOVE WHAT THEY BROUGHT. Diamond, sparingly, and worn —
+	 *   somebody used these. Enchanted books, which are the single best thing to
+	 *   find because they are worth something whatever the player is carrying.
+	 *
+	 *   AND MATERIAL. Emeralds, iron and gold blocks, obsidian, ender pearls.
+	 *   Bulk rather than a trinket: this was a working city and its cupboards had
+	 *   stock in them.
+	 */
+	/**
+	 * WHAT IS UP THE TOWER, AND IT IS ABOUT HEIGHT.
+	 *
+	 * The city pool pays for distance. This one pays for the climb, and the two
+	 * want to be different in KIND rather than in amount — a second pool of
+	 * emeralds would just be the city again in a worse room.
+	 *
+	 * So everything in here is about being off the ground. Rockets and membrane
+	 * because of what is in the chest at the top. Ender pearls, because the parkour
+	 * has a gap in it and a player who works out they can throw one has beaten it
+	 * honestly. Feathers and arrows and a bow. Levitation potions, which are nearly
+	 * useless and are the single most thematically correct item in the game to find
+	 * halfway up a broken tower.
+	 *
+	 * NOTHING HERE IS BETTER THAN THE WINGS. The chests are the road and the elytra
+	 * is the destination; a chest that outshines it would make the summit an
+	 * anticlimax, and the summit is the whole reason anybody is up here.
+	 */
+	private static final Entry[] TOWER_POOL = {
+		new Entry(Items.FIREWORK_ROCKET, 4, 16, 10, false),
+		new Entry(Items.PHANTOM_MEMBRANE, 1, 4, 8, false),
+		new Entry(Items.ENDER_PEARL, 2, 5, 8, false),
+		new Entry(Items.FEATHER, 4, 12, 7, false),
+		new Entry(Items.ARROW, 8, 24, 7, false),
+		new Entry(Items.PAPER, 3, 9, 6, false),
+		new Entry(Items.GUNPOWDER, 3, 9, 6, false),
+		new Entry(Items.BOW, 1, 1, 5, true),
+		new Entry(Items.RABBIT_FOOT, 1, 2, 5, false),
+		new Entry(Items.GOLDEN_CARROT, 2, 6, 5, false),
+		new Entry(Items.EMERALD, 2, 7, 5, false),
+		new Entry(Items.IRON_INGOT, 3, 8, 5, false),
+		new Entry(Items.ENCHANTED_BOOK, 1, 1, 4, false),
+		new Entry(Items.LEATHER, 2, 6, 4, false),
+		new Entry(Items.STRING, 3, 9, 4, false),
+		new Entry(Items.TORCH, 6, 18, 4, false),
+		new Entry(Items.LANTERN, 1, 2, 3, false),
+		new Entry(Items.EXPERIENCE_BOTTLE, 2, 6, 3, false),
+		new Entry(Items.SCAFFOLDING, 6, 16, 3, false),
+		new Entry(Items.GOLDEN_APPLE, 1, 1, 2, false),
+	};
+
+	private static final Entry[] CITY_POOL = {
+		// The food, and it is the good food.
+		new Entry(Items.GOLDEN_CARROT, 2, 8, 9, false),
+		new Entry(Items.COOKED_BEEF, 3, 9, 9, false),
+		new Entry(Items.COOKED_PORKCHOP, 3, 8, 8, false),
+		new Entry(Items.BREAD, 4, 10, 7, false),
+		new Entry(Items.HONEY_BOTTLE, 1, 3, 5, false),
+		new Entry(Items.GOLDEN_APPLE, 1, 1, 2, false),
+		// Tools a rung above what they walked in with.
+		new Entry(Items.IRON_PICKAXE, 1, 1, 7, true),
+		new Entry(Items.IRON_AXE, 1, 1, 6, true),
+		new Entry(Items.DIAMOND_PICKAXE, 1, 1, 3, true),
+		new Entry(Items.DIAMOND_AXE, 1, 1, 2, true),
+		new Entry(Items.DIAMOND_SHOVEL, 1, 1, 2, true),
+		new Entry(Items.CROSSBOW, 1, 1, 3, true),
+		new Entry(Items.SHIELD, 1, 1, 4, true),
+		new Entry(Items.ENCHANTED_BOOK, 1, 1, 6, false),
+		// And stock. A working city kept material, not curios.
+		new Entry(Items.EMERALD, 2, 9, 8, false),
+		new Entry(Items.IRON_INGOT, 4, 12, 8, false),
+		new Entry(Items.GOLD_INGOT, 2, 8, 7, false),
+		new Entry(Items.LAPIS_LAZULI, 3, 10, 6, false),
+		new Entry(Items.OBSIDIAN, 2, 6, 5, false),
+		new Entry(Items.ENDER_PEARL, 1, 3, 5, false),
+		new Entry(Items.DIAMOND, 1, 3, 4, false),
+		new Entry(Items.IRON_BLOCK, 1, 2, 3, false),
+		new Entry(Items.GOLD_BLOCK, 1, 1, 2, false),
+		new Entry(Items.EXPERIENCE_BOTTLE, 2, 6, 4, false),
+		new Entry(Items.GLOWSTONE_DUST, 3, 9, 4, false),
+		new Entry(Items.BLAZE_ROD, 1, 3, 3, false),
+		// The things that make it a home rather than a vault.
+		new Entry(Items.TORCH, 8, 24, 8, false),
+		new Entry(Items.LANTERN, 1, 3, 5, false),
+		new Entry(Items.BOOK, 1, 4, 5, false),
+		new Entry(Items.CANDLE, 2, 6, 4, false),
+	};
+
 	private static final Entry[] ARMS_POOL = {
 		new Entry(Items.ARROW, 8, 24, 10, false),
 		new Entry(Items.BOW, 1, 1, 8, true),
@@ -291,7 +475,9 @@ public final class Loot {
 		}
 		int stacks = 2 + random.nextInt(3);
 		for (int i = 0; i < stacks && !free.isEmpty(); i++) {
-			barrel.setItem(free.remove(random.nextInt(free.size())), roll(pool, random));
+			barrel.setItem(free.remove(random.nextInt(free.size())),
+				roll(pool, random, barrel.getLevel() == null
+					? null : barrel.getLevel().registryAccess()));
 		}
 		barrel.setChanged();
 	}
@@ -304,6 +490,9 @@ public final class Loot {
 			case TOWN_TRADE -> TRADE_POOL;
 			case TOWN_HOME -> HOME_POOL;
 			case TOWN_ARMS -> ARMS_POOL;
+			case TOWN_TOOLS -> TOOLS_POOL;
+			case HIS_CITY -> CITY_POOL;
+			case TOWER -> TOWER_POOL;
 		};
 	}
 
@@ -316,6 +505,11 @@ public final class Loot {
 	 */
 	public static void scatter(BaseContainerBlockEntity chest, RandomSource random, Tier tier) {
 		Entry[] pool = poolFor(tier);
+		// Nullable on purpose: a chest that has not been put in a level yet cannot
+		// look anything up, and the honest answer there is a plain book rather than
+		// a crash. It does not happen from any current caller.
+		RegistryAccess access = chest.getLevel() == null
+			? null : chest.getLevel().registryAccess();
 
 		List<Integer> free = new ArrayList<>();
 		for (int slot = 0; slot < chest.getContainerSize(); slot++) {
@@ -334,7 +528,7 @@ public final class Loot {
 		int stacks = town ? 4 + random.nextInt(5) : 2 + random.nextInt(4);
 		for (int i = 0; i < stacks && !free.isEmpty(); i++) {
 			int slot = free.remove(random.nextInt(free.size()));
-			chest.setItem(slot, roll(pool, random));
+			chest.setItem(slot, roll(pool, random, access));
 		}
 
 		// AND IN THE LAST HOUSES, SOME OF IT IS YOURS.
@@ -475,6 +669,49 @@ public final class Loot {
 	 * gesture. He is not arming you and he is not fooling you. He is giving you
 	 * a chance, on his terms, and finding it funny.
 	 */
+	/**
+	 * SOMEBODY TRIED TO LEAVE HERE AND THIS IS WHAT IS LEFT OF IT.
+	 *
+	 * At the top of the tower, past the gap, and it is the only item in the mod
+	 * that is straightforwardly a gift. Everything else he leaves is bait, a joke,
+	 * or a warning. This is not his — it belongs to whoever got up here before you
+	 * and it is in the state it is in because they did not get any further.
+	 *
+	 * BROKEN, AND IT STAYS BROKEN. The first version had Mending on it, and Mending
+	 * is the one enchantment that undoes the entire idea: a pair of wings you can
+	 * repair with experience is a pair of wings, and within an hour of finding them
+	 * the player simply owns flight. Everything the tower was for is spent.
+	 *
+	 * So the damage is the item rather than a condition on it. Four to twelve
+	 * points is a few seconds in the air — enough to know exactly what you are
+	 * holding, and to work out that you cannot keep it. Repair is phantom membrane
+	 * at an anvil, which is finite, which means every glide is spent rather than
+	 * borrowed. Unbreaking stretches that and does not change it.
+	 *
+	 * AND THERE IS A PRICE ON THE FRONT OF IT. Binding, always: put them on and
+	 * they do not come off, so wearing the wings costs you the chestplate slot for
+	 * good. That is a real decision rather than a drawback — flight or armour, in a
+	 * world where the thing hunting you hits for eleven — and it is visible in the
+	 * tooltip before anybody commits, because a trap you cannot see is a bug report
+	 * and a trap you can read is a choice.
+	 *
+	 * Vanishing on top of it a third of the time, which is the one that hurts: the
+	 * wings that got somebody this far do not survive you dying either.
+	 */
+	public static ItemStack brokenWings(RegistryAccess access, RandomSource random) {
+		Registry<Enchantment> book = access.lookupOrThrow(Registries.ENCHANTMENT);
+		ItemStack wings = new ItemStack(Items.ELYTRA);
+		put(wings, book, new Charm(Enchantments.UNBREAKING, 1, 2), random);
+		put(wings, book, new Charm(Enchantments.BINDING_CURSE, 1, 1), random);
+		if (random.nextInt(3) == 0) {
+			put(wings, book, new Charm(Enchantments.VANISHING_CURSE, 1, 1), random);
+		}
+		wings.setDamageValue(wings.getMaxDamage() - (4 + random.nextInt(9)));
+		wings.set(DataComponents.CUSTOM_NAME,
+			net.minecraft.network.chat.Component.literal("somebody got this far"));
+		return wings;
+	}
+
 	public static ItemStack chance(RegistryAccess access, RandomSource random) {
 		Registry<Enchantment> book = access.lookupOrThrow(Registries.ENCHANTMENT);
 		int kind = random.nextInt(4);
@@ -595,7 +832,221 @@ public final class Loot {
 		stack.setDamageValue(low + random.nextInt(high - low));
 	}
 
-	private static ItemStack roll(Entry[] pool, RandomSource random) {
+	/**
+	 * WHAT GOES ON A BOOK, BECAUSE A BLANK ONE IS A BUG AND NOT AN ITEM.
+	 *
+	 * Items.ENCHANTED_BOOK is a plain item like any other, and putting it in a pool
+	 * gets you exactly that: a book with the shimmer on it, no enchantment
+	 * component, and no way for a player to tell it apart from a broken drop except
+	 * by hovering it and finding nothing there. It shipped in two pools that way.
+	 *
+	 * Curated rather than pulled from the registry at random, and it matters:
+	 * everything available includes Curse of Binding, Curse of Vanishing, and a
+	 * long tail of things nobody wants. A found book should always be worth the
+	 * find, so this is the short list of ones that are.
+	 */
+	private static final Charm[] BOOKS = {
+		new Charm(Enchantments.MENDING, 1, 1),
+		new Charm(Enchantments.UNBREAKING, 2, 3),
+		new Charm(Enchantments.EFFICIENCY, 3, 5),
+		new Charm(Enchantments.FORTUNE, 2, 3),
+		new Charm(Enchantments.SILK_TOUCH, 1, 1),
+		new Charm(Enchantments.SHARPNESS, 3, 5),
+		new Charm(Enchantments.PROTECTION, 3, 4),
+		new Charm(Enchantments.FEATHER_FALLING, 3, 4),
+		new Charm(Enchantments.LOOTING, 2, 3),
+		new Charm(Enchantments.POWER, 3, 5),
+		new Charm(Enchantments.RESPIRATION, 2, 3),
+		new Charm(Enchantments.DEPTH_STRIDER, 2, 3),
+		new Charm(Enchantments.THORNS, 2, 3),
+		new Charm(Enchantments.INFINITY, 1, 1),
+	};
+
+	/**
+	 * WHAT IS LYING ABOUT IN OTHER PEOPLE'S CUPBOARDS.
+	 *
+	 * Twelve of them, one page each, and the rule that makes them work is that
+	 * NONE OF THEM IS ABOUT HIM. They are about a hole, a smell, a debt, a dog, a
+	 * shift somebody covered. Ordinary paper from an ordinary place, and the horror
+	 * arrives sideways in the last line or does not arrive at all.
+	 *
+	 * A found note that says "BEWARE THE ENTITY" tells the reader the mod is trying
+	 * to frighten them, and once they know that they are safe. A found note about a
+	 * man who is annoyed his brother borrowed a shovel and did not bring it back
+	 * does not tell them anything — and it is the fourth one of those, when they
+	 * notice how many of these people are writing about somebody who went down and
+	 * did not come up, that the mod stops needing to tell them anything at all.
+	 *
+	 * THE TITLE IS THE HOOK AND IT IS THE WHOLE BUDGET. It sits in a chest slot
+	 * next to a stack of iron, and it gets about half a second to earn opening.
+	 * Every one of these is a question the reader now wants answered.
+	 */
+	private record Scrap(String title, String page) {}
+
+	private static final Scrap[] SCRAPS = {
+		new Scrap("what the well is for",
+			"Do not drink from it after dark.\n\n"
+			+ "I know how that reads. I know what you will think of me.\n\n"
+			+ "Drink from the butt by the door, and if the butt is empty go thirsty "
+			+ "until morning, and I will not explain further because the explaining "
+			+ "is the part that makes people go and look."),
+		new Scrap("the shovel I lent out",
+			"Corwin took it on the Tuesday and said two days.\n\n"
+			+ "It is the good one with the ash handle. He has had it eleven weeks.\n\n"
+			+ "I have been down to the shaft twice to ask for it back and both times "
+			+ "I got to the third turn and came home, and I am forty-four years old "
+			+ "and I would like somebody to explain that to me."),
+		new Scrap("counting the sheep",
+			"Nineteen out, nineteen in. Every night of my life.\n\n"
+			+ "Twenty in, last night.\n\n"
+			+ "It stood at the back of the pen and it did not eat and the others "
+			+ "would not go near it. I put it out this morning. It went up the west "
+			+ "field, which is not where sheep go."),
+		new Scrap("for whoever has the room next",
+			"The stain on the boards under the window is not damp and it will not "
+			+ "come out. I have tried lye and I have tried sand.\n\n"
+			+ "Put the bed over it. That is what I did and it was two good years.\n\n"
+			+ "Do not put the bed facing the door."),
+		new Scrap("the smell in the low field",
+			"It comes up in the wet and it is not the drain, because I have had the "
+			+ "drain up.\n\n"
+			+ "It is sweet, which is the wrong word and the only one I have. You "
+			+ "smell it and you are hungry and then you are not.\n\n"
+			+ "The dog will not cross that corner now. She goes the long way round "
+			+ "and she is not a clever dog."),
+		new Scrap("a debt, settled",
+			"Two bushels to Haral for the roof. Paid.\n\n"
+			+ "One axe head to Marta. Paid.\n\n"
+			+ "Nine days of work to the house at the head of the valley. NOT paid, "
+			+ "and I am not going back for it, and if anybody reads this and thinks "
+			+ "me a coward they are welcome to go and collect it themselves."),
+		new Scrap("the shift I covered",
+			"Aldis asked me to take his watch on the wall and I said yes because he "
+			+ "has three under six.\n\n"
+			+ "Nothing happened. I want that on the record. Nothing happened, the "
+			+ "whole night, and I stood there the whole night, and at some point I "
+			+ "stopped being able to look at the treeline.\n\n"
+			+ "I will not be taking his watch again."),
+		new Scrap("what the children are singing",
+			"There is a rhyme going round the square and I do not know who taught "
+			+ "it to them.\n\n"
+			+ "It has the counting in it and then it has a bit at the end about a "
+			+ "man in the field who does not have a face on, and they think it is "
+			+ "very funny.\n\n"
+			+ "I have asked four of them. They all say they learned it off "
+			+ "somebody else."),
+		new Scrap("on the keeping of lamps",
+			"Agreed at the meeting: every house shows a light from dusk, and the "
+			+ "cost is shared.\n\n"
+			+ "Agreed also: nobody goes to see why another house has stopped "
+			+ "showing one. We go in the morning. We go in threes.\n\n"
+			+ "This was not agreed unanimously and I have recorded the objection."),
+		new Scrap("my brother's hands",
+			"He came up for water on the Sunday and I have not slept properly "
+			+ "since.\n\n"
+			+ "It was not the state of them. Anybody who cuts stone has hands like "
+			+ "that by forty.\n\n"
+			+ "It was that he did not put them under the water. He stood at the "
+			+ "trough and he looked at them, for a long time, the way you look at "
+			+ "something you have been given."),
+		new Scrap("do not dig past the seam",
+			"Below the pale band the stone comes away too easily and that is not a "
+			+ "gift.\n\n"
+			+ "Ask anybody who has been under it: it is warm, and it should not be, "
+			+ "and there is no fire in this valley deep enough to explain it.\n\n"
+			+ "The seam is the floor. Whatever anyone tells you the seam is the "
+			+ "floor."),
+		new Scrap("an inventory of the second house",
+			"Taken after, by me, with two others present, and countersigned.\n\n"
+			+ "Six bowls. Four spoons. A loom, strung. Two coats on the peg by the "
+			+ "door and a third coat folded on the chair.\n\n"
+			+ "Nothing missing. Nothing broken. I am asked to note that nothing was "
+			+ "missing and I have noted it and I would like the record to show that "
+			+ "I do not think it means what they think it means."),
+	};
+
+	/**
+	 * How much a written book leaf holds before it silently stops drawing.
+	 *
+	 * Third place in this repo to need this number, which is two too many — the
+	 * journal counts characters like this and the testimony counts LINES because
+	 * its pages are hand-wrapped. Worth collapsing into one utility the next time
+	 * anybody is in all three files.
+	 */
+	private static final int LEAF = 250;
+
+	/**
+	 * THIRTY-TWO CHARACTERS, AND GOING OVER DISCONNECTS THE PLAYER.
+	 *
+	 * A written book's title is written to the wire by Utf8String with a hard cap
+	 * of 32, and nothing checks it on the way in. A 33-character title compiles,
+	 * builds, boots, generates, saves — and then the first person to OPEN the chest
+	 * gets
+	 *
+	 *     EncoderException: String too big (was 33 characters, max 32)
+	 *
+	 * on container_set_content, which does not throw an error in the chest, it
+	 * severs the connection. "Internal Exception ... Failed to encode packet" and
+	 * they are on the title screen. The chest also fails to serialise on save, so
+	 * the item quietly vanishes from the world as well.
+	 *
+	 * Two of the titles written this week were 33. Both crashed. It presented as
+	 * "the map is not in the chest", which is exactly what it looks like from
+	 * inside the game, and it cost an evening.
+	 *
+	 * So no title reaches a book without coming through here. Trimming at a word
+	 * boundary rather than mid-word, because a title cut to "an inventory of the sec"
+	 * is a bug report of its own — and it SHOUTS in the log, because a silently
+	 * shortened title is a thing nobody notices until it is in a release.
+	 */
+	private static final int TITLE_FITS = 32;
+
+	private static String title(String wanted) {
+		if (wanted.length() <= TITLE_FITS) {
+			return wanted;
+		}
+		int cut = wanted.lastIndexOf(' ', TITLE_FITS);
+		String short_ = wanted.substring(0, cut > 12 ? cut : TITLE_FITS).trim();
+		com.bloomlet.herobrine.HerobrineMod.LOGGER.warn(
+			"book title was {} characters and the wire allows {} — \"{}\" became \"{}\"",
+			wanted.length(), TITLE_FITS, wanted, short_);
+		return short_;
+	}
+
+	/** One of them, written, and across as many leaves as the writing needs. */
+	private static ItemStack scrap(RandomSource random) {
+		Scrap what = SCRAPS[random.nextInt(SCRAPS.length)];
+		java.util.List<net.minecraft.server.network.Filterable<
+			net.minecraft.network.chat.Component>> leaves = new ArrayList<>();
+		StringBuilder leaf = new StringBuilder();
+		// Split where the writer already paused. Ten of these twelve run past one
+		// leaf, and truncation eats from the END — which on a note whose whole
+		// point is the last line would remove the only part that matters.
+		for (String para : what.page().split("\n\n")) {
+			if (leaf.length() > 0 && leaf.length() + para.length() + 2 > LEAF) {
+				leaves.add(net.minecraft.server.network.Filterable.passThrough(
+					net.minecraft.network.chat.Component.literal(leaf.toString())));
+				leaf.setLength(0);
+			}
+			if (leaf.length() > 0) {
+				leaf.append("\n\n");
+			}
+			leaf.append(para);
+		}
+		if (leaf.length() > 0) {
+			leaves.add(net.minecraft.server.network.Filterable.passThrough(
+				net.minecraft.network.chat.Component.literal(leaf.toString())));
+		}
+		ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
+		book.set(DataComponents.WRITTEN_BOOK_CONTENT,
+			new net.minecraft.world.item.component.WrittenBookContent(
+				net.minecraft.server.network.Filterable.passThrough(title(what.title())),
+				"\u2014", 0, leaves, true));
+		return book;
+	}
+
+	private static ItemStack roll(Entry[] pool, RandomSource random,
+	                              @org.jspecify.annotations.Nullable RegistryAccess access) {
 		int total = 0;
 		for (Entry entry : pool) {
 			total += entry.weight();
@@ -608,6 +1059,27 @@ public final class Loot {
 			}
 			int count = entry.min() + random.nextInt(entry.max() - entry.min() + 1);
 			ItemStack stack = new ItemStack(entry.item(), count);
+			// A PLAIN BOOK IS CRAFTING MATERIAL AND NOBODY READS CRAFTING MATERIAL.
+			//
+			// Items.BOOK was in three pools as flavour, and what it actually is is
+			// three paper and a leather — the player sweeps it up without looking.
+			// In a mod whose whole overworld is a document, a book you cannot open
+			// is the single most wasted item on the table.
+			//
+			// So every one of them is written, and the title does the work. These
+			// are found on the way to somewhere, in somebody else's cupboard, and
+			// the reader has to be able to tell from the shelf that it is worth the
+			// two seconds — which is what a title like "what the well is for" does
+			// and what "Book" does not.
+			if (stack.is(Items.BOOK)) {
+				stack = scrap(random);
+			}
+			if (stack.is(Items.ENCHANTED_BOOK) && access != null) {
+				// ItemStack.enchant routes a book to STORED_ENCHANTMENTS on its own,
+				// so this is the same call every other enchant in the file makes.
+				put(stack, access.lookupOrThrow(Registries.ENCHANTMENT),
+					BOOKS[random.nextInt(BOOKS.length)], random);
+			}
 			if (entry.worn() && stack.isDamageableItem()) {
 				// Somebody used this for years. A pristine tool in a house
 				// nobody has lived in for a decade is a small lie, and small

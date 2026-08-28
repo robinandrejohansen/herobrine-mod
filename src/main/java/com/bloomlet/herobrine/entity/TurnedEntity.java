@@ -102,6 +102,124 @@ public class TurnedEntity extends PathfinderMob {
 	 */
 	private boolean committed;
 
+	// ---- HE WATCHES BEFORE HE COMES ----------------------------------------
+	//
+	// The old behaviour was one bit wide: he had a target or he did not, and
+	// having one meant running at you with an axe. Which is a fine thing for a
+	// village to contain one of and a terrible thing for it to contain forty of —
+	// sixteen men sprinting out of sixteen doors is a wave, and a wave is a
+	// difficulty setting rather than a fright.
+	//
+	// So there is a middle. He notices, and then he FOLLOWS at a distance, empty
+	// handed, facing you the whole time. Nothing is happening and nothing is
+	// going to happen, and the player has to decide what to do about that — which
+	// is a far worse position to be in than being chased, because being chased has
+	// an obvious correct answer and this has none.
+	//
+	// THE WHOLE STATE MACHINE IS getTarget() BEING NULL. MeleeAttackGoal cannot
+	// run without a target, so while he is stalking there is nothing to suppress
+	// and nothing to fight with — the stalk goal simply owns his feet. Setting the
+	// target is what ends it, and from that instant the ordinary goal takes over
+	// exactly as it always did. No flags, no priorities to balance, no third
+	// version of "walk toward the player" to keep in step with the other two.
+
+	/** How far off he holds while he is only watching. */
+	private static final double STANDS_OFF = 7.0;
+	/** Slack either side of it, so he is not oscillating on the spot. */
+	private static final double SLACK = 1.5;
+	/** Inside this he stops watching. */
+	private static final double SNAPS_AT = 3.5;
+	/** How long he keeps the mark after losing sight of them. */
+	private static final int REMEMBERS = 400;
+	/** Both of you motionless for this long and he takes a step. */
+	private static final int CREEPS_AFTER = 60;
+	/** How far a step is. */
+	private static final double A_STEP = 1.4;
+	/** How far a shout carries when somebody puts a sword in him. */
+	private static final double SHOUT = 24.0;
+	/** Under this much movement in a tick, both of you count as standing still. */
+	private static final double STILL = 0.01;
+
+	private java.util.@org.jspecify.annotations.Nullable UUID mark;
+	private net.minecraft.core.@org.jspecify.annotations.Nullable BlockPos markAt;
+	private int patience;
+	private int stillFor;
+	private double standing = STANDS_OFF;
+
+	/** He has seen somebody. Not a target — a mark. */
+	public void notice(Player who) {
+		if (this.getTarget() != null) {
+			return;      // already past watching
+		}
+		if (this.mark == null) {
+			// Each of them picks his own distance, once, and keeps it. A row of
+			// them all holding station at exactly seven blocks is a firing line;
+			// six to nine, chosen per man, is a group of people watching you.
+			this.standing = STANDS_OFF - 1.0 + this.random.nextDouble() * 3.0;
+		}
+		this.mark = who.getUUID();
+		this.markAt = who.blockPosition();
+		this.patience = REMEMBERS;
+		this.empty();
+	}
+
+	/**
+	 * AND NOW HE HAS IT OUT.
+	 *
+	 * @param shout whether the others should hear about it
+	 *
+	 * The axe appearing is the entire transition and it wants to be visible: the
+	 * player has spent a minute being followed by somebody holding nothing, and
+	 * the moment that changes they should be able to SEE that it changed rather
+	 * than infer it from him moving faster.
+	 */
+	public void snap(Player at, boolean shout) {
+		this.carry();
+		this.setTarget(at);
+		this.committed = true;
+		this.mark = null;
+		this.patience = 0;
+		if (!shout || !(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		// AND THEY ALL COME. Hitting one of them is the loudest thing a player can
+		// do in that town, and it should cost accordingly — every one of them
+		// within the shout drops the pretence at once. It also fixes the reading:
+		// they are not forty individuals who happen to look alike, they are one
+		// thing distributed across forty bodies.
+		int woke = 0;
+		for (TurnedEntity other : here.getEntitiesOfClass(TurnedEntity.class,
+				this.getBoundingBox().inflate(SHOUT))) {
+			if (other == this || other.getTarget() != null) {
+				continue;
+			}
+			other.carry();
+			other.setTarget(at);
+			other.committed = true;
+			other.mark = null;
+			woke++;
+		}
+		if (woke > 0) {
+			com.bloomlet.herobrine.HerobrineMod.LOGGER.info(
+				"one of them was struck — {} more put the pretence down", woke);
+		}
+	}
+
+	/** Nothing in his hands, which is most of what makes the watching bearable. */
+	private void empty() {
+		this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+	}
+
+	/** Whoever he is watching, if they are still here. */
+	private @org.jspecify.annotations.Nullable Player marked() {
+		if (this.mark == null || !(this.level() instanceof ServerLevel here)) {
+			return null;
+		}
+		Player who = here.getPlayerByUUID(this.mark);
+		return who != null && who.isAlive() && !who.isSpectator() ? who : null;
+	}
+	// ---- END HE WATCHES ----------------------------------------------------
+
 	/**
 	 * How long since he last said something.
 	 *
@@ -146,6 +264,10 @@ public class TurnedEntity extends PathfinderMob {
 		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0, true));
 		// Awake, and visibly with nothing to do. Villagers at night are in
 		// their beds; the whole event is one man walking the square.
+		// ABOVE THE STROLL AND BELOW THE MELEE, which is the whole ordering: if he
+		// has a target the melee wins, if he has a mark this wins, and otherwise he
+		// wanders. Three states, one line.
+		this.goalSelector.addGoal(2, new Stalk(this));
 		this.goalSelector.addGoal(4, new RandomStrollGoal(this, 0.6));
 		this.targetSelector.addGoal(1, new NightWatch(this));
 		this.carry();
@@ -186,6 +308,127 @@ public class TurnedEntity extends PathfinderMob {
 	 * keeps them. Going round a corner is not an escape and neither is putting
 	 * somebody else between you.
 	 */
+	/**
+	 * KEEPING PACE, AND NOTHING ELSE.
+	 *
+	 * @see TurnedEntity#notice for why the state is simply getTarget() being null
+	 *
+	 * Three things happen in tick() and they are in order of how much the player
+	 * will notice them. He holds his distance. If neither of you has moved for
+	 * three seconds he closes a step — which is the beat the whole goal exists for,
+	 * because a stalker who only ever mirrors you is a shadow, and one that gains
+	 * ground when you stop is a decision being made. And if he loses sight of you
+	 * he walks to where you were, which is not the same as giving up.
+	 */
+	private static class Stalk extends net.minecraft.world.entity.ai.goal.Goal {
+		private final TurnedEntity him;
+		private net.minecraft.world.phys.Vec3 wasAt =
+			net.minecraft.world.phys.Vec3.ZERO;
+
+		Stalk(TurnedEntity him) {
+			this.him = him;
+			this.setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK));
+		}
+
+		@Override
+		public boolean canUse() {
+			return this.him.getTarget() == null && this.him.marked() != null;
+		}
+
+		@Override
+		public boolean canContinueToUse() {
+			return this.canUse() && this.him.patience > 0;
+		}
+
+		@Override
+		public void stop() {
+			this.him.mark = null;
+			this.him.markAt = null;
+			this.him.stillFor = 0;
+			this.him.getNavigation().stop();
+		}
+
+		@Override
+		public void tick() {
+			Player who = this.him.marked();
+			if (who == null) {
+				return;
+			}
+			// He does not stop looking. Ever. The head is doing more work here than
+			// the feet are — a man keeping pace behind you is ordinary until you
+			// realise he has not once looked anywhere else.
+			this.him.getLookControl().setLookAt(who, 30.0F, 30.0F);
+
+			boolean seen = this.him.hasLineOfSight(who);
+			if (seen) {
+				this.him.markAt = who.blockPosition();
+				this.him.patience = REMEMBERS;
+			} else {
+				// SOME TRACK, NOT PERFECT TRACK. Twenty seconds of walking to the
+				// last place you were, and then he genuinely does not know. Running
+				// away works; running away and then standing still forty blocks off
+				// in the open does not.
+				this.him.patience--;
+				if (this.him.markAt != null) {
+					this.him.getNavigation().moveTo(this.him.markAt.getX() + 0.5,
+						this.him.markAt.getY(), this.him.markAt.getZ() + 0.5, 0.55);
+				}
+				return;
+			}
+
+			double away = this.him.distanceTo(who);
+			if (away < SNAPS_AT) {
+				// TOO CLOSE. Whether they walked into him or he closed the last step
+				// himself does not matter — at arm's length there is nothing left to
+				// watch. No shout: this one is on the player and they can see it
+				// coming, so it stays between the two of them.
+				this.him.snap(who, false);
+				return;
+			}
+
+			net.minecraft.world.phys.Vec3 now = who.position();
+			boolean bothStill = now.distanceToSqr(this.wasAt) < STILL
+				&& this.him.getDeltaMovement().horizontalDistanceSqr() < STILL;
+			this.wasAt = now;
+
+			if (away > this.him.standing + SLACK) {
+				this.him.getNavigation().moveTo(who, 0.62);
+				this.him.stillFor = 0;
+				return;
+			}
+			if (away < this.him.standing - SLACK) {
+				// Backing off, and by position rather than by path — a mob asked to
+				// pathfind AWAY from something turns its back to do it, and the one
+				// thing he must never do is stop facing you.
+				net.minecraft.world.phys.Vec3 back = this.him.position()
+					.subtract(who.position()).normalize().scale(0.06);
+				this.him.setDeltaMovement(this.him.getDeltaMovement()
+					.add(back.x, 0.0, back.z));
+				this.him.stillFor = 0;
+				return;
+			}
+
+			this.him.getNavigation().stop();
+			if (!bothStill) {
+				this.him.stillFor = 0;
+				return;
+			}
+			// AND HERE IS THE ONE THAT LANDS. Stand and look at him and he waits —
+			// and then, three seconds in, he is a block and a half nearer than he
+			// was, and he did not run and there was no sound. Waiting him out is
+			// not an option, and finding that out is the entire point of the state.
+			if (++this.him.stillFor >= CREEPS_AFTER) {
+				this.him.stillFor = 0;
+				net.minecraft.world.phys.Vec3 in = who.position()
+					.subtract(this.him.position()).normalize().scale(A_STEP);
+				this.him.getNavigation().moveTo(this.him.getX() + in.x,
+					this.him.getY(), this.him.getZ() + in.z, 0.4);
+				this.him.standing = Math.max(SNAPS_AT + 0.5,
+					this.him.standing - A_STEP);
+			}
+		}
+	}
+
 	private static class NightWatch extends net.minecraft.world.entity.ai.goal.Goal {
 		private final TurnedEntity him;
 
@@ -256,7 +499,10 @@ public class TurnedEntity extends PathfinderMob {
 			if (quarry == null) {
 				return;
 			}
-			this.him.setTarget(quarry);
+			// A MARK, NOT A TARGET. This used to hand him a target directly, which
+			// meant the first thing the night ever did was start a fight. He notices
+			// now, and what happens next is up to how close the player comes.
+			this.him.notice(quarry);
 			// THE MOMENT, and it wants exactly one sound. He has been standing
 			// there muttering all evening and now he is not.
 			if (!this.him.committed) {
@@ -373,7 +619,11 @@ public class TurnedEntity extends PathfinderMob {
 	 */
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
-		if (source.getEntity() instanceof Player) {
+		if (source.getEntity() instanceof Player striker) {
+			// AND THAT IS THE OTHER WAY OUT OF WATCHING. Swinging at one of them is
+			// a decision, and unlike walking too close it is one the player cannot
+			// make by accident — so it is the trigger that carries the shout.
+			this.snap(striker, true);
 			return super.hurtServer(level, source, damage);
 		}
 		// The escape hatch every invulnerable thing in the game keeps: /kill,

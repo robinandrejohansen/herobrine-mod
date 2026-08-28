@@ -164,27 +164,13 @@ public final class Wrath {
 	private static final AttachmentType<Long> ENTERED = AttachmentRegistry
 		.createPersistent(HerobrineMod.id("story_entered"), Codec.LONG);
 
-	/**
-	 * Has this chapter had its time?
-	 *
-	 * The rhythm this produces is the point, and it is better than the one it
-	 * replaces: find a place, the world changes, LIVE IN IT for a while, and then
-	 * somewhere new turns out to be out there. The quiet stretch after a
-	 * discovery is not dead time — it is the only window in which the thing that
-	 * just changed can be noticed at all.
-	 */
-	public static boolean settled(MinecraftServer server) {
-		long entered = server.overworld().getAttachedOrElse(ENTERED, 0L);
-		return server.overworld().getGameTime() - entered >= phase(server).dues();
-	}
+	// settled() and owed() lived here and have gone with the gates that used them.
+	// Nothing waits on a chapter having had its minutes any more — a place sites
+	// when the one before it has been found and that is the whole of it. ENTERED is
+	// still stamped by set(), because it costs nothing and it is the only record of
+	// when a chapter began if anything ever wants one again.
 
 	/** Minutes still owed to this chapter, for /herobrine status. */
-	public static long owed(MinecraftServer server) {
-		long entered = server.overworld().getAttachedOrElse(ENTERED, 0L);
-		long left = phase(server).dues() - (server.overworld().getGameTime() - entered);
-		return left <= 0 ? 0 : left / 1200;
-	}
-
 	private static void set(MinecraftServer server, Phase phase) {
 		server.overworld().setAttached(STORY, phase.ordinal());
 		server.overworld().setAttached(ENTERED, server.overworld().getGameTime());

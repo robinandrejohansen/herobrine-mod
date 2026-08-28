@@ -235,6 +235,50 @@ public final class Whereabouts {
 	}
 
 	/**
+	 * The ways between his buildings, and the ground either side of them.
+	 *
+	 * Three legs: the house to the shed, the house to the foot of the tower, and
+	 * the shed to the tower. The third one matters more than it sounds — two legs
+	 * from a single hub is a driveway, and a triangle is a place people move around
+	 * in. It is the difference between a house with outbuildings and a farm.
+	 */
+	private static void tracks(ServerLevel over, BlockPos house, RandomSource random) {
+		BlockPos door = new BlockPos(house.getX()
+			+ com.bloomlet.herobrine.structure.Homestead.width() / 2,
+			Ground.topOf(over, house.getX(), house.getZ()), house.getZ() - 4);
+		Long shedAt = over.getAttached(SHED);
+		BlockPos shed = shedAt == null ? null : BlockPos.of(shedAt);
+		BlockPos deck = com.bloomlet.herobrine.structure.Spire.site(over);
+		BlockPos tower = deck == null ? null : new BlockPos(deck.getX(),
+			Ground.topOf(over, deck.getX(), deck.getZ()), deck.getZ());
+
+		int laid = 0;
+		if (shed != null && com.bloomlet.herobrine.structure.Grounds
+				.track(over, door, shed, random)) {
+			laid++;
+		}
+		if (tower != null && com.bloomlet.herobrine.structure.Grounds
+				.track(over, door, tower, random)) {
+			laid++;
+		}
+		if (shed != null && tower != null && com.bloomlet.herobrine.structure.Grounds
+				.track(over, shed, tower, random)) {
+			laid++;
+		}
+		// And the two smaller buildings get the same apron the house does, so the
+		// track does not arrive at a shed sitting on bare turf.
+		if (shed != null) {
+			com.bloomlet.herobrine.structure.Grounds.dress(over, shed, 4, 13, random);
+			com.bloomlet.herobrine.structure.Grounds.yard(over, shed,
+				net.minecraft.core.Direction.SOUTH, random);
+		}
+		if (tower != null) {
+			com.bloomlet.herobrine.structure.Grounds.dress(over, tower, 6, 16, random);
+		}
+		HerobrineMod.LOGGER.info("{} tracks laid across his ground", laid);
+	}
+
+	/**
 	 * DRIVEN OFF, AND HE DOES NOT GO AND SIT IN THE HOUSE.
 	 *
 	 * He used to walk home and shut the door for two days, which was the right
@@ -320,7 +364,8 @@ public final class Whereabouts {
 		"somebody lives out here",
 		"there is a house at the mark",
 		"do not go at night",
-		"he was here first",
+		"the last man back had no hands",
+		"we buried what came back",
 		"i would not",
 	};
 
@@ -380,6 +425,18 @@ public final class Whereabouts {
 			// the other way round — the house is where he lives and the tower is
 			// something that was already here.
 			com.bloomlet.herobrine.structure.Spire.raise(over, house, random);
+			// AND NOW THEY ARE ONE PROPERTY RATHER THAN THREE BUILDINGS.
+			//
+			// This is the cheapest thing in the file and close to the most valuable.
+			// The house, the shed and the tower have always been sited relative to
+			// each other and have never been JOINED — so the player walked forty
+			// blocks of untouched forest between two of his buildings and read them
+			// as two separate finds. A worn track between them is what makes the
+			// second one his as well.
+			//
+			// Laid last, after everything is standing, because a path has to be able
+			// to see what it is going round.
+			tracks(over, house, random);
 			// The door goes at the bottom of the passage, which is a position we
 			// chose rather than found — see below for why it is not called here.
 			door(over, house, random);
@@ -431,6 +488,13 @@ public final class Whereabouts {
 		if (++ticks % STEP_EVERY != 0 || !Config.get().enabled) {
 			return;
 		}
+		// HIS OWN WORLD FIRST, BECAUSE THAT IS WHERE HE LIVES.
+		//
+		// Ahead of every line of overworld bookkeeping below, and independent of it:
+		// the homestead, the tower and the walk are all still sited and still
+		// tracked, because they are the INVITATION. He is simply not in them.
+		overTheKeep(server);
+
 		ServerLevel over = server.overworld();
 
 		// HIS HOUSE, ONCE THE MOD HAS PUT ONE DOWN. Until the homestead is sited
@@ -499,6 +563,9 @@ public final class Whereabouts {
 			com.bloomlet.herobrine.structure.Spire.raise(over, house, over.getRandom());
 		}
 
+		weather(server, over, house);
+		fog(server, over, house);
+
 		// Already out there in person? Then the entity owns his position and this
 		// only has to keep the record straight behind it.
 		HerobrineEntity him = loaded(over);
@@ -511,17 +578,167 @@ public final class Whereabouts {
 			return;      // in, and not coming out
 		}
 
-		// SOMEBODY IS CLOSE ENOUGH TO MEET HIM.
-		ServerPlayer near = nearest(server, over, here);
-		if (near != null && near.distanceToSqr(here.getX(), here.getY(), here.getZ())
-				< ARRIVES_AT * ARRIVES_AT) {
-			materialise(over, here);
-			return;
-		}
+		// AND NOBODY MEETS HIM OUT HERE ANY MORE.
+		//
+		// This used to be the whole point of the class: come within ninety-six
+		// blocks of where he had walked to and he was standing there. It is what
+		// made him a resident of the overworld, and everything awkward about the mod
+		// came out of that one fact — the strongest thing in the game on the wrong
+		// side of the door, so the overworld had to be survivable, so he had to be
+		// defanged; and the traces and the stares could not run because he was
+		// already out there being looked at.
+		//
+		// What is on this side now is his HOUSE. Empty, weathered, raining on, with
+		// his address on a map in your inventory. Walk in and there is nobody home,
+		// and the only place he can be is through the tower.
+		//
+		// The overworld is not off limits to him — TheHunt and the manifestations
+		// still put him here, and that is what a visit IS. He just does not live
+		// here, so `here` is a record of where his walk has got to rather than a
+		// place he is about to appear from. See materialise, kept for the visit.
 
 		// Otherwise he is walking, and nobody is watching, so it costs one BlockPos.
 		over.setAttached(AT, wander(over, here, house).asLong());
 	}
+
+	// ---- THE SKY OVER HIS ADDRESS ----------------------------------------
+	//
+	// The one place in the overworld that is never having a nice day.
+	//
+	// Skies.turn already exists and it is EVENT weather — the sky goes over
+	// because of something the players just did, which is why it lands. This is
+	// the opposite and needs to be: a CLIMATE, and only over one spot. You come
+	// over the last ridge toward the homestead and the tower and it is raining
+	// there, and it was raining before you arrived, and it will be raining when
+	// you leave. Nothing announced it. That is the whole effect.
+	//
+	// Minecraft weather is per-dimension, so "local" is a fiction maintained by
+	// arming it while somebody is close and letting it lapse when they are not.
+	// Forty seconds, refreshed every second, so it clears on its own about half a
+	// minute after the last person walks out of range — long enough that leaving
+	// does not feel like flipping a switch.
+
+	// ---- HIS GROUND -------------------------------------------------------
+	//
+	// FOG, AND IT IS ALREADY BUILT — it was just world-wide.
+	//
+	// Atmosphere on the client already drives FOG_COLOR, FOG_END_DISTANCE, the sky
+	// and cloud distances that have to agree with it, the light level and the cloud
+	// height. All of it good, all of it keyed on one thing: the global phase. So the
+	// whole world got the same weather, and there was no way to make one place
+	// worse than everywhere else.
+	//
+	// This is the missing input. One float per player, nought to one, "how far into
+	// his ground you are" — and the client folds it into the same layers. The house
+	// is foggy on the first day, at RUMOUR, before the story has moved at all, and
+	// the walk toward it is the world quietly closing in. Nothing announces it.
+	//
+	// THE SERVER OWNS THE CURVE, not the client, and the client is never told where
+	// he lives. It gets a number between nought and one and no coordinates — same
+	// reasoning as SHOWN_PHASE carrying the ordinal rather than the wrath total.
+	// A datamined "distance to his house" would be a compass.
+
+	/**
+	 * How far into his ground somebody is, for the fog. Nought to one.
+	 *
+	 * Not persistent — it is recomputed every second from where they are standing,
+	 * and a saved copy would only ever be wrong on load.
+	 */
+	public static final AttachmentType<Float> NEAR_HIS = AttachmentRegistry
+		.<Float>builder()
+		.syncWith(net.minecraft.network.codec.ByteBufCodecs.FLOAT.cast(),
+			net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.targetOnly())
+		.buildAndRegister(HerobrineMod.id("near_his"));
+
+	/** Nothing at all this far out. */
+	private static final double FOG_FAR = 200.0;
+	/** And everything by here, which is well outside the yard. */
+	private static final double FOG_NEAR = 40.0;
+
+	private static void fog(MinecraftServer server, ServerLevel over, BlockPos house) {
+		BlockPos tower = com.bloomlet.herobrine.structure.Spire.site(over);
+		ServerLevel his = server.getLevel(
+			com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD);
+		BlockPos keep = his == null
+			? null : com.bloomlet.herobrine.structure.Keep.site(his);
+		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+			double away = Double.MAX_VALUE;
+			if (player.level() == over) {
+				// EITHER OF THEM. The tower is half the point — it is on the skyline
+				// from further off than the house is, and arriving at the way out
+				// through thickening fog is the better of the two approaches.
+				away = Math.sqrt(player.blockPosition().distSqr(house));
+				if (tower != null) {
+					away = Math.min(away, Math.sqrt(player.blockPosition().distSqr(tower)));
+				}
+			} else if (keep != null && player.level() == his) {
+				away = Math.sqrt(player.blockPosition().distSqr(keep));
+			}
+			float in = thickness(away);
+			// Only when it has actually moved. This runs once a second for every
+			// player on the server and each write is a packet.
+			Float known = player.getAttached(NEAR_HIS);
+			if (known == null || Math.abs(known - in) > 0.01F) {
+				player.setAttached(NEAR_HIS, in);
+			}
+		}
+	}
+
+	/**
+	 * Smoothstep rather than linear, and that is not decoration.
+	 *
+	 * A straight ramp has a corner at each end — the fog starts and stops changing
+	 * on a specific step, and the eye finds that instantly: it reads as a radius,
+	 * which is to say as a mechanic. Smoothed at both ends there is no moment when
+	 * it begins.
+	 */
+	private static float thickness(double away) {
+		if (away >= FOG_FAR) {
+			return 0.0F;
+		}
+		if (away <= FOG_NEAR) {
+			return 1.0F;
+		}
+		float t = (float) ((FOG_FAR - away) / (FOG_FAR - FOG_NEAR));
+		return t * t * (3.0F - 2.0F * t);
+	}
+	// ---- END HIS GROUND ---------------------------------------------------
+
+	/** How close counts as being at his address. */
+	private static final double STORM_NEAR = 96.0;
+	/** And how long each arming lasts, refreshed while anybody is inside that. */
+	private static final int STORM_HOLDS = 800;
+	private static boolean stormed;
+
+	private static void weather(MinecraftServer server, ServerLevel over, BlockPos house) {
+		if (!Config.get().weather) {
+			return;
+		}
+		BlockPos tower = com.bloomlet.herobrine.structure.Spire.site(over);
+		boolean near = false;
+		for (ServerPlayer player : over.players()) {
+			if (player.blockPosition().closerThan(house, STORM_NEAR)
+				|| (tower != null && player.blockPosition().closerThan(tower, STORM_NEAR))) {
+				near = true;
+				break;
+			}
+		}
+		if (!near) {
+			stormed = false;
+			return;
+		}
+		// Only when it is not already going. A hunt's storm is nine to eleven
+		// minutes and re-arming over the top of it would cut it to forty seconds —
+		// the loud weather outranks the resident weather.
+		if (!over.isThundering()) {
+			server.setWeatherParameters(0, STORM_HOLDS, true, true);
+		}
+		if (!stormed) {
+			stormed = true;
+			HerobrineMod.LOGGER.info("somebody is at his address — it is raining there");
+		}
+	}
+	// ---- END THE SKY ------------------------------------------------------
 
 	/**
 	 * A step, on foot, with a leash to his own house.
@@ -563,36 +780,69 @@ public final class Whereabouts {
 		return new BlockPos(x, Ground.topOf(level, x, z), z);
 	}
 
+	// ---- HE IS OVER THE KEEP ----------------------------------------------
+
+	/** How far above the keep floor he is put when somebody arrives. */
+	private static final double OVER_THE_KEEP = 24.0;
+	private static boolean announced;
+
 	/**
-	 * And now he is a person standing there.
+	 * Anybody in his world finds him already flying over his own castle.
 	 *
-	 * Prowling, not hunting. He is out on his own business and has not seen anybody
-	 * yet — whether he does is up to how close they come and where he is looking.
+	 * Placed rather than spawned-in-view — the oldest rule in the mod is that he is
+	 * never seen arriving, and here it is easy to honour: the landing is a long way
+	 * from the keep, and by the time anybody can see that far he has been circling
+	 * it for a minute.
+	 *
+	 * Keyed on the keep being sited, so before Keep has built anything there is
+	 * nobody there, which is correct — a castle with an owner and no castle is not a
+	 * thing that can be arranged.
 	 */
-	private static void materialise(ServerLevel level, BlockPos here) {
-		// Same rule from the other side: if an event has already put him somewhere,
-		// his whereabouts do not get to put him somewhere else as well.
-		if (HerobrineEntity.anyLoaded(level)) {
+	private static void overTheKeep(MinecraftServer server) {
+		ServerLevel his = server.getLevel(
+			com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD);
+		if (his == null || his.players().isEmpty()) {
+			announced = false;
 			return;
 		}
-		HerobrineEntity him = ModEntities.HEROBRINE.create(level, EntitySpawnReason.EVENT);
+		// THE LEVEL, AND NOTHING ELSE. See HerobrineEntity.outInTheOverworld for what
+		// the old guard here actually asked and why it never said yes.
+		java.util.List<HerobrineEntity> there = HerobrineEntity.all(his);
+		if (!there.isEmpty()) {
+			// AND IT REPAIRS ITSELF, because a save that ran the broken version has
+			// a crowd in it and no amount of correctness from here on removes them.
+			// Same shape as the tower repair further up this file: ask the cheap
+			// question every second and fix it the first time somebody loads.
+			if (there.size() > 1) {
+				for (int i = 1; i < there.size(); i++) {
+					there.get(i).discard();
+				}
+				HerobrineMod.LOGGER.warn(
+					"there were {} of him over the keep — {} sent back", there.size(),
+					there.size() - 1);
+			}
+			return;
+		}
+		BlockPos keep = com.bloomlet.herobrine.structure.Keep.site(his);
+		if (keep == null) {
+			return;
+		}
+		HerobrineEntity him = ModEntities.HEROBRINE.create(his, EntitySpawnReason.EVENT);
 		if (him == null) {
 			return;
 		}
-		// ON the ground, not IN it. topOf answers "the highest block you could
-		// stand on" — standing on it means standing one above it, and putting his
-		// feet at that Y put him inside the block every single time. It went
-		// unnoticed until unwedge started reporting it: "he tore 2 out from around
-		// himself" fired two seconds after every materialisation in the log,
-		// because he was chewing his way out of the floor on arrival.
-		int y = Ground.topOf(level, here.getX(), here.getZ()) + 1;
-		him.snapTo(here.getX() + 0.5, y, here.getZ() + 0.5,
-			level.getRandom().nextFloat() * 360.0F, 0.0F);
+		double y = keep.getY() + OVER_THE_KEEP;
+		him.snapTo(keep.getX() + 0.5, y, keep.getZ() + 0.5,
+			his.getRandom().nextFloat() * 360.0F, 0.0F);
 		him.beginProwl();
-		level.addFreshEntity(him);
-		HerobrineMod.LOGGER.info("somebody came within reach of him at [{}, {}, {}]",
-			here.getX(), y, here.getZ());
+		his.addFreshEntity(him);
+		if (!announced) {
+			announced = true;
+			HerobrineMod.LOGGER.info("he is over the keep at [{}, {}, {}]",
+				keep.getX(), (int) y, keep.getZ());
+		}
 	}
+	// ---- END OVER THE KEEP ------------------------------------------------
 
 	/** The one of him, if he is currently a real thing somewhere. */
 	private static @org.jspecify.annotations.Nullable HerobrineEntity loaded(ServerLevel level) {
@@ -623,8 +873,12 @@ public final class Whereabouts {
 
 	/** Far enough away that he can stop being an entity again. */
 	public static boolean strayedOffScreen(ServerLevel level, HerobrineEntity him) {
-		ServerPlayer near = nearest(level.getServer(), level.getServer().overworld(),
-			him.blockPosition());
+		// THE LEVEL HE IS IN, not the overworld. Hard-coding server.overworld() here
+		// was harmless while that was the only place he ever stood; now that he
+		// lives on the far side of the way it would ask how near the nearest
+		// OVERWORLD player is to a man flying over his own castle, get "nobody",
+		// and forget him with somebody standing underneath.
+		ServerPlayer near = nearest(level.getServer(), level, him.blockPosition());
 		return near == null
 			|| near.distanceToSqr(him) > FORGETS_AT * FORGETS_AT;
 	}

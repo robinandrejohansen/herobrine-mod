@@ -184,16 +184,25 @@ public final class Township {
 				// at, which is the correct answer and needs no searching.
 				int y = plot.corner().getY();
 
-				net.minecraft.world.entity.Mob soul =
-					net.minecraft.world.entity.EntityTypes.VILLAGER
-						.create(level, net.minecraft.world.entity.EntitySpawnReason.STRUCTURE);
-				if (soul == null) {
+				// NOBODY IS LEFT UP HERE, AND THAT IS THE POINT OF THE TOWN.
+				//
+				// It used to be populated, and a populated town is a nice place to
+				// visit and nothing else. The whole reading of this settlement is
+				// that the doors are shut, the lamps are lit, the market stalls are
+				// standing and there is NO ONE — and then you find the way down and
+				// there are forty of them under it, in the dark, farming.
+				//
+				// A town with people in it and more people beneath it is two
+				// villages. An empty town over a full cellar is a question, and the
+				// answer is in the books down there.
+				//
+				// The spawn stays deleted rather than commented out: `y` and `trade`
+				// are still used by what is left, and half a spawner behind a flag
+				// is how you get a village that repopulates itself after somebody
+				// toggles a config in six months.
+				if (y != Integer.MIN_VALUE) {
 					continue;
 				}
-				soul.snapTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
-				soul.setPersistenceRequired();
-				trade(level, soul, plot.kind(), random);
-				level.addFreshEntity(soul);
 			}
 		}
 	}

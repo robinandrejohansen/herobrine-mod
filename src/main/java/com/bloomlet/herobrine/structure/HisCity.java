@@ -164,93 +164,28 @@ public final class HisCity {
 	}
 
 	/**
-	 * ONE HOUSE, IF THE GROUND WILL TAKE IT.
+	 * ONE HOUSE, AND IT IS NOT THIS CLASS'S JOB ANY MORE.
 	 *
-	 * Refused rather than forced when the forest says no — a slope it cannot sit
-	 * on, water, or a plot already occupied by the street. Refusing leaves a gap
-	 * with trees in it, which is precisely what makes the town look grown rather
-	 * than stamped: the empty lots are the terrain's decision, not a designer's.
+	 * What stood here was a seven by seven box with a lid of dark oak slabs, and
+	 * thirty of them in a street read as a texture. The building moved out to
+	 * Cottage — pitched roof, brick chimney, four stones mixed damp-to-dry,
+	 * shutters, a bed, a chest, and a shovelled path up to the door.
 	 *
-	 * Dark oak and deepslate, because those are what this biome and this
-	 * dimension are made of. A town in oak and cobble would be a village
-	 * transplanted; one built out of the wood it stands in belongs there.
+	 * This keeps what it was always actually for: deciding WHERE, and which way
+	 * round. The facing is the bearing back to the castle, so every front door in
+	 * the town looks the same way and the street reads as a street.
 	 */
 	private static void house(ServerLevel his, BlockPos plot, long seed) {
-		RandomSource random = RandomSource.create(seed);
-		int w = 3 + random.nextInt(2);
-		int d = 3 + random.nextInt(3);
-		int h = random.nextInt(3) == 0 ? 7 : 4;
-
-		if (!his.isLoaded(plot.atY(his.getSeaLevel()))) {
-			return;
+		BlockPos castle = com.bloomlet.herobrine.structure.Keep.site(his);
+		Direction facing = Direction.NORTH;
+		if (castle != null) {
+			int dx = castle.getX() - plot.getX();
+			int dz = castle.getZ() - plot.getZ();
+			facing = Math.abs(dx) > Math.abs(dz)
+				? (dx > 0 ? Direction.EAST : Direction.WEST)
+				: (dz > 0 ? Direction.SOUTH : Direction.NORTH);
 		}
-		// The ground has to be near enough level across the whole footprint, or
-		// the house ends up on stilts at one corner.
-		int low = Integer.MAX_VALUE;
-		int high = Integer.MIN_VALUE;
-		for (int dx = -w; dx <= w; dx += w) {
-			for (int dz = -d; dz <= d; dz += d) {
-				// NOT IN THE WATER. topOf reports the SEABED under an ocean,
-				// perfectly happily, so without this a plot over water passed
-				// every level-ground test there is and put a timber house on
-				// the bottom of a lake with the roof twenty blocks under.
-				if (!Ground.dry(his, plot.getX() + dx, plot.getZ() + dz)) {
-					return;
-				}
-				int y = Ground.topOf(his, plot.getX() + dx, plot.getZ() + dz);
-				low = Math.min(low, y);
-				high = Math.max(high, y);
-			}
-		}
-		if (high - low > 3 || low <= his.getMinY() + 8) {
-			return;
-		}
-		BlockPos base = new BlockPos(plot.getX(), low + 1, plot.getZ());
-
-		for (int dx = -w; dx <= w; dx++) {
-			for (int dz = -d; dz <= d; dz++) {
-				boolean wall = Math.abs(dx) == w || Math.abs(dz) == d;
-				for (int dy = -2; dy <= h; dy++) {
-					BlockPos at = base.offset(dx, dy, dz);
-					if (dy < 0) {
-						fill(his, at, Blocks.COBBLED_DEEPSLATE.defaultBlockState());
-					} else if (dy == h) {
-						put(his, at, Blocks.DARK_OAK_SLAB.defaultBlockState());
-					} else if (dy == h - 1 && wall) {
-						put(his, at, Blocks.DARK_OAK_STAIRS.defaultBlockState()
-							.setValue(BlockStateProperties.HORIZONTAL_FACING,
-								Direction.NORTH)
-							.setValue(BlockStateProperties.HALF, Half.TOP));
-					} else if (wall) {
-						// A course of stone at the foot and timber above it,
-						// which is the only detail that stops a box being a box.
-						put(his, at, dy == 0
-							? Blocks.DEEPSLATE_BRICKS.defaultBlockState()
-							: timber(dx, dz, dy, w, d, random));
-					} else {
-						clear(his, at);
-					}
-				}
-			}
-		}
-		// A door, shut, and a window. Both facing the castle, so a street of
-		// these all look the same way.
-		put(his, base.offset(0, 1, -d), Blocks.DARK_OAK_DOOR.defaultBlockState()
-			.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
-				net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER)
-			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
-		put(his, base.offset(0, 2, -d), Blocks.DARK_OAK_DOOR.defaultBlockState()
-			.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
-				net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER)
-			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
-		for (int dx : new int[] { -w, w }) {
-			put(his, base.offset(dx, 2, 0), Blocks.GLASS_PANE.defaultBlockState());
-		}
-		// AND THE LAMP IS STILL LIT. One per house, outside the door. It is the
-		// single most important block in the whole town: a dark town is an
-		// abandoned one and the player files it as a ruin, and a lit one is a
-		// town somebody left an hour ago.
-		put(his, base.offset(1, 3, -d), Blocks.SOUL_LANTERN.defaultBlockState());
+		Cottage.raise(his, plot, facing, seed);
 	}
 
 	/**
@@ -294,19 +229,6 @@ public final class HisCity {
 	}
 
 	// ---- THE WORKSHOP ------------------------------------------------------
-	private static BlockState timber(int dx, int dz, int dy, int w, int d,
-	                                 RandomSource random) {
-		// Uprights at the corners and every third block, infilled with planks.
-		boolean post = Math.abs(dx) == w && Math.abs(dz) == d
-			|| (Math.abs(dx) == w && dz % 3 == 0) || (Math.abs(dz) == d && dx % 3 == 0);
-		if (post) {
-			return Blocks.DARK_OAK_LOG.defaultBlockState();
-		}
-		return random.nextInt(11) == 0
-			? Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState()
-			: Blocks.DARK_OAK_PLANKS.defaultBlockState();
-	}
-
 	private static BlockState cobbles(RandomSource random) {
 		int roll = random.nextInt(10);
 		if (roll < 3) {

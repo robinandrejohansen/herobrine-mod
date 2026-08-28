@@ -176,9 +176,74 @@ public final class Journal {
 	 * that the scratching is the only part still legible (LORE.md), and an
 	 * empty author field would just look like a bug.
 	 */
+	/**
+	 * How much fits on one leaf of a written book before the game stops drawing.
+	 *
+	 * Fourteen lines of about nineteen characters, and there is no warning when it
+	 * overruns — the text is simply not there and the book looks finished. The old
+	 * pages were all written between a hundred and ninety and two hundred and
+	 * eighty characters, which is somebody having found this limit the hard way and
+	 * then respected it in silence for sixteen entries.
+	 */
+	private static final int FITS = 250;
+
+	/**
+	 * ONE TORN PAGE, ACROSS AS MANY LEAVES AS IT TAKES.
+	 *
+	 * The rewrite made the entries longer than a leaf holds, and the choice was cut
+	 * the prose or stop assuming one page is one leaf. Cutting was the wrong answer
+	 * for a specific reason: the last line of entry fifteen — he is not dead, he is
+	 * only somewhere else — is the single most load-bearing sentence in the mod, it
+	 * lives at the END of the longest entry, and truncation eats from the end. The
+	 * failure would have been silent and it would have removed exactly the sentence
+	 * the overworld exists to deliver.
+	 *
+	 * Split on paragraphs and packed, so breaks land where the writer already put a
+	 * pause. A paragraph too long to fit alone falls back to sentence boundaries,
+	 * which never happens with the current text and will the first time somebody
+	 * writes a long one without thinking about it.
+	 */
+	private static List<Filterable<Component>> leaves(String text) {
+		List<Filterable<Component>> out = new ArrayList<>();
+		StringBuilder leaf = new StringBuilder();
+		for (String para : text.split("\n\n")) {
+			for (String piece : para.length() <= FITS
+					? new String[] { para } : sentences(para)) {
+				if (leaf.length() > 0 && leaf.length() + piece.length() + 2 > FITS) {
+					out.add(Filterable.passThrough(Component.literal(leaf.toString())));
+					leaf.setLength(0);
+				}
+				if (leaf.length() > 0) {
+					leaf.append("\n\n");
+				}
+				leaf.append(piece);
+			}
+		}
+		if (leaf.length() > 0) {
+			out.add(Filterable.passThrough(Component.literal(leaf.toString())));
+		}
+		return out;
+	}
+
+	/** A paragraph nobody sized, broken where it already stops. */
+	private static String[] sentences(String para) {
+		List<String> out = new ArrayList<>();
+		StringBuilder run = new StringBuilder();
+		for (String part : para.split("(?<=\\. )")) {
+			if (run.length() > 0 && run.length() + part.length() > FITS) {
+				out.add(run.toString().trim());
+				run.setLength(0);
+			}
+			run.append(part);
+		}
+		if (run.length() > 0) {
+			out.add(run.toString().trim());
+		}
+		return out.toArray(new String[0]);
+	}
+
 	private static ItemStack page(int number) {
-		List<Filterable<Component>> pages = new ArrayList<>();
-		pages.add(Filterable.passThrough(Component.literal(JournalPages.text(number))));
+		List<Filterable<Component>> pages = leaves(JournalPages.text(number));
 
 		ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
 		book.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(

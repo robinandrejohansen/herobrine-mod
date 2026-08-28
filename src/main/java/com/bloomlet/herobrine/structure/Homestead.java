@@ -284,6 +284,24 @@ public final class Homestead {
 		porch(level, origin, random);
 		trim(level, origin, random);
 		cellar(level, origin, random);
+		// AND THE GROUND IT STANDS ON.
+		//
+		// levelGround flattens the footprint, which is what stops the house sinking
+		// into a slope — and leaves it standing on a suspiciously tidy platform of
+		// grass. This is the other half of that: the apron round the walls goes back
+		// to being ground, with the boulders and moss and flowers coming up to meet
+		// the plinth, and a working yard off the front.
+		//
+		// Both are deliberately OUTSIDE the char grid above. That grid is a set of
+		// elevations and it is the wrong tool for anything organic — a wall is a
+		// drawing and a garden is a scatter, and trying to express one in the other
+		// is how you get a flowerbed with corners.
+		int wide = width();
+		int deep = depth();
+		BlockPos middle = origin.offset(wide / 2, 0, deep / 2);
+		Grounds.dress(level, middle, Math.max(wide, deep) / 2 + 2,
+			Math.max(wide, deep) / 2 + 14, random);
+		Grounds.yard(level, origin.offset(wide / 2, 0, -4), Direction.NORTH, random);
 		HerobrineMod.LOGGER.info("homestead raised at [{}, {}, {}]",
 			origin.getX(), origin.getY(), origin.getZ());
 	}
@@ -946,10 +964,24 @@ public final class Homestead {
 			}
 		}
 
-		// The hole in the floor itself. The map cannot do this: its ground
-		// layer lays a plank floor across the whole interior, so without
-		// taking one back out the cellar is a sealed box nobody can reach.
-		set(level, hole, Blocks.AIR.defaultBlockState());
+		// AND THE HOLE IS FILLED IN.
+		//
+		// It used to be an open square in the floor at the back of the room, which
+		// is the first thing anybody sees on walking in — and it gave away the one
+		// thing in the whole mod that should have to be earned. The way to his
+		// dimension was a visible hole in the first building of the story.
+		//
+		// So the floor is whole. The stair is still under it, exactly as it was;
+		// there is simply a plank over the top and no reason to suspect it. What
+		// tells you is the book at the END of the sequence — five buildings later,
+		// after the threshold, when the last thing you find sends you back to the
+		// first thing you found. See Dwellings.theLastWord.
+		//
+		// ONE BLOCK, NOT A PUZZLE. When they know, they break a plank and drop in.
+		// Anything cleverer — a lever, a trapped chest, a pattern — would be a
+		// riddle, and the discovery is meant to be the reward rather than the lock.
+		set(level, hole, Blocks.SPRUCE_PLANKS.defaultBlockState());
+		set(level, origin.offset(5, 0, 13), Blocks.SPRUCE_PLANKS.defaultBlockState());
 
 		// A STAIR DOWN, NOT A LADDER — AND THE FLOOR PLANE IS WHY IT MATTERED.
 		//
@@ -967,7 +999,6 @@ public final class Homestead {
 		//   y=-2    ▓░     ← z=14
 		//   y=-3     ▓▒▒▒  ← turn east onto the cellar floor
 		//
-		set(level, origin.offset(5, 0, 13), Blocks.AIR.defaultBlockState());
 		set(level, origin.offset(5, -1, 12), Blocks.COBBLESTONE.defaultBlockState());
 		set(level, origin.offset(5, -2, 13), Blocks.COBBLESTONE.defaultBlockState());
 		set(level, origin.offset(5, -3, 14), Blocks.COBBLESTONE.defaultBlockState());

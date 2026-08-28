@@ -71,6 +71,19 @@ public final class Spire {
 		return packed == null ? null : BlockPos.of(packed);
 	}
 
+	/**
+	 * The chest at the very top, if the tower has been built.
+	 *
+	 * Derived rather than stored, because it is nothing but arithmetic on the deck:
+	 * the island sits GAP + 1 above it and the chest sits one above the island
+	 * floor. Storing it would be a second copy of a number that already exists in
+	 * two places, and the third copy is always the one that goes stale.
+	 */
+	public static @org.jspecify.annotations.Nullable BlockPos wings(ServerLevel level) {
+		BlockPos deck = site(level);
+		return deck == null ? null : deck.above(GAP + 2);
+	}
+
 	public static boolean joined(ServerLevel level) {
 		return Boolean.TRUE.equals(level.getServer().overworld().getAttached(JOINED));
 	}
@@ -254,6 +267,7 @@ public final class Spire {
 			}
 		}
 		stair(level, base, random);
+		pit(level, base);
 		// A door at the foot, and steps up to it out of the grass.
 		for (int h = 0; h < 2; h++) {
 			level.setBlock(base.above(h).relative(Direction.SOUTH, TIER_HALF[0]),
@@ -264,6 +278,62 @@ public final class Spire {
 				Blocks.STONE_BRICK_STAIRS.defaultBlockState()
 					.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH), 2);
 		}
+	}
+
+	/** How wide the hole in the floor is, leaving a rim at the wall. */
+	private static final int PIT_HALF = 2;
+	/** And how deep the lava in it goes. */
+	private static final int PIT_DEEP = 2;
+
+	/**
+	 * A HOLE IN THE FLOOR WITH LAVA IN IT, AND IT IS WHAT MAKES THE CLIMB A CLIMB.
+	 *
+	 * The interior of this tower has been a spiral of single stair blocks up a
+	 * twenty-nine block hollow shaft since it was built — which is parkour by every
+	 * definition except the one that matters, because falling off it cost nothing.
+	 * You landed on the floor and walked back to the bottom step. A jump with no
+	 * consequence is a staircase with gaps in it.
+	 *
+	 * THE RIM IS THE WHOLE DESIGN. The pit is five across in a seven across room,
+	 * so there is exactly one block of floor left against the wall — enough to walk
+	 * in through the door, stand, and look at what you have got to do, and not
+	 * enough to walk round the edge and avoid it. The first step of the spiral is
+	 * on that rim.
+	 *
+	 * Two deep, and two is deliberate. Deeper is a pit you die at the bottom of;
+	 * two is a bath you can climb out of if you are quick and have anything left,
+	 * which is a far better punishment than dying because the player gets to
+	 * experience failing rather than being told about it.
+	 */
+	private static void pit(ServerLevel level, BlockPos base) {
+		for (int dx = -PIT_HALF; dx <= PIT_HALF; dx++) {
+			for (int dz = -PIT_HALF; dz <= PIT_HALF; dz++) {
+				// Down through whatever the tower was standing on.
+				for (int dy = -1; dy >= -(PIT_DEEP + 2); dy--) {
+					level.setBlock(base.offset(dx, dy, dz),
+						Blocks.AIR.defaultBlockState(), 2);
+				}
+				for (int dy = -(PIT_DEEP + 2); dy <= -3; dy++) {
+					level.setBlock(base.offset(dx, dy, dz),
+						Blocks.LAVA.defaultBlockState(), 2);
+				}
+			}
+		}
+		// A lip of deepslate round the hole so the lava is contained and the edge
+		// reads as cut rather than as the floor having failed.
+		for (int dx = -PIT_HALF - 1; dx <= PIT_HALF + 1; dx++) {
+			for (int dz = -PIT_HALF - 1; dz <= PIT_HALF + 1; dz++) {
+				if (Math.abs(dx) <= PIT_HALF && Math.abs(dz) <= PIT_HALF) {
+					continue;
+				}
+				for (int dy = -1; dy >= -(PIT_DEEP + 2); dy--) {
+					level.setBlock(base.offset(dx, dy, dz),
+						Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 2);
+				}
+			}
+		}
+		HerobrineMod.LOGGER.info("the tower stands over lava at [{}, {}]",
+			base.getX(), base.getZ());
 	}
 
 	/** A course of wall, hollow, aged and grown over. */
@@ -357,6 +427,27 @@ public final class Spire {
 				level.setBlock(lamp, Blocks.LANTERN.defaultBlockState()
 					.setValue(net.minecraft.world.level.block.LanternBlock.HANGING, true), 2);
 			}
+			// AND FOUR OF THEM HANG OUT OVER THE HOLE.
+			//
+			// One block jutting inward off the spiral with a chest on it, at four
+			// heights up the shaft. Reachable from the step you are standing on —
+			// this is not a jump, and it should not be, because a jump you must
+			// make to get the loot is a jump you will make forty times until you
+			// get it and the lava stops being frightening and starts being tedious.
+			//
+			// What it is instead is a REASON TO STAND STILL over two blocks of lava
+			// and take your hands off the controls. That is worse.
+			if (up % 8 == 4) {
+				Direction inward = face.getOpposite();
+				BlockPos shelf = step.relative(inward);
+				level.setBlock(shelf.below(), Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 2);
+				level.setBlock(shelf, Blocks.CHEST.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING, face), 2);
+				if (level.getBlockEntity(shelf)
+						instanceof net.minecraft.world.level.block.entity.ChestBlockEntity box) {
+					Loot.scatter(box, random, Loot.Tier.TOWER);
+				}
+			}
 		}
 	}
 
@@ -444,6 +535,7 @@ public final class Spire {
 	 * Nothing here is climbable on purpose.
 	 */
 	private static void between(ServerLevel level, BlockPos deck, RandomSource random) {
+		java.util.List<BlockPos> stones = new java.util.ArrayList<>();
 		for (int i = 0; i < 26; i++) {
 			int dy = 1 + random.nextInt(GAP);
 			int spread = 2 + random.nextInt(4);
@@ -457,10 +549,87 @@ public final class Spire {
 				continue;
 			}
 			level.setBlock(at, aged(random), 2);
+			stones.add(at);
 			if (random.nextBoolean()) {
 				level.setBlock(at.below(), Blocks.PALE_HANGING_MOSS.defaultBlockState(), 2);
 			}
 		}
+		hoard(level, stones, random);
+	}
+
+	/**
+	 * TWO OR THREE CHESTS OUT IN THE GAP, ON THE STONES THEMSELVES.
+	 *
+	 * The rubble between the deck and the island has been a view since it was
+	 * written — twenty-six blocks hanging in the air that a player looks at, works
+	 * out is jumpable, and then has no reason whatever to jump. A climb with
+	 * nothing at the top of it is scenery.
+	 *
+	 * ON THE HIGH ONES, and that is the only rule. Sorting by height and taking
+	 * from the top means every chest is further into the jump than the last, so the
+	 * player is paid at three points on the way up rather than once at the end —
+	 * which is what keeps somebody going after the first miss.
+	 *
+	 * The stones are spread out on purpose, so no two chests are reachable from the
+	 * same footing. A chest you can open without committing to the next jump is a
+	 * chest that makes the jump optional.
+	 */
+	private static void hoard(ServerLevel level, java.util.List<BlockPos> stones,
+	                          RandomSource random) {
+		stones.sort((a, b) -> Integer.compare(b.getY(), a.getY()));
+		int want = 2 + random.nextInt(2);
+		int put = 0;
+		for (BlockPos stone : stones) {
+			if (put >= want) {
+				break;
+			}
+			BlockPos on = stone.above();
+			if (!level.getBlockState(on).isAir()) {
+				continue;
+			}
+			level.setBlock(on, Blocks.CHEST.defaultBlockState(), 2);
+			if (level.getBlockEntity(on)
+					instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+				Loot.scatter(chest, random, Loot.Tier.TOWER);
+			}
+			put++;
+		}
+		HerobrineMod.LOGGER.info("{} chests hang in the gap under the island", put);
+	}
+
+	/**
+	 * AND THE THING AT THE TOP OF ALL OF IT.
+	 *
+	 * Twenty-nine blocks of interior stair, then a deck, then a gap with three
+	 * chests strung across it, and then this: one chest on the floor of the island
+	 * with a broken pair of wings in it and a lantern over it.
+	 *
+	 * THE ROOM IS EMPTY APART FROM IT, deliberately. Everything else in the tower
+	 * is scattered — rubble, moss, hanging vine, chests wedged on stones. The
+	 * summit is bare and swept and has one object in the middle of it, because a
+	 * reward found among clutter is loot and a reward alone in a room is an ENDING.
+	 * The player knows they have reached the top before they have opened anything.
+	 *
+	 * See Loot.brokenWings for why they are broken and why that is the good version.
+	 */
+	private static void summit(ServerLevel level, BlockPos middle, RandomSource random) {
+		BlockPos on = middle.above();
+		if (!level.getBlockState(on).isAir()) {
+			return;
+		}
+		level.setBlock(on, Blocks.CHEST.defaultBlockState(), 2);
+		level.setBlock(on.above(2), Blocks.SOUL_LANTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HANGING, true), 2);
+		if (!(level.getBlockEntity(on)
+				instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest)) {
+			return;
+		}
+		// The wings first, into the middle slot, so they are the thing under the
+		// cursor when the lid comes up rather than something noticed afterwards.
+		chest.setItem(13, Loot.brokenWings(level.registryAccess(), random));
+		Loot.scatter(chest, random, Loot.Tier.TOWER);
+		HerobrineMod.LOGGER.info("the wings are at the top of the tower, [{}, {}, {}]",
+			on.getX(), on.getY(), on.getZ());
 	}
 
 	/** The rest of it, torn off and hanging, with its own debris around it. */
@@ -485,6 +654,7 @@ public final class Spire {
 				cornice(level, middle.above(up), 3, random);
 			}
 		}
+		summit(level, middle, random);
 		// The upper half of the frame, hanging upside down over the gap.
 		for (int dx = -1; dx <= 1; dx++) {
 			level.setBlock(middle.offset(dx, -1, 0), Blocks.CALCITE.defaultBlockState(), 2);

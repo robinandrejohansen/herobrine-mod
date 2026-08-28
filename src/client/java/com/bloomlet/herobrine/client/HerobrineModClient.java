@@ -13,6 +13,7 @@ public class HerobrineModClient implements ClientModInitializer {
 		EntityRenderers.register(ModEntities.INFECTED, InfectedRenderer::new);
 		EntityRenderers.register(ModEntities.MIMIC, MimicRenderer::new);
 		EntityRenderers.register(ModEntities.TURNED, TurnedRenderer::new);
+		EntityRenderers.register(ModEntities.GAUNT, GauntRenderer::new);
 		hisWeather();
 	}
 
@@ -46,10 +47,17 @@ public class HerobrineModClient implements ClientModInitializer {
 					return;
 				}
 				client.level.setRainLevel(1.0F);
-				// Thunder level is what darkens the sky and deepens the sound;
-				// short of one so the world is not quite as black as a vanilla
-				// storm at midnight, which is dark enough to be unplayable.
-				client.level.setThunderLevel(0.85F);
+				// Thunder level is what darkens the sky and deepens the sound.
+				//
+				// PULLED BACK FROM 0.85, and the reasoning that set it there was
+				// sound and incomplete: it was chosen as "not quite as black as a
+				// vanilla storm at midnight" against a dimension that had
+				// ambient_light 0.0 and fog starting eight blocks away. Three
+				// separate maximum-darkness settings in the same place do not add
+				// up to atmosphere, they add up to a black screen — you could not
+				// see the castle from the city, which is the one shot the whole
+				// dimension is built for.
+				client.level.setThunderLevel(0.6F);
 			});
 	}
 }

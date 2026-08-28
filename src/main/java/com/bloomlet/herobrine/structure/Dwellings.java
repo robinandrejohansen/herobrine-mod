@@ -149,6 +149,423 @@ public final class Dwellings {
 	 * /herobrine wrath does not skip the sequence either — it only unlocks how
 	 * far it is allowed to get.
 	 */
+	// ---- THE CHAIN ---------------------------------------------------------
+	//
+	// A MAP IN EACH HOUSE TO THE NEXT ONE.
+	//
+	// The sequence already worked and nothing pointed along it. A player found the
+	// homestead, the story moved, the town was sited four hundred blocks away — and
+	// the only thing telling them so was a road, if the terrain had allowed one. The
+	// distances climb deliberately (280 out for the first, 800 for the last), which
+	// is right for the journey and hopeless as a search.
+	//
+	// So each place is a signpost to the one after it. Not handed over, FOUND: it is
+	// in a chest inside the building you have just walked into, which makes the
+	// building the reward rather than a waypoint, and makes the chain something the
+	// player assembles rather than a quest marker they follow.
+	//
+	// TIMED ON THE SITING, NOT THE BUILDING, and that ordering is the whole trick.
+	// Place N+1 does not exist while you are standing in place N — it is not sited
+	// until this chapter has had its hour. So the map cannot be placed when N is
+	// built. It is placed the moment N+1 is DECIDED, into a building that is already
+	// standing and probably already explored — which means the chest you looked in
+	// an hour ago has something in it now. That is a better feeling than finding it
+	// first time and it costs nothing to arrange.
+
+	/** How far around the last building to look for somewhere to leave it. */
+	private static final int LOOKS_FOR_A_CHEST = 24;
+
+	private static void leaveTheWay(ServerLevel over, Place next, BlockPos to) {
+		Place[] all = Place.values();
+		if (next.ordinal() == 0) {
+			return;      // nothing stands before the homestead
+		}
+		Place from = all[next.ordinal() - 1];
+		Long where = over.getAttached(from.site);
+		if (where == null || !Boolean.TRUE.equals(over.getAttached(from.up))) {
+			return;      // the one before it was never built; nothing to leave it in
+		}
+		BlockPos anchor = BlockPos.of(where);
+		// THE FIRST ONE IS ON TOP OF THE TOWER, AND THAT IS WORTH THE SPECIAL CASE.
+		//
+		// Every other link in the chain can sit in whatever cupboard the building
+		// already has, because by then the player knows they are following
+		// something. The FIRST one has to teach them that there is a chain at all,
+		// and a map found in a kitchen drawer teaches nothing — it reads as loot.
+		//
+		// The tower is the only thing on his land visible from off it. You see it
+		// from the ridge before you see the house, you climb twenty-nine blocks of
+		// interior stair to get to the deck, and there is one chest at the top with
+		// one thing in it. Nobody mistakes that for loot. It is the difference
+		// between finding a map and being GIVEN one.
+		net.minecraft.world.level.block.entity.BlockEntity holder = switch (from) {
+			case HOMESTEAD -> onTheTower(over);
+			// AND THE TOWN'S GOES DOWN WITH THE PEOPLE WHO ARE STILL ALIVE.
+			//
+			// Two wrong answers before this one. First it was "nearest chest within
+			// twenty-four blocks of the town site" — and the site is the middle of
+			// an OPEN SQUARE, so it landed in whichever building happened to sit
+			// closest, differently every world, which is a needle in a haystack the
+			// mod built for itself. Then it went beside the well in the square,
+			// which is deterministic and findable and still WRONG, because the
+			// interesting half of that settlement is forty blocks underneath it and
+			// that is where anybody who has understood the place goes looking.
+			//
+			// The library in the undercity. The survivors keep their accounts on
+			// that shelf and this goes on it with them, which is the only version of
+			// this that makes sense in the fiction: the people who know where the
+			// next place is are the ones hiding from what is in it, and you have to
+			// find them before they will tell you.
+			//
+			// It also means the town's own secret — the way down — is now load
+			// bearing rather than optional. You cannot follow the chain past the
+			// town without finding the people under it.
+			case TOWN -> inTheLibrary(over, anchor);
+			default -> nearestHolder(over, anchor);
+		};
+		if (holder == null) {
+			HerobrineMod.LOGGER.info("nowhere in the {} to leave the way to the {}",
+				from.name().toLowerCase(java.util.Locale.ROOT),
+				next.name().toLowerCase(java.util.Locale.ROOT));
+			return;
+		}
+		net.minecraft.world.item.ItemStack map =
+			net.minecraft.world.item.MapItem.create(over, to.getX(), to.getZ(),
+				(byte) 4, true, true);
+		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
+			map, to, "+",
+			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
+		// Named for the place it points at, in his register rather than his voice —
+		// these are not messages to the player, they are somebody's papers.
+		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+			net.minecraft.network.chat.Component.literal(WAY_TO[next.ordinal()]));
+		if (!(holder instanceof net.minecraft.world.Container box)) {
+			return;
+		}
+		for (int slot = 0; slot < box.getContainerSize(); slot++) {
+			if (box.getItem(slot).isEmpty()) {
+				box.setItem(slot, map);
+				box.setChanged();
+				HerobrineMod.LOGGER.info(
+					"the way to the {} was left {}, at [{}, {}, {}]",
+					next.name().toLowerCase(java.util.Locale.ROOT),
+					switch (from) {
+						case HOMESTEAD -> "on the tower";
+						case TOWN -> "in the undercity library";
+						default -> "in the " + from.name().toLowerCase(java.util.Locale.ROOT);
+					},
+					holder.getBlockPos().getX(), holder.getBlockPos().getY(),
+					holder.getBlockPos().getZ());
+				return;
+			}
+		}
+		HerobrineMod.LOGGER.info("every container in the {} was full", from.name());
+	}
+
+	/**
+	 * A chest on the tower deck, put there for this if there is not one already.
+	 *
+	 * PLACED RATHER THAN FOUND, unlike every other link. The deck was emptied when
+	 * the portal moved off it and under the house, and it has been a viewing
+	 * platform with nothing on it ever since — which is a waste of the one
+	 * structure in the overworld that advertises itself.
+	 *
+	 * Idempotent, because this runs the moment the town is sited and the tower may
+	 * have been standing for an hour by then with a player having already been up
+	 * it. If there is a chest on the deck it uses that one; only an empty deck gets
+	 * a new one. Otherwise a second visit finds two chests and the deliberateness —
+	 * which is the whole effect — is gone.
+	 */
+	private static net.minecraft.world.level.block.entity.@org.jspecify.annotations.Nullable
+			BlockEntity onTheTower(ServerLevel over) {
+		BlockPos deck = com.bloomlet.herobrine.structure.Spire.site(over);
+		if (deck == null) {
+			return null;      // no tower on this save; the search below can have it
+		}
+		over.getChunk(deck.getX() >> 4, deck.getZ() >> 4);
+		// THE SUMMIT FIRST, AND THAT IS WHERE IT BELONGS.
+		//
+		// It went on the deck, which is at the top of the STAIR — and the stair is
+		// only the first half of the tower. Everything past it, the lava, the gap,
+		// the jumps and the chest with the wings in it, was optional: you could get
+		// the map, turn round, and never learn there was more above you.
+		//
+		// In the same chest as the wings, the climb has one destination and it pays
+		// once, at the top, with both halves of what the tower is for — the thing
+		// somebody died holding, and the way on to the next building.
+		BlockPos summit = com.bloomlet.herobrine.structure.Spire.wings(over);
+		if (summit != null && over.getBlockState(summit)
+				.is(net.minecraft.world.level.block.Blocks.CHEST)) {
+			return over.getBlockEntity(summit);
+		}
+		// Outward from the middle of the deck, first standable square. The rings
+		// matter: dead centre is where a player walks out of the stair, and a chest
+		// they have to step round is a chest in the way rather than a chest waiting.
+		for (int ring = 1; ring <= 3; ring++) {
+			for (int dx = -ring; dx <= ring; dx++) {
+				for (int dz = -ring; dz <= ring; dz++) {
+					if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) {
+						continue;
+					}
+					for (int dy = 0; dy <= 3; dy++) {
+						BlockPos at = deck.offset(dx, dy, dz);
+						net.minecraft.world.level.block.state.BlockState here =
+							over.getBlockState(at);
+						if (here.is(net.minecraft.world.level.block.Blocks.CHEST)) {
+							return over.getBlockEntity(at);      // already been done
+						}
+						if (!here.isAir()
+							|| !over.getBlockState(at.below()).isSolid()
+							|| !over.getBlockState(at.above()).isAir()) {
+							continue;
+						}
+						over.setBlock(at,
+							net.minecraft.world.level.block.Blocks.CHEST.defaultBlockState(),
+							3);
+						// A light beside it, so it is the thing you see when your head
+						// comes up through the floor rather than something you find
+						// after a minute of looking round in the dark.
+						over.setBlock(at.above(),
+							net.minecraft.world.level.block.Blocks.SOUL_LANTERN
+								.defaultBlockState()
+								.setValue(net.minecraft.world.level.block.state.properties
+									.BlockStateProperties.HANGING, false),
+							3);
+						HerobrineMod.LOGGER.info(
+							"a chest was left on the tower deck at [{}, {}, {}]",
+							at.getX(), at.getY(), at.getZ());
+						return over.getBlockEntity(at);
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * A shelf in the undercity library, on the survivors' own bookcase run.
+	 *
+	 * Idempotent like the tower's, because the town may have been standing for an
+	 * hour before its map is due and somebody may already have been down there. A
+	 * second chest appearing beside the first is the effect gone.
+	 *
+	 * Falls back to the square if the undercity is not there — a town can be sited
+	 * where the ground refuses a chamber, and a map nobody can reach is worse than
+	 * a map in a slightly duller place.
+	 */
+	private static net.minecraft.world.level.block.entity.@org.jspecify.annotations.Nullable
+			BlockEntity inTheLibrary(ServerLevel over, BlockPos square) {
+		BlockPos shelf = com.bloomlet.herobrine.town.Undercity.libraryAt(square);
+		over.getChunk(shelf.getX() >> 4, shelf.getZ() >> 4);
+		net.minecraft.world.level.block.entity.BlockEntity found =
+			nearestHolder(over, shelf);
+		if (found != null) {
+			return found;      // their own store, which is exactly the right shelf
+		}
+		HerobrineMod.LOGGER.info("no undercity under this town — the map stays up top");
+		return atTheWell(over, square);
+	}
+
+	/**
+	 * A chest beside the well in the middle of the square, put there if need be.
+	 *
+	 * Kept as the fallback rather than deleted: not every town gets a chamber under
+	 * it, and the square is the one place in a settlement that is always there.
+	 */
+	private static net.minecraft.world.level.block.entity.@org.jspecify.annotations.Nullable
+			BlockEntity atTheWell(ServerLevel over, BlockPos centre) {
+		over.getChunk(centre.getX() >> 4, centre.getZ() >> 4);
+		// Two out from the rim, so it is beside the well rather than in it. The
+		// well itself is a three by three with a beam over it — see Township.square.
+		for (int ring = 2; ring <= 5; ring++) {
+			for (int dx = -ring; dx <= ring; dx++) {
+				for (int dz = -ring; dz <= ring; dz++) {
+					if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) {
+						continue;
+					}
+					for (int dy = 0; dy <= 2; dy++) {
+						BlockPos at = centre.offset(dx, dy, dz);
+						net.minecraft.world.level.block.state.BlockState here =
+							over.getBlockState(at);
+						if (here.is(net.minecraft.world.level.block.Blocks.CHEST)) {
+							return over.getBlockEntity(at);
+						}
+						if (!here.isAir()
+							|| !over.getBlockState(at.below()).isSolid()
+							|| !over.getBlockState(at.above()).isAir()) {
+							continue;
+						}
+						over.setBlock(at,
+							net.minecraft.world.level.block.Blocks.CHEST.defaultBlockState(),
+							3);
+						over.setBlock(at.above(),
+							net.minecraft.world.level.block.Blocks.LANTERN.defaultBlockState()
+								.setValue(net.minecraft.world.level.block.state.properties
+									.BlockStateProperties.HANGING, false),
+							3);
+						HerobrineMod.LOGGER.info(
+							"a chest was left at the well at [{}, {}, {}]",
+							at.getX(), at.getY(), at.getZ());
+						return over.getBlockEntity(at);
+					}
+				}
+			}
+		}
+		return nearestHolder(over, centre);
+	}
+
+	/**
+	 * A chest or a barrel near the last building, and it does not much matter which.
+	 *
+	 * Searched rather than remembered on purpose. Every one of these buildings puts
+	 * containers down through a different method — Loot.scatter in the town, the
+	 * sealed room in the houses, Remembering in the keep — and threading a "put the
+	 * map here" position out of all of them is six places to keep in step. Asking the
+	 * world where the chests are is one place, and it is also robust to a player
+	 * having moved things about.
+	 */
+	private static net.minecraft.world.level.block.entity.@org.jspecify.annotations.Nullable
+			BlockEntity nearestHolder(
+			ServerLevel over, BlockPos anchor) {
+		net.minecraft.world.level.block.entity.BlockEntity best = null;
+		double nearest = Double.MAX_VALUE;
+		int r = LOOKS_FOR_A_CHEST;
+		for (BlockPos at : BlockPos.betweenClosed(
+				anchor.offset(-r, -r, -r), anchor.offset(r, r, r))) {
+			if (!over.isLoaded(at)) {
+				continue;
+			}
+			net.minecraft.world.level.block.state.BlockState state = over.getBlockState(at);
+			if (!state.is(net.minecraft.world.level.block.Blocks.CHEST)
+				&& !state.is(net.minecraft.world.level.block.Blocks.BARREL)) {
+				continue;
+			}
+			double away = at.distSqr(anchor);
+			if (away < nearest) {
+				net.minecraft.world.level.block.entity.BlockEntity found =
+					over.getBlockEntity(at);
+				if (found instanceof net.minecraft.world.Container) {
+					nearest = away;
+					best = found;
+				}
+			}
+		}
+		return best;
+	}
+
+	/**
+	 * AND THE LAST ONE POINTS BACK AT THE FIRST.
+	 *
+	 * The chain has run five buildings and something like three thousand blocks,
+	 * and every map in it has pointed outward — further from spawn, further from
+	 * the house, deeper into the story. This is the one that turns round.
+	 *
+	 * WHY THE LOOP IS THE ENDING. A sequence that finishes at its furthest point
+	 * finishes by running out, and the player's last act is closing a chest in a
+	 * building nobody will visit again. A sequence that finishes by sending you
+	 * HOME finishes with a walk you have already done, past four buildings you
+	 * already know, to a floor you have stood on a dozen times — carrying the one
+	 * fact that recontextualises all of it. The distance is the same. What changes
+	 * is that every step of it is somewhere you have been.
+	 *
+	 * A MAP AND A BOOK, because neither works alone. A map to the homestead on its
+	 * own says "go back", which they will read as the chain glitching — they have
+	 * BEEN there, it was the first thing they found. The book is what makes the
+	 * map mean something new, and the map is what stops the book being a riddle
+	 * they have to solve with coordinates.
+	 *
+	 * And the book is the only place in the mod that says the word outright. It
+	 * has earned it by being five buildings deep and by being written by somebody
+	 * who is plainly past caring who reads it.
+	 */
+	private static void theLastWord(ServerLevel over, BlockPos threshold) {
+		Long home = over.getAttached(Place.HOMESTEAD.site);
+		if (home == null) {
+			return;
+		}
+		BlockPos house = BlockPos.of(home);
+		net.minecraft.world.level.block.entity.BlockEntity holder =
+			nearestHolder(over, threshold);
+		if (!(holder instanceof net.minecraft.world.Container box)) {
+			HerobrineMod.LOGGER.info("nowhere in the threshold to leave the last word");
+			return;
+		}
+
+		net.minecraft.world.item.ItemStack map =
+			net.minecraft.world.item.MapItem.create(over, house.getX(), house.getZ(),
+				(byte) 4, true, true);
+		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
+			map, house, "+",
+			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
+		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+			net.minecraft.network.chat.Component.literal("back to the first house"));
+
+		net.minecraft.world.item.ItemStack book =
+			new net.minecraft.world.item.ItemStack(
+				net.minecraft.world.item.Items.WRITTEN_BOOK);
+		book.set(net.minecraft.core.component.DataComponents.WRITTEN_BOOK_CONTENT,
+			new net.minecraft.world.item.component.WrittenBookContent(
+				net.minecraft.server.network.Filterable.passThrough("under the floor"),
+				"", 0,
+				java.util.List.of(
+					net.minecraft.server.network.Filterable.passThrough(
+						net.minecraft.network.chat.Component.literal(LAST_PAGE)),
+					net.minecraft.server.network.Filterable.passThrough(
+						net.minecraft.network.chat.Component.literal(LAST_PAGE_TWO))),
+				true));
+
+		int put = 0;
+		for (int slot = 0; slot < box.getContainerSize() && put < 2; slot++) {
+			if (!box.getItem(slot).isEmpty()) {
+				continue;
+			}
+			box.setItem(slot, put == 0 ? book : map);
+			put++;
+		}
+		box.setChanged();
+		HerobrineMod.LOGGER.info(
+			"the last word was left in the threshold at [{}, {}, {}] — it points home",
+			holder.getBlockPos().getX(), holder.getBlockPos().getY(),
+			holder.getBlockPos().getZ());
+	}
+
+	/**
+	 * WHAT IT SAYS, AND IT IS THE PLAINEST WRITING IN THE MOD.
+	 *
+	 * Every sign and every page until now has been four lowercase words with no
+	 * full stop — somebody being careful, or somebody who cannot manage more. This
+	 * is neither. It is a man leaving an instruction, because he has decided
+	 * somebody is going to come and he would rather they knew.
+	 *
+	 * It never says what is down there. "The floor of the back room" and "it is
+	 * not a cellar" is the whole of it — enough to send them, not enough to spoil
+	 * the moment they get the plank up.
+	 */
+	private static final String LAST_PAGE =
+		"You will have been to the farmhouse. Everyone goes there first.\n\n"
+		+ "Go back.\n\n"
+		+ "The back room. The floor, four paces in from the store. Lift the "
+		+ "boards and mind the third one, there is still hair caught under it.";
+
+	private static final String LAST_PAGE_TWO =
+		"It is not a cellar.\n\n"
+		+ "I laid those boards over my brother's stair with his blood still "
+		+ "tacky on my hands and I have not been able to make myself take them "
+		+ "up since. Four of us went down. I came back with two of my fingers "
+		+ "and the smell in my clothes, and I burned the clothes.\n\n"
+		+ "You will not have that problem. Nobody who reads this ever does.";
+
+	/** What each one is written on the back of. Indexed by the place it points to. */
+	private static final String[] WAY_TO = {
+		"",
+		"the road east",
+		"where the tower stands",
+		"the cut in the hill",
+		"the long nave",
+		"the last door",
+	};
+	// ---- END THE CHAIN -----------------------------------------------------
+
 	private enum Place {
 		HOMESTEAD("homestead", Phase.RUMOUR, 280, 520),
 		TOWN("town", Phase.WATCHER, 340, 620),
@@ -269,6 +686,20 @@ public final class Dwellings {
 					comingHome(overworld, place, phase);
 					continue;   // found; on to the next chapter
 				}
+				// THE FREE PASS THE HOMESTEAD HAD HERE IS GONE, AND IT WAS A
+				// WORKAROUND FOR A BUG I HAD NOT FOUND YET.
+				//
+				// The symptom was that the chain never moved, and the theory was
+				// that requiring somebody to walk up to a house they were handed a
+				// map to was too strict. It was not. The real fault was that the
+				// path Whereabouts uses to build the house never set place.up, so
+				// arriving() was never reached and the homestead could never be
+				// recorded as found however close anybody stood. See raise().
+				//
+				// With that fixed, letting it through unfound does the wrong thing
+				// instead: the town sites four seconds into a new world, before
+				// anybody has seen the first building, and the sequence stops being
+				// a sequence. Find the house, and the town appears.
 				// AND IT NEVER STALLS FOREVER. A place that was built and then
 				// walked away from would otherwise hold the entire sequence shut
 				// with nobody left to open it. If everybody has gone a long way
@@ -290,56 +721,60 @@ public final class Dwellings {
 				}
 				return;     // standing, unfound, and somebody is still near enough
 			}
-			if (!phase.atLeast(place.from)) {
-				return;     // and nothing after it either — this is a sequence
+			// FIND ONE, THE NEXT ONE APPEARS. THAT IS THE WHOLE RULE NOW.
+			//
+			// Three gates used to stand here and between them they made a simple
+			// sequence very hard to observe:
+			//
+			//   the phase ladder   the next place waited for a chapter
+			//   the dues floor     and then for that chapter to have had its
+			//                      twenty or thirty minutes
+			//   a survived hunt    and the church waited on one of those as well
+			//
+			// Every one of them was defensible while the buildings WERE the pacing.
+			// They are not any more. The fight lives on the far side of the way, the
+			// traces keep their own weights, and these six buildings are the trail
+			// that leads somebody there — and a trail with a thirty minute pause
+			// built into it is not paced, it is broken. It was also
+			// indistinguishable from broken from the outside, which is how an
+			// evening went on looking for a map that was working perfectly and had
+			// simply not been placed yet.
+			//
+			// THE SEQUENCE STILL CANNOT BE SKIPPED, and nothing here was needed to
+			// stop that. The loop above returns unless this place is built AND has
+			// been walked up to, so "the one before it has been found" is the gate.
+			// It is the only one that was ever doing necessary work.
+			//
+			// The hunt gate on the church goes with them, and it had stopped being
+			// a gate and become a wall: hunts only happen in his world now, so a
+			// player who had not crossed over could never open it and the last two
+			// buildings would have sat unsited for good.
+			// AND THE TOWN WAITS FOR SOMEWHERE TO PUT ITS MAP.
+			//
+			// Siting the town is what places the first map, and the first map goes in
+			// the chest at the top of the tower. Whereabouts raises the house and the
+			// tower in one call, but this loop ticks on its own clock and can land
+			// between the two — in which case onTheTower finds nothing, the map falls
+			// back into a kitchen cupboard in the house, and the one link in the
+			// chain that has to teach the player what a chain is has taught nothing.
+			//
+			// One tick of patience costs nothing and removes the race.
+			if (place == Place.TOWN
+				&& com.bloomlet.herobrine.structure.Spire.site(overworld) == null) {
+				return;
 			}
 
 			Long chosen = overworld.getAttached(place.site);
 			if (chosen == null) {
-				// THE CHAPTER HAS TO HAVE HAD ITS TIME FIRST.
-				//
-				// Without this, a group that finds the homestead ten minutes after
-				// spawning is in WATCHER ten minutes after spawning, and if they
-				// are lucky again they are three phases deep inside an hour —
-				// having seen one manifestation per phase and none of the story
-				// the phases exist to tell. Discovery must be the gate on
-				// progress without also being the pace of it.
-				//
-				// Finding a place still advances the story at once. It simply
-				// does not conjure the next one: that waits until this chapter
-				// has been lived in.
-				//
-				// EXCEPT THE HOMESTEAD, WHICH IS NOT A CHAPTER. It is where he
-				// LIVES, and the whole mod now hangs off that being true from the
-				// first minute — he walks out from it, the first player is handed a
-				// map to it, and everything he does is measured from it.
-				//
-				// Under the dues floor it was not even SITED for twenty minutes on
-				// a new world, so for the first twenty minutes of every game there
-				// was no him at all: no address, no wandering, no map, nothing. The
-				// symptom is a completely silent log and a mod that appears not to
-				// be installed, which is the worst possible first impression and
-				// took a playtest to notice.
-				//
-				// The floor is right for the other five. Those are story beats and
-				// the pacing exists so a lucky group cannot burn three chapters in
-				// an hour. His house is not a beat; it is the setting.
-				if (place != Place.HOMESTEAD && !Wrath.settled(server)) {
-					return;
-				}
-				// AND THE CHURCH ALSO WAITS ON A HUNT. Not "was offered one" —
-				// survived one. Nothing else in the sequence asks the players
-				// for anything, and this asks for the only thing HUNTER has.
-				if (place.afterAHunt
-					&& !com.bloomlet.herobrine.manifest.TheHunt.survived(server)) {
-					return;
-				}
+
 				BlockPos picked = pick(overworld, place);
 				if (picked != null) {
 					overworld.setAttached(place.site, picked.asLong());
 					HerobrineMod.LOGGER.info("{} will stand near [{}, {}] ({})",
 						place.name().toLowerCase(java.util.Locale.ROOT),
 						picked.getX(), picked.getZ(), phase.name());
+					// AND THE ONE BEFORE IT LEARNS WHERE THIS ONE IS.
+					leaveTheWay(overworld, place, picked);
 				}
 				return;     // one at a time, and the next waits for this one
 			}
@@ -373,6 +808,9 @@ public final class Dwellings {
 
 			if (nearest <= RAISE_RANGE && build(overworld, place, site)) {
 				overworld.setAttached(place.up, true);
+				if (place == Place.THRESHOLD) {
+					theLastWord(overworld, site);
+				}
 				// Roads, smoke and a sign, laid at build time for the same reason
 				// the building is: nobody is close enough to watch it happen.
 				Approach.lay(overworld, site, phase);
@@ -566,8 +1004,13 @@ public final class Dwellings {
 			return;
 		}
 		homeIn.remove(place);
-		// Early on it is the sky and a figure. From MIMIC he walks in.
-		boolean hunting = phase.atLeast(Phase.MIMIC);
+		// HE IS ALWAYS THE SKY AND A FIGURE OUT HERE.
+		//
+		// This was `phase.atLeast(MIMIC)` — from the fourth chapter on, finding one
+		// of his places got you a hunt rather than a sighting. The fight is in his
+		// world now, so what you get for finding a building is the building and him
+		// standing in it, which is what the beat was originally for.
+		boolean hunting = false;
 		com.bloomlet.herobrine.manifest.Skies.turn(level);
 		// THE ARGUMENTS WERE THE WRONG WAY ROUND, AND HE HAS NEVER ONCE HUNTED
 		// HERE. place() takes (ignoreLight, hunting) and this passed
@@ -627,6 +1070,13 @@ public final class Dwellings {
 	 * a house somebody watches arrive, and nothing here is ever watched
 	 * arriving.
 	 */
+	/** Candidate sites examined per tick. Each one may generate a chunk. */
+	private static final int TRIES = 6;
+	/** How many ticks of failure before it says so. */
+	private static final int GRUMBLES_AFTER = 30;
+	private static final java.util.Map<Place, Integer> refused =
+		new java.util.EnumMap<>(Place.class);
+
 	private static @org.jspecify.annotations.Nullable BlockPos pick(ServerLevel level, Place place) {
 		double cx = 0;
 		double cz = 0;
@@ -638,15 +1088,26 @@ public final class Dwellings {
 		cz /= level.players().size();
 
 		RandomSource random = level.getRandom();
-		for (int attempt = 0; attempt < 48; attempt++) {
+		// Six a tick, every two seconds. Sampling is free now, so this could be far
+		// higher — it stays low because a candidate that PASSES generates a chunk,
+		// and there is no reason to find six winners when the loop only uses one.
+		for (int attempt = 0; attempt < TRIES; attempt++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
 			double range = place.near + random.nextDouble() * (place.far - place.near);
 			int x = (int)Math.round(cx + Math.cos(angle) * range);
 			int z = (int)Math.round(cz + Math.sin(angle) * range);
 
+			// Judged straight off the noise, with nothing loaded and nothing
+			// generated — see buildable(), which is where the four evenings went.
 			if (!buildable(level, x, z)) {
 				continue;
 			}
+			// AND ONLY NOW IS IT WORTH GENERATING. buildable costs nothing above,
+			// but topOf reads real blocks to find the first thing that will hold a
+			// floor, so the chunk has to exist for the candidate that WON. Six
+			// generations a tick became at most one per successful pick, which is
+			// where the tick debt in the log went.
+			level.getChunk(x >> 4, z >> 4);
 			BlockPos at = new BlockPos(x, Ground.topOf(level, x, z), z);
 			boolean tooNear = false;
 			for (ServerPlayer player : level.players()) {
@@ -658,6 +1119,17 @@ public final class Dwellings {
 			if (!tooNear) {
 				return at;
 			}
+		}
+		// AND IT SAYS SO WHEN IT CANNOT. A silent null here is indistinguishable
+		// from "not due yet", which is exactly how the last four buildings went
+		// missing without a single line in the log to point at.
+		int missed = refused.merge(place, 1, Integer::sum);
+		if (missed % GRUMBLES_AFTER == 0) {
+			HerobrineMod.LOGGER.warn(
+				"nowhere to put the {} after {} tries — wanted {}-{} blocks out from"
+					+ " the players, and every candidate was water, sea level or"
+					+ " unbuildable", place.name().toLowerCase(java.util.Locale.ROOT),
+				missed * TRIES, place.near, place.far);
 		}
 		return null;
 	}
@@ -742,16 +1214,11 @@ public final class Dwellings {
 			}
 			reached = false;
 			if (at == null) {
-				// Which of the two things it is waiting on, because "waiting for
-				// HUNTER" printed at HUNTER is the single most confusing line
-				// this command has ever produced.
-				String on = !phase.atLeast(place.from)
-					? place.from.name()
-					: place.afterAHunt && !com.bloomlet.herobrine.manifest.TheHunt
-						.survived(level.getServer())
-						? "a hunt to be survived"
-						: "this chapter to have had its time";
-				lines.add(String.format("%-11s waiting for  %s", name, on));
+				// One thing left it can be waiting on, so it says that rather than
+				// working out which of three. The old version could print "waiting
+				// for HUNTER" while the world was at HUNTER, which is the most
+				// confusing line this command has ever produced.
+				lines.add(String.format("%-11s waiting for  the one before it", name));
 			} else {
 				BlockPos pos = BlockPos.of(at);
 				lines.add(String.format("%-11s OUT THERE    x %d z %d",
@@ -885,6 +1352,31 @@ public final class Dwellings {
 			ServerLevel overworld = level.getServer().overworld();
 			overworld.setAttached(ORIGIN, origin.asLong());
 			overworld.setAttached(RAISED, true);
+			// AND THE SEQUENCE HAS TO BE TOLD, WHICH IS THE BUG THAT ATE THE MAP.
+			//
+			// There are two ways the homestead gets built and only one of them was
+			// telling anybody. Dwellings' own loop builds a place and then sets
+			// place.up on the next line; Whereabouts calls THIS method directly at
+			// world creation, because the one building the whole mod hangs off has
+			// to exist before anybody logs in rather than appearing when they walk
+			// past it.
+			//
+			// That second path set ORIGIN and RAISED and nothing else. So the loop
+			// looked at HOMESTEAD, saw up == false, went to build it, got false back
+			// from here — already raised — and never marked it. Every tick, for the
+			// life of the world. The sequence could not get past the first entry, so
+			// the town was never sited, so the map was never made, and the chest at
+			// the top of the tower was empty for a reason that had nothing to do
+			// with the tower.
+			//
+			// The site goes with it. raise() picks its own ground and may land up to
+			// forty-eight blocks from where pick() suggested, and arriving() measures
+			// sixty blocks from the SITE — so a house that wandered was a house you
+			// could stand inside without ever being recorded as having found it.
+			overworld.setAttached(Place.HOMESTEAD.site, origin.asLong());
+			overworld.setAttached(Place.HOMESTEAD.up, true);
+			HerobrineMod.LOGGER.info("homestead marked up at [{}, {}, {}] — the"
+				+ " sequence can move", origin.getX(), origin.getY(), origin.getZ());
 			return true;
 		}
 		HerobrineMod.LOGGER.warn("no buildable ground for the homestead near [{}, {}]",
@@ -899,7 +1391,48 @@ public final class Dwellings {
 	 * only has to be good enough that levelling it does not leave a four-block
 	 * step of dirt down one side.
 	 */
+	/**
+	 * ASKED OF THE GENERATOR, NOT OF THE WORLD. Third fix to these lines and the
+	 * first one that can work.
+	 *
+	 * IT USED TO REFUSE EVERY SITE EVER CONSIDERED. The grid below reads columns
+	 * from x+2 to x+18 — SEVENTEEN BLOCKS, wider than a chunk — so the footprint
+	 * straddled a chunk boundary for every possible value of x. The isLoaded guard
+	 * therefore always found a column in a chunk nobody had generated and returned
+	 * false. Not usually, not only at range: always, 256 candidates out of 256.
+	 *
+	 * So pick() returned null on every attempt on every tick since this was
+	 * written, and the six-building sequence — every house, every map, the whole
+	 * trail — could only appear by accident, on a candidate that happened to land
+	 * inside chunks somebody had already walked through. Which is precisely how it
+	 * behaved, and precisely what four evenings of "the map is not in the chest"
+	 * actually were.
+	 *
+	 * The previous attempt generated the chunk at (x, z) before judging. Right
+	 * instinct, fixed nothing: it generated ONE chunk where the check needs up to
+	 * four. It also made the fault expensive — six generations a tick, every one
+	 * thrown away, which is the "Can't keep up! Running 289 ticks behind".
+	 *
+	 * So it stops asking the world. ChunkGenerator.getBaseHeight samples the noise
+	 * the terrain will be built from without generating anything, which is how
+	 * vanilla places its own structures: correct at any distance, and free.
+	 *
+	 * THE TWO HEIGHTMAPS ARE THE WATER TEST. WORLD_SURFACE_WG stops at the first
+	 * thing that is not air, so over a lake it returns the lake's surface;
+	 * OCEAN_FLOOR_WG ignores fluid and returns the bed. On dry land they agree
+	 * exactly, so one comparison replaces both the old sea-level check and the old
+	 * fluid probe.
+	 *
+	 * It reads the noise floor rather than the canopy for the same reason the old
+	 * code called floorOver instead of the heightmap: judging a forest site by the
+	 * treetops makes it look wildly uneven and puts the floor above the leaves.
+	 * WG-suffixed heightmaps are pre-feature, so trees are not there yet.
+	 */
 	private static boolean buildable(ServerLevel level, int x, int z) {
+		net.minecraft.world.level.chunk.ChunkGenerator shape =
+			level.getChunkSource().getGenerator();
+		net.minecraft.world.level.levelgen.RandomState noise =
+			level.getChunkSource().randomState();
 		int low = Integer.MAX_VALUE;
 		int high = Integer.MIN_VALUE;
 		// Only the building has to be level. The yard follows the ground now,
@@ -908,22 +1441,20 @@ public final class Dwellings {
 		// grave marker forty blocks away would have been on a hill.
 		for (int dz = 2; dz <= 14; dz += 4) {
 			for (int dx = 2; dx <= 18; dx += 4) {
-				BlockPos column = new BlockPos(x + dx, 0, z + dz);
-				if (!level.isLoaded(column.atY(level.getSeaLevel()))) {
-					return false;
+				int surface = shape.getBaseHeight(x + dx, z + dz,
+					net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG,
+					level, noise);
+				int floor = shape.getBaseHeight(x + dx, z + dz,
+					net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR_WG,
+					level, noise);
+				if (surface != floor) {
+					return false;   // standing water over it
 				}
-				// Real ground, not the canopy. Judging a forest site by the
-				// heightmap made it look wildly uneven AND put the floor level
-				// somewhere above the trees.
-				int height = Ground.floorOver(level, x + dx, z + dz);
-				if (height <= level.getSeaLevel()) {
+				if (floor <= level.getSeaLevel()) {
 					return false;   // in the sea, or in a lake
 				}
-				if (!level.getFluidState(new BlockPos(x + dx, height - 1, z + dz)).isEmpty()) {
-					return false;
-				}
-				low = Math.min(low, height);
-				high = Math.max(high, height);
+				low = Math.min(low, floor);
+				high = Math.max(high, floor);
 			}
 		}
 		// Two, not three. The footing is only three deep now, so a site that

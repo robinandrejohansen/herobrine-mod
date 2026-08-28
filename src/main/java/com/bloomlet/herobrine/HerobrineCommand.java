@@ -217,6 +217,33 @@ public final class HerobrineCommand {
 					return 1;
 				}))
 
+			// The tall one, on demand — and unlike the others this one genuinely
+			// cannot be looked at into existence any other way. Its whole rule is
+			// that it does not move while observed, so a debug spawn in front of
+			// the player is the ONLY way to watch it do nothing on purpose.
+			.then(Commands.literal("gaunt").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					ServerLevel level = (ServerLevel)p.level();
+					com.bloomlet.herobrine.entity.GauntEntity it =
+						com.bloomlet.herobrine.entity.ModEntities.GAUNT.create(
+							level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+					if (it == null) {
+						ctx.getSource().sendFailure(Component.literal("could not make one"));
+						return 0;
+					}
+					// Further out than the turned one. Five blocks is close enough
+					// to see the face and far enough that the freeze is the first
+					// thing you notice rather than the second.
+					net.minecraft.world.phys.Vec3 ahead =
+						p.position().add(p.getLookAngle().scale(14.0));
+					it.snapTo(ahead.x, p.getY(), ahead.z, p.getYRot() + 180.0F, 0.0F);
+					level.addFreshEntity(it);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						"it is in the trees — it only moves when you are not looking"),
+						false);
+					return 1;
+				}))
+
 			// His world, without the forty hours in front of it. Puts a way
 			// through at your feet rather than teleporting you, so what gets
 			// tested is the portal and the landing and not a debug shortcut.
@@ -308,7 +335,6 @@ public final class HerobrineCommand {
 		long seconds = ManifestationDirector.secondsUntilNext(server, player);
 		int light = level.getMaxLocalRawBrightness(player.blockPosition());
 
-		long owed = Wrath.owed(server);
 		// PHASE FIRST, and no wrath total, because there is not one any more. The
 		// old first field was a number that had been disconnected from the story
 		// for several releases and still printed next to it, which is how a
@@ -317,7 +343,6 @@ public final class HerobrineCommand {
 			// Without this the new pacing floor is indistinguishable from a bug:
 			// a house is late, nobody can see why, and the honest conclusion from
 			// inside the game is that the mod is broken.
-			+ (owed > 0 ? "  |  next place in " + owed + " min" : "  |  next place due")
 			// The second thing the church waits on, and without a line for it
 			// the symptom is identical to the pacing floor: a building that is
 			// due and does not arrive, for no reason anybody can see.
@@ -584,8 +609,8 @@ public final class HerobrineCommand {
 		Wrath.jumpTo(server, wanted);
 		final Phase moved = wanted;
 		ctx.getSource().sendSuccess(() -> Component.literal(
-			"the story is at " + moved.name() + " — the next place will site once this"
-				+ " chapter has had its " + moved.duesMinutes + " minutes"), false);
+			"the story is at " + moved.name() + " — places no longer wait on the"
+				+ " chapter, only on the one before them being found"), false);
 		return 1;
 	}
 }

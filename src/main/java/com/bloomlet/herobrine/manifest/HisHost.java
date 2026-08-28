@@ -179,11 +179,46 @@ public final class HisHost {
 		}
 	}
 
+	/**
+	 * ONE OF HIS, OR NOT THERE AT ALL.
+	 *
+	 * Enemy rather than Monster, because Monster misses slimes — Slime extends Mob
+	 * and implements Enemy directly, and a guard that lists the classes it knows
+	 * about is exactly the shape of bug this file keeps finding. Enemy is the
+	 * marker every hostile thing in the game carries.
+	 *
+	 * InfectedEntity is ours and it EXTENDS Zombie, so it comes through this net
+	 * unless it is named. It is the only one that does: the Turned, the mimics and
+	 * he himself are all PathfinderMob and were never Enemy to begin with.
+	 */
+	private static boolean notOneOfHis(Mob mob) {
+		return mob instanceof net.minecraft.world.entity.monster.Enemy
+			&& !(mob instanceof com.bloomlet.herobrine.entity.InfectedEntity);
+	}
+
 	private static void onLoad(Entity entity, ServerLevel level) {
-		if (!Config.get().enabled || !Config.get().hisHost) {
+		if (!Config.get().enabled) {
 			return;
 		}
 		if (!level.dimension().equals(TheWayBlock.HIS_WORLD) || !(entity instanceof Mob mob)) {
+			return;
+		}
+		// AND THE SWEEP RUNS BEFORE THE ARMING, and outside the hisHost gate.
+		//
+		// The biome does the real work — his forest has no monster list, so none of
+		// this is ever rolled. But a dimension that has ALREADY generated keeps the
+		// biome its chunks were written with, and every one of those chunks goes on
+		// spawning zombies forever. This catches those, and anything that arrives by
+		// spawner, egg or command.
+		//
+		// Outside the hisHost gate on purpose: hisHost is "arm what is there", and
+		// turning it off should leave the place undefended, not repopulate it with
+		// vanilla mobs.
+		if (Config.get().hisOwnOnly && notOneOfHis(mob)) {
+			mob.discard();
+			return;
+		}
+		if (!Config.get().hisHost) {
 			return;
 		}
 		RandomSource random = level.getRandom();

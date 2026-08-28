@@ -253,6 +253,82 @@ public final class TheHunt {
 		ServerTickEvents.END_SERVER_TICK.register(TheHunt::onTick);
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH
 			.register(TheHunt::onDeath);
+		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DAMAGE
+			.register(TheHunt::spares);
+	}
+
+	/**
+	 * HE DOES NOT KILL ANYBODY ON THIS SIDE OF THE WAY.
+	 *
+	 * The answer to him is not supposed to be in the overworld. Everything he does
+	 * out here — the sword, the burning, the roof coming in, the bolts, the
+	 * fireballs — hurts exactly as much as it ever did, right down to half a heart,
+	 * and then the blow that would finish somebody does not land.
+	 *
+	 * ONE CHOKEPOINT RATHER THAN NINE. His damage reaches a player through the
+	 * melee, the shell, the sweep, the lunge, three kinds of lightning, a fireball
+	 * and an explosion, and clamping each of those in place would be eight more
+	 * things to keep in step. ALLOW_DAMAGE is where all of it converges.
+	 *
+	 * NOT THE OLD MERCY, AND THE DIFFERENCE MATTERS. That one triggered on a health
+	 * threshold and skipped the WHOLE BLOW — no fire, no shove — and then withdrew,
+	 * so a player parked at four hearts made him walk up and decline, forever. This
+	 * refuses one thing only: the last point of damage. He still connects, still
+	 * throws you, still takes the house apart while you stand in it at half a
+	 * heart. There is nothing to farm.
+	 *
+	 * HIS DOING ONLY. A creeper, a fall into the ravine he threw you toward, the
+	 * mobs that turned up because it is night — all still kill you. He is not a
+	 * shield.
+	 */
+	private static boolean spares(net.minecraft.world.entity.LivingEntity hurt,
+	                              net.minecraft.world.damagesource.DamageSource source,
+	                              float amount) {
+		if (!(hurt instanceof ServerPlayer player)
+			|| !(hurt.level() instanceof ServerLevel here)
+			|| here.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+			return true;      // his own world is where he is allowed to win
+		}
+		if (player.getHealth() - amount > 0.0F || !hisDoing(here, source)) {
+			return true;
+		}
+		// And put them out on the way past. Burning is a hundred separate one-point
+		// blows, so without this they would stand in his fire at half a heart with
+		// every tick of it refused and none of it stopping.
+		player.clearFire();
+		return false;
+	}
+
+	/**
+	 * Whether this came from him.
+	 *
+	 * The mirror of HerobrineEntity.hisOwnDoing, and the same shape: his hand, his
+	 * projectiles, and — while he is actually out here — the weather. A bolt is not
+	 * owned by anybody in the way a fireball is, so the test for lightning is that
+	 * he is standing in this level to have called it.
+	 */
+	private static boolean hisDoing(ServerLevel here,
+	                                net.minecraft.world.damagesource.DamageSource source) {
+		if (source.getEntity() instanceof com.bloomlet.herobrine.entity.HerobrineEntity
+			|| source.getDirectEntity()
+				instanceof com.bloomlet.herobrine.entity.HerobrineEntity) {
+			return true;
+		}
+		if (source.getEntity() instanceof net.minecraft.world.entity.projectile.Projectile shot
+			&& shot.getOwner() instanceof com.bloomlet.herobrine.entity.HerobrineEntity) {
+			return true;
+		}
+		if (source.getDirectEntity()
+				instanceof net.minecraft.world.entity.projectile.Projectile flew
+			&& flew.getOwner() instanceof com.bloomlet.herobrine.entity.HerobrineEntity) {
+			return true;
+		}
+		if (!com.bloomlet.herobrine.entity.HerobrineEntity.outInTheOverworld(here)) {
+			return false;
+		}
+		return source.is(net.minecraft.tags.DamageTypeTags.IS_LIGHTNING)
+			|| source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)
+			|| source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION);
 	}
 
 	/**
@@ -313,19 +389,13 @@ public final class TheHunt {
 		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
 			settleUp(server.overworld(), player);
 		}
-		if (Wrath.phase(server).atLeast(Phase.HUNTER) && !survived(server)
-			&& Wrath.settled(server)) {
-			ServerLevel overworld = server.overworld();
-			if (overworld.players().isEmpty()) {
-				return;
-			}
-			ServerPlayer on = overworld.players().get(
-				overworld.getRandom().nextInt(overworld.players().size()));
-			HauntingSpawner.Outcome outcome = begin(overworld, on);
-			HerobrineMod.LOGGER.info("the hunt is owed — tried {}: {}",
-				on.getName().getString(),
-				outcome == HauntingSpawner.Outcome.PLACED ? "on" : outcome.reason());
-		}
+		// AND THE OWED HUNT IS GONE.
+		//
+		// This picked a random overworld player once a chapter was reached and put a
+		// hunt on them. It was the one thing in the mod that came looking for you
+		// without you having done anything, which was its point — and it is exactly
+		// what the dimension is for now. Nothing hunts anybody on this side; you go
+		// through and find it.
 	}
 
 	/**
@@ -383,7 +453,7 @@ public final class TheHunt {
 		"there we are",
 		"you kept looking",
 		"now we both know",
-		"you could have walked away from that",
+		"i can smell the iron in you from here",
 		"say it out loud so it is real",
 	};
 
@@ -392,7 +462,8 @@ public final class TheHunt {
 		"i have been here a while",
 		"you never once looked up",
 		"i watched you finish what you were doing",
-		"i was close enough to touch you twice",
+		"i was close enough to smell your hair",
+		"i counted your breaths and stopped at four hundred",
 	};
 
 	// ---- HE ARRIVES WITH THE WEATHER ---------------------------------------
@@ -1883,19 +1954,22 @@ public final class TheHunt {
 		{
 			"i am walking now",
 			"i want to hear the small bones first",
-			"hold still it is easier that way",
+			"hold still and it will be tidier",
 			"there is a great deal of blood in a person",
 			"you will be tired long before i am",
-			"i have been deciding how to start",
-			"i am going to take my time",
+			"i have been deciding where to start",
+			"i am going to take my time with you",
 			"look at your hands while you still have them",
+			"i want to see what colour you are inside",
+			"i will do the legs first so you stay",
 		},
 		// 2 — the sky. Said once, when the storm turns.
 		{
 			"the ground is mine tonight",
 			"nothing out here is going to help you",
 			"i have opened the sky over your house",
-			"there will not be anywhere dry",
+			"there will not be anywhere dry to lie down",
+			"the ground here has had people in it before",
 		},
 	};
 
@@ -1950,19 +2024,19 @@ public final class TheHunt {
 		"i heard that",
 		"come out then",
 		"there is something in here with me",
-		"you are breathing very loudly",
+		"i can hear your heart working",
 		"do not make me come and look",
 		"i can hear you deciding",
-		"stand still and it will be quicker",
+		"stand still and you will keep more of it",
 		"i will find what is left of you",
-		"something moved",
+		"you are leaking somewhere",
 	};
 
 	/** And when he gets to the spot and there is nothing on it. */
 	private static final String[] NOTHING = {
 		"nothing",
 		"i know what i heard",
-		"you were here a moment ago",
+		"there is warm air where you were standing",
 		"go on then",
 		"i am not finished looking",
 	};
@@ -2021,7 +2095,7 @@ public final class TheHunt {
 		"look behind you",
 		"found you",
 		"you stopped moving",
-		"i can see you %s",
+		"i can see your pulse from here %s",
 		"turn around",
 		"there you are",
 	};
@@ -2053,12 +2127,14 @@ public final class TheHunt {
 		{
 			"you should not have done that %s",
 			"that was a mistake %s",
-			"i felt that",
+			"i felt that and i want more",
+			"do it again i want to feel it",
 		},
 		// The second. The restraint is gone.
 		{
 			"i will take everything from you",
-			"i know where you sleep %s",
+			"i will take you apart at the joints %s",
+			"i know how you come apart %s",
 			"you will not be able to stay awake %s",
 		},
 		// The third, as he goes, and it is four words again. He is back in
@@ -2066,7 +2142,8 @@ public final class TheHunt {
 		{
 			"not tonight %s",
 			"soon",
-			"i am not finished",
+			"i am not finished opening you",
+			"i will come back for the rest %s",
 		},
 	};
 

@@ -153,6 +153,29 @@ public final class Config {
 	 */
 	public boolean hisHost = true;
 	/**
+	 * NOTHING OVER THERE IS VANILLA.
+	 *
+	 * Spiders, zombies, zombie villagers, skeletons, creepers, slimes, endermen
+	 * and witches do not spawn in his world at all — his forest carries an empty
+	 * monster list, so they are never rolled in the first place.
+	 *
+	 * The reasoning is that ambient hostiles are NOISE. A creeper interrupting a
+	 * diamond seam, a skeleton plinking at you across a clearing while you are
+	 * trying to look at something — those are the texture of an ordinary night in
+	 * an ordinary world, and this is neither. Every hostile thing over there
+	 * should mean something, and a zombie means nothing.
+	 *
+	 * What it costs is constant pressure, and that is the point: quiet is what
+	 * makes an arrival land. What it buys back is the ability to CLEAR a place
+	 * and have it stay clear.
+	 *
+	 * This flag is the sweep for chunks that were generated BEFORE the biome
+	 * changed. Those still carry dark_forest and still roll its monster list, so
+	 * anything hostile that loads in his world is removed on the spot. His own —
+	 * the Turned, the mimics, the infected, him — are not touched.
+	 */
+	public boolean hisOwnOnly = true;
+	/**
 	 * The keep — the one competent building he ever put up, and the only thing
 	 * standing in his world.
 	 *

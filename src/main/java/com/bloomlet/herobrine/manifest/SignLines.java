@@ -56,14 +56,14 @@ public final class SignLines {
 	private static final String[][] BASE = {
 		{"go back"},
 		{"stop digging"},
-		{"this is deep", "enough"},
-		{"not deeper"},
-		{"it is awake"},
-		{"it is not", "your house"},
+		{"i opened the", "last one who", "came down here"},
+		{"the marrow", "is the best", "part of you"},
+		{"it is awake", "and it is", "hungry"},
+		{"you are mostly", "water and", "string"},
+		{"i know where", "your seams", "are"},
+		{"i can hear", "your heart", "from up here"},
 		{"turn around"},
 		{"i was here", "first"},
-		{"i do not", "like you"},
-		{"you think i", "cannot see"},
 	};
 
 	/**
@@ -81,13 +81,13 @@ public final class SignLines {
 	 */
 	private static final String[][] LEAVING = {
 		{"go home"},
-		{"nobody stays"},
-		{"you can still", "leave"},
-		{"they left too"},
-		{"there is nothing", "here for you"},
+		{"nobody stays", "whole"},
+		{"they left", "in pieces"},
+		{"you can still", "leave", "most of you"},
+		{"there is", "nothing here", "but the ground"},
 		{"this is not", "your world"},
 		{"how long"},
-		{"others tried", "this"},
+		{"others tried", "this", "i kept them"},
 	};
 
 	/**
@@ -105,15 +105,15 @@ public final class SignLines {
 	private static final String[][] FOURTH_WALL = {
 		{"log off"},
 		{"close the game"},
-		{"go outside"},
+		{"go outside", "while you", "still can"},
 	};
 
 	// --------------------------------------------------------------- contextual
 	/** Below y-0. His territory, and the thing his brother did. */
 	private static final String[][] DEEP = {
 		{"you went too", "far down"},
-		{"he dug here", "too"},
-		{"there is nothing", "under this"},
+		{"he dug here", "too", "he is still", "down there"},
+		{"there is", "nothing under", "this but me"},
 		{"go up"},
 	};
 
@@ -127,7 +127,8 @@ public final class SignLines {
 	/** Sleeps often — so he has watched them do it. */
 	private static final String[][] SLEEPER = {
 		{"i watch you", "sleep"},
-		{"i know where", "you sleep"},
+		{"i have counted", "your teeth"},
+		{"i know how", "you smell", "when you dream"},
 		{"you left the", "door open"},
 	};
 
@@ -135,7 +136,8 @@ public final class SignLines {
 	private static final String[][] KILLER = {
 		{"you kill more", "than you need"},
 		{"so many"},
-		{"you are the", "same"},
+		{"you are the", "same as me", "underneath"},
+		{"i have seen", "what you are", "made of"},
 	};
 
 	/** Has died repeatedly. */
@@ -148,7 +150,7 @@ public final class SignLines {
 	/** Has torn one of his signs down. */
 	private static final String[][] DEFIANT = {
 		{"you broke it"},
-		{"i will write", "it again"},
+		{"i will write", "it again", "in something", "wetter"},
 		{"%s", "stop"},
 	};
 
@@ -157,6 +159,7 @@ public final class SignLines {
 		{"%s"},
 		{"i can see", "the light"},
 		{"%s", "i see you"},
+		{"%s", "i have been", "inside your", "house"},
 	};
 
 	/**

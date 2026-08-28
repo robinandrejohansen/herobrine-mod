@@ -75,6 +75,25 @@ public final class ModEntities {
 			.clientTrackingRange(10)
 	);
 
+	/**
+	 * The tall one in the trees.
+	 *
+	 * Sized off GauntEntity's own constants rather than literals, because the
+	 * renderer stretches the villager mesh by the same numbers and a hitbox that
+	 * disagrees with the drawing is the oldest bug in modded Minecraft.
+	 *
+	 * Tracked further out than anything else the mod registers. Everything else is
+	 * meant to be met; this is meant to be SEEN, at the treeline, at a distance
+	 * where you cannot be sure — and a client tracking range that lets it vanish
+	 * at thirty blocks would delete the entire creature.
+	 */
+	public static final EntityType<GauntEntity> GAUNT = register(
+		"gaunt",
+		EntityType.Builder.of(GauntEntity::new, MobCategory.MONSTER)
+			.sized(GauntEntity.WIDE, GauntEntity.TALL)
+			.clientTrackingRange(24)
+	);
+
 	private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HerobrineMod.id(name));
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
@@ -86,5 +105,6 @@ public final class ModEntities {
 		FabricDefaultAttributeRegistry.register(INFECTED, InfectedEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(MIMIC, MimicEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(TURNED, TurnedEntity.createAttributes());
+		FabricDefaultAttributeRegistry.register(GAUNT, GauntEntity.createAttributes());
 	}
 }
