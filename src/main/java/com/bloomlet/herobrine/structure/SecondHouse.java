@@ -281,7 +281,8 @@ public final class SecondHouse {
 			if (book != null) {
 				chest.setItem(0, book);
 			}
-			chest.setItem(1, new ItemStack(Items.TORCH, 12));
+			chest.setItem(1, HouseBooks.theTowerAfter());
+			chest.setItem(2, new ItemStack(Items.TORCH, 12));
 			Loot.scatter(chest, random, Loot.Tier.LARDER);
 		}
 

@@ -396,7 +396,18 @@ public final class Homestead {
 			case 'B' -> bed(level, pos);
 			case 'C' -> chest(level, pos, null, random);
 			case '1' -> chest(level, pos, HouseBooks.child(), random);
-			case '2' -> chest(level, pos, HouseBooks.farRoom(), random);
+			// THE SMALL ROOM, AND ONLY THIS ONE.
+			//
+			// chest() is the helper every container in the house goes through, so
+			// putting the aftermath book in there gave five copies of it. It belongs
+			// in one place and this is the place: the room with no window is where
+			// the boy asked to sleep, and it is where they were found.
+			case '2' -> {
+				chest(level, pos, HouseBooks.farRoom(), random);
+				if (level.getBlockEntity(pos) instanceof ChestBlockEntity found) {
+					found.setItem(1, HouseBooks.theHomesteadAfter());
+				}
+			}
 			case '3' -> chest(level, pos, HouseBooks.ledger(), random);
 			case '4' -> chest(level, pos, HouseBooks.tally(), random);
 			case 'c' -> set(level, pos, Blocks.CRAFTING_TABLE.defaultBlockState());

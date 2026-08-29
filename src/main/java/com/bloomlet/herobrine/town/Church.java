@@ -384,6 +384,7 @@ public final class Church {
 		if (level.getBlockEntity(box)
 				instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
 			chest.setItem(0, com.bloomlet.herobrine.structure.HouseBooks.theTown());
+			chest.setItem(1, com.bloomlet.herobrine.structure.HouseBooks.theTownAfter());
 			com.bloomlet.herobrine.structure.Loot.scatter(chest, random,
 				com.bloomlet.herobrine.structure.Loot.Tier.TOWN_TOOLS);
 		}

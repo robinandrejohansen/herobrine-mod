@@ -90,3 +90,26 @@ and why it is here, fitted to what the story has already said.
 - The keep should site a good way further from the city
 - The map goes in one of the chests IN the city
 - Remove the map from the chest at the portal
+
+---
+
+## 4b — Cells sealed, and chests eaten  ✅ done
+
+- [x] The cells in the gaol were IRON doors with nothing to work them. Iron
+      does not open by hand, so every locked cell was shut for good and the
+      fourteen rooms the floor exists to show could not be looked into. A lever
+      on the corridor wall beside each one.
+- [x] Chests placed before the carving. TheDig set the warder's chest down and
+      THEN ran Warren.dig from a block inside its back wall; Shrine set its
+      chests and then ran crypt(), which ends in Warren.dig too. Warren's own
+      comment states the rule and both callers broke it. Shell, then carve, then
+      furnish.
+
+## 5 — A second book in every place  ✅ done
+
+Written by somebody who got out, after. The chapters are the community's own
+record, written while it was happening by people who did not yet know what it
+was. These know exactly what it was and are not being polite about it.
+
+Every one ends with an instruction, because a warning that does not tell you
+what to do is a mood.

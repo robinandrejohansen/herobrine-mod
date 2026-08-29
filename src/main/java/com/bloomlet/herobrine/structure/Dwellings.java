@@ -556,9 +556,22 @@ public final class Dwellings {
 			return;
 		}
 
+		// The elder brother's account, in the same box as the map home. It is the
+		// only book in the mod written by somebody who WON, and it is the bleakest
+		// thing in it — see HouseBooks.theThresholdAfter.
+		for (int slot = 0; slot < box.getContainerSize(); slot++) {
+			if (box.getItem(slot).isEmpty()) {
+				box.setItem(slot, com.bloomlet.herobrine.structure.HouseBooks
+					.theThresholdAfter());
+				break;
+			}
+		}
+
+		// Scale two and the coordinates in the name, same as every other map on the
+		// trail. Four is two thousand blocks across and the arrow falls off it.
 		net.minecraft.world.item.ItemStack map =
 			net.minecraft.world.item.MapItem.create(over, house.getX(), house.getZ(),
-				(byte) 4, true, true);
+				(byte) 2, true, true);
 		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
 			map, house, "+",
 			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);

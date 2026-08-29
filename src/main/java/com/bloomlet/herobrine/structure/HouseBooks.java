@@ -367,6 +367,226 @@ public final class HouseBooks {
 			You are going to need all of it.""");
 	}
 
+	// ---- WHAT WAS LEFT AFTERWARDS ------------------------------------------
+
+	/**
+	 * A SECOND BOOK IN EVERY PLACE, AND IT IS A DIFFERENT KIND OF WRITING.
+	 *
+	 * The chapters above are the community's own record: written while it was
+	 * happening, by people who did not yet know what it was, ending with somewhere
+	 * to go. They are deliberately understated because the people writing them
+	 * still thought they were describing an ordinary bad year.
+	 *
+	 * These are written by somebody who GOT OUT. They know exactly what it was,
+	 * they saw what it did, and they are not describing a bad year — they are
+	 * leaving a warning for whoever comes next and they have no reason left to be
+	 * polite about it. So they say the thing plainly, once, and then they say what
+	 * to do about it.
+	 *
+	 * That contrast is the point. Two books in one room, one written before and one
+	 * after, and the distance between the voices is the whole story of the place.
+	 *
+	 * EVERY ONE ENDS WITH AN INSTRUCTION, because a warning that does not tell you
+	 * what to do is a mood.
+	 */
+	public static ItemStack theHomesteadAfter() {
+		return book("what he did to that family", "one who got out",
+			"""
+			I went back for the animals.
+
+			The door was off its hinges and it
+			was off them OUTWARD.
+
+			Whatever left that house left it in
+			a hurry and it did not use the
+			handle.""",
+
+			"""
+			They were all still in the small
+			room. All four.
+
+			He had put them in there together
+			and he had taken his time and I am
+			not going to write down what I saw
+			because you do not need it to
+			believe me.""",
+
+			"""
+			The boy was not with them.
+
+			Do not sleep in that house.
+			Do not go down the hole under it.
+
+			And if you find something wearing
+			his face, it is not asking you for
+			help.""");
+	}
+
+	public static ItemStack theTownAfter() {
+		return book("eleven, in one afternoon", "one who got out",
+			"""
+			It was the middle of the day.
+
+			He came in through the west lane
+			and he was not in a hurry and
+			nobody stopped him.
+
+			Eleven of us by dark.""",
+
+			"""
+			We found them in the square.
+
+			Not in one place. He had walked the
+			whole town and left one in every
+			doorway he passed, facing in, so
+			that whoever opened it would be the
+			one to see.
+
+			The well ran red for two days.""",
+
+			"""
+			If you are standing in the square
+			reading this then you are standing
+			where they were.
+
+			GO DOWN THE WELL.
+
+			The rest of us are under your feet
+			and we are still alive.""");
+	}
+
+	public static ItemStack theTowerAfter() {
+		return book("we found what was left", "the last of the watch",
+			"""
+			Two of us went up at dawn for him.
+
+			The stair was still barred from the
+			inside. We took the bar off
+			ourselves. Nobody had touched it.""",
+
+			"""
+			There was blood on the deck and on
+			the inside of the wall and on the
+			underside of the parapet, which is
+			a place a man cannot bleed onto
+			without being held above it.
+
+			We did not find all of him.
+			We found enough.""",
+
+			"""
+			His lamp was still lit and it had
+			not been knocked over.
+
+			Whatever did that had time.
+
+			Do not stand watch alone. Do not
+			stand watch at all. There is
+			nothing to see until it is behind
+			you.""");
+	}
+
+	public static ItemStack theGaolAfter() {
+		return book("cell nine", "the warder",
+			"""
+			We put fourteen behind iron and it
+			worked for a month.
+
+			They stop eating first. Then they
+			stop sleeping. Then they stand at
+			the bars all night with their faces
+			against them and they do not blink
+			and they say your children's names.""",
+
+			"""
+			Cell nine went quiet on a Tuesday.
+
+			The door was still locked. The bars
+			were still whole. There was a great
+			deal of blood and it was on the
+			CEILING, in a spiral, and the man
+			was gone.
+
+			Nothing came out. Something left.""",
+
+			"""
+			Iron holds them. Iron does not hold
+			HIM.
+
+			If a cell is quiet, do not open it
+			to find out why.
+
+			We went to the church after that.
+			It did not help either.""");
+	}
+
+	public static ItemStack theChurchAfter() {
+		return book("the last night in here", "one who got out",
+			"""
+			Forty of us in one room with the
+			doors barred and every candle we
+			had left.
+
+			We thought light was the answer.
+			Light is how he finds the room.""",
+
+			"""
+			He did not break the door.
+
+			He was already inside and he had
+			been for some time, standing among
+			us in the dark at the back, and
+			when the first candle went out we
+			learned how long.
+
+			I got out through the graves.""",
+
+			"""
+			There were nine of us at the wall
+			and four of us in the trees and one
+			of me by morning.
+
+			Do not gather. Do not count on
+			numbers. Numbers only tell him how
+			long it will take.
+
+			Go under. Go to the seam.""");
+	}
+
+	public static ItemStack theThresholdAfter() {
+		return book("what it cost to shut it", "the elder brother",
+			"""
+			It took nineteen of us to put him
+			through and eleven came back up.
+
+			We did not fight him. Nobody fights
+			him. We made a hole and we made
+			ourselves the reason he walked
+			toward it.""",
+
+			"""
+			Eight people stood in a line and
+			let him come, so that the ninth
+			could be behind him when he did.
+
+			I gave the order. I would give it
+			again. That is the worst sentence
+			in this book.""",
+
+			"""
+			We sealed it and we told everyone
+			he was dead.
+
+			HE IS NOT DEAD.
+			He is only somewhere else.
+
+			And if you are reading this at the
+			bottom of that stair, you have
+			already decided to go and get him,
+			and there is nothing I can write
+			that will stop you.""");
+	}
+
 	// ---- THE MECHANICS -----------------------------------------------------
 
 	/**

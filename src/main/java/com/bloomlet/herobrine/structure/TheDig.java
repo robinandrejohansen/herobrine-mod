@@ -60,8 +60,23 @@ public final class TheDig {
 			brick(random), random);
 
 		BlockPos far = hall(level, landing.below(2), random);
+		// SHELL, THEN CARVE, THEN FURNISH — and it was shell, furnish, carve.
+		//
+		// workings() calls Warren.dig from a block inside the warder's back wall,
+		// and Warren.dig bores a six-leg trunk and a dozen spurs out of it. The
+		// chest was already standing in that room when it started. Warren's own
+		// comment states the rule — "the homestead taught this the hard way: boring
+		// a passage after a chest was already placed drove straight through it and
+		// left the books on the floor as items counting down to despawning" — and
+		// this file broke it at the call site.
+		//
+		// The room still has to be BUILT before the bore, or the back wall goes up
+		// after the tunnel and seals its mouth. So it is split: warder raises the
+		// room and everything fixed in it, workings cuts, and keeps() puts the chest
+		// down last, when nothing is going to dig any more.
 		warder(level, far, random);
 		workings(level, far, random);
+		keeps(level, far, random);
 
 		HerobrineMod.LOGGER.info("the gaol opened at [{}, {}, {}]",
 			landing.getX(), landing.getY(), landing.getZ());
@@ -196,6 +211,27 @@ public final class TheDig {
 		level.setBlock(mouth.above(), door.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
 			DoubleBlockHalf.UPPER), 2);
 
+		// AND THE LEVER THAT WORKS IT, WHICH THERE WAS NOT ONE OF.
+		//
+		// A shut cell was an IRON door and nothing else. Iron doors do not open by
+		// hand — that is the entire difference between iron and oak — so every
+		// locked cell in the building was sealed for good, and the fourteen rooms
+		// this whole floor exists to show you could not be looked into.
+		//
+		// A lever on the corridor wall beside each one. It is also the correct
+		// answer fictionally: a warder does not carry fourteen keys, he throws the
+		// bolt from where he is standing, and COUNT THEM IN / COUNT THEM OUT is
+		// written on the sign four blocks away.
+		BlockPos switchAt = mouth.relative(across, 2)
+			.relative(into.getOpposite(), 1).above();
+		if (level.getBlockState(switchAt).isAir()
+			&& level.getBlockState(switchAt.relative(into)).isSolid()) {
+			level.setBlock(switchAt, Blocks.LEVER.defaultBlockState()
+				.setValue(BlockStateProperties.ATTACH_FACE,
+					net.minecraft.world.level.block.state.properties.AttachFace.WALL)
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, into.getOpposite()), 2);
+		}
+
 		// Straw, a bucket, and cobwebs. The same in every one of them, which is
 		// what makes fourteen of them read as a system rather than as rooms.
 		BlockPos in = mouth.relative(into, 3);
@@ -267,6 +303,12 @@ public final class TheDig {
 			level.setBlock(far.offset(dx, 2, 7), Blocks.BOOKSHELF.defaultBlockState(), 2);
 		}
 
+		sign(level, far.offset(2, 1, 5),
+			new String[] { "COUNT", "THEM IN", "COUNT", "THEM OUT" });
+	}
+
+	/** The warder's chest, put down after every tunnel in the place is cut. */
+	private static void keeps(ServerLevel level, BlockPos far, RandomSource random) {
 		BlockPos chestAt = far.offset(-3, 0, 5);
 		level.setBlock(chestAt, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
@@ -275,12 +317,10 @@ public final class TheDig {
 			if (book != null) {
 				chest.setItem(0, book);
 			}
-			chest.setItem(1, new ItemStack(Items.IRON_INGOT, 6));
+			chest.setItem(1, HouseBooks.theGaolAfter());
+			chest.setItem(2, new ItemStack(Items.IRON_INGOT, 6));
 			Loot.scatter(chest, random, Loot.Tier.LARDER);
 		}
-
-		sign(level, far.offset(2, 1, 5),
-			new String[] { "COUNT", "THEM IN", "COUNT", "THEM OUT" });
 	}
 
 	/**

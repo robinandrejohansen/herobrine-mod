@@ -57,9 +57,14 @@ public final class Shrine {
 		colonnade(level, corner, random);
 		chancel(level, corner, random);
 		instructions(level, corner, random);
-		belongings(level, corner, random);
 		graves(level, corner, random);
+		// THE CRYPT CARVES, SO IT GOES BEFORE THE THINGS THAT CAN BE CARVED THROUGH.
+		//
+		// crypt() ends in Warren.dig, which bores a trunk and spurs out from under
+		// the chancel — and belongings() had already set this building's chests
+		// down. Same fault as the gaol, same rule, same file that documents it.
 		crypt(level, corner, random);
+		belongings(level, corner, random);
 
 		HerobrineMod.LOGGER.info("the open church stands at [{}, {}, {}]",
 			corner.getX(), corner.getY(), corner.getZ());
@@ -253,10 +258,11 @@ public final class Shrine {
 		if (book != null) {
 			chest.setItem(0, book);
 		}
-		chest.setItem(1, new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE));
-		chest.setItem(2, new ItemStack(net.minecraft.world.item.Items.FLINT_AND_STEEL));
-		chest.setItem(3, new ItemStack(net.minecraft.world.item.Items.BREAD, 9));
-		chest.setItem(4, new ItemStack(
+		chest.setItem(1, HouseBooks.theChurchAfter());
+		chest.setItem(2, new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE));
+		chest.setItem(3, new ItemStack(net.minecraft.world.item.Items.FLINT_AND_STEEL));
+		chest.setItem(4, new ItemStack(net.minecraft.world.item.Items.BREAD, 9));
+		chest.setItem(5, new ItemStack(
 			net.minecraft.world.item.Items.BED.pick(DyeColor.WHITE)));
 		Loot.scatter(chest, random, Loot.Tier.HOMESTEAD);
 	}
