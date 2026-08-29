@@ -72,22 +72,12 @@ public class GauntEntity extends PathfinderMob {
 
 	/** Inside this it stops caring whether it is watched. */
 	private static final double REACHES = 3.2;
-	/** Beyond this, unwatched, it does not walk — it arrives. */
-	private static final double STEPS_FROM = 14.0;
-	/** Ticks between those. Without it, one blink crosses a hundred blocks. */
-	private static final int SLIPS_EVERY = 60;
-	/** Where it puts itself down, relative to the player. */
-	private static final double LANDS_NEAR = 7.0;
-	private static final double LANDS_FAR = 13.0;
-	/** How many landing spots it will consider before staying where it is. */
-	private static final int TRIES = 16;
 
 	/** Continuous ticks of being looked at before the looking starts to cost. */
 	private static final int STARE_COSTS = 70;
 	private static final int DARK_FOR = 60;
 
 	private int watchedFor;
-	private int slipsIn;
 
 	public GauntEntity(EntityType<? extends PathfinderMob> type, Level level) {
 		super(type, level);
@@ -106,24 +96,37 @@ public class GauntEntity extends PathfinderMob {
 			// have to be worth having run from.
 			.add(Attributes.ATTACK_DAMAGE, 9.0)
 			.add(Attributes.ATTACK_KNOCKBACK, 0.6)
-			// Faster than a player walking, slower than one sprinting. Turning your
-			// back and running IS an answer — it is just an answer that ends with
-			// you somewhere you have not looked at yet.
-			.add(Attributes.MOVEMENT_SPEED, 0.36)
+			// SLOW, AND IT HAS TO BE, now that it cannot step through the distance.
+			//
+			// It used to arrive rather than walk when it was far enough out, and
+			// that covered a lot: speed did not matter much when the gap could be
+			// deleted. With the teleport gone the speed IS the threat, and the
+			// threat is not that it is quick. A slow thing you cannot outrun and a
+			// slow thing you can are different creatures, and this is the second —
+			// walking away works, every time, as long as you keep walking. What it
+			// costs you is the rest of the night.
+			//
+			// Well under a player's walk. It never catches anybody who is moving.
+			// It catches people who stopped.
+			.add(Attributes.MOVEMENT_SPEED, 0.19)
 			.add(Attributes.FOLLOW_RANGE, 64.0)
 			.add(Attributes.STEP_HEIGHT, 1.0);
 	}
 
 	/**
-	 * NARROW AND LONG, and the hitbox has to agree with the drawing.
+	 * THE ENDERMAN'S OWN BOX, because it is now the enderman's own model.
 	 *
-	 * GauntRenderer stretches the villager mesh — thin on x and z, long on y —
-	 * and a visual-only stretch is the classic way to ship a mob you cannot hit
-	 * where it looks like it is. The type is registered at the drawn size and this
-	 * exists so the scale lives in ONE place: change the constant, both agree.
+	 * Every previous version of these two numbers was a guess chased after a
+	 * poseStack scale — the villager mesh stretched by hand, the hitbox adjusted
+	 * to try to catch up, and a standing invitation to ship a mob you cannot hit
+	 * where it looks like it is. Taking vanilla's model takes vanilla's dimensions
+	 * with it and the guessing stops: 0.6 by 2.9, no scaling anywhere, drawing and
+	 * hurtbox in agreement by construction.
+	 *
+	 * Still most of a block over a player, which was the whole point of the height.
 	 */
-	public static final float WIDE = 0.5F;
-	public static final float TALL = 3.3F;
+	public static final float WIDE = 0.6F;
+	public static final float TALL = 2.9F;
 
 	// No getDimensions override: LivingEntity marks it final, and it does not need
 	// one. EntityType.Builder.sized in ModEntities is fed these same two constants,
@@ -201,14 +204,11 @@ public class GauntEntity extends PathfinderMob {
 		if (this.level().isClientSide()) {
 			return;
 		}
-		if (this.slipsIn > 0) {
-			this.slipsIn--;
-		}
+		this.speak();
 
 		Player seen = this.watcher();
 		if (seen == null) {
 			this.watchedFor = 0;
-			this.slip();
 			return;
 		}
 		this.watchedFor++;
@@ -229,69 +229,6 @@ public class GauntEntity extends PathfinderMob {
 			seen.addEffect(new MobEffectInstance(MobEffects.DARKNESS, DARK_FOR, 0,
 				false, false));
 		}
-	}
-
-	// ---- CLOSING -----------------------------------------------------------
-	/**
-	 * ARRIVING RATHER THAN WALKING, when it is far enough out to get away with it.
-	 *
-	 * Walking the whole way is wrong twice over. It is slow — a forest at fifty
-	 * blocks means a minute of nothing — and it is legible: a player who turns
-	 * round twice can measure the speed and stops being frightened of it, because
-	 * a thing with a known speed is a thing you can outrun and therefore a thing
-	 * you have solved.
-	 *
-	 * Under STEPS_FROM it walks, because at close range the sudden arrival would
-	 * be the mob teleporting into melee, which is not tense, it is unfair. Over
-	 * it, it steps — and it lands BEHIND the player specifically, so the next
-	 * thing that happens is you turning round.
-	 */
-	private void slip() {
-		Player who = this.getTarget() instanceof Player p ? p
-			: this.level().getNearestPlayer(this, this.getAttributeValue(Attributes.FOLLOW_RANGE));
-		if (who == null || this.slipsIn > 0 || this.distanceTo(who) < STEPS_FROM) {
-			return;
-		}
-		if (!(this.level() instanceof ServerLevel level)) {
-			return;
-		}
-		Vec3 back = who.getViewVector(1.0F).normalize().scale(-1.0);
-		for (int look = 0; look < TRIES; look++) {
-			// Fanned around the player's back rather than dead behind, or the
-			// arrivals line up and it reads as a spawn point.
-			double swing = (this.random.nextDouble() - 0.5) * Math.PI;
-			double range = LANDS_NEAR + this.random.nextDouble() * (LANDS_FAR - LANDS_NEAR);
-			double dx = (back.x * Math.cos(swing) - back.z * Math.sin(swing)) * range;
-			double dz = (back.x * Math.sin(swing) + back.z * Math.cos(swing)) * range;
-			BlockPos at = BlockPos.containing(who.getX() + dx, who.getY(), who.getZ() + dz);
-			// Down to the ground, then up to the first place a three-block thing
-			// fits. Without the height check it lands under an overhang with its
-			// head in stone and suffocates, which is a lesson this codebase has
-			// already paid for once with the undercity's villagers.
-			at = level.getHeightmapPos(
-				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, at);
-			if (!room(level, at)) {
-				continue;
-			}
-			if (this.randomTeleport(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, false)) {
-				this.slipsIn = SLIPS_EVERY;
-				HerobrineMod.LOGGER.debug("the tall one is closer, [{}, {}, {}]",
-					at.getX(), at.getY(), at.getZ());
-				return;
-			}
-		}
-	}
-
-	private boolean room(ServerLevel level, BlockPos feet) {
-		if (!level.getBlockState(feet.below()).isSolid()) {
-			return false;
-		}
-		for (int up = 0; up < Mth.ceil(TALL); up++) {
-			if (!level.getBlockState(feet.above(up)).isAir()) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	/**
@@ -337,44 +274,74 @@ public class GauntEntity extends PathfinderMob {
 	}
 
 	// ---- IT MAKES NO NOISE -------------------------------------------------
+	/** How far down the anger is pitched. Below 0.5 the engine resamples badly. */
+	private static final float DEEP = 0.52F;
+	private static final int SPEAKS_MIN = 70;
+	private static final int SPEAKS_SPREAD = 90;
+
+	private int speaksIn = SPEAKS_MIN;
+
 	/**
-	 * Silent, and that is the point of it.
+	 * SILENT UNTIL IT HAS DECIDED, AND THEN VERY LOW.
 	 *
 	 * The Turned will not stop muttering — villager ambience pitched down, so you
 	 * hear one before you see it and the sound is the warning. This one has no
-	 * warning. The only way to know it is there is to look at where it is, which
-	 * means the only way to find it is the same act that stops it.
+	 * warning at all while it is only standing there. The only way to find it is
+	 * to look at where it is, which is the same act that stops it.
+	 *
+	 * When it takes a target that reverses. The enderman scream at roughly half
+	 * pitch, which drops it about an octave and stretches it to twice the length —
+	 * the resampler turns a shriek into something slow and wrong, and slow and
+	 * wrong is the register this whole creature works in.
+	 *
+	 * Half pitch is also the floor. Below it the engine's resampling starts to
+	 * tear, and what comes out is a artefact rather than a voice.
 	 */
 	@Override
 	protected @org.jspecify.annotations.Nullable SoundEvent getAmbientSound() {
-		return null;
+		return null;      // nothing at all until it wants something
+	}
+
+	private void speak() {
+		if (this.getTarget() == null || this.isSilent()) {
+			this.speaksIn = SPEAKS_MIN;
+			return;
+		}
+		if (--this.speaksIn > 0) {
+			return;
+		}
+		this.speaksIn = SPEAKS_MIN + this.random.nextInt(SPEAKS_SPREAD);
+		this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.ENDERMAN_SCREAM, this.getSoundSource(), 1.1F,
+			DEEP + this.random.nextFloat() * 0.05F);
 	}
 
 	@Override
 	protected SoundEvent getHurtSound(DamageSource source) {
-		return SoundEvents.VILLAGER_HURT;
+		return SoundEvents.ENDERMAN_HURT;
 	}
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return SoundEvents.VILLAGER_DEATH;
+		return SoundEvents.ENDERMAN_DEATH;
+	}
+
+	/**
+	 * Everything it makes comes out an octave down, not just the anger.
+	 *
+	 * getVoicePitch is what LivingEntity multiplies into hurt and death, and left
+	 * alone it randomises around 1.0 — so a creature whose one utterance is pitched
+	 * to 0.52 would yelp at full pitch the moment it was hit, which is a different
+	 * animal making the noise.
+	 */
+	@Override
+	public float getVoicePitch() {
+		return DEEP;
 	}
 
 	@Override
 	public boolean removeWhenFarAway(double distanceSquared) {
 		return false;
-	}
-
-	@Override
-	public void addAdditionalSaveData(net.minecraft.world.level.storage.ValueOutput output) {
-		super.addAdditionalSaveData(output);
-		output.putInt("SlipsIn", this.slipsIn);
-	}
-
-	@Override
-	public void readAdditionalSaveData(net.minecraft.world.level.storage.ValueInput input) {
-		super.readAdditionalSaveData(input);
-		this.slipsIn = input.getIntOr("SlipsIn", 0);
 	}
 
 	@Override

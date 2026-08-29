@@ -1099,15 +1099,9 @@ public final class Dwellings {
 
 			// Judged straight off the noise, with nothing loaded and nothing
 			// generated — see buildable(), which is where the four evenings went.
-			if (!buildable(level, x, z)) {
+			if (!ready(level, x, z)) {
 				continue;
 			}
-			// AND ONLY NOW IS IT WORTH GENERATING. buildable costs nothing above,
-			// but topOf reads real blocks to find the first thing that will hold a
-			// floor, so the chunk has to exist for the candidate that WON. Six
-			// generations a tick became at most one per successful pick, which is
-			// where the tick debt in the log went.
-			level.getChunk(x >> 4, z >> 4);
 			BlockPos at = new BlockPos(x, Ground.topOf(level, x, z), z);
 			boolean tooNear = false;
 			for (ServerPlayer player : level.players()) {
@@ -1233,7 +1227,7 @@ public final class Dwellings {
 		for (int attempt = 0; attempt < 24; attempt++) {
 			int x = near.getX() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
 			int z = near.getZ() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
-			if (!buildable(level, x, z)) {
+			if (!ready(level, x, z)) {
 				continue;
 			}
 			BlockPos origin = new BlockPos(x, Ground.topOf(level, x, z) + 1, z);
@@ -1344,7 +1338,7 @@ public final class Dwellings {
 		for (int attempt = 0; attempt < 24; attempt++) {
 			int x = near.getX() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
 			int z = near.getZ() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
-			if (!buildable(level, x, z)) {
+			if (!ready(level, x, z)) {
 				continue;
 			}
 			BlockPos origin = new BlockPos(x, Homestead.floorHeightAt(level, x, z), z);
@@ -1428,6 +1422,55 @@ public final class Dwellings {
 	 * treetops makes it look wildly uneven and puts the floor above the leaves.
 	 * WG-suffixed heightmaps are pre-feature, so trees are not there yet.
 	 */
+	/**
+	 * Buildable, AND the ground under it actually exists.
+	 *
+	 * THIS IS THE HALF OF buildable() I DELETED, and deleting it broke three
+	 * callers at once in a way that was worse than the bug it fixed.
+	 *
+	 * The old check opened with isLoaded and bailed if the chunk was not there.
+	 * That was wrong as a SITING test — it refused every candidate, always, which
+	 * is why no building could ever be placed — but it was doing a second job
+	 * nobody had written down: it guaranteed that by the time a caller got a
+	 * `true` back, it could safely read blocks. Every caller relied on that, and
+	 * none of them said so.
+	 *
+	 * So buildable() now samples the generator and answers correctly at any
+	 * distance, and this puts the second job back where it can be seen. Judged and
+	 * real, in one call, so the two cannot come apart again.
+	 *
+	 * WHAT HAPPENS WITHOUT IT is not a refusal, it is a house at Y -65. Ground.topOf
+	 * asks the heightmap of an ungenerated column, gets the world floor, walks down
+	 * looking for footing, finds none, and returns from - 1 — one block BELOW the
+	 * bottom of the world. Homestead.floorHeightAt takes the median of forty of
+	 * those and builds the whole farm in the bedrock.
+	 *
+	 * THE WHOLE FOOTPRINT, not the one chunk at the corner. floorHeightAt reads a
+	 * grid across the entire twenty by sixteen, which straddles up to four chunks —
+	 * generating only the one containing (x, z) leaves three quarters of the reads
+	 * still lying, and the median hides it.
+	 *
+	 * The last line is the cross-check and it is cheap insurance. buildable has
+	 * just sworn this ground is dry and above sea level; if the real blocks
+	 * disagree the read is not to be trusted whatever the reason — a cave, a
+	 * feature, a chunk that did not generate — and the candidate is dropped.
+	 */
+	private static boolean ready(ServerLevel level, int x, int z) {
+		if (!buildable(level, x, z)) {
+			return false;
+		}
+		for (int cx = x >> 4; cx <= (x + FOOT_X) >> 4; cx++) {
+			for (int cz = z >> 4; cz <= (z + FOOT_Z) >> 4; cz++) {
+				level.getChunk(cx, cz);
+			}
+		}
+		return Ground.topOf(level, x, z) > level.getSeaLevel();
+	}
+
+	/** How far the biggest of these buildings reaches from its origin. */
+	private static final int FOOT_X = 20;
+	private static final int FOOT_Z = 16;
+
 	private static boolean buildable(ServerLevel level, int x, int z) {
 		net.minecraft.world.level.chunk.ChunkGenerator shape =
 			level.getChunkSource().getGenerator();
