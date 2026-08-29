@@ -198,6 +198,17 @@ public final class Dwellings {
 		// interior stair to get to the deck, and there is one chest at the top with
 		// one thing in it. Nobody mistakes that for loot. It is the difference
 		// between finding a map and being GIVEN one.
+		// AND SOMETHING HAPPENED ON THE ROAD BETWEEN THEM.
+		//
+		// This is the one moment in the mod that knows BOTH ends of a journey — the
+		// place the player is standing in and the place the map is about to point
+		// at. Everything the mod has to say lives inside a building, so the four
+		// hundred blocks between two of them has always been the loading screen.
+		//
+		// Laid before the map goes in the chest rather than after, so by the time
+		// anybody has the map the road already has things on it. See Wayside.
+		Wayside.lay(over, anchor, to, over.getRandom());
+
 		net.minecraft.world.level.block.entity.BlockEntity holder = switch (from) {
 			case HOMESTEAD -> onTheTower(over);
 			// AND THE TOWN'S GOES DOWN WITH THE PEOPLE WHO ARE STILL ALIVE.
