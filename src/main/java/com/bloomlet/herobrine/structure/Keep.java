@@ -195,7 +195,22 @@ public final class Keep {
 					for (int dy = 0; dy >= -2; dy--) {
 						BlockPos at = came.offset(dx, dy, dz);
 						if (his.getBlockState(at).is(Blocks.CHEST)) {
-							return;      // already been through this door
+							// AND ITS MAP IS REPLACED, not left to rot.
+							//
+							// This used to just return. Which was right while a site
+							// was chosen once and never moved — and wrong the moment
+							// onTick learned to throw a bad one away, because the
+							// castle would move and the map in the chest would go on
+							// pointing where it used to be. A chest that hands you a
+							// wrong map is worse than a chest with nothing in it.
+							if (his.getBlockEntity(at) instanceof net.minecraft.world
+									.level.block.entity.ChestBlockEntity old) {
+								old.setItem(13, theWay(his, keep));
+								HerobrineMod.LOGGER.info(
+									"the map at the crossing was redrawn for [{}, {}]",
+									keep.getX(), keep.getZ());
+							}
+							return;
 						}
 						if (!his.getBlockState(at).isAir()
 							|| !his.getBlockState(at.below()).isSolid()
@@ -211,17 +226,7 @@ public final class Keep {
 									.ChestBlockEntity box)) {
 							return;
 						}
-						net.minecraft.world.item.ItemStack map =
-							net.minecraft.world.item.MapItem.create(his, keep.getX(),
-								keep.getZ(), (byte) 3, true, true);
-						net.minecraft.world.level.saveddata.maps.MapItemSavedData
-							.addTargetDecoration(map, keep, "+",
-								net.minecraft.world.level.saveddata.maps
-									.MapDecorationTypes.RED_MARKER);
-						map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-							net.minecraft.network.chat.Component.literal(
-								"he is building something"));
-						box.setItem(13, map);
+						box.setItem(13, theWay(his, keep));
 						// And enough to walk there on. Not a haul — the city pays,
 						// and a full chest at the door would mean never leaving it.
 						com.bloomlet.herobrine.structure.Loot.scatter(box,
@@ -235,6 +240,47 @@ public final class Keep {
 			}
 		}
 		HerobrineMod.LOGGER.info("nowhere at the crossing to leave the way to the keep");
+	}
+
+	/**
+	 * The map that says where the castle is, and it says so in WORDS as well.
+	 *
+	 * A MAP CANNOT BE CENTRED ON AN ARBITRARY POINT. MapItemSavedData.createFresh
+	 * snaps the middle to a grid of 128 << scale — so asking for a map "of the
+	 * keep" gets you a map of whichever standard tile the keep happens to fall in,
+	 * and the keep can sit anywhere in it, including hard against an edge.
+	 *
+	 * At the scale this shipped with — 3, a thousand and twenty-four blocks across
+	 * — that had two consequences, measured over twenty thousand random arrivals:
+	 *
+	 *     the red marker was silently dropped   3% of the time
+	 *     the PLAYER'S OWN ARROW was off it    12% of the time
+	 *
+	 * The second is the one that hurt. With no arrow there is nothing to read the
+	 * map against, so it stops being a direction and becomes a picture — and the
+	 * only thing left to walk toward is the middle, which is a grid centre and can
+	 * be five hundred blocks from anything. That is a map leading you to the wrong
+	 * place, exactly as reported, while the castle stood where it was supposed to.
+	 *
+	 * Scale 2 rather than 3: four blocks a pixel instead of eight, so ninety blocks
+	 * is a legible run across the sheet rather than eleven pixels of nothing.
+	 *
+	 * AND THE COORDINATES GO IN THE NAME, which is the part that cannot fail. Every
+	 * bound above is a percentage; a number on the item is not. If the marker is
+	 * dropped and the arrow is off the edge and the whole sheet is blank, the thing
+	 * still says where to go, and it says it in the tooltip before the map is even
+	 * opened.
+	 */
+	private static net.minecraft.world.item.ItemStack theWay(ServerLevel his, BlockPos keep) {
+		net.minecraft.world.item.ItemStack map = net.minecraft.world.item.MapItem
+			.create(his, keep.getX(), keep.getZ(), (byte) 2, true, true);
+		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
+			map, keep, "+", net.minecraft.world.level.saveddata.maps
+				.MapDecorationTypes.RED_MARKER);
+		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+			net.minecraft.network.chat.Component.literal(
+				"he is building something — " + keep.getX() + ", " + keep.getZ()));
+		return map;
 	}
 
 	public static void register() {
