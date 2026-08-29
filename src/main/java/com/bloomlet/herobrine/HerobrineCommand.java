@@ -543,6 +543,41 @@ public final class HerobrineCommand {
 			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
 		ServerLevel level = (ServerLevel)player.level();
+
+		// IN HIS WORLD IT ANSWERS ABOUT HIS WORLD.
+		//
+		// Dwellings.report is the overworld trail — six buildings and a threshold —
+		// and running this on the far side of the way used to print all of it, none
+		// of which is over there. Somebody standing in the dimension asking where
+		// he is got a list of farmhouses.
+		//
+		// The two things worth knowing here are the only two things in the place:
+		// where the castle is, and whether he is on top of it. Both are cheap to
+		// ask and neither was reachable from any command.
+		if (level.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+			net.minecraft.core.BlockPos keep =
+				com.bloomlet.herobrine.structure.Keep.site(level);
+			boolean up = com.bloomlet.herobrine.structure.Keep.raised(level);
+			ctx.getSource().sendSuccess(() -> Component.literal(keep == null
+				? "the keep has not been sited yet — stay here a couple of seconds"
+				: "the keep " + (up ? "stands" : "will stand") + " at "
+					+ keep.getX() + " " + keep.getY() + " " + keep.getZ()
+					+ toward(player, keep)), false);
+
+			com.bloomlet.herobrine.entity.HerobrineEntity him =
+				com.bloomlet.herobrine.entity.HerobrineEntity.oneIn(level);
+			ctx.getSource().sendSuccess(() -> Component.literal(him == null
+				? "§8he is not loaded — he appears over the keep once it is sited"
+				: "he is at " + him.blockPosition().getX() + " "
+					+ him.blockPosition().getY() + " " + him.blockPosition().getZ()
+					+ toward(player, him.blockPosition())), false);
+			if (keep != null && !up) {
+				ctx.getSource().sendSuccess(() -> Component.literal(
+					"§8walk within 144 blocks of it and it goes up"), false);
+			}
+			return 1;
+		}
+
 		for (String line : Dwellings.report(level)) {
 			ctx.getSource().sendSuccess(() -> Component.literal(line), false);
 		}
@@ -550,6 +585,12 @@ public final class HerobrineCommand {
 			"§8sited near the players when their phase arrives; built at 192 blocks"),
 			false);
 		return 1;
+	}
+
+	/** Distance and bearing to a known position, for the things that have one. */
+	private static String toward(ServerPlayer player, net.minecraft.core.BlockPos pos) {
+		int distance = (int)Math.sqrt(pos.distSqr(player.blockPosition()));
+		return "  (" + distance + " blocks " + compass(player, pos) + ")";
 	}
 
 	private static String where(ServerPlayer player) {

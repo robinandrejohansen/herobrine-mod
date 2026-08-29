@@ -122,6 +122,7 @@ public final class Warren {
 			default -> 2;
 		};
 		int placed = 0;
+		List<BlockPos> passedOver = new ArrayList<>();
 		for (BlockPos end : ends) {
 			if (placed < roomsWanted && room(level, end)) {
 				Chambers.place(level, end, random.nextInt(Chambers.kinds()), random);
@@ -130,7 +131,44 @@ public final class Warren {
 			}
 			// Everything else simply stops, and stops the way a person stops:
 			// rubble at the foot of a rough face rather than a clean wall.
+			passedOver.add(end);
 			givingUp(level, end, random);
+		}
+
+		// AND IT IS NEVER ALLOWED TO BE ENTIRELY EMPTY.
+		//
+		// room() wants sixty-two per cent of a nine-by-eight-by-nine box to be
+		// untouched rock before it will carve a chamber, which is the right test
+		// for "is there room here" and a terrible one to have no answer for. Bore a
+		// warren through cavey ground and every single end fails it, placed stays
+		// at zero, and what the player walks down into is tunnels, rubble at every
+		// dead end, and a stack of marker blocks at each junction.
+		//
+		// Which is exactly what somebody reported: all the way down past the cells,
+		// and the room at the end of it is two blocks. That was the cairn. There
+		// was nothing else down there to find.
+		//
+		// The failure is silent and it is not rare — it depends entirely on what
+		// the terrain happened to do underneath, so it works perfectly in testing
+		// and produces a dead half-hour in somebody's world.
+		//
+		// So one is forced. Chambers.place carves its own space, so the rock test
+		// is a preference rather than a requirement — the worst it can do on a bad
+		// end is open a room into a cave, which is a strange room and not an empty
+		// warren. The deepest end gets it, because that is the one somebody who
+		// walked the whole thing has earned.
+		if (placed == 0 && !passedOver.isEmpty()) {
+			BlockPos deepest = passedOver.get(0);
+			for (BlockPos end : passedOver) {
+				if (end.getY() < deepest.getY()) {
+					deepest = end;
+				}
+			}
+			Chambers.place(level, deepest, random.nextInt(Chambers.kinds()), random);
+			placed++;
+			HerobrineMod.LOGGER.info(
+				"no end had rock enough for a chamber — one forced at [{}, {}, {}]",
+				deepest.getX(), deepest.getY(), deepest.getZ());
 		}
 
 		for (BlockPos junction : junctions) {
@@ -173,18 +211,30 @@ public final class Warren {
 		if (floor == null) {
 			return;
 		}
-		int height = 2 + random.nextInt(3);
-		for (int up = 1; up <= height; up++) {
-			BlockPos pos = floor.above(up);
-			if (!level.getBlockState(pos).isAir()) {
-				return;
+		// THE WHOLE COLUMN IS CHECKED BEFORE ANY OF IT IS BUILT.
+		//
+		// This used to set blocks as it went and return the moment it met one that
+		// was not air — which leaves a HALF cairn: one or two stones, no chiselled
+		// cap, and the lantern skipped because the loop never reached it. An unlit
+		// stump of two blocks at a junction, in a place whose one navigational aid
+		// is that no two markers are the same height.
+		//
+		// Three or four, never two, because the doc above has always said three or
+		// four and the code has always been able to roll two — and a two-high cairn
+		// with a lantern is indistinguishable from the broken one.
+		int height = 3 + random.nextInt(2);
+		for (int up = 1; up <= height + 1; up++) {
+			if (!level.getBlockState(floor.above(up)).isAir()) {
+				return;      // not enough headroom. build nothing rather than half.
 			}
-			level.setBlock(pos, up == height
+		}
+		for (int up = 1; up <= height; up++) {
+			level.setBlock(floor.above(up), up == height
 				? Blocks.CHISELED_STONE_BRICKS.defaultBlockState()
 				: stack(random), 2);
 		}
 		// FAILING gets no lights, which is most of what makes it feel failing.
-		if (manner != Manner.FAILING && level.getBlockState(floor.above(height + 1)).isAir()) {
+		if (manner != Manner.FAILING) {
 			level.setBlock(floor.above(height + 1), Blocks.LANTERN.defaultBlockState(), 2);
 		}
 	}

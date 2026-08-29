@@ -86,6 +86,16 @@ public final class Keep {
 	private static final int FAR = 100;
 	/** Built when somebody is this close. Inside a default simulation radius. */
 	private static final int RAISE_RANGE = 144;
+	/**
+	 * How far a stored site's height may be from the ground before it is a lie.
+	 *
+	 * pick() and highest() both take their Y straight off Ground.topOf at the
+	 * position they return, so a site chosen correctly agrees exactly. Twelve is
+	 * slack for nothing in particular — it only has to be small enough to catch a
+	 * site carrying a player's arrival altitude, which is out by tens of blocks or
+	 * it would not have been noticed.
+	 */
+	private static final int SLIPPED = 12;
 	private static final int CHECK_INTERVAL = 40;
 
 	// ---- THE SHELL, AND IT IS MEANT TO BE TOO BIG ---------------------------
@@ -147,6 +157,11 @@ public final class Keep {
 	 * from the landing still has weather in it — which is where the player spends
 	 * the most time looking at this dimension.
 	 */
+	/** Whether the castle is actually standing, as opposed to merely chosen. */
+	public static boolean raised(ServerLevel his) {
+		return Boolean.TRUE.equals(his.getAttached(RAISED));
+	}
+
 	public static int reach() {
 		return WALL + HisCity.REACH + 24;
 	}
@@ -253,6 +268,30 @@ public final class Keep {
 		}
 
 		BlockPos site = BlockPos.of(chosen);
+
+		// AND A SITE FROM THE BROKEN VERSION IS THROWN AWAY.
+		//
+		// SITE is written once and never re-rolled, so a world that chose its
+		// bearing before pick() generated its candidates is stuck with a height
+		// that was never a fact about the ground — it was whatever Y the first
+		// person happened to be standing at when they stepped out of the portal.
+		// No amount of correctness from here on moves it, and the symptom is both
+		// the castle AND him missing, because overTheKeep hangs off this same Y.
+		//
+		// Same shape as the repair in Whereabouts.overTheKeep: ask the cheap
+		// question once a couple of seconds and fix it the first time somebody is
+		// over there. Only ever runs before RAISED — a keep already standing is
+		// never moved, whatever its Y says.
+		his.getChunk(site.getX() >> 4, site.getZ() >> 4);
+		int ground = Ground.topOf(his, site.getX(), site.getZ());
+		if (Math.abs(site.getY() - ground) > SLIPPED) {
+			his.setAttached(SITE, null);
+			HerobrineMod.LOGGER.warn(
+				"the keep was sited at Y {} where the ground is {} — forgetting it,"
+					+ " it will be chosen again", site.getY(), ground);
+			return;
+		}
+
 		for (ServerPlayer player : his.players()) {
 			if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
 				raise(his, site);
@@ -297,9 +336,20 @@ public final class Keep {
 			if (fallback == null) {
 				fallback = at;
 			}
-			if (!his.isLoaded(at.atY(his.getSeaLevel()))) {
-				continue;
-			}
+			// GENERATED, NOT SKIPPED, and this is the whole bug.
+			//
+			// It used to skip any bearing that was not already loaded — and this
+			// runs on the FIRST tick anybody stands in the dimension, at eighty to
+			// a hundred blocks out, while the chunks around a fresh portal are
+			// still catching up. So all sixteen bearings skipped, every time,
+			// and it fell through to the fallback.
+			//
+			// The fallback is an unchecked bearing carrying from.getY() — THE
+			// PLAYER'S OWN Y. And SITE is written once and never re-rolled, so that
+			// wrong height is permanent for the life of the world. The castle goes
+			// somewhere nobody can reach and overTheKeep puts him at siteY + 24,
+			// which is inside the rock. Both of them missing, from one line.
+			his.getChunk(x >> 4, z >> 4);
 			if (Ground.dry(his, x, z)) {
 				return highest(his, at);
 			}
@@ -310,7 +360,16 @@ public final class Keep {
 		// fires in practice the answer is a wider search rather than a shrug.
 		HerobrineMod.LOGGER.warn("no dry ground for the keep within {}–{} of [{}, {}]",
 			NEAR, FAR, from.getX(), from.getZ());
-		return fallback == null ? from : fallback;
+		// AND EVEN THE GIVING-UP ANSWER GETS ITS HEIGHT OFF THE GROUND.
+		//
+		// It used to hand back a position still carrying the player's Y, which is
+		// the height somebody happened to be standing at when they stepped out of a
+		// portal. That is not a fact about the world. Feet in the water is an
+		// acceptable castle; a castle at the arrival's altitude is not a castle.
+		BlockPos wet = fallback == null ? from : fallback;
+		his.getChunk(wet.getX() >> 4, wet.getZ() >> 4);
+		return new BlockPos(wet.getX(),
+			Ground.topOf(his, wet.getX(), wet.getZ()), wet.getZ());
 	}
 
 	/**
@@ -342,8 +401,11 @@ public final class Keep {
 		for (int dx = -24; dx <= 24; dx += 12) {
 			for (int dz = -24; dz <= 24; dz += 12) {
 				BlockPos at = around.offset(dx, 0, dz);
-				if (!his.isLoaded(at.atY(his.getSeaLevel()))
-					|| !Ground.dry(his, at.getX(), at.getZ())) {
+				// Same again: skipping unloaded samples here left `best` as the
+				// centre it was handed, Y and all, which is how the player's height
+				// survived even when pick() found dry land.
+				his.getChunk(at.getX() >> 4, at.getZ() >> 4);
+				if (!Ground.dry(his, at.getX(), at.getZ())) {
 					continue;
 				}
 				int y = Ground.topOf(his, at.getX(), at.getZ());
@@ -353,7 +415,13 @@ public final class Keep {
 				}
 			}
 		}
-		return best;
+		// AND THE Y COMES BACK OFF THE GROUND, never off whatever was passed in.
+		// If every sample was wet, `best` is still the centre — which used to mean
+		// the caller's Y went straight through untouched.
+		return top == Integer.MIN_VALUE
+			? new BlockPos(best.getX(),
+				Ground.topOf(his, best.getX(), best.getZ()), best.getZ())
+			: best.atY(top);
 	}
 
 	// ---- THE BUILD ---------------------------------------------------------
