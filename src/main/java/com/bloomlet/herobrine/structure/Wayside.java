@@ -91,7 +91,7 @@ public final class Wayside {
 				+ random.nextInt(WANDERS * 2) - WANDERS;
 			int z = (int) Math.round(from.getZ() + (to.getZ() - from.getZ()) * along)
 				+ random.nextInt(WANDERS * 2) - WANDERS;
-			final int kind = random.nextInt(6);
+			final int kind = random.nextInt(8);
 			final long seed = random.nextLong();
 			Cadence.in(server, i + 1, () -> scene(level, x, z, kind, seed, to));
 			placed++;
@@ -125,6 +125,14 @@ public final class Wayside {
 			case 2 -> cart(level, at, way, random);
 			case 3 -> burnt(level, at, random);
 			case 4 -> dragged(level, at, way, random);
+			// The adit needs a hillside and there is not always one. When there is
+			// not, it falls back rather than carving a tunnel into flat grass and
+			// leaving a hole in a field.
+			case 5, 6 -> {
+				if (!adit(level, at, random)) {
+					cairn(level, at, way, random);
+				}
+			}
 			default -> cairn(level, at, way, random);
 		}
 	}
@@ -308,6 +316,144 @@ public final class Wayside {
 		level.setBlock(board, Blocks.OAK_FENCE.defaultBlockState(), 2);
 		writ(level, board.above(), new String[] {
 			"KEEP GOING", "", "DO NOT SLEEP", "ON THIS ROAD" });
+	}
+
+	/** How far into the rock, and how much light. */
+	private static final int BORE_MIN = 11;
+	private static final int BORE_SPREAD = 13;
+	private static final int TORCH_EVERY = 5;
+	/** The rise that counts as a hillside worth driving into. */
+	private static final int A_FACE = 5;
+
+	/**
+	 * A HOLE SOMEBODY DUG AND THEN LIVED IN.
+	 *
+	 * Two by two, driven straight into a hillside, torched the whole way, and a
+	 * room at the end with a bed in it. Which is the most ordinary thing in
+	 * Minecraft and that is exactly why it belongs out here: every player has done
+	 * this. Found a slope at dusk, cut in two blocks, put a torch down and slept.
+	 *
+	 * Finding somebody ELSE's is the whole scene. The tunnel is competent, the
+	 * torches are still burning, the bed is still made — and whoever cut it is not
+	 * in it and did not take the pickaxe. A player recognises the shape of their
+	 * own panic from a hundred first nights, and then has to decide what it means
+	 * that this one was left.
+	 *
+	 * It is also the one thing on the road that is genuinely USEFUL rather than
+	 * only atmospheric: light, a bed, a chest, and a roof, halfway down a
+	 * six-hundred-block walk. The trail asks for a lot of travelling and has never
+	 * given anywhere to stop.
+	 *
+	 * @return false if there is no hillside here to drive into
+	 */
+	private static boolean adit(ServerLevel level, BlockPos mouth, RandomSource random) {
+		// UPHILL, and measured rather than guessed. Eight bearings, and the one
+		// that climbs most is the face — a tunnel bored into flat ground is a
+		// trench, and one bored downhill fills with whatever is above it.
+		Direction into = null;
+		int best = A_FACE;
+		for (Direction way : Direction.Plane.HORIZONTAL) {
+			int there = Ground.topOf(level,
+				mouth.getX() + way.getStepX() * 8, mouth.getZ() + way.getStepZ() * 8);
+			int rise = there - mouth.getY();
+			if (rise > best) {
+				best = rise;
+				into = way;
+			}
+		}
+		if (into == null) {
+			return false;
+		}
+
+		Direction across = into.getClockWise();
+		int deep = BORE_MIN + random.nextInt(BORE_SPREAD);
+		BlockPos head = mouth;
+		int cut = 0;
+
+		for (int d = 0; d < deep; d++) {
+			BlockPos step = mouth.relative(into, d);
+			// It follows the hill up, a course at a time, so the floor stays under
+			// the player instead of the ceiling coming down to meet them.
+			int floor = Ground.topOf(level, step.getX(), step.getZ());
+			int y = Math.min(step.getY() + d / 4, floor);
+			step = new BlockPos(step.getX(), Math.max(y, mouth.getY() - 2), step.getZ());
+
+			boolean rock = false;
+			for (int w = 0; w <= 1; w++) {
+				for (int up = 0; up <= 1; up++) {
+					BlockPos on = step.relative(across, w).above(up);
+					if (level.getBlockState(on).isSolid()) {
+						rock = true;
+					}
+					level.setBlock(on, Blocks.CAVE_AIR.defaultBlockState(), 2);
+				}
+				// A floor under it, because a bore that opens into a cave leaves the
+				// player standing on nothing.
+				BlockPos under = step.relative(across, w).below();
+				if (!level.getBlockState(under).isSolid()) {
+					level.setBlock(under, Blocks.COBBLESTONE.defaultBlockState(), 2);
+				}
+			}
+			if (!rock && d > 3) {
+				break;      // broken out the far side or into a cave. stop here.
+			}
+			if (d % TORCH_EVERY == TORCH_EVERY - 1) {
+				level.setBlock(step.above(), Blocks.WALL_TORCH.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING, into), 2);
+			}
+			head = step;
+			cut = d;
+		}
+		if (cut < 5) {
+			return false;      // it hit something immediately. not a tunnel.
+		}
+
+		// ---- THE ROOM AT THE END, and somebody's whole life in it.
+		for (int f = -1; f <= 2; f++) {
+			for (int w = -1; w <= 2; w++) {
+				for (int up = 0; up <= 2; up++) {
+					level.setBlock(head.relative(into, f).relative(across, w).above(up),
+						Blocks.CAVE_AIR.defaultBlockState(), 2);
+				}
+				BlockPos under = head.relative(into, f).relative(across, w).below();
+				if (!level.getBlockState(under).isSolid()) {
+					level.setBlock(under, Blocks.COBBLESTONE.defaultBlockState(), 2);
+				}
+			}
+		}
+		BlockPos far = head.relative(into, 2);
+		level.setBlock(far.above(2), Blocks.LANTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HANGING, true), 2);
+
+		// The bed, still made, along the back wall.
+		BlockState bed = Blocks.BED.pick(net.minecraft.world.item.DyeColor.RED)
+			.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, into);
+		BlockPos foot = head.relative(across, -1);
+		level.setBlock(foot, bed.setValue(BlockStateProperties.BED_PART,
+			net.minecraft.world.level.block.state.properties.BedPart.FOOT), 2);
+		level.setBlock(foot.relative(into), bed.setValue(BlockStateProperties.BED_PART,
+			net.minecraft.world.level.block.state.properties.BedPart.HEAD), 2);
+
+		level.setBlock(head.relative(across, 2), Blocks.CRAFTING_TABLE.defaultBlockState(), 2);
+		level.setBlock(head.relative(across, 2).relative(into),
+			Blocks.FURNACE.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, into.getOpposite()), 2);
+
+		BlockPos box = far.relative(across, 1);
+		level.setBlock(box, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, into.getOpposite()), 2);
+		if (level.getBlockEntity(box) instanceof ChestBlockEntity chest) {
+			// The pickaxe he did not take, and enough to get somebody through a
+			// night: light, food, and something to dig with.
+			chest.setItem(0, new ItemStack(Items.STONE_PICKAXE));
+			chest.setItem(1, new ItemStack(Items.TORCH, 24));
+			chest.setItem(2, new ItemStack(Items.BREAD, 5 + random.nextInt(6)));
+			Loot.scatter(chest, random, Loot.Tier.HOMESTEAD);
+		}
+		HerobrineMod.LOGGER.info("a working {} blocks into the hill at [{}, {}, {}]",
+			cut, mouth.getX(), mouth.getY(), mouth.getZ());
+		return true;
 	}
 
 	// ---- THE MECHANICS -----------------------------------------------------
