@@ -133,6 +133,8 @@ public final class Township {
 			}
 		}
 
+		footpaths(level, centre, plots, random);
+		commons(level, centre, random);
 		populate(level, centre, plots, random);
 
 		HerobrineMod.LOGGER.info("township laid out at [{}, {}, {}], gate facing {}, {} plots",
@@ -163,6 +165,84 @@ public final class Township {
 	 * place, the people in it are just people — which is what gives the nine
 	 * more of them living forty blocks underneath somewhere to be strange.
 	 */
+	/**
+	 * A WORN LINE FROM EVERY DOOR TO THE NEAREST LANE.
+	 *
+	 * The town has three or four lanes running from the square to the wall, and
+	 * every house is placed square to one of them — and then nothing joins the two.
+	 * A player walks off a paved lane onto untouched grass, crosses eight blocks of
+	 * it, and arrives at somebody's front step. Which is what makes the place read
+	 * as buildings ON a field rather than a settlement: a town is not its houses,
+	 * it is the ground people wore out walking between them.
+	 *
+	 * Grounds.track already lays exactly this — a smoothstep wander with mossy
+	 * treads where it climbs — and it was written for the homestead and never asked
+	 * anywhere else. The lane is found by walking straight back toward the middle
+	 * until the paving starts, so the path meets the street at the point that
+	 * doorway actually faces.
+	 */
+	private static void footpaths(ServerLevel level, BlockPos centre, List<Plot> plots,
+	                              RandomSource random) {
+		int laid = 0;
+		for (Plot plot : plots) {
+			// The doorstep: one step out from the middle of the plot's front.
+			Direction out = plot.facing();
+			BlockPos door = plot.corner()
+				.offset(plot.width() / 2, 0, plot.depth() / 2)
+				.relative(out, Math.max(plot.width(), plot.depth()) / 2 + 1);
+			BlockPos step = new BlockPos(door.getX(),
+				Ground.topOf(level, door.getX(), door.getZ()), door.getZ());
+
+			// Walk toward the middle of the town until the ground is already paved.
+			// That is the lane, wherever it happens to have drifted to.
+			BlockPos join = null;
+			double dx = centre.getX() - step.getX();
+			double dz = centre.getZ() - step.getZ();
+			double span = Math.hypot(dx, dz);
+			if (span < 3.0) {
+				continue;
+			}
+			for (int d = 2; d <= (int) span; d++) {
+				int x = step.getX() + (int) Math.round(dx / span * d);
+				int z = step.getZ() + (int) Math.round(dz / span * d);
+				BlockPos on = new BlockPos(x, Ground.topOf(level, x, z), z);
+				if (level.getBlockState(on).is(net.minecraft.tags.BlockTags.STONE_BRICKS)
+					|| level.getBlockState(on).is(Blocks.GRAVEL)
+					|| level.getBlockState(on).is(Blocks.COBBLESTONE)
+					|| level.getBlockState(on).is(Blocks.MOSSY_COBBLESTONE)) {
+					join = on;
+					break;
+				}
+			}
+			if (join == null) {
+				continue;      // no lane between it and the middle. leave it.
+			}
+			if (com.bloomlet.herobrine.structure.Grounds.track(level, step, join, random)) {
+				laid++;
+			}
+		}
+		HerobrineMod.LOGGER.info("{} footpaths worn between the doors and the lanes", laid);
+	}
+
+	/**
+	 * THE GROUND BETWEEN THE BUILDINGS, which was flat grass and nothing.
+	 *
+	 * Everything inside the wall is either a plot, a lane or a square, and what is
+	 * left over is the majority of the enclosure — several thousand blocks of
+	 * untouched turf. Open, flat and dull was the note, and it was fair: a town is
+	 * mostly the bits that are not buildings, and those bits had never been touched
+	 * by anything.
+	 *
+	 * Grounds.dress scatters the same rough growth the homestead's yard uses —
+	 * podzol, coarse dirt, grass, the odd stone. Thinned out with distance so it
+	 * gathers at the edges and along the wall rather than covering the middle,
+	 * because the middle is where people walked and the edges are where nobody did.
+	 */
+	private static void commons(ServerLevel level, BlockPos centre, RandomSource random) {
+		com.bloomlet.herobrine.structure.Grounds.dress(level, centre,
+			SQUARE + 3, WALL_RADIUS - 1, random);
+	}
+
 	private static void populate(ServerLevel level, BlockPos centre, List<Plot> plots,
 	                             RandomSource random) {
 		for (Plot plot : plots) {

@@ -605,6 +605,31 @@ public final class Cottage {
 		int reach = facing.getAxis() == Direction.Axis.X ? w : d;
 		Direction across = facing.getClockWise();
 
+		// ---- THE DOORWAY IS CUT AT THE DOOR'S HEIGHT, BEFORE ANYTHING ELSE.
+		//
+		// Reported as "the doors to the houses are often blocked", and it is this.
+		// The path below lays itself on whatever Ground.topOf says at each column
+		// and clears ONE block over it — but the door is two tall and it sits at the
+		// house's floor level, not the hillside's. Put a cottage against any slope
+		// and the ground outside comes up past the door's waist: the lower half is
+		// dug out by the path, the upper half is still hillside, and the front door
+		// opens onto a wall of dirt.
+		//
+		// So the first three blocks out are cut square to the DOOR — two high, three
+		// wide, with a floor laid under them — regardless of what the terrain was
+		// doing. A house whose door does not open is not a house.
+		BlockPos sill = base.relative(facing, reach).above();
+		for (int out = 0; out <= 3; out++) {
+			for (int side = -1; side <= 1; side++) {
+				BlockPos on = sill.relative(facing, out).relative(across, side);
+				clear(level, on);
+				clear(level, on.above());
+				if (!level.getBlockState(on.below()).isSolid()) {
+					put(level, on.below(), Blocks.DIRT_PATH.defaultBlockState());
+				}
+			}
+		}
+
 		// The track from the door, three wide, running out until it has gone far
 		// enough to have met the street.
 		for (int out = 1; out <= 9; out++) {
@@ -629,7 +654,11 @@ public final class Cottage {
 				put(level, on, random.nextInt(7) == 0
 					? Blocks.COARSE_DIRT.defaultBlockState()
 					: Blocks.DIRT_PATH.defaultBlockState());
+				// TWO, NOT ONE. A path a player cannot walk down without ducking is
+				// a trench, and one block of headroom over a rising track leaves the
+				// second block of every doorway and every step still in the hill.
 				clear(level, on.above());
+				clear(level, on.above(2));
 			}
 		}
 

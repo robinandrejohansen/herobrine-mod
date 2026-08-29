@@ -8,12 +8,12 @@ Robin's words, grouped. Nothing here is ordered by priority.
 
 ---
 
-## 1 — The town, the second house, and the church
+## 1 — The town, the second house, and the church  ✅ done
 
 **The town and house two**
-- More paths INSIDE the town
-- More natural formations in the surroundings
-- More built into the outside generally, so it is not open, flat and dull
+- [x] More paths INSIDE the town
+- [x] More natural formations in the surroundings
+- [x] More built into the outside generally, so it is not open, flat and dull
 
 **Glass, everywhere**
 - [x] The church needs glass BLOCKS, not panes
@@ -70,7 +70,7 @@ loot, NO MAP. Dead end.
 
 The chain breaks at link three.
 
-## 7 — The tower does not make sense
+## 7 — The tower does not make sense  ✅ done
 
 It ends with a platform off some railway, a stair up, and then a stair toward
 the sky. Robin's question was literally "stemmer dette?" — is that right?
@@ -78,14 +78,14 @@ the sky. Robin's question was literally "stemmer dette?" — is that right?
 Wants a bigger, coherent design: a building whose shape says what it was for
 and why it is here, fitted to what the story has already said.
 
-## 8 — The dimension houses, and the Turned  ✅ the Turned done; jammed doors still open
+## 8 — The dimension houses, and the Turned  ✅ done
 
-- The doors are often blocked
+- [x] The doors are often blocked
 - When aggressive the Turned should break glass, chop through iron doors and
   open ordinary ones
 - And a little more health
 
-## 9 — Where the map to the keep lives
+## 9 — Where the map to the keep lives  ✅ done
 
 - The keep should site a good way further from the city
 - The map goes in one of the chests IN the city
