@@ -253,7 +253,7 @@ public final class Lodge {
 			// to reach for and renders as a thin post in the middle of a hole —
 			// so every shuttered window is two panes wide, and the pair reads
 			// as glass because it is connected to itself.
-			case 'g' -> put(level, at, Blocks.GLASS_PANE.defaultBlockState());
+			case 'g' -> put(level, at, Blocks.GLASS.defaultBlockState());
 			case 'D' -> door(level, at, facing);
 			case 'd' -> bed(level, at, facing, random);
 			case 'C' -> chest(level, at, facing, random, Loot.Tier.TOWN_HOME);

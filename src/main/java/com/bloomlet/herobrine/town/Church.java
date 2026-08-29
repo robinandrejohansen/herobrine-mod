@@ -198,37 +198,51 @@ public final class Church {
 		"                   ",
 	};
 
+	/**
+	 * THE COURSE UNDER THE ROOF, AND IT IS A RING NOW RATHER THAN A LID.
+	 *
+	 * This was solid W across the whole footprint — a stone ceiling at head height
+	 * with the entire pitched roof sitting on top of it, unseen. Which made the
+	 * comment on roof() a lie: it says the nave runs twenty blocks from floor to
+	 * ridge so that a player cannot see the top of the room without looking up,
+	 * and there was a slab in the way at five.
+	 *
+	 * Hollow, so the nave opens all the way to the ridge and the roof becomes part
+	 * of the room. The perimeter stays, because it is still a wall course and
+	 * taking it out would leave a gap between the crown and the eaves. The two end
+	 * rows stay solid as well: they are what the gables are built up from.
+	 */
 	private static final String[] EAVES = {
 		"                   ",
 		" WWWWWWWWWWWWWWWWW ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
+		" W               W ",
 		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" WWWWWWWWWWWWWWWWW ",
-		" LWWWWWWWWWWWWWWWL ",
-		"                   ",
-		"                   ",
-		"                   ",
 		"                   ",
 	};
 
@@ -292,7 +306,87 @@ public final class Church {
 		}
 		roof(level, corner, facing);
 		tower(level, corner, facing, random);
+		altar(level, corner, facing, random);
 		return true;
+	}
+
+	/**
+	 * The altar, built in world coordinates rather than out of blueprint glyphs.
+	 *
+	 * The chancel was three chiselled blocks in a row with a single dark block
+	 * behind them, which is a shelf. Everything that makes an altar an altar —
+	 * height, a step up to it, light on it, something left on it — needs blocks at
+	 * several Y at once, and a layer-by-layer blueprint can only say one thing per
+	 * column. So this is drawn by hand.
+	 *
+	 * THE CANDLES ON THE TABLE ARE LIT AND THE ONES ON THE WALL ARE NOT. Four
+	 * standing candles nobody snuffed, in a building nobody has been inside for a
+	 * year, in a town that is living underneath itself. It is the only warm light
+	 * in the settlement and there is no one to have put it there.
+	 */
+	private static void altar(ServerLevel level, BlockPos corner, Direction facing,
+	                          RandomSource random) {
+		for (int x = 7; x <= 11; x++) {
+			for (int z = 2; z <= 4; z++) {
+				boolean table = x >= 8 && x <= 10 && z == 3;
+				boolean step = z == 4;
+				BlockPos at = corner.offset(
+					Blueprint.spinX(x, z, WIDTH, DEPTH, facing), 1,
+					Blueprint.spinZ(x, z, WIDTH, DEPTH, facing));
+				if (table) {
+					Blueprint.put(level, at, Blocks.CHISELED_DEEPSLATE.defaultBlockState());
+				} else if (step) {
+					// A course of polished stone the width of the chancel, so the
+					// altar is stood ON something rather than set on the floor.
+					Blueprint.put(level, at,
+						Blocks.POLISHED_DEEPSLATE_SLAB.defaultBlockState());
+				}
+			}
+		}
+
+		// The table top, and the candles standing on it.
+		for (int x = 8; x <= 10; x++) {
+			BlockPos top = corner.offset(
+				Blueprint.spinX(x, 3, WIDTH, DEPTH, facing), 2,
+				Blueprint.spinZ(x, 3, WIDTH, DEPTH, facing));
+			Blueprint.put(level, top, Blocks.DEEPSLATE_TILE_SLAB.defaultBlockState());
+		}
+		for (int x : new int[] { 8, 10 }) {
+			BlockPos on = corner.offset(
+				Blueprint.spinX(x, 3, WIDTH, DEPTH, facing), 3,
+				Blueprint.spinZ(x, 3, WIDTH, DEPTH, facing));
+			Blueprint.put(level, on, Blocks.CANDLE
+				.defaultBlockState()
+				.setValue(BlockStateProperties.CANDLES, 2 + random.nextInt(2))
+				.setValue(BlockStateProperties.LIT, true));
+		}
+
+		// Two more standing on the floor either side, taller, unlit.
+		for (int x : new int[] { 6, 12 }) {
+			BlockPos foot = corner.offset(
+				Blueprint.spinX(x, 3, WIDTH, DEPTH, facing), 1,
+				Blueprint.spinZ(x, 3, WIDTH, DEPTH, facing));
+			Blueprint.put(level, foot, Blocks.POLISHED_DEEPSLATE.defaultBlockState());
+			Blueprint.put(level, foot.above(), Blocks.CANDLE.defaultBlockState()
+				.setValue(BlockStateProperties.CANDLES, 4)
+				.setValue(BlockStateProperties.LIT, false));
+		}
+
+		// AND WHAT THEY LEFT ON IT. The town's church is the last thing anybody
+		// organised, so what is in here is what a settlement takes when it is
+		// deciding whether to go underground and not coming back for the rest.
+		BlockPos box = corner.offset(
+			Blueprint.spinX(9, 5, WIDTH, DEPTH, facing), 1,
+			Blueprint.spinZ(9, 5, WIDTH, DEPTH, facing));
+		Blueprint.put(level, box, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING,
+				Blueprint.turned(Direction.SOUTH, facing)));
+		if (level.getBlockEntity(box)
+				instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+			chest.setItem(0, com.bloomlet.herobrine.structure.HouseBooks.theTown());
+			com.bloomlet.herobrine.structure.Loot.scatter(chest, random,
+				com.bloomlet.herobrine.structure.Loot.Tier.TOWN_TOOLS);
+		}
 	}
 
 	/** The stair behind the altar, in world coordinates, for the undercity. */
@@ -309,7 +403,7 @@ public final class Church {
 			case 'W' -> Blueprint.put(level, at, stone(random));
 			case 'L' -> Blueprint.put(level, at, Blocks.CHISELED_STONE_BRICKS.defaultBlockState());
 			// Tall coloured windows, the only real colour in the town.
-			case 'g' -> Blueprint.put(level, at, Blocks.STAINED_GLASS_PANE
+			case 'g' -> Blueprint.put(level, at, Blocks.STAINED_GLASS
 				.pick(glass(random)).defaultBlockState());
 			case 'D' -> door(level, at, facing);
 			// Pews. They face the altar, which is toward map-north here.
@@ -321,8 +415,11 @@ public final class Church {
 			// stone building and the only colour the town could actually make
 			// itself, which is why the church has wool where a richer one would
 			// have had paint.
-			case 'm' -> Blueprint.put(level, at, Blocks.WOOL.pick(cloth(random))
-				.defaultBlockState());
+			// THE WOOL IS GONE. It hung between the windows as the one warm thing in
+			// a stone building — and in a room full of spruce-stair pews it read as
+			// upholstery, as though somebody had put cushions on the chairs. A
+			// church the town abandoned in a hurry does not have soft furnishings.
+			case 'm' -> { }
 			// The reredos: a wall of candles behind the altar, all unlit.
 			case 'V' -> Blueprint.put(level, at, Blocks.CHISELED_DEEPSLATE.defaultBlockState());
 			case 'k' -> Blueprint.put(level, at, Blocks.LANTERN.defaultBlockState()
@@ -357,6 +454,22 @@ public final class Church {
 					Blueprint.put(level, at, step == 8
 						? Blocks.DARK_OAK_PLANKS.defaultBlockState()
 						: roofing(step));
+					// AND THE STEP UNDER IT, WHICH IS WHAT SHUTS THE ROOF.
+					//
+					// One block per course per side draws the pitch as a diagonal
+					// line of blocks meeting corner to corner — and a diagonal line
+					// of cubes is not a surface. Every joint is an open corner: you
+					// could stand in the nave and see daylight through the slope,
+					// and rain and snow came through with it.
+					//
+					// A second block directly beneath turns each course into an L,
+					// the corners close on each other, and the pitch becomes solid
+					// without changing its angle or its silhouette by a pixel.
+					if (step > 0) {
+						Blueprint.put(level, corner.offset(
+							Blueprint.spinX(x, z, WIDTH, DEPTH, facing), 5 + step,
+							Blueprint.spinZ(x, z, WIDTH, DEPTH, facing)), roofing(step));
+					}
 				}
 			}
 			// AND THE GABLE ENDS GET CLOSED, which they never were.

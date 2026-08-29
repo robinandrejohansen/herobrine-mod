@@ -426,6 +426,25 @@ public final class Township {
 			fill(level, centre.offset(side, 2, 0), Blocks.SPRUCE_FENCE.defaultBlockState());
 		}
 		fill(level, centre.above(3), Blocks.SPRUCE_SLAB.defaultBlockState());
+
+		// AND THE CHAPTER THAT SENDS THEM DOWN GOES ON THE RIM OF THE WELL.
+		//
+		// The town's half of the story lived entirely in the undercity, which is a
+		// chapter you can only read once you have solved the thing it was written to
+		// explain. Somebody who never found the way down never learned there was a
+		// way down, and the whole settlement read as another ruin.
+		//
+		// A lectern on the well, in the open, in the middle of the square. It is the
+		// first thing anybody walks to.
+		BlockPos desk = centre.offset(0, 1, 2);
+		fill(level, desk, Blocks.LECTERN.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.state.properties
+				.BlockStateProperties.HORIZONTAL_FACING,
+				net.minecraft.core.Direction.SOUTH));
+		if (level.getBlockEntity(desk)
+				instanceof net.minecraft.world.level.block.entity.LecternBlockEntity read) {
+			read.setBook(com.bloomlet.herobrine.structure.HouseBooks.theTown());
+		}
 		for (int side = -1; side <= 1; side += 2) {
 			fill(level, centre.offset(side, 3, 0), Blocks.SPRUCE_SLAB.defaultBlockState());
 		}

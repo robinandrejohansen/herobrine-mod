@@ -194,7 +194,7 @@ public final class Hall {
 			case 'L' -> put(level, at, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
 				.setValue(BlockStateProperties.AXIS, Direction.Axis.Y));
 			case 'H' -> put(level, at, Blocks.STRIPPED_SPRUCE_WOOD.defaultBlockState());
-			case 'g' -> put(level, at, Blocks.GLASS_PANE.defaultBlockState());
+			case 'g' -> put(level, at, Blocks.GLASS.defaultBlockState());
 			case 'b' -> put(level, at, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing)
 				.setValue(BlockStateProperties.OPEN, true)

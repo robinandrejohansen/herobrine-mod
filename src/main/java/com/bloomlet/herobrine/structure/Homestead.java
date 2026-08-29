@@ -389,7 +389,7 @@ public final class Homestead {
 			case '*' -> set(level, pos, Blocks.PODZOL.defaultBlockState());
 			case 'f' -> set(level, pos, Blocks.SPRUCE_FENCE.defaultBlockState());
 			case 'G' -> set(level, pos, Blocks.SPRUCE_FENCE_GATE.defaultBlockState());
-			case 'g' -> set(level, pos, Blocks.GLASS_PANE.defaultBlockState());
+			case 'g' -> set(level, pos, Blocks.GLASS.defaultBlockState());
 			case 'b' -> set(level, pos, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
 				.setValue(BlockStateProperties.HALF, Half.BOTTOM));
 			case 'D' -> door(level, pos, layer);
@@ -713,14 +713,14 @@ public final class Homestead {
 
 		// WINDOWS, and shutters on the ones that still have them.
 		for (int z : new int[] { WING_Z0 + 2, WING_Z1 - 2 }) {
-			hole(level, origin.offset(WING_X1, 2, z), Blocks.GLASS_PANE.defaultBlockState());
+			hole(level, origin.offset(WING_X1, 2, z), Blocks.GLASS.defaultBlockState());
 			set(level, origin.offset(WING_X1 + 1, 2, z),
 				Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
 					.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
 					.setValue(BlockStateProperties.OPEN, true));
 		}
 		hole(level, origin.offset(WING_X0 + 3, 2, WING_Z0),
-			Blocks.GLASS_PANE.defaultBlockState());
+			Blocks.GLASS.defaultBlockState());
 
 		// THE DOOR THROUGH WHAT USED TO BE AN OUTSIDE WALL.
 		for (int y = 1; y <= 2; y++) {

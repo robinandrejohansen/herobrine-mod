@@ -221,24 +221,57 @@ public final class Dwellings {
 			// bearing rather than optional. You cannot follow the chain past the
 			// town without finding the people under it.
 			case TOWN -> inTheLibrary(over, anchor);
+			// AND THE TOWER'S GOES IN THE CELLAR, WITH THE BOOK THAT SENDS YOU ON.
+			//
+			// THIS IS WHERE THE STORY STOPPED. The default below is "nearest chest
+			// within twenty-four blocks of the site", and the tower's only chest is
+			// fourteen down a stair whose landing wanders several blocks sideways —
+			// so the one container in the building sat right on the edge of that
+			// cube and sometimes outside it. When it fell outside, leaveTheWay found
+			// nothing, logged one line nobody was reading, and the chain simply
+			// ended: cellar, tunnel, deep hole, no map, no next place.
+			//
+			// Aimed at the cellar now rather than at the doorstep. And it is the
+			// right chest for it on its own merits — HouseBooks.buried is in there,
+			// and that book's last line is go to the gaol on the ridge. The
+			// direction and the means to follow it end up in the same box.
+			case TOWER -> inTheCellar(over, anchor);
 			default -> nearestHolder(over, anchor);
 		};
 		if (holder == null) {
-			HerobrineMod.LOGGER.info("nowhere in the {} to leave the way to the {}",
+			// WARN, NOT INFO. This line IS the chain breaking — the next place has
+			// been sited and there is now no way for anybody to learn where. It sat
+			// at info level among a hundred other info lines and went unread through
+			// a whole playthrough that dead-ended because of it.
+			HerobrineMod.LOGGER.warn("nowhere in the {} to leave the way to the {}"
+					+ " — THE TRAIL ENDS HERE",
 				from.name().toLowerCase(java.util.Locale.ROOT),
 				next.name().toLowerCase(java.util.Locale.ROOT));
 			return;
 		}
+		// SCALE TWO, AND THE COORDINATES IN THE NAME.
+		//
+		// This was scale FOUR — two thousand and forty-eight blocks across, the
+		// largest map in the game — for a building somewhere between three hundred
+		// and thirteen hundred blocks away. A map cannot be centred on an arbitrary
+		// point: createFresh snaps the middle to a grid of 128 << scale, so at that
+		// size the marker and the player's own arrow are both dots somewhere in a
+		// vast tile, and often the arrow is not on it at all. See Keep.theWay, which
+		// hit exactly this and was reported as "the map leads to the wrong place".
+		//
+		// The name is the part that cannot fail, and it reads in the tooltip before
+		// the map is ever opened.
 		net.minecraft.world.item.ItemStack map =
 			net.minecraft.world.item.MapItem.create(over, to.getX(), to.getZ(),
-				(byte) 4, true, true);
+				(byte) 2, true, true);
 		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
 			map, to, "+",
 			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
 		// Named for the place it points at, in his register rather than his voice —
 		// these are not messages to the player, they are somebody's papers.
 		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-			net.minecraft.network.chat.Component.literal(WAY_TO[next.ordinal()]));
+			net.minecraft.network.chat.Component.literal(
+				WAY_TO[next.ordinal()] + " — " + to.getX() + ", " + to.getZ()));
 		if (!(holder instanceof net.minecraft.world.Container box)) {
 			return;
 		}
@@ -340,6 +373,27 @@ public final class Dwellings {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * The tower's cellar, where its book already is.
+	 *
+	 * Falls back to the doorstep if the cellar could not be cut — the ground under
+	 * a tower is not always diggable, and a map in a slightly duller place beats
+	 * the chain ending.
+	 */
+	private static net.minecraft.world.level.block.entity.@org.jspecify.annotations.Nullable
+			BlockEntity inTheCellar(ServerLevel over, BlockPos site) {
+		BlockPos down = site.below(
+			com.bloomlet.herobrine.structure.SecondHouse.cellarDepth());
+		over.getChunk(down.getX() >> 4, down.getZ() >> 4);
+		net.minecraft.world.level.block.entity.BlockEntity found =
+			nearestHolder(over, down);
+		if (found != null) {
+			return found;
+		}
+		HerobrineMod.LOGGER.info("no cellar under this tower — the map stays up top");
+		return nearestHolder(over, site);
 	}
 
 	/**

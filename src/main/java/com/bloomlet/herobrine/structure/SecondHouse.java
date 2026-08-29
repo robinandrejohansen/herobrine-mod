@@ -50,6 +50,20 @@ public final class SecondHouse {
 	/** How far under the tower's floor the buried house sits. */
 	private static final int CELLAR_DROP = 12;
 
+	/**
+	 * How far under the tower's foot its one chest sits.
+	 *
+	 * Public because the map chain needs somewhere deliberate to leave the way to
+	 * the gaol, and derived rather than stored for the same reason Undercity
+	 * publishes libraryAt: the number already exists here, and a second copy in an
+	 * attachment would only be the one that goes stale.
+	 *
+	 * The stair drops CELLAR_DROP and the room is cut two below where it lands.
+	 */
+	public static int cellarDepth() {
+		return CELLAR_DROP + 2;
+	}
+
 	public static void build(ServerLevel level, BlockPos origin, RandomSource random) {
 		BlockPos base = new BlockPos(origin.getX(),
 			Ground.topOf(level, origin.getX(), origin.getZ()) + 1, origin.getZ());
@@ -64,6 +78,7 @@ public final class SecondHouse {
 		buried(level, landing.below(2), random);
 
 		grounds(level, base, random);
+		theWatch(level, base, random);
 
 		HerobrineMod.LOGGER.info("the tower went up at [{}, {}, {}]",
 			base.getX(), base.getY(), base.getZ());
@@ -289,6 +304,114 @@ public final class SecondHouse {
 	 * door to nowhere in particular. None of it is interactive and all of it is
 	 * there so the tower has been LIVED beside rather than dropped.
 	 */
+	/**
+	 * WHAT THE TOWER IS FOR, SAID IN BLOCKS.
+	 *
+	 * Reported after the first playthrough as "a platform off some railway, a stair
+	 * up, and then a stair toward the sky — is that right?" It was not. What the
+	 * player met was four empty rooms and a chair, and empty rooms do not say
+	 * anything, so the building read as scaffolding somebody had abandoned.
+	 *
+	 * The book in the cellar already says exactly what this place was, and the
+	 * building was not saying any of it:
+	 *
+	 *     We built this to see him coming. Three of us. One awake at all times.
+	 *     Night forty-two, the man on the deck did not come down at dawn.
+	 *     His lamp was still burning. The stair was still barred. FROM THE INSIDE.
+	 *
+	 * So: three beds on one floor, because three men were living here in shifts.
+	 * A watch room with the log and the glass. A signal fire on the deck, because
+	 * a watchtower with no way to WARN anybody is just a high room — the whole
+	 * point of standing up there was to light something the town could see.
+	 *
+	 * And the bar is still across the door at the foot of the stair, on the inside,
+	 * exactly as the book leaves it. That one detail is the building's last line:
+	 * nobody got in. It did not matter.
+	 */
+	private static void theWatch(ServerLevel level, BlockPos base, RandomSource random) {
+		// ---- THE QUARTERS, on the first floor up.
+		int floor = base.getY() + 6;
+		Direction[] round = { Direction.NORTH, Direction.EAST, Direction.WEST };
+		int bunk = 0;
+		for (Direction way : round) {
+			BlockPos head = new BlockPos(
+				base.getX() + way.getStepX() * 2, floor + 1, base.getZ() + way.getStepZ() * 2);
+			BlockPos foot = head.relative(way.getOpposite());
+			net.minecraft.world.level.block.state.BlockState bed =
+				Blocks.BED.pick(net.minecraft.world.item.DyeColor.WHITE).defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING, way);
+			level.setBlock(foot, bed.setValue(BlockStateProperties.BED_PART,
+				net.minecraft.world.level.block.state.properties.BedPart.FOOT), 2);
+			level.setBlock(head, bed.setValue(BlockStateProperties.BED_PART,
+				net.minecraft.world.level.block.state.properties.BedPart.HEAD), 2);
+			// TWO SLEPT IN AND ONE MADE. Three men on a rota is two off duty at any
+			// hour, so a third bed still folded is the shift that was awake — and it
+			// is the bed of the man who did not come down.
+			if (bunk++ < 2) {
+				level.setBlock(head.above(), Blocks.CAVE_AIR.defaultBlockState(), 2);
+			}
+		}
+		BlockPos kit = new BlockPos(base.getX() + 2, floor + 1, base.getZ() - 2);
+		level.setBlock(kit, Blocks.BARREL.defaultBlockState(), 2);
+		if (level.getBlockEntity(kit)
+				instanceof net.minecraft.world.level.block.entity.BarrelBlockEntity store) {
+			Loot.scatter(store, random, Loot.Tier.LARDER);
+		}
+
+		// ---- THE WATCH ROOM, two floors up. The log, and what they watched with.
+		int room = base.getY() + 18;
+		BlockPos desk = new BlockPos(base.getX() - 2, room + 1, base.getZ());
+		level.setBlock(desk, Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
+		level.setBlock(desk.above(), Blocks.LECTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
+		if (level.getBlockEntity(desk.above())
+				instanceof net.minecraft.world.level.block.entity.LecternBlockEntity read) {
+			read.setBook(HouseBooks.buried());
+		}
+		BlockPos glass = new BlockPos(base.getX() + 2, room + 1, base.getZ());
+		level.setBlock(glass, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
+		if (level.getBlockEntity(glass) instanceof ChestBlockEntity kept) {
+			kept.setItem(0, new ItemStack(Items.SPYGLASS));
+			kept.setItem(1, new ItemStack(Items.TORCH, 16));
+			Loot.scatter(kept, random, Loot.Tier.TOWER);
+		}
+		level.setBlock(new BlockPos(base.getX(), room + 3, base.getZ()),
+			Blocks.LANTERN.defaultBlockState()
+				.setValue(BlockStateProperties.HANGING, true), 2);
+
+		// ---- THE SIGNAL, on the deck. The reason the building exists.
+		//
+		// A watchtower that cannot warn anybody is a high room. The fire is what the
+		// climb was for, and it is still lit — nobody came up to put it out.
+		int top = base.getY() + TOWER_HEIGHT;
+		BlockPos fire = new BlockPos(base.getX(), top, base.getZ() - 2);
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dz = -1; dz <= 1; dz++) {
+				level.setBlock(fire.offset(dx, 0, dz),
+					Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
+			}
+		}
+		level.setBlock(fire, Blocks.CAMPFIRE.defaultBlockState()
+			.setValue(BlockStateProperties.LIT, true), 2);
+
+		// ---- AND THE BAR IS STILL ACROSS THE DOOR, FROM THE INSIDE.
+		//
+		// The book's last fact, made physical. A plank on two fence posts against
+		// the inside of the stair door: whoever was up here had shut themselves in
+		// and it made no difference at all.
+		BlockPos door = new BlockPos(base.getX(), base.getY() + 1, base.getZ() + TOWER_RADIUS - 1);
+		for (int side = -1; side <= 1; side += 2) {
+			level.setBlock(door.offset(side, 0, 0),
+				Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+		}
+		level.setBlock(door, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH)
+			.setValue(BlockStateProperties.OPEN, false)
+			.setValue(BlockStateProperties.HALF,
+				net.minecraft.world.level.block.state.properties.Half.BOTTOM), 2);
+	}
+
 	private static void grounds(ServerLevel level, BlockPos base, RandomSource random) {
 		for (int dx = -12; dx <= 12; dx++) {
 			for (int dz = -12; dz <= 12; dz++) {

@@ -11,272 +11,389 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.WrittenBookContent;
 
 /**
- * What the family wrote.
+ * What the people who lived here wrote, in the order a player finds it.
  *
- * These are NOT his. That distinction is the whole point of them, and it is
- * why they use ordinary punctuation and capital letters where his signs use
- * neither — a player who has been reading four-word lowercase threats on their
- * walls opens a book here and finds someone writing properly, about bread and
- * sheep, and the change in voice does more than any amount of dread would.
+ * SIX CHAPTERS, AND EACH ONE ENDS BY POINTING AT THE NEXT PLACE.
  *
- * The rule for all six: NOTHING SUPERNATURAL IS EVER DESCRIBED. Nobody sees a
- * ghost, nobody reports glowing eyes, nobody says the word possessed. Every
- * entry is a domestic observation that would be unremarkable on its own. A boy
- * is not hungry. A boy does not blink. The sheep are fewer. The horror is
- * entirely in the reader's head, assembled out of things that are individually
- * fine, and that is the only kind that survives being written down.
+ *     1  the homestead   a family, and a man standing in their field
+ *     2  the town        it happens to everyone. they go underground
+ *     3  the tower       they built somewhere to watch from. it did not work
+ *     4  the gaol        they started locking up the ones who came back
+ *     5  the church      the last thing anybody organised. they decide to dig
+ *     6  the threshold   they open the way, and then they lie about it
  *
- * They are also the load-bearing piece of lore delivery. LORE.md's premise —
- * the brother who went under the hill and came back — has until now only been
- * available through the Journal, which the player finds a page at a time over
- * hours. These put the family in the world as people first, so that when the
- * Journal explains what happened to them it is happening to somebody.
+ * REWRITTEN AFTER THE FIRST FULL PLAYTHROUGH, and the note was blunt: the story
+ * was too hard to follow. That is worth recording honestly, because the old
+ * version was not badly written — it was written to a rule that turned out to be
+ * the wrong one. The rule was NOTHING SUPERNATURAL IS EVER DESCRIBED: every
+ * entry a domestic observation, unremarkable on its own, the horror left for the
+ * reader to assemble. A boy who will not eat. A fence found open rather than
+ * broken.
+ *
+ * It reads beautifully and it fails at the job. A player finds these one at a
+ * time, hours apart, between two other things they were doing — and asking them
+ * to hold six oblique fragments in their head across a whole evening and infer a
+ * plot from the gaps is asking for reading they came here to avoid. Restraint
+ * that nobody assembles is not restraint. It is a story that did not get told.
+ *
+ * So: SHORT LINES, PLAIN WORDS, AND THE WORST THING SAID OUT LOUD. The tally
+ * still counts, but it says what it is counting. The tower still fails, but it
+ * says who did not come down. Every chapter is four to six lines a page and ends
+ * with somewhere to go.
+ *
+ * What survives from the old rule is the voice: these are not his. He writes in
+ * lowercase fragments on walls. These people use capital letters and full stops
+ * right up until the moment they stop writing, and that contrast still does more
+ * than any adjective would.
  */
 public final class HouseBooks {
 	private HouseBooks() {}
 
-	/**
-	 * The mother's household book.
-	 *
-	 * Deliberately the dullest thing in the mod for two pages. It has to be —
-	 * it is establishing that these were people with a life worth losing, and
-	 * the reader has to be a little bored before the last line lands. "I have
-	 * never had to ask him twice to eat in his life" is a mother's observation
-	 * about her son's appetite and nothing else, and it should take a second
-	 * or two to understand why it is the worst sentence on the page.
-	 */
+	// ---- 1. THE HOMESTEAD --------------------------------------------------
+
+	/** The mother. She is the one who decides they are leaving. */
 	public static ItemStack household() {
 		return book("the house book", "M.",
 			"""
-			Bread twice in the week. The big oven wants an hour before it will take a loaf.
-
+			Bread twice in the week.
 			Wool from the four ewes at midsummer.
 
-			J. is to fetch the water before dark. He forgets. He is nine.""",
+			J. fetches the water before dark.
+			He is nine and he always forgets.
+
+			Tonight he did not forget.
+			He ran the whole way back.""",
 
 			"""
-			Rain all the week and the path is mud to the knee.
+			J. says there is a man standing at
+			the treeline.
 
-			The little one has made a whistle out of a reed and has not stopped since.
+			He says the man does not move.
 
-			Everyone is well. I write it down so that I will remember it was true.""",
+			R. went out with the lamp and found
+			nothing at all. The grass is dead in
+			a ring where J. says he stands.""",
 
 			"""
-			J. came back up from the north cut and would not eat.
+			J. would not eat tonight.
 
-			He says he is not hungry. He said it four times.
+			He said he was not hungry.
+			He said it four times.
 
-			I have never once had to ask that boy twice to eat.""");
+			I have never once had to ask that
+			boy twice to eat.
+
+			We are going to the town in the
+			morning. All of us.""");
 	}
 
-	/**
-	 * The youngest child's book.
-	 *
-	 * A child reports what it sees without deciding what it means, which is
-	 * why this one is allowed to be the most direct. An adult writing "he does
-	 * not blink" is making an accusation. A child writing it has simply lost a
-	 * game and is annoyed about it.
-	 */
+	/** The youngest. Says the frightening thing without knowing it is one. */
 	public static ItemStack child() {
 		return book("my book", "the little one",
 			"""
-			I drew the house. Mama says it looks like the house.
+			There is a man in our field.
 
-			I drew the sheep. There are four.
+			We play the game where you do not
+			blink. I always win.
 
-			I drew J. He is by the door. He is by the door a lot now.""",
+			He never wins and he does not mind.""",
 
 			"""
-			J. does not blink.
+			I told mother about him.
+			She went white and shut the door.
 
-			I counted to two hundred.
+			She says do not look at him.
 
-			He said that is a silly game.
+			But if I do not look at him then
+			nobody is looking at him.""",
 
-			He did not blink when he said it.""");
+			"""
+			He was closer this morning.
+
+			Nobody moved him.""");
 	}
 
-	/**
-	 * The father's ledger.
-	 *
-	 * A column of numbers is the most efficient horror device available here,
-	 * because the reader does the arithmetic themselves and arrives at the
-	 * conclusion a beat before the writer admits it. No adjectives are needed
-	 * and none are used.
-	 */
+	/** The father. Practical, right up until he is not. */
 	public static ItemStack ledger() {
 		return book("ledger", "R.",
 			"""
-			Midsummer. Four ewes, two lambs. Wheat good. Six loaves traded for nails.
+			Four ewes. Two lambs. Eleven hens.
+			Fence on the north cut wants mending.
 
-			Autumn. Four ewes, one lamb. No sign of the other.
-
-			Winter. Three ewes.""",
-
-			"""
-			Two ewes.
-
-			I have walked the fence line twice over. There is no gap in it.
-
-			Nothing has been dragged. There is no blood on the grass.
-
-			They are only fewer each morning.""",
+			Something has been standing in the
+			north cut. The ground is bare in a
+			circle and nothing will grow there.""",
 
 			"""
-			None.
+			Mended the fence.
+			It was open again by morning.
 
-			I am not writing this down for anybody.
+			Not broken. OPENED.
 
-			I am writing it down so that the number is written.""");
+			Whatever is out there has hands.""",
+
+			"""
+			We leave for the town tomorrow.
+
+			I am writing this down so somebody
+			knows we did not simply walk off and
+			leave the animals.
+
+			We were driven out of our own house.""");
 	}
 
-	/**
-	 * The elder brother, on the younger.
-	 *
-	 * This is the Journal's voice arriving early, and the only book that
-	 * touches the event directly. Even here it refuses to name it: he describes
-	 * being GLAD, and then describes the small wrong detail he was too relieved
-	 * to notice at the time. Guilt, not fear — which is the whole character.
-	 */
-	public static ItemStack brother() {
-		return book("about my brother", "—",
-			"""
-			He was under the hill two days. We dug for one of them.
-
-			When we broke through he was sitting up, and he was not cold, and he said my name before I said his.
-
-			I was so glad that I did not think about that until much later.""",
-
-			"""
-			He is the same. That is the trouble with it. He is exactly the same.
-
-			He does the things he did. He says the things he used to say.
-
-			He does them the way a man does a thing he has been told about.""");
-	}
-
-	/**
-	 * The tally.
-	 *
-	 * Five pages, and four of them are a shortening list. There is no sentence
-	 * anywhere in it doing any work; the whole effect is a name that is present
-	 * on one page and absent on the next, and the reader turning back to check.
-	 * It is the shortest thing in the mod and the only one that has made me
-	 * stop while writing it.
-	 */
+	/** Kept by whoever was awake. It stops counting days halfway down. */
 	public static ItemStack tally() {
 		return book("tally", "—",
-			"Mother. Father. The little one. J.\n\nThat is the house.",
-			"Mother. Father. The little one.\n\nThat is the house.",
-			"Father. The little one.",
-			"The little one.",
-			"That is the house.");
+			"""
+			Days he has stood in the field:
+
+			IIII IIII IIII IIII
+			IIII IIII IIII IIII""",
+
+			"""
+			I stopped counting the days.
+
+			I started counting the paces from
+			the door to where he stands.
+
+			Forty.
+			Thirty-one.
+			Nine.""");
 	}
 
-	/**
-	 * The last one, left by the sealed wall.
-	 *
-	 * Placed where the player will already be standing when they notice the
-	 * stonework does not match, so it answers the question they have just
-	 * started asking. The second page is the only outright threat in any of
-	 * these, and it is not even a threat — it is a description of somebody
-	 * being patient.
-	 */
+	/** The room with no window, and why a child asked for it. */
 	public static ItemStack farRoom() {
-		return book("the small room", "—",
+		return book("the small room", "M.",
 			"""
-			We put him in the small room because he asked us to.
+			We have put J. in the small room
+			because it has no window.
 
-			He said he did not want to be near the little one at night.
+			He asked for it himself.
 
-			We thought that was a kindness in him.
-
-			We understand now that it was not a warning about the little one.""",
+			A boy of nine asked to sleep in a
+			room with no window.""",
 
 			"""
-			The door is barred and the bar is on our side and that is the whole of what I am able to do.
+			He sleeps now.
 
-			He has not tried it once.
+			He talks while he sleeps and it is
+			not his voice.
 
-			He stands on the other side of it and waits for one of us to be curious.""");
+			R. sat outside that door all night
+			with the axe across his knees.""");
 	}
 
+	/** In the undercroft, under the house. The one they shut in. */
+	public static ItemStack brother() {
+		return book("about my brother", "R.",
+			"""
+			My brother went under the hill in
+			the spring.
+
+			Something came back out in the
+			autumn.""",
+
+			"""
+			It knows things about this house
+			that he was never told.
+
+			It calls me by our mother's name.
+
+			I have put it below and I have
+			barred the door.""",
+
+			"""
+			It does not knock.
+
+			It waits.
+
+			God forgive me, I can hear it
+			breathing through the floor.""");
+	}
+
+	// ---- 2. THE TOWN -------------------------------------------------------
+
 	/**
-	 * House two. Written by somebody explaining a decision to nobody.
+	 * Chapter two, and it is the one that was missing entirely.
 	 *
-	 * The trick here is that every sentence is reasonable. Each line on its own
-	 * is a sane thing for a person to say, and the paragraph they add up to is
-	 * somebody bricking up their own windows — which is a much worse way to
-	 * read it than any amount of raving would be.
+	 * The town's story was only ever told DOWN in the undercity, in the survivors'
+	 * accounts — six books that say what happened and one of which mentions the
+	 * well. Every word of that is unreachable until you have already found the way
+	 * down, so the chapter that is supposed to send you underground could only be
+	 * read by somebody who had got there without it.
+	 *
+	 * This goes on the surface, at the well, in the open. It says the two things
+	 * the player actually needs: THE TOWN IS UNDER THE TOWN, and the way in is the
+	 * thing you are standing next to.
+	 */
+	public static ItemStack theTown() {
+		return book("we went under", "the town",
+			"""
+			He walked into this square in the
+			middle of the afternoon.
+
+			Nobody stopped him.
+			Nobody could say afterwards what
+			he did. Only that eleven of us
+			were gone by dark.""",
+
+			"""
+			So we went under the town.
+
+			We dug out the cellars and joined
+			them and we live down there now,
+			in the dark, like something he put
+			there.
+
+			It is better than up here.""",
+
+			"""
+			The way down is the well.
+
+			Go over the side and keep going.
+			It is further than you think and
+			the water does not last.
+
+			If we are still alive we are at the
+			bottom of it. Bring a light.""");
+	}
+
+	// ---- 3. THE TOWER ------------------------------------------------------
+
+	/**
+	 * Chapter three. They build somewhere to see him coming, and the point of
+	 * the chapter is that seeing him coming was never the problem.
 	 */
 	public static ItemStack buried() {
-		return book("the windows", "—",
+		return book("the watch", "the watch",
 			"""
-			I have closed the windows on the east side. It is not because of anything.
+			We built this to see him coming.
 
-			It is only that a window is a thing that can be looked into as easily as out of, and I had not thought of that before.""",
+			Eighty feet of it, and a clear line
+			to the wood on every side.
 
-			"""
-			The north ones as well now. The room is not darker. I keep a lamp.
-
-			I find I am sleeping.""",
+			Three of us. One awake at all times.""",
 
 			"""
-			I have taken the last of them out and put stone in.
+			Night forty. Nothing.
+			Night forty-one. Nothing.
 
-			There is nothing wrong with the house. The house is exactly as it was.
+			Night forty-two, the man on the deck
+			did not come down at dawn.
 
-			I simply do not need to see the field.""");
+			His lamp was still burning.
+			The stair was still barred.
+			From the inside.""",
+
+			"""
+			You do not watch for him.
+
+			He was up here before we were.
+
+			The rest of us have gone to the gaol
+			on the ridge. They have worked out
+			what to do with the ones who come
+			back wrong.""");
 	}
 
-	/**
-	 * House three, left in the dirt beside the bed.
-	 *
-	 * Not a diary any more, because he has stopped keeping one. Four fragments
-	 * with nothing joining them, the last of which is about the digging and is
-	 * not about the digging.
-	 */
+	// ---- 4. THE GAOL -------------------------------------------------------
+
+	/** Chapter four. Fourteen cells, and what they were really for. */
 	public static ItemStack theDig() {
-		return book("notes", "—",
-			"the seam runs south. I follow it. it does not end.",
+		return book("count them out", "the warder",
 			"""
-			slept here. no reason to go up.
+			Fourteen cells. We cut them in a
+			week and we cut them badly.
 
-			nothing is up there that is not also down here.""",
+			Not for thieves.
+
+			For the ones who walk into that wood
+			and walk back out of it.""",
 
 			"""
-			I have stopped counting the days because the counting was the last thing I was doing for anybody else's benefit.""",
+			They look right. They talk right.
+
+			Then they say a thing that only a
+			dead man could know, and you put
+			them behind iron and you do not
+			open it again.
+
+			Count them in. Count them out.""",
 
 			"""
-			It is not that I am looking for something.
+			Cell nine has been empty a month.
 
-			It is that the digging is the only thing left that I am still doing on purpose, and I would like to be doing something on purpose.""");
+			The straw in it is still warm.
+
+			We have given up. What is left of
+			the town is in the church.
+
+			Go there. It is the last thing
+			anybody built on purpose.""");
 	}
 
-	/**
-	 * House four, on the altar. The only one of these not in the first person.
-	 *
-	 * By this point he is not writing a journal, he is writing instructions —
-	 * and instructions have a reader. That change of address is the whole
-	 * content: somebody is being spoken to, and it is not us.
-	 */
+	// ---- 5. THE CHURCH -----------------------------------------------------
+
+	/** Chapter five. They stop praying and pick up a shovel. */
 	public static ItemStack theShrine() {
-		return book("what is required", "—",
+		return book("the last of us", "the last of us",
 			"""
-			Do not sleep. Sleeping is how they find the way in and you have let them in every night of your life without once being asked.""",
+			Everyone still alive is in this
+			room.
 
-			"""
-			Bring nothing. Everything you carry belongs to the person you were and he is not welcome here.""",
+			We prayed for a month.
 
-			"""
-			Stand where the light is and wait to be looked at.
-
-			It will take as long as it takes. It has always taken as long as it takes.""",
+			Nothing came. Nothing left.""",
 
 			"""
-			When you are looked at you will know, because you will want to leave.
+			So we have stopped praying and we
+			have started digging.
 
-			Do not leave.""");
+			There is a way under the world and
+			he has been using it the whole time.
+
+			We have found the seam.
+			We are going to open it and we are
+			going to put him through it.""",
+
+			"""
+			If you are reading this, we did it.
+
+			The stair behind this building goes
+			down to what is left of the town.
+
+			Take everything they left you.
+			You are going to need all of it.""");
+	}
+
+	// ---- THE MECHANICS -----------------------------------------------------
+
+	/**
+	 * THIRTY-TWO CHARACTERS, AND GOING OVER DISCONNECTS THE PLAYER.
+	 *
+	 * A written book's title goes to the wire through Utf8String with a hard cap
+	 * of 32 and nothing checks it on the way in. A 33-character title compiles,
+	 * builds, boots and generates — and then the first person to OPEN the chest
+	 * gets EncoderException: String too big on container_set_content, which does
+	 * not throw an error in the chest, it severs the connection.
+	 *
+	 * It cost an evening once already, in Loot and Testimony, which both carry
+	 * this guard. This file did not, purely because its titles happened to be
+	 * short. Every title here is well under — and now it cannot stop being.
+	 */
+	private static final int TITLE_FITS = 32;
+
+	private static String title(String wanted) {
+		if (wanted.length() <= TITLE_FITS) {
+			return wanted;
+		}
+		int cut = wanted.lastIndexOf(' ', TITLE_FITS);
+		String short_ = wanted.substring(0, cut > 12 ? cut : TITLE_FITS).trim();
+		com.bloomlet.herobrine.HerobrineMod.LOGGER.warn(
+			"book title was {} characters and the wire allows {} — \"{}\" became \"{}\"",
+			wanted.length(), TITLE_FITS, wanted, short_);
+		return short_;
 	}
 
 	private static ItemStack book(String title, String author, String... pages) {
@@ -286,7 +403,7 @@ public final class HouseBooks {
 		}
 		ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
 		stack.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
-			Filterable.passThrough(title), author, 0, written, true));
+			Filterable.passThrough(title(title)), author, 0, written, true));
 		return stack;
 	}
 }

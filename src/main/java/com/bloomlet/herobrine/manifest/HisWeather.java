@@ -344,9 +344,21 @@ public final class HisWeather {
 	 * one part of this dimension that IS open to the sky.
 	 */
 	private static boolean clearOfTheKeep(ServerLevel his, BlockPos at) {
+		// TWO PLACES TO SPARE, NOT ONE.
+		//
+		// reach() used to be the castle wall PLUS the whole city, because the city
+		// was a ring around the castle and one radius covered both. They are a
+		// couple of hundred blocks apart now, so a radius drawn round the castle
+		// stopped protecting the town entirely — and a real bolt in the town is the
+		// town burning down, which is the one thing this check exists to prevent.
 		BlockPos keep = com.bloomlet.herobrine.structure.Keep.site(his);
-		return keep == null
-			|| !keep.closerThan(at, com.bloomlet.herobrine.structure.Keep.reach());
+		if (keep != null
+			&& keep.closerThan(at, com.bloomlet.herobrine.structure.Keep.reach())) {
+			return false;
+		}
+		BlockPos city = com.bloomlet.herobrine.structure.Keep.city(his);
+		return city == null
+			|| !city.closerThan(at, com.bloomlet.herobrine.structure.Keep.cityReach());
 	}
 
 	/**

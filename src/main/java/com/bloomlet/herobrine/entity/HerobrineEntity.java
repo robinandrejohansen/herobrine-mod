@@ -3926,8 +3926,19 @@ public class HerobrineEntity extends PathfinderMob {
 	 * leave. Two opens at the church, when he stops fighting the way a man
 	 * would. Three is everything at once.
 	 */
+	/**
+	 * THE ACTS ARE THIRDS OF THE FIGHT, not the first thirty blows of it.
+	 *
+	 * This divided by THE_WARNING, a constant ten — which was the same thing as a
+	 * third only because blowsToKill happened to be thirty. Raise the health and
+	 * the structure came apart: act three would start a third of the way in and
+	 * run for the remaining two thirds, so the ending arrived early and then went
+	 * on for twice as long as everything before it.
+	 *
+	 * Derived now, so the shape survives any number somebody puts in the config.
+	 */
 	private int act() {
-		return Math.min(3, 1 + this.hits / THE_WARNING);
+		return Math.min(3, 1 + this.hits / Math.max(1, Config.get().blowsToKill / 3));
 	}
 	// ---- END THE RECKONING ------------------------------------------------
 
@@ -8053,14 +8064,29 @@ public class HerobrineEntity extends PathfinderMob {
 		// Faster every act: three seconds, then two, then just over one.
 		this.arsenalTicks = Math.max(26, 70 - act * 18) + this.random.nextInt(20);
 
-		if (act == 1) {
-			return;   // act one is still only a man with an axe
+		// ACT ONE IS ONLY A MAN WITH AN AXE — IN THE OVERWORLD.
+		//
+		// Over there that is the whole point of the first act: nothing about him is
+		// supernatural yet. In his own world the beat has already been played. The
+		// player crossed over, walked to a castle and found him flying above it, so
+		// meeting a swordsman is a step DOWN from the entrance he already made.
+		if (act == 1 && !this.hisGround()) {
+			return;
 		}
 		// Act three he stops staying on the ground between attacks. It is a
 		// reposition rather than a mode — glide already lands him as soon as
 		// there is somewhere to land — but it means the player loses the one
 		// assumption they have left, which is that he is at eye level.
-		if (act == 3 && !this.flying && this.random.nextInt(4) == 0) {
+		//
+		// AND IN HIS OWN WORLD HE DOES IT FROM THE START, TWICE AS OFTEN.
+		//
+		// He stayed in melee for nearly the whole fight, and melee against a single
+		// target is hold-left-click — which is most of why the ending was over in
+		// nineteen seconds of connecting. Off the ground he cannot be reached with a
+		// sword at all, so the fight becomes what the arsenal is for. Which is worth
+		// doing now that the arsenal has a blast radius.
+		if (!this.flying && this.random.nextInt(this.hisGround() ? 2 : 4) == 0
+			&& (act == 3 || this.hisGround())) {
 			this.takeOff();
 		}
 		if (!this.hasLineOfSight(target)) {
@@ -8093,9 +8119,24 @@ public class HerobrineEntity extends PathfinderMob {
 
 		int shots = act == 3 ? 3 : 1;
 		for (int i = 0; i < shots; i++) {
-			net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball ball =
-				new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(
-					here, this, to.normalize());
+			// LARGE, NOT SMALL, AND THIS IS THE WHOLE COMPLAINT ANSWERED.
+			//
+			// SmallFireball is what a blaze throws: it does five points on a direct
+			// hit, sets a small fire, and DOES NOT EXPLODE. So his fireballs could
+			// only ever hurt somebody they touched, and they left the ground exactly
+			// as they found it — in a dimension whose stated point is that it should
+			// look worse every time you come back to it.
+			//
+			// LargeFireball explodes on impact at the power it is given, which is
+			// both the damage and the crater. Power one, a ghast's: enough to be
+			// felt and to dish out the floor, and well short of the hole a creeper
+			// leaves. HisFireballMixin then hangs a deliberate scorch on the impact
+			// on top of that, and it already fires for LargeFireball — so the ground
+			// damage the mixin was written for finally applies to HIS shots and not
+			// only to the skeletons'.
+			net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball ball =
+				new net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball(
+					here, this, to.normalize(), 1);
 			ball.snapTo(from.x, from.y, from.z, this.getYRot(), this.getXRot());
 			ball.shoot(to.x, to.y, to.z, 1.3F, spread);
 			here.addFreshEntity(ball);
@@ -8224,7 +8265,7 @@ public class HerobrineEntity extends PathfinderMob {
 			super.hurtServer(level, source, Float.MAX_VALUE);
 			return true;
 		}
-		if (this.hits == THE_WARNING) {
+		if (this.hits == Math.max(1, Config.get().blowsToKill / 3)) {
 			com.bloomlet.herobrine.manifest.Reckoning.theWarning(level, striker, this);
 		}
 		// One point of the health bar per blow, which is why MAX_HEALTH is the

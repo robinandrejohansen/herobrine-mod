@@ -107,7 +107,7 @@ public final class Shop {
 			case 'W' -> Blueprint.put(level, at, plaster(random));
 			case 'L' -> Blueprint.put(level, at, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
 				.setValue(BlockStateProperties.AXIS, Direction.Axis.Y));
-			case 'g' -> Blueprint.put(level, at, Blocks.GLASS_PANE.defaultBlockState());
+			case 'g' -> Blueprint.put(level, at, Blocks.GLASS.defaultBlockState());
 			case 'D' -> door(level, at, facing);
 			// The wall between shop and home, with a gap you can see through.
 			case '_' -> Blueprint.put(level, at, Blocks.SPRUCE_PLANKS.defaultBlockState());

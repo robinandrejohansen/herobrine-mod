@@ -233,7 +233,7 @@ public final class Config {
 	/** He can be killed at SIEGE. Off means the mod has no ending. */
 	public boolean theReckoning = true;
 	/** How many blows he takes. The church still arrives a third of the way. */
-	public int blowsToKill = 30;
+	public int blowsToKill = 70;
 
 	// ------------------------------------------------------------------------
 

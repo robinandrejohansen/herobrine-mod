@@ -235,6 +235,9 @@ public class TurnedEntity extends PathfinderMob {
 	public TurnedEntity(EntityType<? extends PathfinderMob> type, Level level) {
 		super(type, level);
 		this.setPersistenceRequired();
+		// The pathfinder has to know a door is a way through, or he will route
+		// round the building and Forces will never get a chance to run.
+		this.getNavigation().setCanOpenDoors(true);
 	}
 
 	public static AttributeSupplier.Builder createAttributes() {
@@ -242,7 +245,11 @@ public class TurnedEntity extends PathfinderMob {
 			// A villager's health exactly. He is a man with an axe, not a boss,
 			// and the fight should be over in the four or five hits it takes to
 			// kill anything else that walks into you.
-			.add(Attributes.MAX_HEALTH, 20.0)
+			// Was a villager's twenty exactly. A little over now — enough that a
+			// diamond sword wants one more swing than it used to and a crowd of them
+			// stops being arithmetic, and well short of anything that reads as a
+			// health bar to be ground down.
+			.add(Attributes.MAX_HEALTH, 26.0)
 			// Enough to matter in leather and survivable in iron. Ordinary
 			// damage on purpose — unlike the Reckoning this does NOT go through
 			// armour, because a player who prepared should be rewarded for it
@@ -257,10 +264,24 @@ public class TurnedEntity extends PathfinderMob {
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new FloatGoal(this));
-		// No door-opening and no door-breaking. He is one of them and he lives
-		// here — a locked door is a real answer to him, which is the difference
-		// between this and the hunt, and it is what keeps a village at night
-		// survivable rather than a siege.
+		// A LOCKED DOOR STOPPED BEING AN ANSWER.
+		//
+		// This used to say: no door-opening, no door-breaking, because a door he
+		// cannot pass is the difference between him and the hunt and it keeps a
+		// village at night survivable. That was written when he lived in a village
+		// in the overworld and the player was outside it.
+		//
+		// In his own world the player is the one indoors, and a creature that stops
+		// at a door is not a threat, it is scenery — you walk into any building and
+		// the whole street stands outside it. Worse, the cottages there have doors
+		// that jam, so half the time the answer was not even a decision somebody
+		// made. It was a bug the mob was politely respecting.
+		//
+		// He opens ordinary doors while he walks, and when he is ANGRY he goes
+		// through whatever is in the way. See Forces.
+		this.goalSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.OpenDoorGoal(
+			this, false));
+		this.goalSelector.addGoal(1, new Forces(this));
 		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0, true));
 		// Awake, and visibly with nothing to do. Villagers at night are in
 		// their beds; the whole event is one man walking the square.
@@ -271,6 +292,128 @@ public class TurnedEntity extends PathfinderMob {
 		this.goalSelector.addGoal(4, new RandomStrollGoal(this, 0.6));
 		this.targetSelector.addGoal(1, new NightWatch(this));
 		this.carry();
+	}
+
+	/** How long he works at one block before it gives. */
+	private static final int FORCES_TICKS = 55;
+	/** And how far in front of him he will reach to do it. */
+	private static final double FORCES_REACH = 2.6;
+
+	/**
+	 * WHAT HE DOES ABOUT A DOOR HE CANNOT OPEN, once he is angry.
+	 *
+	 * Vanilla has BreakDoorGoal and it only knows wooden doors, on hard difficulty,
+	 * and it will not touch glass or iron. All three of those are the things people
+	 * actually hide behind — a cottage window, an iron door, a door somebody jammed
+	 * shut. A creature that walks up to a pane of glass and stops is not
+	 * frightening, it is a demonstration that the glass works.
+	 *
+	 * So this is one goal for all of it: while he HAS A TARGET and cannot reach
+	 * them, whatever is at head or foot height directly in front gets worked on for
+	 * about three seconds and then goes. Glass, panes, doors, trapdoors, iron
+	 * included.
+	 *
+	 * ONLY WHILE HE HAS A TARGET, which is the whole safety valve. He is not
+	 * demolishing the village on a quiet night — he walks past every window in the
+	 * place until somebody hits him or gets too close, and from then on there is no
+	 * building he cannot come into.
+	 *
+	 * The block is BROKEN rather than removed, so it drops. Nothing is lost but
+	 * the window.
+	 */
+	private static final class Forces extends net.minecraft.world.entity.ai.goal.Goal {
+		private final TurnedEntity him;
+		private net.minecraft.core.@org.jspecify.annotations.Nullable BlockPos onIt;
+		private int worked;
+
+		private Forces(TurnedEntity him) {
+			this.him = him;
+			this.setFlags(java.util.EnumSet.of(
+				net.minecraft.world.entity.ai.goal.Goal.Flag.MOVE));
+		}
+
+		private static boolean inTheWay(net.minecraft.world.level.block.state.BlockState state) {
+			return state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock
+				|| state.getBlock() instanceof net.minecraft.world.level.block.TrapDoorBlock
+				|| state.is(net.minecraft.tags.BlockTags.IMPERMEABLE)
+				|| state.getBlock()
+					instanceof net.minecraft.world.level.block.IronBarsBlock;
+		}
+
+		private net.minecraft.core.@org.jspecify.annotations.Nullable BlockPos ahead() {
+			net.minecraft.world.entity.LivingEntity at = this.him.getTarget();
+			if (at == null) {
+				return null;
+			}
+			net.minecraft.world.phys.Vec3 way = at.position()
+				.subtract(this.him.position());
+			if (way.lengthSqr() < 0.01) {
+				return null;
+			}
+			net.minecraft.world.phys.Vec3 step = this.him.position()
+				.add(way.normalize().scale(FORCES_REACH));
+			for (int up = 0; up <= 1; up++) {
+				net.minecraft.core.BlockPos pos = net.minecraft.core.BlockPos.containing(
+					step.x, this.him.getY() + up, step.z);
+				if (inTheWay(this.him.level().getBlockState(pos))) {
+					return pos;
+				}
+			}
+			return null;
+		}
+
+		@Override
+		public boolean canUse() {
+			net.minecraft.world.entity.LivingEntity at = this.him.getTarget();
+			if (at == null || this.him.distanceTo(at) < 2.0) {
+				return false;      // he can reach them. nothing is in the way.
+			}
+			this.onIt = this.ahead();
+			return this.onIt != null;
+		}
+
+		@Override
+		public boolean canContinueToUse() {
+			return this.onIt != null && this.him.getTarget() != null
+				&& inTheWay(this.him.level().getBlockState(this.onIt));
+		}
+
+		@Override
+		public void start() {
+			this.worked = 0;
+		}
+
+		@Override
+		public void stop() {
+			this.onIt = null;
+			if (this.him.level() instanceof ServerLevel here) {
+				here.destroyBlockProgress(this.him.getId(), net.minecraft.core.BlockPos.ZERO, -1);
+			}
+		}
+
+		@Override
+		public void tick() {
+			if (this.onIt == null || !(this.him.level() instanceof ServerLevel here)) {
+				return;
+			}
+			this.him.getLookControl().setLookAt(this.onIt.getX() + 0.5,
+				this.onIt.getY() + 0.5, this.onIt.getZ() + 0.5, 30.0F, 30.0F);
+			this.worked++;
+			// The cracks, so it is legible from the other side of the glass that
+			// something is coming through and roughly when.
+			here.destroyBlockProgress(this.him.getId(), this.onIt,
+				(int) (this.worked / (float) FORCES_TICKS * 10.0F));
+			if (this.worked % 8 == 0) {
+				here.playSound(null, this.onIt, net.minecraft.sounds.SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR,
+					this.him.getSoundSource(), 1.0F, 0.6F);
+			}
+			if (this.worked >= FORCES_TICKS) {
+				here.destroyBlock(this.onIt, true, this.him);
+				here.destroyBlockProgress(this.him.getId(), this.onIt, -1);
+				this.onIt = null;
+				this.worked = 0;
+			}
+		}
 	}
 
 	/**

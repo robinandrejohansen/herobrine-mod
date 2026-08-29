@@ -505,7 +505,7 @@ public final class Threshold {
 				// something did, and nobody put it back.
 				BlockState pane = random.nextInt(4) == 0
 					? Blocks.CAVE_AIR.defaultBlockState()
-					: Blocks.GLASS_PANE.defaultBlockState();
+					: Blocks.GLASS.defaultBlockState();
 				level.setBlock(origin.offset(0, y, z),
 					door ? Blocks.CAVE_AIR.defaultBlockState() : pane, 2);
 			}

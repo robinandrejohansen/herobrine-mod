@@ -176,7 +176,13 @@ public final class HisCity {
 	 * the town looks the same way and the street reads as a street.
 	 */
 	private static void house(ServerLevel his, BlockPos plot, long seed) {
-		BlockPos castle = com.bloomlet.herobrine.structure.Keep.site(his);
+		// THE MIDDLE OF THE TOWN, NOT THE CASTLE.
+		//
+		// Every front door used to face the keep, which was correct while the town
+		// was a ring around it — the castle WAS the middle. It stands a couple of
+		// hundred blocks away now, so facing it would turn every street in the place
+		// the same way and point the whole town off at nothing.
+		BlockPos castle = com.bloomlet.herobrine.structure.Keep.city(his);
 		Direction facing = Direction.NORTH;
 		if (castle != null) {
 			int dx = castle.getX() - plot.getX();

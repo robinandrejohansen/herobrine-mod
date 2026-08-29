@@ -62,28 +62,39 @@ public final class Keep {
 	private static final AttachmentType<Boolean> RAISED =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("keep_raised"), Codec.BOOL);
 
+	private static final AttachmentType<Long> CITY =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("city_site"), Codec.LONG);
+	private static final AttachmentType<Boolean> CITY_UP =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("city_raised"), Codec.BOOL);
+
 	/**
-	 * How far out, and it is short on purpose. THE FOG SETS THIS, NOT TASTE.
+	 * THE CITY AND THE CASTLE ARE TWO PLACES NOW.
 	 *
-	 * The dimension's fog ends at a hundred and twelve blocks and a dark forest
-	 * canopy closes whatever it leaves. Anything sited beyond that is invisible
-	 * until it is underfoot, which turns the one landmark in the place into
-	 * something found by accident — and the whole design of this build is that
-	 * it is found by its light.
+	 * They used to be one. Keep.raise built the castle and then called
+	 * HisCity.raise on the same base, so the town was a ring fifty-eight blocks
+	 * deep around the curtain wall — which means arriving near one was arriving at
+	 * both, and the single landmark this dimension has was something you were
+	 * standing inside before you had decided to go to it.
 	 *
-	 * IT WAS BRIEFLY 96–128, WHICH BROKE THAT. The castle doubled in size and the
-	 * distance got dragged up with it out of instinct, straight past the fog: a
-	 * site rolled at the far end stood sixteen blocks beyond anything the player
-	 * could ever see, in a wood with no sightlines, and the blue glow through the
-	 * trees simply was not there.
+	 * The city sites near the crossing, because it is what you are meant to find
+	 * first: somewhere with doors and chests and people in it, which is where you
+	 * learn there is a castle at all. The castle sites a long way past it, and the
+	 * walk between the two IS the middle of the chapter.
 	 *
-	 * Eighty to a hundred. The tower tops sit thirty above the ground on the
-	 * motte, so the furthest one is about a hundred and four blocks away as the
-	 * eye measures it — inside the fog with room to spare, and still a real walk
-	 * through the dark to get there.
+	 * AND THE OLD DISTANCE WAS SET BY THE FOG, NOT BY TASTE. The comment that
+	 * stood here said so: eighty to a hundred, because the fog ended at a hundred
+	 * and twelve and anything beyond it was invisible until it was underfoot. That
+	 * was true and it is not any more — the fog now starts at ninety-six and ends
+	 * at three hundred and twenty, because it read as low quality up close. The
+	 * constraint that forced the castle to sit on top of its own town is gone, and
+	 * this is the change it was holding back.
 	 */
-	private static final int NEAR = 80;
-	private static final int FAR = 100;
+	private static final int CITY_NEAR = 46;
+	private static final int CITY_FAR = 74;
+	private static final int CITY_RAISE_RANGE = 104;
+
+	private static final int NEAR = 240;
+	private static final int FAR = 340;
 	/** Built when somebody is this close. Inside a default simulation radius. */
 	private static final int RAISE_RANGE = 144;
 	/**
@@ -163,7 +174,18 @@ public final class Keep {
 	}
 
 	public static int reach() {
-		return WALL + HisCity.REACH + 24;
+		return WALL + 24;
+	}
+
+	/** Where his city stands, for anything that has to keep away from it. */
+	public static @org.jspecify.annotations.Nullable BlockPos city(ServerLevel his) {
+		Long packed = his.getAttached(CITY);
+		return packed == null ? null : BlockPos.of(packed);
+	}
+
+	/** And how far it spreads. */
+	public static int cityReach() {
+		return HisCity.REACH + 16;
 	}
 
 	/**
@@ -184,7 +206,7 @@ public final class Keep {
 	 * so the chest is waiting before they have finished loading in, and nobody
 	 * watches it appear.
 	 */
-	private static void arrival(ServerLevel his, BlockPos came, BlockPos keep) {
+	private static void arrival(ServerLevel his, BlockPos came) {
 		his.getChunk(came.getX() >> 4, came.getZ() >> 4);
 		for (int ring = 1; ring <= 4; ring++) {
 			for (int dx = -ring; dx <= ring; dx++) {
@@ -203,14 +225,7 @@ public final class Keep {
 							// castle would move and the map in the chest would go on
 							// pointing where it used to be. A chest that hands you a
 							// wrong map is worse than a chest with nothing in it.
-							if (his.getBlockEntity(at) instanceof net.minecraft.world
-									.level.block.entity.ChestBlockEntity old) {
-								old.setItem(13, theWay(his, keep));
-								HerobrineMod.LOGGER.info(
-									"the map at the crossing was redrawn for [{}, {}]",
-									keep.getX(), keep.getZ());
-							}
-							return;
+							return;      // already been through this door
 						}
 						if (!his.getBlockState(at).isAir()
 							|| !his.getBlockState(at.below()).isSolid()
@@ -226,7 +241,13 @@ public final class Keep {
 									.ChestBlockEntity box)) {
 							return;
 						}
-						box.setItem(13, theWay(his, keep));
+						// NO MAP HERE ANY MORE.
+						//
+						// It used to hand you the castle at the door, which made the
+						// city — the only inhabited thing in the dimension — a place
+						// you walked PAST on your way to a marker. Supplies only now.
+						// You are told where to go by the people who lived here, in
+						// their own houses, or not at all.
 						// And enough to walk there on. Not a haul — the city pays,
 						// and a full chest at the door would mean never leaving it.
 						com.bloomlet.herobrine.structure.Loot.scatter(box,
@@ -283,6 +304,58 @@ public final class Keep {
 		return map;
 	}
 
+	/**
+	 * The way to the castle, left in the city that knows about it.
+	 *
+	 * THE MAP USED TO BE AT THE PORTAL, which was the wrong place for it twice
+	 * over. It gave you the destination before you had met anybody who could have
+	 * told you — so the city, the only inhabited thing over here, became scenery on
+	 * the way to a marker. And it meant the first thing the dimension did was hand
+	 * you an objective, which is the one move this mod does not make anywhere else.
+	 *
+	 * A cottage chest instead. You walk into the city because it is the thing you
+	 * can see, you go through the houses because that is what anybody does, and the
+	 * castle comes out of a drawer.
+	 *
+	 * SEARCHED FROM THE MIDDLE OUTWARD so it lands in a house rather than in the
+	 * rampart stores — HisCity lays its plots on rings out from the centre, and the
+	 * nearest container to the middle is somebody's kitchen.
+	 */
+	private static void theWayFromTheCity(ServerLevel his, BlockPos city, BlockPos keep) {
+		for (int ring = 0; ring <= HisCity.REACH; ring += 4) {
+			for (int dx = -ring; dx <= ring; dx += 2) {
+				for (int dz = -ring; dz <= ring; dz += 2) {
+					if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) {
+						continue;
+					}
+					for (int dy = -4; dy <= 8; dy++) {
+						BlockPos at = city.offset(dx, dy, dz);
+						if (!his.getBlockState(at).is(Blocks.CHEST)) {
+							continue;
+						}
+						if (!(his.getBlockEntity(at) instanceof net.minecraft.world.level
+								.block.entity.ChestBlockEntity box)) {
+							continue;
+						}
+						for (int slot = 0; slot < box.getContainerSize(); slot++) {
+							if (!box.getItem(slot).isEmpty()) {
+								continue;
+							}
+							box.setItem(slot, theWay(his, keep));
+							box.setChanged();
+							HerobrineMod.LOGGER.info(
+								"the way to the keep is in a house at [{}, {}, {}]",
+								at.getX(), at.getY(), at.getZ());
+							return;
+						}
+					}
+				}
+			}
+		}
+		HerobrineMod.LOGGER.warn(
+			"no chest in his city to leave the way to the keep — THE TRAIL ENDS HERE");
+	}
+
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Keep::onTick);
 	}
@@ -300,16 +373,43 @@ public final class Keep {
 			return;
 		}
 
+		// ---- THE CITY FIRST, because it is the one you are meant to walk into.
+		Long town = his.getAttached(CITY);
+		if (town == null) {
+			ServerPlayer first = his.players().get(0);
+			BlockPos at = pick(his, first.blockPosition(), CITY_NEAR, CITY_FAR);
+			his.setAttached(CITY, at.asLong());
+			HerobrineMod.LOGGER.info("his city will stand at [{}, {}]",
+				at.getX(), at.getZ());
+			arrival(his, first.blockPosition());
+			return;
+		}
+
+		BlockPos city = BlockPos.of(town);
+		if (!Boolean.TRUE.equals(his.getAttached(CITY_UP))) {
+			for (ServerPlayer player : his.players()) {
+				if (player.blockPosition().closerThan(city, CITY_RAISE_RANGE)) {
+					his.setAttached(CITY_UP, true);
+					// castle 0, because there is no castle here to stand clear of.
+					HisCity.raise(his, city.above(MOTTE), 0, MOTTE, his.getRandom());
+					HerobrineMod.LOGGER.info("his city is going up at [{}, {}, {}]",
+						city.getX(), city.getY(), city.getZ());
+					return;
+				}
+			}
+			return;      // and nothing else happens until it is standing
+		}
+
 		Long chosen = his.getAttached(SITE);
 		if (chosen == null) {
 			// Sited from wherever the first person came out, which is the only
 			// fixed point this dimension has.
-			ServerPlayer first = his.players().get(0);
-			BlockPos site = pick(his, first.blockPosition());
+			BlockPos site = pick(his, city, NEAR, FAR);
 			his.setAttached(SITE, site.asLong());
-			HerobrineMod.LOGGER.info("the keep will stand at [{}, {}]",
-				site.getX(), site.getZ());
-			arrival(his, first.blockPosition(), site);
+			HerobrineMod.LOGGER.info(
+				"the keep will stand at [{}, {}] — {} blocks off the city",
+				site.getX(), site.getZ(), (int) Math.sqrt(site.distSqr(city)));
+			theWayFromTheCity(his, city, site);
 			return;
 		}
 
@@ -355,7 +455,7 @@ public final class Keep {
 	 * server could each site a different castle, and the second one would be
 	 * standing somewhere the first had already walked.
 	 */
-	private static BlockPos pick(ServerLevel his, BlockPos from) {
+	private static BlockPos pick(ServerLevel his, BlockPos from, int near, int far) {
 		// SEVERAL BEARINGS, AND THE FIRST DRY ONE WINS.
 		//
 		// One hashed bearing was enough while nothing checked what was under it,
@@ -375,7 +475,7 @@ public final class Keep {
 			h = (h ^ (h >>> 29)) * 0x94D049BB133111EBL;
 			h = h ^ (h >>> 32);
 			double angle = ((h >>> 12) & 0xFFFF) / 65536.0 * Math.PI * 2.0;
-			double range = NEAR + ((h >>> 28) & 0xFF) / 255.0 * (FAR - NEAR);
+			double range = near + ((h >>> 28) & 0xFF) / 255.0 * (far - near);
 			int x = from.getX() + (int)Math.round(Math.cos(angle) * range);
 			int z = from.getZ() + (int)Math.round(Math.sin(angle) * range);
 			BlockPos at = new BlockPos(x, from.getY(), z);
@@ -405,7 +505,7 @@ public final class Keep {
 		// water than no castle at all — and it is logged, because if this ever
 		// fires in practice the answer is a wider search rather than a shrug.
 		HerobrineMod.LOGGER.warn("no dry ground for the keep within {}–{} of [{}, {}]",
-			NEAR, FAR, from.getX(), from.getZ());
+			near, far, from.getX(), from.getZ());
 		// AND EVEN THE GIVING-UP ANSWER GETS ITS HEIGHT OFF THE GROUND.
 		//
 		// It used to hand back a position still carrying the player's Y, which is
@@ -509,7 +609,9 @@ public final class Keep {
 		});
 		stage(server, 22, () -> keep(his, base, random));
 		stage(server, 26, () -> Remembering.furnish(his, base, KEEP, KEEP_HEIGHT, random));
-		stage(server, 30, () -> HisCity.raise(his, base, WALL, MOTTE, random));
+		// NO CITY HERE. It is its own place now, sited near the crossing and raised
+		// long before this — see onTick. A castle that builds a town around itself
+		// is a castle you were already standing in.
 
 		HerobrineMod.LOGGER.info("the keep is going up at [{}, {}, {}]",
 			base.getX(), base.getY(), base.getZ());

@@ -401,7 +401,7 @@ public final class Remembering {
 		for (int dx = -2; dx <= 2; dx++) {
 			for (int dy = 1; dy <= 3; dy++) {
 				put(his, at.offset(dx, dy, half),
-					Blocks.STAINED_GLASS_PANE.pick(
+					Blocks.STAINED_GLASS.pick(
 						net.minecraft.world.item.DyeColor.PURPLE).defaultBlockState());
 			}
 		}

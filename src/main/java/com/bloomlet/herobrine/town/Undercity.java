@@ -660,6 +660,23 @@ public final class Undercity {
 		int[][] ring = { {1, 0}, {2, 0}, {3, 0}, {3, 1}, {3, 2}, {3, 3},
 			{2, 3}, {1, 3}, {0, 3}, {0, 2}, {0, 1}, {0, 0} };
 
+		// AND THE MOUTH ITSELF GETS OPENED, WHICH IT NEVER WAS.
+		//
+		// The loop below starts at step 0, whose ring cell is {1, 0} — so the first
+		// block it ever cuts is one to the side of the crypt position, and the
+		// crypt position itself is left exactly as the church left it. The church
+		// puts CHISELED_DEEPSLATE there: it is the middle of the reredos, the wall
+		// behind the altar.
+		//
+		// So whether the stair had a doorway at all came down to whether the block
+		// beside the reredos happened to be open, which depends on the plot's
+		// rotation. Sometimes you walked down. Sometimes you stood in front of a
+		// solid wall with a minute of staircase behind it and no way in — reported
+		// as "av og til er den stengt", and it was exactly that often.
+		for (int dy = 0; dy <= 3; dy++) {
+			level.setBlock(crypt.above(dy), Blocks.CAVE_AIR.defaultBlockState(), 2);
+		}
+
 		BlockPos head = crypt.offset(-1, 0, -1);
 		int step = 0;
 		BlockPos at = crypt;

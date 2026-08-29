@@ -353,7 +353,7 @@ public final class Reckoning {
 		// Two narrow windows, because a chapel with none is a bunker.
 		for (int side : new int[] { -2, 2 }) {
 			level.setBlock(base.relative(facing, -1).relative(across, side).above(2),
-				Blocks.STAINED_GLASS_PANE.pick(net.minecraft.world.item.DyeColor.BROWN)
+				Blocks.STAINED_GLASS.pick(net.minecraft.world.item.DyeColor.BROWN)
 					.defaultBlockState(), 2);
 		}
 		// The altar, at the far end, with a candle nobody lit.
