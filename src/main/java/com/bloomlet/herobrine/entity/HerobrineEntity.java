@@ -1848,7 +1848,17 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final double PATROL_IN = 16.0;
 	private static final double PATROL_OUT = 34.0;
 	/** Slower than the duel's ring. He is not chasing anything. */
-	private static final double PATROL_PACE = 0.55;
+	/**
+	 * Blocks a tick along the ring, at any radius. 4.4 a second.
+	 *
+	 * Deliberately under a sprint. He is not chasing anybody up here and he should
+	 * not be able to — what the pace has to buy is TIME TO BE LOOKED AT, and a
+	 * circuit somebody can watch a whole lap of. Faster than the player made him a
+	 * thing that went past.
+	 */
+	private static final double PATROL_PACE = 0.22;
+	/** And how far he stays above whatever is actually underneath him. */
+	private static final double PATROL_CLEARS = 7.0;
 	/** How far off he still turns his head to somebody. */
 	private static final double PATROL_NOTICES = 72.0;
 
@@ -1876,10 +1886,39 @@ public class HerobrineEntity extends PathfinderMob {
 			this.orbitWay = this.random.nextBoolean() ? 1 : -1;
 			this.orbitWide = PATROL_IN + this.random.nextDouble() * (PATROL_OUT - PATROL_IN);
 		}
-		this.orbit += this.orbitWay * ORBIT_SPEED * PATROL_PACE;
+		// CONSTANT SPEED OVER THE GROUND, NOT CONSTANT ANGLE.
+		//
+		// It used to advance a fixed number of radians a tick, which means the
+		// LINEAR speed scaled with whatever radius the current leg had rolled: 6.2
+		// blocks a second on the inside of the ring and 13.1 on the outside. A
+		// sprinting player does 5.6. So on a wide leg he crossed the sky at better
+		// than twice anything on the ground could follow, in a couple of seconds,
+		// and was gone — which is exactly how it was reported.
+		//
+		// Dividing by the radius makes the angle the derived quantity and the pace
+		// the fixed one. Every leg now reads the same from below, and a circuit
+		// takes long enough to watch him come round again.
+		this.orbit += this.orbitWay * (PATROL_PACE / this.orbitWide);
 		// A long slow rise and fall on top of the circle, so the path never closes
 		// on itself and he never reads as being on rails.
 		double want = keep.getY() + PATROL_UP + Math.sin(this.age * 0.015) * 4.0;
+		// AND NEVER INSIDE THE HILL.
+		//
+		// The height was measured off the KEEP and nothing else, while the ring
+		// runs out to thirty-four blocks — and Keep.highest only sampled twenty-four
+		// when it chose the site. So ground beyond that could be, and was, higher
+		// than the flight path. He has no gravity and no physics up here, so he did
+		// not land on it or bounce off it: he flew straight through the rock.
+		//
+		// Which costs far more than it looks. There is no line of sight into a
+		// hillside, and being SHOT is the one thing that takes him off patrol. A
+		// player who cannot see him cannot start the fight, so an aesthetic problem
+		// was silently a progression one.
+		int under = his.getHeight(
+			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+			net.minecraft.util.Mth.floor(this.getX()),
+			net.minecraft.util.Mth.floor(this.getZ()));
+		want = Math.max(want, under + PATROL_CLEARS);
 		double toX = keep.getX() + 0.5 + Math.cos(this.orbit) * this.orbitWide;
 		double toZ = keep.getZ() + 0.5 + Math.sin(this.orbit) * this.orbitWide;
 		// Facing along the circle, not at the middle of it — a man flying sideways
