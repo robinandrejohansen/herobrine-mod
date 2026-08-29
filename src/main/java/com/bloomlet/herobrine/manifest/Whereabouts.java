@@ -845,10 +845,9 @@ public final class Whereabouts {
 	// ---- END OVER THE KEEP ------------------------------------------------
 
 	/** The one of him, if he is currently a real thing somewhere. */
+	/** The third copy of the world-sized sweep. See HerobrineEntity.all. */
 	private static @org.jspecify.annotations.Nullable HerobrineEntity loaded(ServerLevel level) {
-		for (HerobrineEntity him : level.getEntitiesOfClass(HerobrineEntity.class,
-				new net.minecraft.world.phys.AABB(-30000000, level.getMinY(), -30000000,
-					30000000, level.getMaxY(), 30000000))) {
+		for (HerobrineEntity him : HerobrineEntity.all(level)) {
 			return him;
 		}
 		return null;

@@ -2071,10 +2071,27 @@ public class HerobrineEntity extends PathfinderMob {
 	}
 
 	/** Every one of him in this level, which should always be nought or one. */
+	/**
+	 * THE TYPE INDEX, NOT A BOX THE SIZE OF THE WORLD.
+	 *
+	 * This used to ask getEntitiesOfClass for everything inside a sixty-million
+	 * block AABB, which is the obvious way to write "all of them" and is a spatial
+	 * query over the entire loaded entity store. It reads as free because the box
+	 * is a constant. It is not: the cost is every entity section a player has
+	 * loaded, walked and type-checked, and on a server with a few people spread
+	 * out that is thousands of entities per call.
+	 *
+	 * getEntities with an EntityTypeTest goes at the level's own index by type. It
+	 * returns the same list and it never touches an entity that is not one of his.
+	 * There is normally exactly ONE of him in a world and often none at all, so
+	 * the honest cost of this question is nearly nothing — it was only expensive
+	 * because of how it was being asked.
+	 */
+	@SuppressWarnings("unchecked")
 	public static java.util.List<HerobrineEntity> all(ServerLevel level) {
-		return level.getEntitiesOfClass(HerobrineEntity.class,
-			new net.minecraft.world.phys.AABB(-30000000, level.getMinY(), -30000000,
-				30000000, level.getMaxY(), 30000000));
+		return (java.util.List<HerobrineEntity>) level.getEntities(
+			net.minecraft.world.level.entity.EntityTypeTest.forClass(HerobrineEntity.class),
+			him -> true);
 	}
 
 	public boolean isPresent() {

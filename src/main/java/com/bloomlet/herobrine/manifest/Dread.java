@@ -87,18 +87,28 @@ public final class Dread {
 			return;
 		}
 		for (ServerLevel level : server.getAllLevels()) {
-			java.util.List<HerobrineEntity> them = level.getEntitiesOfClass(
-				HerobrineEntity.class,
-				new net.minecraft.world.phys.AABB(-30000000, level.getMinY(), -30000000,
-					30000000, level.getMaxY(), 30000000),
-				him -> him.isAlive());
+			// HerobrineEntity.all goes at the level's type index. It used to be a
+			// copy of the same sixty-million-block AABB sweep, run here twice a
+			// second, for EVERY dimension, whether he existed or not — eight full
+			// entity-store walks a second on a world where nothing was happening.
+			// That is the lag, and it was being paid by servers that had never seen
+			// him.
+			java.util.List<HerobrineEntity> them = HerobrineEntity.all(level).stream()
+				.filter(HerobrineEntity::isAlive).toList();
 			if (them.isEmpty()) {
 				relight(level, null);
 				continue;
 			}
 			for (HerobrineEntity him : them) {
 				scatter(level, him);
-				if (ticks % LIGHT_EVERY == 0) {
+				// AND theDark HAS TO REACH THE COST, not just the effect.
+				//
+				// douse sweeps thirty-seven by eleven by thirty-seven — fifteen
+				// thousand block reads — and it was running whatever the config
+				// said, so switching the darkness off saved nothing at all. The one
+				// switch a struggling server would reach for was the one that did
+				// not help.
+				if (Config.get().theDark && ticks % LIGHT_EVERY == 0) {
 					douse(level, him);
 				}
 			}
