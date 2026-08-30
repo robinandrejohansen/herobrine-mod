@@ -80,7 +80,8 @@ public final class TheDig {
 		BlockPos landing = Descent.stair(level, top.offset(-1, 0, -1), DROP,
 			brick(random), random);
 
-		BlockPos far = hall(level, landing.below(2), random);
+		BlockPos start = landing.below(2);
+		BlockPos far = hall(level, start, random);
 		// SHELL, THEN CARVE, THEN FURNISH — and it was shell, furnish, carve.
 		//
 		// workings() calls Warren.dig from a block inside the warder's back wall,
@@ -98,6 +99,12 @@ public final class TheDig {
 		warder(level, far, random);
 		workings(level, far, random);
 		keeps(level, far, random);
+		// AND THE SCRATCHES GO IN AFTER THE BORE, for the reason the chest does.
+		// workings() cuts a Warren out of the back of the warder's room, and a
+		// Warren spur is free to come back along the hall. A sign is not a chest —
+		// nothing despawns — but a note with a tunnel through it is a note nobody
+		// reads, and being read is the whole of what they are for.
+		dressCells(level, start, random);
 
 		HerobrineMod.LOGGER.info("the gaol opened at [{}, {}, {}]",
 			landing.getX(), landing.getY(), landing.getZ());
@@ -180,6 +187,32 @@ public final class TheDig {
 			}
 		}
 
+		for (Cell spot : cells(start)) {
+			cell(level, spot.mouth(), spot.into(), random, spot.shut());
+		}
+		return start.offset(0, 0, HALL - 1);
+	}
+
+	/** A cell mouth, the way it opens, and whether it was left shut. */
+	private record Cell(BlockPos mouth, Direction into, boolean shut) {}
+
+	/**
+	 * THE FOURTEEN, IN THE ORDER THEY WERE NUMBERED, as one list rather than two
+	 * copies of the same arithmetic.
+	 *
+	 * hall() carves from this and dressCells() writes into it, and those two run
+	 * at opposite ends of build() with a Warren bore in between. Two loops each
+	 * working out `spacing` for themselves is the setup for the quietest bug in
+	 * the file: change CELLS_PER_SIDE and every note in the building lands in a
+	 * wall one cell over from the person it belongs to, with nothing failing.
+	 *
+	 * West before east at each rank, and that is what makes the shut one the
+	 * NINTH. It is not arranged — CELLS_PER_SIDE - 2 falls on rank five, west
+	 * side, which is index eight, which is cell nine. theGaolAfter() has called
+	 * it cell nine since it was written, and it turns out to be telling the truth.
+	 */
+	private static java.util.List<Cell> cells(BlockPos start) {
+		java.util.List<Cell> found = new java.util.ArrayList<>();
 		int spacing = HALL / (CELLS_PER_SIDE + 1);
 		for (int i = 1; i <= CELLS_PER_SIDE; i++) {
 			int out = i * spacing;
@@ -198,10 +231,10 @@ public final class TheDig {
 			// found on opening a door was the far cell's brickwork a block away.
 			// Reported as "the cell is blocked again on the other side of the door",
 			// which is exactly what it was.
-			cell(level, start.offset(-3, 0, out), Direction.WEST, random, shut);
-			cell(level, start.offset(3, 0, out), Direction.EAST, random, false);
+			found.add(new Cell(start.offset(-3, 0, out), Direction.WEST, shut));
+			found.add(new Cell(start.offset(3, 0, out), Direction.EAST, false));
 		}
-		return start.offset(0, 0, HALL - 1);
+		return found;
 	}
 
 	/**
@@ -381,8 +414,19 @@ public final class TheDig {
 				chest.setItem(0, book);
 			}
 			chest.setItem(1, HouseBooks.theGaolAfter());
-			chest.setItem(2, new ItemStack(Items.IRON_INGOT, 6));
-			Loot.scatter(chest, random, Loot.Tier.LARDER);
+			// THE THING YOU CAME DOWN HERE FOR.
+			//
+			// The other two books tell you what happened. This one tells you what to
+			// DO, and it is the only place in the mod that does: four tells for the
+			// mimic, read off MimicEntity.TheFriend in the order that goal runs
+			// them. The gaol sits on Phase.MIMIC, so it arrives exactly when it
+			// becomes useful and long before it becomes urgent.
+			chest.setItem(2, HouseBooks.theProtocol());
+			chest.setItem(3, new ItemStack(Items.IRON_INGOT, 6));
+			// LARDER was a dead farmer's pantry, at the bottom of sixteen blocks of
+			// stair and thirty-four of hall. A chest speaks one language and that
+			// one was saying "you should not have come down".
+			Loot.scatter(chest, random, Loot.Tier.GAOL);
 		}
 	}
 
@@ -407,6 +451,76 @@ public final class TheDig {
 		Warren.warn(level, far.offset(2, 1, 6),
 			new String[] { "COUNT", "THEM IN", "COUNT", "THEM OUT" });
 		Warren.dig(level, back, Warren.Manner.WORKED, random);
+	}
+
+
+	/**
+	 * WHAT FOURTEEN PEOPLE SCRATCHED INTO THE BACK WALL.
+	 *
+	 * The furniture in these rooms is identical on purpose — cell() says so, and
+	 * it is right: a mat, a bucket and cobwebs in every one is what makes fourteen
+	 * doors read as an institution rather than as fourteen rooms. Sameness is the
+	 * horror of the place. An institution processed these people the same way.
+	 *
+	 * So the difference goes somewhere else. One line of handwriting each, and
+	 * nothing else changes. Same room, same straw, same bucket, fourteen separate
+	 * people — which is a harder thing to look at than fourteen different rooms.
+	 *
+	 * They are in the order cells() numbers them, which puts INDEX EIGHT in the
+	 * shut cell: the ninth. The one theGaolAfter() says went quiet on a Tuesday
+	 * and had blood on the ceiling. What is standing in there now is standing in
+	 * front of a man's handwriting saying he was still himself.
+	 */
+	private static final String[][] SCRATCHED = {
+		new String[] { "MARTA", "DAY SIX", "STILL", "MYSELF" },
+		new String[] { "IIII IIII", "IIII III", "ELEVEN", "DAYS" },
+		new String[] { "I AM NOT", "HIM", "I AM NOT", "HIM" },
+		new String[] { "TELL MY", "BROTHER", "I WENT IN", "CLEAN" },
+		new String[] { "WHOEVER", "READS THIS", "I WAS", "REAL" },
+		new String[] { "DAY ONE", "SCARED", "DAY NINE", "HUNGRY" },
+		new String[] { "ASK ME", "SOMETHING", "ONLY I", "WOULD KNOW" },
+		new String[] { "HE KNEW", "THE ANSWER", "HOW DID", "HE KNOW" },
+		new String[] { "NINE", "I AM", "STILL", "MYSELF" },
+		new String[] { "COUNT ME", "OUT", "PLEASE", "COUNT ME" },
+		new String[] { "IIII", "I SLEPT", "THAT IS", "GOOD" },
+		new String[] { "IF I STOP", "EATING", "DO NOT", "OPEN THIS" },
+		new String[] { "JOREN", "WARDER", "SECOND", "MONTH" },
+		new String[] { "NOBODY", "HAS COME", "IN FOUR", "DAYS" },
+	};
+
+	private static void dressCells(ServerLevel level, BlockPos start, RandomSource random) {
+		java.util.List<Cell> spots = cells(start);
+		for (int n = 0; n < spots.size(); n++) {
+			Cell spot = spots.get(n);
+			// The back wall of the cell is at in == 5, so the sign hangs on the face
+			// of it at in == 4, at head height, facing back toward the door. Which
+			// means you cannot read it from the corridor. You have to go in.
+			BlockPos at = spot.mouth().relative(spot.into(), 4).above();
+			scratch(level, at, spot.into().getOpposite(),
+				SCRATCHED[n % SCRATCHED.length]);
+		}
+	}
+
+	/**
+	 * A wall sign, set over whatever was there.
+	 *
+	 * Unconditional, unlike sign() — this runs after cell() has thrown cobwebs
+	 * around at random, and one of the four it throws can land on exactly this
+	 * block. sign()'s air check would silently drop the note, and a missing note
+	 * is indistinguishable from a cell nobody wrote in.
+	 */
+	private static void scratch(ServerLevel level, BlockPos at, Direction faces,
+	                            String[] lines) {
+		level.setBlock(at, Blocks.OAK_WALL_SIGN.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, faces), 2);
+		if (level.getBlockEntity(at) instanceof SignBlockEntity sign) {
+			SignText text = new SignText();
+			for (int row = 0; row < 4; row++) {
+				text = text.setMessage(row, Component.literal(
+					row < lines.length ? lines[row] : ""));
+			}
+			sign.setText(text, true);
+		}
 	}
 
 	private static void sign(ServerLevel level, BlockPos at, String[] lines) {

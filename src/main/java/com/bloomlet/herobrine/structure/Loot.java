@@ -105,6 +105,23 @@ public final class Loot {
 		HIS_CITY,
 		/** Up the tower, past the gap. Paid for in height rather than in distance. */
 		TOWER,
+		/**
+		 * THE GAOL, AND IT HAS TO PAY, because the walk to it is the longest
+		 * unrewarded stretch in the mod.
+		 *
+		 * Sixteen blocks of stair, thirty-four of hall, fourteen cells, and at the
+		 * end of it one chest on LARDER — the same pool as a dead farmer's pantry.
+		 * A player who goes all the way down and finds bread has been told, by the
+		 * only language a chest speaks, that they should not have bothered.
+		 *
+		 * And unlike the farm, this is not an abandoned building the rule at the
+		 * top of this file was written about. It is an INSTITUTION, and it was in
+		 * operation: it had warders, it had a payroll, it had a stores cupboard.
+		 * Iron, restraint, and record-keeping, which is what a gaol actually owns.
+		 * The pickaxes and the coal are in here because the same men were sinking
+		 * the shaft behind the warder's room.
+		 */
+		GAOL,
 	}
 
 	private record Entry(Item item, int min, int max, int weight, boolean worn) {}
@@ -388,6 +405,44 @@ public final class Loot {
 		new Entry(Items.GOLDEN_APPLE, 1, 1, 2, false),
 	};
 
+	/**
+	 * A working gaol's stores: iron, restraint, paper, and the shaft out back.
+	 *
+	 * Chainmail rather than plate, and all of it worn. A warder is not a soldier
+	 * — he is issued the cheap mail nobody at the front would take, and he wears
+	 * it for years. The chains and the bars are stock rather than salvage: this
+	 * was a building that ordered restraint hardware by the crate.
+	 *
+	 * The milk is the saddest entry in this file. It is in here because somebody
+	 * down there thought what was happening to those fourteen people might be a
+	 * thing you could cure, and milk is what you reach for when you believe that.
+	 */
+	private static final Entry[] GAOL_POOL = {
+		new Entry(Items.IRON_INGOT, 3, 9, 10, false),
+		new Entry(Items.IRON_CHAIN, 3, 10, 9, false),
+		new Entry(Items.TORCH, 8, 24, 8, false),
+		new Entry(Items.IRON_BARS, 4, 12, 8, false),
+		new Entry(Items.BREAD, 3, 9, 7, false),
+		new Entry(Items.CHAINMAIL_CHESTPLATE, 1, 1, 6, true),
+		new Entry(Items.CHAINMAIL_HELMET, 1, 1, 6, true),
+		new Entry(Items.SHIELD, 1, 1, 6, true),
+		new Entry(Items.COAL, 4, 14, 6, false),
+		new Entry(Items.IRON_SWORD, 1, 1, 5, true),
+		new Entry(Items.IRON_PICKAXE, 1, 1, 5, true),
+		new Entry(Items.PAPER, 4, 12, 5, false),
+		new Entry(Items.BOOK, 1, 4, 5, false),
+		new Entry(Items.CHAINMAIL_LEGGINGS, 1, 1, 4, true),
+		new Entry(Items.IRON_NUGGET, 4, 12, 4, false),
+		new Entry(Items.LANTERN, 1, 3, 4, false),
+		new Entry(Items.TRIPWIRE_HOOK, 1, 3, 4, false),
+		new Entry(Items.INK_SAC, 1, 3, 4, false),
+		new Entry(Items.IRON_BOOTS, 1, 1, 3, true),
+		new Entry(Items.MILK_BUCKET, 1, 1, 3, false),
+		new Entry(Items.EMERALD, 2, 6, 3, false),
+		new Entry(Items.ENCHANTED_BOOK, 1, 1, 3, false),
+		new Entry(Items.GOLDEN_APPLE, 1, 1, 2, false),
+	};
+
 	private static final Entry[] CITY_POOL = {
 		// The food, and it is the good food.
 		new Entry(Items.GOLDEN_CARROT, 2, 8, 9, false),
@@ -493,6 +548,7 @@ public final class Loot {
 			case TOWN_TOOLS -> TOOLS_POOL;
 			case HIS_CITY -> CITY_POOL;
 			case TOWER -> TOWER_POOL;
+			case GAOL -> GAOL_POOL;
 		};
 	}
 

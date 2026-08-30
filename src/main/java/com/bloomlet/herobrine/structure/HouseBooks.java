@@ -486,6 +486,92 @@ public final class HouseBooks {
 			you.""");
 	}
 
+	/**
+	 * HOW TO TELL HIM FROM A PERSON, which is the one thing this building knows
+	 * that nothing else in the mod tells you.
+	 *
+	 * The gaol sits on Phase.MIMIC, and MIMIC is the phase where he stops being a
+	 * shape at the treeline and starts being one of your friends. Every tell in
+	 * here is a real one — they are read straight off MimicEntity.TheFriend, in
+	 * the order that goal actually runs them: COMES_TO 6, the crouch toggle on
+	 * GREET_EVERY, ransack, DRESSES_EVERY, STRIKES 3, then BOLTS at twice a
+	 * sprint. A player who reads this and then meets one has been given a fair
+	 * chance, which is the difference between a scare and a cheat.
+	 *
+	 * The last page is the mechanic stated plainly: the goal will not start unless
+	 * a player is SEPARATED from the others. "Do not be alone down here" is not
+	 * atmosphere, it is the counter.
+	 */
+	public static ItemStack theProtocol() {
+		return book("intake protocol", "the warder",
+			"""
+			A man came out of the wood
+			and he was my brother.
+
+			His face. His coat. He knew
+			what my brother knew.
+
+			There is no test for this.""",
+
+			"""
+			We tried seventeen of them.
+			All seventeen passed.
+
+			So we stopped asking what
+			he KNOWS, and started
+			watching what he DOES.
+			Four things. In order.""",
+
+			"""
+			ONE. He comes close and
+			stops at six paces.
+
+			TWO. He crouches at you.
+			On, off, on, off, longer
+			than any greeting takes.
+
+			A man does it once.""",
+
+			"""
+			THREE. He goes through
+			your chests while you are
+			stood there watching him.
+
+			FOUR. He puts your things
+			ON. Your mail. Your helm.
+			One piece at a time.""",
+
+			"""
+			Then he strikes. Three
+			times, no more. He is not
+			trying to kill you.
+
+			He is trying to see.
+
+			Then he runs, at twice
+			what a man can run.""",
+
+			"""
+			Do not wait for the fourth.
+
+			Leave at the SECOND. The
+			crouching is the one part
+			of him he did not copy off
+			somebody else.
+
+			He comes for a man alone.""",
+
+			"""
+			Two of you within shouting
+			distance and he does not
+			come at all.
+
+			So do not be alone down
+			here.
+
+			That is the whole protocol.""");
+	}
+
 	public static ItemStack theGaolAfter() {
 		return book("cell nine", "the warder",
 			"""
