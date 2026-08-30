@@ -48,6 +48,27 @@ public final class TheDig {
 	private TheDig() {}
 
 	private static final int DROP = 16;
+
+	/**
+	 * Where the one chest in this building ends up, from the surface origin alone.
+	 *
+	 * Public for the same reason Undercity publishes libraryAt: the map chain has
+	 * to leave the way to the church somewhere findable, and the gaol's only
+	 * container is at the far end of a thirty-four block hall sixteen down, which
+	 * is nowhere near the doorstep the default search starts from.
+	 *
+	 * This is the arithmetic in build(), read forwards. The stair drops DROP from a
+	 * corner one block back from the origin, the hall starts two under its landing
+	 * and runs HALL along z, and keeps() sets the chest three across and five
+	 * beyond the far end. Approximate by a block or two on x and z — the spiral's
+	 * last tread lands on whichever corner DROP happens to end on — and that is
+	 * fine, because the caller searches a radius around this rather than reading
+	 * the single block. It only has to land inside the right room.
+	 */
+	public static BlockPos keepAt(ServerLevel level, BlockPos origin) {
+		int ground = Ground.topOf(level, origin.getX(), origin.getZ()) + 1;
+		return new BlockPos(origin.getX() - 3, ground - DROP - 2, origin.getZ() + HALL + 5);
+	}
 	private static final int HALL = 34;
 	private static final int CELLS_PER_SIDE = 7;
 

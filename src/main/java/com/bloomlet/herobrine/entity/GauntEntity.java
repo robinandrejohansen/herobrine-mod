@@ -94,9 +94,25 @@ public class GauntEntity extends PathfinderMob {
 			// It gets very few swings, because it only closes when unobserved and
 			// the moment it is in reach you are looking at it. The ones it gets
 			// have to be worth having run from.
-			.add(Attributes.ATTACK_DAMAGE, 9.0)
-			.add(Attributes.ATTACK_KNOCKBACK, 0.6)
-			// SLOW, AND IT HAS TO BE, now that it cannot step through the distance.
+			// FAR LESS DAMAGE, AND IT THROWS YOU INSTEAD.
+			//
+			// Nine was a two-hit kill through iron, which makes the thing that never
+			// moves while you watch it into something you simply must not let touch
+			// you — and that is a stat, not a scare. Four is survivable, which is the
+			// point: the blow is not what you remember about it.
+			//
+			// What you remember is the arc. See launch().
+			.add(Attributes.ATTACK_DAMAGE, 4.0)
+			.add(Attributes.ATTACK_KNOCKBACK, 1.2)
+			// A GOLEM'S PACE, WHICH IS THE SHAPE OF THE THING RATHER THAN A NUMBER.
+			//
+			// An iron golem walks at 0.25 and reads as unhurried, heavy and certain —
+			// it is not chasing you, it is coming, and the difference is legible from
+			// across a field. That is exactly the register this wants, and 0.19 was
+			// under it: slow enough to read as damaged rather than deliberate.
+			//
+			// Still comfortably under a sprint. It never catches anybody who is
+			// moving. It catches people who stopped.
 			//
 			// It used to arrive rather than walk when it was far enough out, and
 			// that covered a lot: speed did not matter much when the gap could be
@@ -108,7 +124,7 @@ public class GauntEntity extends PathfinderMob {
 			//
 			// Well under a player's walk. It never catches anybody who is moving.
 			// It catches people who stopped.
-			.add(Attributes.MOVEMENT_SPEED, 0.19)
+			.add(Attributes.MOVEMENT_SPEED, 0.25)
 			.add(Attributes.FOLLOW_RANGE, 64.0)
 			.add(Attributes.STEP_HEIGHT, 1.0);
 	}
@@ -388,6 +404,47 @@ public class GauntEntity extends PathfinderMob {
 	@Override
 	public float getVoicePitch() {
 		return DEEP;
+	}
+
+	/**
+	 * How hard it throws, straight up, in blocks per tick.
+	 *
+	 * THIS NUMBER IS A FALL, NOT A HEIGHT, and that is the trap in it. A player
+	 * launched at v rises roughly 1.25 * (v / 0.42) ^ 2 blocks — a normal jump is
+	 * 0.42 and 1.25 blocks — and then comes down, and everything above three blocks
+	 * of that descent is damage. So a satisfying-looking 1.0 is seven blocks up and
+	 * four points of fall on the way back, which would quietly hand back the five
+	 * points we just took off the attack and leave the thing exactly as lethal as
+	 * it was, with an extra animation.
+	 *
+	 * 0.8 is about four and a half blocks: unmistakably thrown, a real moment of
+	 * being airborne and not in charge, and a landing that costs a point or two.
+	 * Four from the blow plus that is still well under the nine it used to hit for.
+	 */
+	private static final double THROWN = 0.8;
+
+	/**
+	 * It hits you off your feet rather than through your armour.
+	 *
+	 * An iron golem is the reference the whole creature is being pointed at now:
+	 * slow, heavy, and the thing everybody remembers about it is the arc, not the
+	 * hit. You do not die to a golem, you get put somewhere else, and the fright is
+	 * that you are no longer standing where you had planned to be standing.
+	 *
+	 * The knockback attribute handles the horizontal — this is only the lift, and
+	 * it has to be added AFTER super, because the damage call is what applies the
+	 * ordinary knockback and it writes delta movement rather than adding to it.
+	 */
+	@Override
+	public boolean doHurtTarget(ServerLevel level, net.minecraft.world.entity.Entity target) {
+		if (!super.doHurtTarget(level, target)) {
+			return false;
+		}
+		target.setDeltaMovement(target.getDeltaMovement().add(0.0, THROWN, 0.0));
+		target.hurtMarked = true;   // tells the server to send the player the shove
+		level.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.IRON_GOLEM_ATTACK, this.getSoundSource(), 1.0F, DEEP);
+		return true;
 	}
 
 	@Override

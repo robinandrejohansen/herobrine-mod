@@ -247,6 +247,13 @@ public final class Dwellings {
 			// and that book's last line is go to the gaol on the ridge. The
 			// direction and the means to follow it end up in the same box.
 			case TOWER -> inTheCellar(over, anchor);
+			// AND THE GAOL'S GOES DOWN WITH THE WARDER, for the reason the tower's
+			// does. Its only containers are sixteen blocks below the surface at the
+			// far end of a thirty-four block hall — well outside the twenty-four the
+			// default searches from the doorstep — so the church was being sited with
+			// nowhere to leave the way to it, and the trail ended at the gaol exactly
+			// as it used to end at the tower.
+			case GAOL -> inTheGaol(over, anchor);
 			default -> nearestHolder(over, anchor);
 		};
 		if (holder == null) {
@@ -384,6 +391,40 @@ public final class Dwellings {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * The warder's room, at the bottom of the gaol and the end of its hall.
+	 *
+	 * Deeper and further along than the tower's cellar, so it gets a wider look:
+	 * the stair drops DROP and the hall runs HALL beyond it, and the only chests in
+	 * the building are down there with the book that says to go to the church.
+	 */
+	private static net.minecraft.world.level.block.entity.@org.jspecify.annotations.Nullable
+			BlockEntity inTheGaol(ServerLevel over, BlockPos site) {
+		BlockPos keep = com.bloomlet.herobrine.structure.TheDig.keepAt(over, site);
+
+		// AND THE CHUNKS HAVE TO BE THERE FIRST, which is the whole reason this
+		// needed writing rather than widening the default. nearestHolder walks a
+		// cube and quietly skips anything !isLoaded, so pointing it at a chest
+		// thirty-nine blocks out — three chunks away, in a chunk nobody has any
+		// reason to have loaded — returns null and reports nothing wrong.
+		for (int cx = (keep.getX() - LOOKS_FOR_A_CHEST) >> 4;
+				cx <= (keep.getX() + LOOKS_FOR_A_CHEST) >> 4; cx++) {
+			for (int cz = (keep.getZ() - LOOKS_FOR_A_CHEST) >> 4;
+					cz <= (keep.getZ() + LOOKS_FOR_A_CHEST) >> 4; cz++) {
+				over.getChunk(cx, cz);
+			}
+		}
+
+		net.minecraft.world.level.block.entity.BlockEntity found =
+			nearestHolder(over, keep);
+		if (found != null) {
+			return found;
+		}
+		HerobrineMod.LOGGER.warn("no chest in the gaol at [{}, {}, {}] — falling back",
+			keep.getX(), keep.getY(), keep.getZ());
+		return nearestHolder(over, site);
 	}
 
 	/**
@@ -648,7 +689,13 @@ public final class Dwellings {
 		HOMESTEAD("homestead", Phase.RUMOUR, 280, 520),
 		TOWN("town", Phase.WATCHER, 340, 620),
 		TOWER("house_two", Phase.TRESPASSER, 450, 800),
-		GAOL("house_three", Phase.MIMIC, 550, 950),
+		// Pulled in. These are measured from where the players are standing when the
+		// place is sited, which in practice is the building they have just finished
+		// reading — so this number IS the walk, and 550-950 made the walk out of the
+		// tower the longest stretch in the chapter before the church. Now it is a
+		// touch shorter than the tower's own, which is the shape you want in the
+		// middle of a sequence: not a relief, just not an escalation.
+		GAOL("house_three", Phase.MIMIC, 480, 760),
 		/**
 		 * AND THIS ONE IS NOT SITED UNTIL A HUNT HAS BEEN SURVIVED.
 		 *
