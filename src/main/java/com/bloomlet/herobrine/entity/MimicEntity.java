@@ -118,15 +118,285 @@ public class MimicEntity extends PathfinderMob {
 		// deliberate about. Both speeds are 1.0 rather than the usual 1.0/1.2
 		// walk-then-sprint, because a player who has decided to leave does not
 		// break into a run, and a sprint would read as fleeing.
-		this.goalSelector.addGoal(1, new AvoidEntityGoal<>(this, Player.class, 12.0F, 1.0, 1.0));
+		// ABOVE THE AVOIDANCE, AND ONLY IN HIS WORLD. Out in the overworld the whole
+		// point of him is that he will not come near you and will not look at you.
+		// Over there you are the one who is a long way from anybody, and the thing
+		// that is worth doing is the opposite.
+		this.goalSelector.addGoal(1, new TheFriend(this));
+		this.goalSelector.addGoal(2, new AvoidEntityGoal<>(this, Player.class, 12.0F, 1.0, 1.0));
 		// Above strolling, so that when he has a pickaxe he is a person who came
 		// down here to do something rather than a person wandering a cave.
-		this.goalSelector.addGoal(2, new Mining(this));
-		this.goalSelector.addGoal(3, new WaterAvoidingRandomStrollGoal(this, 1.0));
+		this.goalSelector.addGoal(3, new Mining(this));
+		this.goalSelector.addGoal(4, new WaterAvoidingRandomStrollGoal(this, 1.0));
 		// And no LookAtPlayerGoal anywhere in here, which is the omission that
 		// does the work. Every mob in the game turns to watch you; being looked
 		// straight through is what people report as the thing that got them.
-		this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
+		this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
+	}
+
+	/**
+	 * THE ONE WHO COMES OVER AND SAYS HELLO.
+	 *
+	 * The mimic already wears somebody's skin, carries their name over its head and
+	 * puts a seventh row in a six-player tab list. What it has never done is BEHAVE
+	 * like them, and the behaviour is where the whole thing pays off — because
+	 * every single beat below is something a real player does, and a player who has
+	 * been on a server for a week knows all of them by heart.
+	 *
+	 *     walks over            not toward you exactly. over.
+	 *     crouch-spams          the universal I-am-friendly. everybody does this.
+	 *     goes through a chest  and takes the good stuff, the way anybody would
+	 *     PUTS THE ARMOUR ON    in front of you, piece by piece
+	 *     hits you              three times, which is a joke between friends
+	 *     and sprints off       at twice the speed anything alive can run
+	 *
+	 * The sequence is doing one job: every step reads as a person right up until
+	 * the last one, and the last one is not survivable as an interpretation. There
+	 * is no moment where a player thinks "that is a mob". There is a moment where
+	 * they think "why is he not answering" and then a much worse one.
+	 *
+	 * THE ARMOUR IS THE CENTREPIECE. Taking it out of the chest is a mechanic;
+	 * standing there putting it on, one piece every second, while you watch, is a
+	 * PERSON. It also has a mechanical point: whatever he leaves with is gone, so
+	 * the visit costs something real, and the next time you see that skin it will
+	 * be wearing your iron.
+	 *
+	 * ONLY WHERE NOBODY CAN CHECK. Mimicry already refuses to place him unless the
+	 * players are eighty blocks apart — the entire scare rests on not being able to
+	 * shout across and ask. This runs in his world, where they are further apart
+	 * than that and the map does not help.
+	 */
+	private static final class TheFriend extends net.minecraft.world.entity.ai.goal.Goal {
+		private static final double COMES_TO = 6.0;
+		private static final int GREET_FOR = 90;
+		private static final int GREET_EVERY = 7;
+		private static final double LOOKS_FOR_A_CHEST = 22.0;
+		private static final int DRESSES_EVERY = 22;
+		private static final int STRIKES = 3;
+		private static final double GETS_AWAY = 46.0;
+		/** Twice a sprint. Nothing alive moves like this and that is the point. */
+		private static final double BOLTS = 2.0;
+
+		private final MimicEntity him;
+		private net.minecraft.world.entity.player.@org.jspecify.annotations.Nullable Player mark;
+		private net.minecraft.core.@org.jspecify.annotations.Nullable BlockPos box;
+		private final java.util.List<net.minecraft.world.item.ItemStack> took =
+			new java.util.ArrayList<>();
+		private int stage;
+		private int held;
+
+		private TheFriend(MimicEntity him) {
+			this.him = him;
+			this.setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK));
+		}
+
+		@Override
+		public boolean canUse() {
+			if (!this.him.level().dimension().equals(
+					com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+				return false;
+			}
+			this.mark = this.him.level().getNearestPlayer(this.him, 40.0);
+			return this.mark != null;
+		}
+
+		@Override
+		public boolean canContinueToUse() {
+			return this.mark != null && this.mark.isAlive() && this.stage <= 5;
+		}
+
+		@Override
+		public void start() {
+			this.stage = 0;
+			this.held = 0;
+			this.took.clear();
+			this.box = null;
+		}
+
+		@Override
+		public void stop() {
+			this.him.setShiftKeyDown(false);
+			this.him.setSprinting(false);
+			this.mark = null;
+		}
+
+		@Override
+		public void tick() {
+			if (this.mark == null || !(this.him.level() instanceof ServerLevel here)) {
+				return;
+			}
+			this.held++;
+			switch (this.stage) {
+				case 0 -> approach();
+				case 1 -> greet();
+				case 2 -> ransack(here);
+				case 3 -> dress();
+				case 4 -> strike(here);
+				default -> flee();
+			}
+		}
+
+		/** Walks over. Ordinary pace — a person crossing a clearing. */
+		private void approach() {
+			this.him.getLookControl().setLookAt(this.mark, 30.0F, 30.0F);
+			this.him.getNavigation().moveTo(this.mark, 1.0);
+			if (this.him.distanceTo(this.mark) <= COMES_TO) {
+				this.him.getNavigation().stop();
+				this.stage = 1;
+				this.held = 0;
+			}
+		}
+
+		/**
+		 * Crouch-spam, which is the closest thing Minecraft has to a handshake.
+		 *
+		 * It is also the only part of this a player will describe afterwards as the
+		 * bit that got them, because it is not a threat — it is somebody being
+		 * NICE, and it is being done by something that is about to hit them.
+		 */
+		private void greet() {
+			this.him.getLookControl().setLookAt(this.mark, 30.0F, 30.0F);
+			this.him.setShiftKeyDown((this.held / GREET_EVERY) % 2 == 0);
+			if (this.held >= GREET_FOR) {
+				this.him.setShiftKeyDown(false);
+				this.stage = 2;
+				this.held = 0;
+			}
+		}
+
+		/** Goes through the nearest chest, and takes what anybody would take. */
+		private void ransack(ServerLevel here) {
+			if (this.box == null) {
+				this.box = nearestBox(here);
+				if (this.box == null) {
+					this.stage = 4;      // nothing to rob. straight to the joke.
+					this.held = 0;
+					return;
+				}
+			}
+			this.him.getLookControl().setLookAt(this.box.getX() + 0.5,
+				this.box.getY() + 0.5, this.box.getZ() + 0.5, 30.0F, 30.0F);
+			this.him.getNavigation().moveTo(this.box.getX() + 0.5, this.box.getY(),
+				this.box.getZ() + 0.5, 1.0);
+			if (this.him.blockPosition().distSqr(this.box) > 9.0 && this.held < 200) {
+				return;
+			}
+			this.him.getNavigation().stop();
+			if (here.getBlockEntity(this.box)
+					instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+				here.playSound(null, this.box,
+					net.minecraft.sounds.SoundEvents.CHEST_OPEN,
+					this.him.getSoundSource(), 0.8F, 1.0F);
+				for (int slot = 0; slot < chest.getContainerSize(); slot++) {
+					net.minecraft.world.item.ItemStack in = chest.getItem(slot);
+					if (in.isEmpty() || this.took.size() >= 5) {
+						continue;
+					}
+					net.minecraft.world.entity.EquipmentSlot where =
+						this.him.getEquipmentSlotForItem(in);
+					// SwordItem and AxeItem stopped being classes — weapons are
+					// data-driven now and the tags are the only honest question.
+					if (where == net.minecraft.world.entity.EquipmentSlot.MAINHAND
+						&& !in.is(net.minecraft.tags.ItemTags.SWORDS)
+						&& !in.is(net.minecraft.tags.ItemTags.AXES)) {
+						continue;      // he is not here for your carrots
+					}
+					this.took.add(in.copy());
+					chest.setItem(slot, net.minecraft.world.item.ItemStack.EMPTY);
+				}
+				chest.setChanged();
+				here.playSound(null, this.box,
+					net.minecraft.sounds.SoundEvents.CHEST_CLOSE,
+					this.him.getSoundSource(), 0.8F, 1.0F);
+			}
+			this.stage = 3;
+			this.held = 0;
+		}
+
+		/** And puts it on, one piece at a time, standing where you can see him. */
+		private void dress() {
+			this.him.getNavigation().stop();
+			this.him.getLookControl().setLookAt(this.mark, 30.0F, 30.0F);
+			if (this.held % DRESSES_EVERY != 0) {
+				return;
+			}
+			if (this.took.isEmpty()) {
+				this.stage = 4;
+				this.held = 0;
+				return;
+			}
+			net.minecraft.world.item.ItemStack on = this.took.remove(0);
+			net.minecraft.world.entity.EquipmentSlot where =
+				this.him.getEquipmentSlotForItem(on);
+			this.him.setItemSlot(where, on);
+			this.him.setDropChance(where, 0.0F);
+			if (this.him.level() instanceof ServerLevel here) {
+				here.playSound(null, this.him.blockPosition(),
+					net.minecraft.sounds.SoundEvents.ARMOR_EQUIP_IRON.value(),
+					this.him.getSoundSource(), 0.9F, 1.0F);
+			}
+		}
+
+		/** Three hits. Between friends that is a joke. */
+		private void strike(ServerLevel here) {
+			this.him.getLookControl().setLookAt(this.mark, 30.0F, 30.0F);
+			this.him.getNavigation().moveTo(this.mark, 1.1);
+			if (this.him.distanceTo(this.mark) > 2.6) {
+				return;
+			}
+			if (this.held % 14 != 0) {
+				return;
+			}
+			this.him.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+			this.him.doHurtTarget(here, this.mark);
+			if (this.held / 14 >= STRIKES) {
+				this.stage = 5;
+				this.held = 0;
+			}
+		}
+
+		/**
+		 * And then he leaves at twice the speed of anything that runs.
+		 *
+		 * This is the beat the whole visit was built to deliver. Everything before
+		 * it is deniable — a quiet player, a rude player, a player messing about.
+		 * A figure crossing open ground at double sprint is not a player and cannot
+		 * be made into one, and it happens AFTER the player has spent a minute
+		 * deciding it was one.
+		 */
+		private void flee() {
+			this.him.setSprinting(true);
+			double dx = this.him.getX() - this.mark.getX();
+			double dz = this.him.getZ() - this.mark.getZ();
+			double span = Math.max(0.001, Math.hypot(dx, dz));
+			this.him.getNavigation().moveTo(
+				this.him.getX() + dx / span * 24.0, this.him.getY(),
+				this.him.getZ() + dz / span * 24.0, BOLTS);
+			if (this.him.distanceTo(this.mark) >= GETS_AWAY || this.held > 400) {
+				this.him.vanish();
+				this.stage = 6;
+			}
+		}
+
+		private net.minecraft.core.@org.jspecify.annotations.Nullable BlockPos nearestBox(
+				ServerLevel here) {
+			int r = (int) LOOKS_FOR_A_CHEST;
+			net.minecraft.core.BlockPos best = null;
+			double nearest = Double.MAX_VALUE;
+			for (net.minecraft.core.BlockPos at : net.minecraft.core.BlockPos.betweenClosed(
+					this.him.blockPosition().offset(-r, -4, -r),
+					this.him.blockPosition().offset(r, 4, r))) {
+				if (!here.getBlockState(at).is(net.minecraft.world.level.block.Blocks.CHEST)) {
+					continue;
+				}
+				double away = at.distSqr(this.him.blockPosition());
+				if (away < nearest) {
+					nearest = away;
+					best = at.immutable();
+				}
+			}
+			return best;
+		}
 	}
 
 	@Override
