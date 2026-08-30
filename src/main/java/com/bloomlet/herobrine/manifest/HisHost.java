@@ -156,6 +156,7 @@ public final class HisHost {
 			if (player.isSpectator() || player.isCreative() || !player.isAlive()) {
 				continue;
 			}
+			closing(his, player);
 			for (Mob spotter : his.getEntitiesOfClass(Mob.class,
 					player.getBoundingBox().inflate(HIVE_SEARCH),
 					mob -> mob.getTarget() == player)) {
@@ -167,6 +168,71 @@ public final class HisHost {
 				break;
 			}
 		}
+	}
+
+	/** How far out he starts pulling the storm in after him. */
+	private static final double STORM_FEELS = 90.0;
+	/** And how close it has to be before every second is carrying a strike. */
+	private static final double STORM_ON_TOP = 18.0;
+	/** How far from the player the bolts land. Never on them. */
+	private static final double BOLT_NEAR = 6.0;
+	private static final double BOLT_FAR = 22.0;
+
+	/**
+	 * THE STORM KNOWS HE IS COMING BEFORE YOU DO.
+	 *
+	 * His world rains permanently and that rain is scenery — constant, and anything
+	 * constant stops being information within a minute. So the weather has never
+	 * once told a player anything, in a place whose entire mood is weather.
+	 *
+	 * This makes the sky the tell. Ninety blocks out the first bolt lands somewhere
+	 * off in the trees, maybe one every twenty seconds. At eighteen it is most
+	 * seconds and it is landing close enough to light the ground you are standing
+	 * on. Nothing has appeared, nothing has made a sound at you, and the horizon is
+	 * coming apart.
+	 *
+	 * AND IT IS REAL, which is the whole reason it works. Every one of these goes
+	 * through struck() like any other bolt over here, so what a player watches
+	 * approach is not an effect — it is craters and fire arriving in a line, and
+	 * the line has a direction, and the direction is him.
+	 *
+	 * They never land ON anybody. Six blocks is the closest, which is near enough
+	 * to be frightening and far enough that the warning is not also the damage.
+	 */
+	private static void closing(ServerLevel his,
+	                            net.minecraft.server.level.ServerPlayer player) {
+		com.bloomlet.herobrine.entity.HerobrineEntity him =
+			com.bloomlet.herobrine.entity.HerobrineEntity.oneIn(his);
+		if (him == null) {
+			return;
+		}
+		double away = him.distanceTo(player);
+		if (away > STORM_FEELS) {
+			return;
+		}
+		// Linear from nothing at ninety blocks to about one a second on top of you.
+		double near = (STORM_FEELS - away) / (STORM_FEELS - STORM_ON_TOP);
+		double chance = Math.min(1.0, Math.max(0.0, near)) * 0.9 + 0.05;
+		RandomSource random = his.getRandom();
+		if (random.nextDouble() > chance) {
+			return;
+		}
+
+		double angle = random.nextDouble() * Math.PI * 2.0;
+		double range = BOLT_NEAR + random.nextDouble() * (BOLT_FAR - BOLT_NEAR);
+		int x = (int) Math.round(player.getX() + Math.cos(angle) * range);
+		int z = (int) Math.round(player.getZ() + Math.sin(angle) * range);
+		int y = his.getHeight(
+			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+			x, z);
+
+		net.minecraft.world.entity.LightningBolt bolt =
+			EntityTypes.LIGHTNING_BOLT.create(his, EntitySpawnReason.EVENT);
+		if (bolt == null) {
+			return;
+		}
+		bolt.snapTo(x + 0.5, y, z + 0.5, 0.0F, 0.0F);
+		his.addFreshEntity(bolt);
 	}
 
 	private static void call(ServerLevel his, Mob spotter,
@@ -200,7 +266,29 @@ public final class HisHost {
 		if (!Config.get().enabled) {
 			return;
 		}
-		if (!level.dimension().equals(TheWayBlock.HIS_WORLD) || !(entity instanceof Mob mob)) {
+		if (!level.dimension().equals(TheWayBlock.HIS_WORLD)) {
+			return;
+		}
+
+		// EVERY BOLT OVER THERE LEAVES A HOLE AND A FIRE, NOT JUST HIS.
+		//
+		// The crater and the scorch were built for the ending — for him, throwing
+		// lightning while he circles his own castle — and they are the best thing in
+		// the fight. The weather in his world has been dropping perfectly ordinary
+		// vanilla bolts the entire time, which set a tree alight if you were lucky
+		// and otherwise did nothing at all.
+		//
+		// Wiring the same two effects onto the WEATHER is the cheapest way to make
+		// the storm read as him. A player who has fought him at the keep already
+		// knows what a strike of his looks like: a dished-out crater and fire round
+		// the rim. Then it starts happening on the walk home, in weather nobody is
+		// controlling, and the dimension stops having weather and starts having HIM.
+		if (entity instanceof net.minecraft.world.entity.LightningBolt bolt) {
+			struck(level, bolt.blockPosition());
+			return;
+		}
+
+		if (!(entity instanceof Mob mob)) {
 			return;
 		}
 		// AND THE SWEEP RUNS BEFORE THE ARMING, and outside the hisHost gate.
@@ -465,8 +553,62 @@ public final class HisHost {
 	 * that his own garrison shells to rubble over a week is a bug, not a story.
 	 */
 	private static final int DENT = 2;
+	/** A weather strike bites deeper than a fireball. */
+	private static final int BOLT_DENT = 3;
+	/** And how many fires it leaves round the rim. */
+	private static final int BOLT_FIRES = 5;
+
+	/**
+	 * What a bolt does to his ground.
+	 *
+	 * Gated the same three ways every other terrain effect in this file is: only in
+	 * his world, only when mobGriefing allows it, and only when hisHost is on.
+	 * Somebody who has turned mobGriefing off has said they do not want terrain
+	 * touched, and this is terrain being touched however it is dressed up.
+	 *
+	 * The fires burn out on their own after six seconds. A permanent fire in a dark
+	 * forest under permanent rain is a forest fire, and the point of this is a
+	 * pockmarked wood rather than a burnt one.
+	 */
+	public static void struck(ServerLevel here, BlockPos at) {
+		if (!Config.get().hisHost
+			|| !here.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
+			return;
+		}
+		dent(here, at, BOLT_DENT);
+
+		RandomSource random = here.getRandom();
+		int lit = 0;
+		for (int attempt = 0; attempt < 16 && lit < BOLT_FIRES; attempt++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = 1.4 + random.nextDouble() * 2.6;
+			BlockPos near = BlockPos.containing(at.getX() + Math.cos(angle) * range,
+				at.getY(), at.getZ() + Math.sin(angle) * range);
+			BlockPos ground = null;
+			for (int down = 0; down <= 3 && ground == null; down++) {
+				if (here.getBlockState(near.below(down)).isSolid()) {
+					ground = near.below(down);
+				}
+			}
+			if (ground == null || !here.getBlockState(ground.above()).isAir()) {
+				continue;
+			}
+			final BlockPos flame = ground.above();
+			here.setBlock(flame, Blocks.FIRE.defaultBlockState(), 2);
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), 120, () -> {
+				if (here.getBlockState(flame).is(Blocks.FIRE)) {
+					here.setBlock(flame, Blocks.AIR.defaultBlockState(), 2);
+				}
+			});
+			lit++;
+		}
+	}
 
 	public static void dent(ServerLevel here, BlockPos impact) {
+		dent(here, impact, DENT);
+	}
+
+	public static void dent(ServerLevel here, BlockPos impact, int wide) {
 		RandomSource random = here.getRandom();
 		// Down to the floor from wherever it burst. Six is enough to reach the
 		// ground from a shot that went off in a trunk or a low branch, and short
@@ -483,9 +625,9 @@ public final class HisHost {
 		}
 		int taken = 0;
 		for (BlockPos pos : BlockPos.betweenClosed(
-				ground.offset(-DENT, -1, -DENT), ground.offset(DENT, 0, DENT))) {
+				ground.offset(-wide, -wide + 1, -wide), ground.offset(wide, 0, wide))) {
 			double away = Math.sqrt(pos.distSqr(ground));
-			if (away > DENT - 0.2 || random.nextInt(5) == 0) {
+			if (away > wide - 0.2 || random.nextInt(5) == 0) {
 				continue;
 			}
 			if (!diggable(here, pos)) {
