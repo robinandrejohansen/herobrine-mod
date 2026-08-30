@@ -79,6 +79,7 @@ public final class SecondHouse {
 
 		grounds(level, base, random);
 		theWatch(level, base, random);
+		stable(level, base, random);
 
 		HerobrineMod.LOGGER.info("the tower went up at [{}, {}, {}]",
 			base.getX(), base.getY(), base.getZ());
@@ -193,6 +194,7 @@ public final class SecondHouse {
 	 * and the emptiness around the chair is what says so.
 	 */
 	private static void crown(ServerLevel level, BlockPos base, RandomSource random) {
+		// (random is used by the deck chest below)
 		int top = base.getY() + TOWER_HEIGHT - 1;
 
 		for (int dx = -TOWER_RADIUS; dx <= TOWER_RADIUS; dx++) {
@@ -213,6 +215,24 @@ public final class SecondHouse {
 		level.setBlock(chair, Blocks.SPRUCE_STAIRS.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
 		level.setBlock(chair.north(2), Blocks.LANTERN.defaultBlockState(), 2);
+
+		// AND A CHEST BESIDE THE CHAIR, WHICH IS WHAT THE CLIMB IS FOR.
+		//
+		// Twenty-six blocks of open stair with no rail, in the wind, and what was at
+		// the top was somewhere to sit. That is a good image and a bad reward: a
+		// player who has just done something physically committing wants the climb
+		// acknowledged, and a chair acknowledges nothing.
+		//
+		// Next to the chair rather than in the middle of the deck, because it is HIS
+		// — the box a man keeps beside where he sits, not a treasure placed for
+		// somebody to find.
+		BlockPos box = chair.west();
+		level.setBlock(box, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
+		if (level.getBlockEntity(box) instanceof ChestBlockEntity kept) {
+			kept.setItem(0, new ItemStack(Items.SPYGLASS));
+			Loot.scatter(kept, random, Loot.Tier.TOWER);
+		}
 	}
 
 	/**
@@ -411,6 +431,146 @@ public final class SecondHouse {
 			.setValue(BlockStateProperties.OPEN, false)
 			.setValue(BlockStateProperties.HALF,
 				net.minecraft.world.level.block.state.properties.Half.BOTTOM), 2);
+	}
+
+	/** How far out the paddock sits, and how big it is. */
+	private static final int YARD_OUT = 17;
+	private static final int YARD_WIDE = 7;
+	private static final int YARD_DEEP = 6;
+
+	/**
+	 * A PADDOCK AND A STABLE, BECAUSE SOMEBODY LIVED HERE FOR YEARS.
+	 *
+	 * The tower says he watched and the buried house says he slept, and between
+	 * those two facts is a man who never went anywhere and never ate anything. A
+	 * holding is what makes the other two believable: fence, shelter, feed, and
+	 * animals that have to be let out in the morning.
+	 *
+	 * It is also the first thing on the whole trail that is WORTH SOMETHING while
+	 * you are standing in it. Six buildings of books and a lantern, and here is a
+	 * horse and a saddle four hundred blocks from home.
+	 *
+	 * ROOFED AND PROPERLY FENCED, which is the difference between a stable and
+	 * four fences in a field. The shelter runs the back wall, open to the yard, so
+	 * the animals have somewhere to stand out of the rain and the player can see
+	 * into it from outside — a closed box would just be a shed.
+	 */
+	private static void stable(ServerLevel level, BlockPos base, RandomSource random) {
+		Direction out = Direction.Plane.HORIZONTAL.getRandomDirection(random);
+		Direction across = out.getClockWise();
+		int cx = base.getX() + out.getStepX() * YARD_OUT;
+		int cz = base.getZ() + out.getStepZ() * YARD_OUT;
+		int floor = Ground.topOf(level, cx, cz) + 1;
+		BlockPos yard = new BlockPos(cx, floor, cz);
+
+		// ---- THE GROUND, levelled and worn. A paddock is mud by the second year.
+		for (int a = -YARD_WIDE; a <= YARD_WIDE; a++) {
+			for (int b = -YARD_DEEP; b <= YARD_DEEP; b++) {
+				BlockPos at = yard.relative(across, a).relative(out, b);
+				for (int up = 0; up <= 4; up++) {
+					level.setBlock(at.above(up), Blocks.AIR.defaultBlockState(), 2);
+				}
+				level.setBlock(at.below(), random.nextInt(4) == 0
+					? Blocks.DIRT.defaultBlockState()
+					: Blocks.COARSE_DIRT.defaultBlockState(), 2);
+			}
+		}
+
+		// ---- THE FENCE, with a gate on the side facing the tower.
+		for (int a = -YARD_WIDE; a <= YARD_WIDE; a++) {
+			for (int b = -YARD_DEEP; b <= YARD_DEEP; b++) {
+				if (Math.abs(a) != YARD_WIDE && Math.abs(b) != YARD_DEEP) {
+					continue;
+				}
+				BlockPos at = yard.relative(across, a).relative(out, b);
+				boolean gate = a == 0 && b == -YARD_DEEP;
+				level.setBlock(at, gate
+					? Blocks.SPRUCE_FENCE_GATE.defaultBlockState()
+						.setValue(BlockStateProperties.HORIZONTAL_FACING, out)
+					: Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+			}
+		}
+
+		// ---- THE SHELTER, along the far wall, open to the yard.
+		int backB = YARD_DEEP - 1;
+		for (int a = -3; a <= 3; a++) {
+			for (int b = backB - 2; b <= backB; b++) {
+				BlockPos at = yard.relative(across, a).relative(out, b);
+				boolean post = (Math.abs(a) == 3 || b == backB)
+					&& !(b == backB - 2);
+				if (post) {
+					for (int up = 0; up <= 2; up++) {
+						level.setBlock(at.above(up),
+							Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
+					}
+				}
+				// One course of roof over the whole footprint, sloped by slabs at
+				// the open edge so it reads as a lean-to rather than a lid.
+				level.setBlock(at.above(3), b == backB - 2
+					? Blocks.SPRUCE_SLAB.defaultBlockState()
+					: Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
+			}
+		}
+		// The two corner posts at the open front, or the roof floats.
+		for (int a : new int[] { -3, 3 }) {
+			BlockPos at = yard.relative(across, a).relative(out, backB - 2);
+			for (int up = 0; up <= 2; up++) {
+				level.setBlock(at.above(up), Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+			}
+		}
+
+		// ---- THE FEED. Bales under the roof, and a trough at the front of them.
+		for (int a = -2; a <= 2; a += 2) {
+			BlockPos bale = yard.relative(across, a).relative(out, backB - 1);
+			level.setBlock(bale, Blocks.HAY_BLOCK.defaultBlockState()
+				.setValue(BlockStateProperties.AXIS,
+					random.nextBoolean() ? Direction.Axis.X : Direction.Axis.Z), 2);
+			if (random.nextBoolean()) {
+				level.setBlock(bale.above(), Blocks.HAY_BLOCK.defaultBlockState(), 2);
+			}
+		}
+		level.setBlock(yard.relative(across, -3).relative(out, backB - 1),
+			Blocks.CAULDRON.defaultBlockState(), 2);
+
+		// ---- AND WHAT HE KEPT IN HERE.
+		BlockPos kit = yard.relative(across, 3).relative(out, backB - 1);
+		level.setBlock(kit, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, out.getOpposite()), 2);
+		if (level.getBlockEntity(kit) instanceof ChestBlockEntity tack) {
+			tack.setItem(0, new ItemStack(Items.SADDLE));
+			tack.setItem(1, new ItemStack(Items.LEAD, 2));
+			tack.setItem(2, new ItemStack(Items.WHEAT, 20 + random.nextInt(14)));
+			tack.setItem(3, new ItemStack(Items.GOLDEN_CARROT, 3 + random.nextInt(4)));
+			tack.setItem(4, new ItemStack(Items.HAY_BLOCK, 4));
+			tack.setItem(5, new ItemStack(Items.IRON_HOE));
+			tack.setItem(6, new ItemStack(Items.SHEARS));
+			tack.setItem(7, new ItemStack(Items.BUCKET));
+			Loot.scatter(tack, random, Loot.Tier.LARDER);
+		}
+
+		// ---- AND THE ANIMALS, WHICH ARE STILL HERE.
+		//
+		// Persistent, because the whole point is that they were left. A paddock
+		// somebody fenced, roofed and stocked, standing four hundred blocks from
+		// anywhere with the horses still in it, says he did not pack.
+		int head = 2 + random.nextInt(2);
+		for (int i = 0; i < head; i++) {
+			net.minecraft.world.entity.animal.equine.Horse horse =
+				net.minecraft.world.entity.EntityTypes.HORSE.create(
+					level, net.minecraft.world.entity.EntitySpawnReason.STRUCTURE);
+			if (horse == null) {
+				continue;
+			}
+			BlockPos at = yard.relative(across, random.nextInt(9) - 4)
+				.relative(out, random.nextInt(6) - 4);
+			horse.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5,
+				random.nextFloat() * 360.0F, 0.0F);
+			horse.setPersistenceRequired();
+			horse.setAge(0);
+			level.addFreshEntity(horse);
+		}
+		HerobrineMod.LOGGER.info("a paddock and {} horses at [{}, {}, {}]",
+			head, yard.getX(), yard.getY(), yard.getZ());
 	}
 
 	private static void grounds(ServerLevel level, BlockPos base, RandomSource random) {
