@@ -730,8 +730,24 @@ public final class Whereabouts {
 		// Only when it is not already going. A hunt's storm is nine to eleven
 		// minutes and re-arming over the top of it would cut it to forty seconds —
 		// the loud weather outranks the resident weather.
+		// RAIN FIRST, THUNDER LATER.
+		//
+		// This armed a full thunderstorm — rain AND thunder — inside ninety-six
+		// blocks of the first building in the game, from the first night, forever,
+		// refreshed every time it ran out. Thunder is the loudest weather Minecraft
+		// has and it darkens the sky enough to spawn mobs in daylight, and it was
+		// being used as the ambience of a farmhouse in the phase called RUMOUR.
+		//
+		// It also made the whole approach unreadable: rain, thunder, fog and a grey
+		// sky all arriving together at two hundred blocks means the player has
+		// nothing left to escalate INTO.
+		//
+		// Rain is enough to say this ground is wrong. The thunder waits until he has
+		// earned it.
+		boolean thunder = com.bloomlet.herobrine.wrath.Wrath.phase(server)
+			.atLeast(com.bloomlet.herobrine.wrath.Phase.MIMIC);
 		if (!over.isThundering()) {
-			server.setWeatherParameters(0, STORM_HOLDS, true, true);
+			server.setWeatherParameters(0, STORM_HOLDS, true, thunder);
 		}
 		if (!stormed) {
 			stormed = true;

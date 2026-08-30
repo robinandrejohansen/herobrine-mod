@@ -241,7 +241,12 @@ public final class Atmosphere {
 		//
 		// Floored, not subtracted freely. Below about four tenths the house itself
 		// starts disappearing, and the point is to walk toward it.
-		return Math.max(0.42F, base - SHUTS_IN_AT_HIS * near());
+		// FLOORED HIGHER THAN IT WAS. Forty-two per cent of the render distance is
+		// a wall of murk you walk into, and the note has come back twice now that
+		// heavy fog reads as low quality rather than as weather. Sixty-five still
+		// shuts the world in noticeably around his ground and leaves you able to see
+		// the building you are walking toward.
+		return Math.max(0.65F, base - SHUTS_IN_AT_HIS * near());
 	}
 
 	/**
@@ -398,6 +403,31 @@ public final class Atmosphere {
 			return 0.0F;
 		}
 		float held = net.minecraft.util.Mth.clamp(in, 0.0F, 1.0F);
+
+		// AND IT FOLLOWS THE STORY, WHICH IT NEVER DID.
+		//
+		// This ramp ran at full strength from the first minute of a world: walk
+		// within two hundred blocks of the homestead at RUMOUR and the sky went
+		// fifty-five per cent grey and the fog shut to under half its distance.
+		//
+		// RUMOUR is the phase whose entire job is to look like an ordinary world —
+		// Skies.wetFraction returns 0.00 for it, deliberately, with a comment saying
+		// so — and then this contradicted it at the one building the player is
+		// guaranteed to walk to first. The mod said "nothing is wrong yet" and its
+		// own atmosphere said otherwise, loudly, in the same field.
+		//
+		// A quarter at RUMOUR, all of it by SIEGE. The place is still wrong on the
+		// first visit; it is wrong the way a cold room is wrong rather than the way
+		// a storm is.
+		held *= switch (phase()) {
+			case RUMOUR -> 0.25F;
+			case WATCHER -> 0.45F;
+			case TRESPASSER -> 0.65F;
+			case MIMIC -> 0.8F;
+			case HUNTER -> 0.92F;
+			case SIEGE -> 1.0F;
+		};
+
 		return client.level.dimension().equals(
 			com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)
 			? held * HIS_SIDE : held;
