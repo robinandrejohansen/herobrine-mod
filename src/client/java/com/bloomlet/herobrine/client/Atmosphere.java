@@ -177,7 +177,35 @@ public final class Atmosphere {
 		// nine tenths the biome stops having any say at all and the world in front
 		// of you is one flat colour, which stops being weather and starts being a
 		// broken shader.
-		return Math.min(0.88F, base + GREY_AT_HIS * near());
+		return Math.min(0.88F, base + GREY_AT_HIS * near()) * daylit();
+	}
+
+	/**
+	 * AND IT ONLY APPLIES WHILE THERE IS LIGHT TO GREY OUT.
+	 *
+	 * PALL is rgb(58, 60, 66) — a dark slate, correct for an overcast noon. The
+	 * night sky is nearly black, around rgb(2, 3, 8). So lerping the NIGHT toward
+	 * PALL can only do one thing, and it is the opposite of everything this class
+	 * is for: at HUNTER it took the night sky to rgb(30, 31, 37) and at his door in
+	 * a SIEGE storm to about rgb(51, 53, 59).
+	 *
+	 * Which is a sky that looks like heavy dusk while the clock says midnight — so
+	 * the world reads as LIT and creepers spawn in it anyway. Reported exactly that
+	 * way: "det er lyst, men mobs spawner". Not a spawning bug and not the clock.
+	 * The atmosphere was quietly raising the black point of the night.
+	 *
+	 * getSkyDarken is vanilla's own answer to "how dark is it", eleven at midnight
+	 * and zero at noon, and it already accounts for weather. Scaling by it leaves
+	 * the overcast at full strength through the day, fades it out across dusk, and
+	 * gives the night back to the night.
+	 */
+	private static float daylit() {
+		net.minecraft.client.multiplayer.ClientLevel level =
+			net.minecraft.client.Minecraft.getInstance().level;
+		if (level == null) {
+			return 1.0F;
+		}
+		return Math.max(0.0F, 1.0F - level.getSkyDarken() / 11.0F);
 	}
 
 	/**

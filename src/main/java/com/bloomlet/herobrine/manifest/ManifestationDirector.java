@@ -46,6 +46,8 @@ public final class ManifestationDirector {
 	/** How many recent manifestations are blocked from repeating. */
 	private static final int SUPPRESS_LAST = 2;
 	private static final int CHECK_INTERVAL = 100;
+	/** However hot the player is and however bad he has got: never under this. */
+	private static final int NEVER_TIGHTER = 2 * 60 * 20;
 
 	/**
 	 * Debug time compression. The real window is 8-20 minutes, which is right
@@ -258,7 +260,34 @@ public final class ManifestationDirector {
 		// per-player share inside attentionFactor — two readings of the same
 		// climbing total, compounding, which is how the gap between events could
 		// quietly collapse to the forty-tick floor and stay there.
-		return Math.max(40, (int)(window(random) / attentionFactor(player)));
+		// AND THE GAP CLOSES AS HE GETS WORSE.
+		//
+		// The POOL grew with the phase — nine things are possible at RUMOUR and
+		// twenty-two by HUNTER — but the CLOCK never did, so the rate was one trace
+		// every eight to twenty minutes from the first night to the last. Which
+		// reads exactly as reported: something happens on the walk to the town, and
+		// then it goes quiet, and stays quiet, because eight to twenty minutes is a
+		// long time to be walking and nothing is broken.
+		//
+		// More KINDS of event at the same rate is variety. Escalation is the job.
+		//
+		// FLOORED AT TWO MINUTES, and that floor is the whole reason this is safe to
+		// add. The comment above records what happened last time two climbing scales
+		// were multiplied together: the gap collapsed to the forty-tick floor and
+		// stayed there. Heat is the player's own attention and phase is the world's
+		// state, so they are genuinely different axes — but two multipliers is two
+		// multipliers, and a hard floor costs nothing and cannot be argued with.
+		float tighter = switch (com.bloomlet.herobrine.wrath.Wrath.phase(
+				((ServerLevel) player.level()).getServer())) {
+			case RUMOUR -> 1.0F;
+			case WATCHER -> 0.88F;
+			case TRESPASSER -> 0.76F;
+			case MIMIC -> 0.64F;
+			case HUNTER -> 0.54F;
+			case SIEGE -> 0.45F;
+		};
+		return Math.max(NEVER_TIGHTER,
+			(int)(window(random) * tighter / attentionFactor(player)));
 	}
 
 	private static int window(RandomSource random) {
