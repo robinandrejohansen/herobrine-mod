@@ -1102,10 +1102,19 @@ public final class Dwellings {
 		// they have lit; whether the ground outside is dark is not a question
 		// worth asking, and asking it meant the whole beat silently failed in
 		// daylight.
-		com.bloomlet.herobrine.entity.HauntingSpawner.place(level, inside, true, hunting);
-		HerobrineMod.LOGGER.info("he came home to {} while {} was still there ({})",
-			place.name().toLowerCase(java.util.Locale.ROOT), inside.getName().getString(),
-			hunting ? "hunting" : "watching");
+		// AND HE DOES NOT COME HOME EITHER, for the same reason. See arriving().
+		//
+		// This was the other half: linger in one of his buildings long enough and he
+		// turns up in it. Better written than the arrival spawn and the same
+		// problem — it makes the six buildings places where he can be met, and they
+		// are supposed to be the reason to go and look for him somewhere else.
+		//
+		// Left as a log line rather than deleted outright, because the clock that
+		// drives it is worth keeping: something SHOULD happen to somebody who makes
+		// camp in his house, and when we know what it is this is where it goes.
+		HerobrineMod.LOGGER.info("{} is still in the {} — nothing came ({})",
+			inside.getName().getString(), place.name().toLowerCase(java.util.Locale.ROOT),
+			hunting ? "would have hunted" : "would have watched");
 	}
 
 	private static void arriving(ServerLevel level, Place place) {
@@ -1131,7 +1140,23 @@ public final class Dwellings {
 			// AND THE STORY MOVES, because somebody found one of his places. This
 			// is the only call site that advances a phase anywhere in the mod.
 			Wrath.discovered(level.getServer());
-			com.bloomlet.herobrine.entity.HauntingSpawner.atPlace(level, player, site);
+			// AND HE IS NOT STANDING THERE WHEN YOU ARRIVE. NOT ANY MORE.
+			//
+			// This put him at the building the moment somebody walked up to it, which
+			// is the single most reliable way to see him in the overworld: find a
+			// house, and he is at it. Reported after a playthrough as "he was shown in
+			// the town, the only thing I did was walk there".
+			//
+			// It contradicts the thing the whole mod was rebuilt around. He LIVES on
+			// the far side of the way now — over the keep, circling it — and what is
+			// left out here is his places and the traces. A building that produces him
+			// on arrival makes the overworld somewhere he still is, and then crossing
+			// over is a formality rather than the point.
+			//
+			// The apparitions are untouched and they are a different thing: the stare,
+			// the glimpse and the passage fire on their own clock, wherever the player
+			// happens to be, and are gone before anybody can walk up to them. Those
+			// are atmosphere. This was residence.
 			return;
 		}
 	}
