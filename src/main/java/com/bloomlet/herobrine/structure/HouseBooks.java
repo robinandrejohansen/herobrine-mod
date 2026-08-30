@@ -11,683 +11,1545 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.WrittenBookContent;
 
 /**
- * What the people who lived here wrote, in the order a player finds it.
+ * THE STORY, AND WHO IS TELLING IT.
  *
- * SIX CHAPTERS, AND EACH ONE ENDS BY POINTING AT THE NEXT PLACE.
+ * Two kinds of book, and the difference is the whole design.
  *
- *     1  the homestead   a family, and a man standing in their field
- *     2  the town        it happens to everyone. they go underground
- *     3  the tower       they built somewhere to watch from. it did not work
- *     4  the gaol        they started locking up the ones who came back
- *     5  the church      the last thing anybody organised. they decide to dig
- *     6  the threshold   they open the way, and then they lie about it
+ * STEVE'S SIX. One at each site, left on purpose, for whoever comes after him.
+ * Same five headings every time — what he is, who lived here, what he did, what
+ * I got wrong, where to go. A single voice a player learns to read once, that
+ * knows more than it is saying, and that is pointing at the next building and
+ * explaining why. These are theHomesteadAfter through theThresholdAfter.
  *
- * REWRITTEN AFTER THE FIRST FULL PLAYTHROUGH, and the note was blunt: the story
- * was too hard to follow. That is worth recording honestly, because the old
- * version was not badly written — it was written to a rule that turned out to be
- * the wrong one. The rule was NOTHING SUPERNATURAL IS EVER DESCRIBED: every
- * entry a domestic observation, unremarkable on its own, the horror left for the
- * reader to assemble. A boy who will not eat. A fence found open rather than
- * broken.
+ * AND WHAT THE DEAD WROTE. Alma's house book, Toby's book, Joren's protocol,
+ * Kadmus on the watch. The primary sources Steve is writing up, in the hands of
+ * the people it happened to, found in the rooms they were written in.
  *
- * It reads beautifully and it fails at the job. A player finds these one at a
- * time, hours apart, between two other things they were doing — and asking them
- * to hold six oblique fragments in their head across a whole evening and infer a
- * plot from the gaps is asking for reading they came here to avoid. Restraint
- * that nobody assembles is not restraint. It is a story that did not get told.
+ * WHY IT WAS REBUILT. Feedback after the first full playthrough, and it was
+ * blunt: too hard, no introduction, nothing you could picture, and — worst of it
+ * — HEROBRINE IS NEVER NAMED. Not once in twenty-two books. He was "he", "him",
+ * "HIM", for the whole mod. Steve did not exist at all. Everybody was an initial:
+ * M., R., J., and an em dash.
  *
- * So: SHORT LINES, PLAIN WORDS, AND THE WORST THING SAID OUT LOUD. The tally
- * still counts, but it says what it is counting. The tower still fails, but it
- * says who did not come down. Every chapter is four to six lines a page and ends
- * with somewhere to go.
+ * The old rule was NOTHING SUPERNATURAL IS EVER DESCRIBED — every entry a
+ * domestic observation, the horror left for the reader to assemble. It reads
+ * beautifully and it fails the job. A player finds these one at a time, hours
+ * apart, between two other things; restraint nobody assembles is not restraint,
+ * it is a story that did not get told.
  *
- * What survives from the old rule is the voice: these are not his. He writes in
- * lowercase fragments on walls. These people use capital letters and full stops
- * right up until the moment they stop writing, and that contrast still does more
- * than any adjective would.
+ * So: names. Alma, Nils, Toby, Otto, Marek, Kadmus, Bren, Pip, Joren, Wendel.
+ * An introduction, on page one of Steve's old ledger, which says who Herobrine
+ * was and what he touched. Plain words, short lines, and the worst thing said
+ * out loud rather than implied.
+ *
+ * PAGINATION IS NOT OPTIONAL HERE. A page renders about 114 pixels wide and
+ * fourteen rows tall, and overflow is SILENT — seven pages of the old set were
+ * losing their last lines, including the page that says HE IS NOT DEAD. Every
+ * page below was laid out against the real glyph widths before it was written
+ * in. If you edit one by hand, count the rows.
+ *
+ * The one thing kept from the old rule is the contrast: these people use capital
+ * letters and full stops right up to the moment they stop writing. He does not.
  */
 public final class HouseBooks {
 	private HouseBooks() {}
 
-	// ---- 1. THE HOMESTEAD --------------------------------------------------
+	// ---- 1. THE FARM --------------------------------------------------
 
-	/** The mother. She is the one who decides they are leaving. */
-	public static ItemStack household() {
-		return book("the house book", "M.",
+	/**
+	 * STEVE'S OWN LEDGER, LEFT ON THE KITCHEN SHELF, and it is the introduction the
+	 * mod did not have.
+	 *
+	 * Two hands in one house: a man who was happy here four years, and the family
+	 * who moved in after and found his handwriting. It names Herobrine on the first
+	 * page, says plainly that they were friends, and says what happened under the
+	 * hill. Everything else in all six chapters is downstream of this book.
+	 */
+	public static ItemStack ledger() {
+		return book("Steve's old ledger", "Steve",
 			"""
-			Bread twice in the week.
-			Wool from the four ewes at midsummer.
+			Four ewes. Two lambs.
+			Eleven hens.
 
-			J. fetches the water before dark.
-			He is nine and he always forgets.
-
-			Tonight he did not forget.
-			He ran the whole way back.""",
-
-			"""
-			J. says there is a man standing at
-			the treeline.
-
-			He says the man does not move.
-
-			R. went out with the lamp and found
-			nothing at all. The grass is dead in
-			a ring where J. says he stands.""",
+			Fence on the north
+			cut wants mending.
+			Herobrine says he will
+			do it and he will not,
+			and I will do it, and
+			this is how it has
+			always been.""",
 
 			"""
-			J. would not eat tonight.
+			Four years in this
+			house and I have
+			never once been
+			lonely.
 
-			He said he was not hungry.
-			He said it four times.
+			Something has been
+			standing in the north
+			cut. The ground is
+			bare in a circle and
+			nothing will grow
+			there.""",
 
-			I have never once had to ask that
-			boy twice to eat.
+			"""
+			I mended the fence. It
+			was open again by
+			morning.
 
-			We are going to the town in the
-			morning. All of us.""");
+			Not broken. OPENED.
+
+			Whatever is out there
+			has hands.
+
+			I am going to write the
+			rest of this plainly
+			because I do not think
+			I will be back to
+			explain it.""",
+
+			"""
+			We went under the hill
+			in the spring. We
+			found a door that
+			nobody built.
+
+			He touched it. I did
+			not.""",
+
+			"""
+			He came up wrong. He
+			knows things he was
+			never told. He calls
+			me by my mother's
+			name and my mother
+			has been dead eleven
+			years.
+
+			I am leaving tonight. I
+			am leaving the animals
+			and the tools and this
+			book and I am not
+			coming back.""",
+
+			"""
+			If you are reading
+			this in my kitchen: get
+			out of my house.""");
 	}
 
-	/** The youngest. Says the frightening thing without knowing it is one. */
+	/**
+	 * Alma. She is the one who decides they are leaving, and she is the first name in the mod.
+	 */
+	public static ItemStack household() {
+		return book("Alma's house book", "Alma",
+			"""
+			We took this farm in
+			the autumn. It stood
+			empty four years and
+			nobody in the town
+			would say why.
+
+			There is a ledger in
+			the kitchen in another
+			man's hand. Steve, he
+			signs it. I have read it
+			twice and I wish I had
+			read it once.""",
+
+			"""
+			Bread twice in the
+			week. Wool from the
+			four ewes at
+			midsummer.
+
+			Nils mends the north
+			fence on Sundays.
+			Toby fetches the
+			water before dark.
+
+			Toby is nine. He
+			always forgets the
+			water.""",
+
+			"""
+			Tonight he did not
+			forget. He ran the
+			whole way back and he
+			was white to the lips.
+
+			He says there is a
+			man standing at the
+			treeline. He says the
+			man does not move.
+
+			Nils went out with the
+			lamp and found
+			nobody at all.""",
+
+			"""
+			But the grass is dead
+			in a ring where Toby
+			says he stands, and
+			nothing has grown
+			there since.""");
+	}
+
+	/**
+	 * Toby, nine. The only book here written by somebody who is not frightened of him yet.
+	 */
 	public static ItemStack child() {
-		return book("my book", "the little one",
+		return book("Toby's book", "Toby, nine years old",
 			"""
-			There is a man in our field.
+			There is a man in our
+			field.
 
-			We play the game where you do not
-			blink. I always win.
+			He is very tall and he
+			stands very straight.
 
-			He never wins and he does not mind.""",
+			His eyes are white all
+			the way through. Like
+			two lamps with nobody
+			behind them.
+
+			We play the game
+			where you do not
+			blink. I always win.""",
 
 			"""
-			I told mother about him.
-			She went white and shut the door.
+			He never wins and he
+			does not mind.
 
-			She says do not look at him.
+			I told mother about
+			him and she went white
+			and shut the door and
+			would not open it
+			again until father
+			came in.
 
-			But if I do not look at him then
-			nobody is looking at him.""",
+			She says do not look
+			at him.""",
 
 			"""
-			He was closer this morning.
+			But if I do not look at
+			him then nobody is
+			looking at him.
+
+			He was nine paces
+			closer this morning.
 
 			Nobody moved him.""");
 	}
 
-	/** The father. Practical, right up until he is not. */
-	public static ItemStack ledger() {
-		return book("ledger", "R.",
-			"""
-			Four ewes. Two lambs. Eleven hens.
-			Fence on the north cut wants mending.
-
-			Something has been standing in the
-			north cut. The ground is bare in a
-			circle and nothing will grow there.""",
-
-			"""
-			Mended the fence.
-			It was open again by morning.
-
-			Not broken. OPENED.
-
-			Whatever is out there has hands.""",
-
-			"""
-			We leave for the town tomorrow.
-
-			I am writing this down so somebody
-			knows we did not simply walk off and
-			leave the animals.
-
-			We were driven out of our own house.""");
-	}
-
-	/** Kept by whoever was awake. It stops counting days halfway down. */
+	/**
+	 * Nils, counting. The only book that is mostly a number.
+	 */
 	public static ItemStack tally() {
-		return book("tally", "—",
+		return book("how close he is now", "Nils",
 			"""
-			Days he has stood in the field:
+			Days the man has
+			stood in the north
+			field:
 
-			IIII IIII IIII IIII
-			IIII IIII IIII IIII""",
+			IIII IIII IIII IIII IIII
+			IIII IIII IIII
+
+			I have stopped
+			counting days. There
+			is no use in it.""",
 
 			"""
-			I stopped counting the days.
-
-			I started counting the paces from
-			the door to where he stands.
+			I have started
+			counting the paces
+			from our door to
+			where he stands.
 
 			Forty.
+
 			Thirty-one.
+
 			Nine.""");
 	}
 
-	/** The room with no window, and why a child asked for it. */
+	/**
+	 * Alma again, four nights later. The point where the family stops being a family
+	 * with a problem and becomes a family that is leaving.
+	 */
 	public static ItemStack farRoom() {
-		return book("the small room", "M.",
+		return book("the room with no window", "Alma",
 			"""
-			We have put J. in the small room
-			because it has no window.
+			We have put Toby in
+			the small room
+			because it has no
+			window.
 
-			He asked for it himself.
+			He asked for it
+			himself.
 
-			A boy of nine asked to sleep in a
-			room with no window.""",
+			A boy of nine asked to
+			sleep in a room with
+			no window.""",
 
 			"""
-			He sleeps now.
+			He is asleep now. He
+			talks while he sleeps
+			and it is not his voice.
 
-			He talks while he sleeps and it is
-			not his voice.
+			It is a man's voice. It
+			is slow. It is using my
+			son's mouth to say my
+			name over and over.
 
-			R. sat outside that door all night
-			with the axe across his knees.""");
+			Nils has sat outside
+			that door all night with
+			the axe across his
+			knees.""",
+
+			"""
+			In the morning we go
+			to the town. All four
+			of us and the dog and
+			nothing else.
+
+			There is a walled town
+			two days east and it
+			still has a gate that
+			shuts.
+
+			If you are reading
+			this in my kitchen, then
+			we did not stay.""");
 	}
 
-	/** In the undercroft, under the house. The one they shut in. */
+	/**
+	 * Nils, in the cellar under his own kitchen. The wearing-a-face idea, planted at
+	 * the first house so that the gaol at site four is a confirmation and not a
+	 * surprise.
+	 */
 	public static ItemStack brother() {
-		return book("about my brother", "R.",
+		return book("about Otto", "Nils",
 			"""
-			My brother went under the hill in
-			the spring.
+			My brother Otto went
+			under the hill in the
+			spring, looking for the
+			iron that Steve wrote
+			about in his ledger.
 
-			Something came back out in the
-			autumn.""",
+			Something came back
+			out in the autumn.
+
+			It has Otto's face. It
+			has Otto's hands. It
+			has the same chip out
+			of his front tooth.""",
 
 			"""
-			It knows things about this house
-			that he was never told.
+			It knows things about
+			this house that it was
+			never told.
 
-			It calls me by our mother's name.
-
-			I have put it below and I have
-			barred the door.""",
+			It called me by our
+			mother's name. Otto
+			never once called me
+			that.""",
 
 			"""
+			I have put it in the
+			cellar under the
+			kitchen and I have
+			barred the door and I
+			am not going to open
+			it.
+
 			It does not knock.
 
-			It waits.
+			It waits.""",
 
-			God forgive me, I can hear it
-			breathing through the floor.""");
+			"""
+			God forgive me, I can
+			hear it breathing
+			through the floor
+			while we eat.""");
 	}
 
-	// ---- 2. THE TOWN -------------------------------------------------------
+	/**
+	 * SITE ONE OF STEVE'S SIX, and the shape every one of them keeps.
+	 *
+	 * WHAT HE IS / WHO LIVED HERE / WHAT HE DID / WHAT I GOT WRONG / WHERE TO GO.
+	 * Same five headings, same order, six times. Learn the form once and you know
+	 * where to look in all of them, which is the entire point — the old books were
+	 * six unrelated diaries and a player had to assemble the plot from the gaps.
+	 *
+	 * It also explains the map chain. "There is a map in this chest. I drew it
+	 * myself." leaveTheWay has always put the map in the same container as the book;
+	 * this is the first time the fiction accounts for why.
+	 */
+	public static ItemStack theHomesteadAfter() {
+		return book("one: the farm", "Steve",
+			"""
+			SITE ONE. THE FARM.
+
+			My name is Steve. I am
+			leaving six of these,
+			one at each place, so
+			that whoever comes
+			after me knows what
+			happened and does
+			not do what I did.
+
+			Read them in order.
+			There is a map in this
+			chest. I drew it myself.""",
+
+			"""
+			WHAT HE IS.
+
+			His name is Herobrine.
+
+			Four years ago he
+			was my friend. We
+			came here together
+			when there was
+			nothing but trees. He
+			dug the well. I raised
+			these walls. We ate at
+			that table every night
+			for four years and I
+			called him brother.""",
+
+			"""
+			Then we went under
+			the hill behind the
+			north field, looking
+			for iron, and we found
+			a door.
+
+			He put his hand on it. I
+			did not.
+
+			He has not been a man
+			since.
+
+			WHO LIVED HERE.""",
+
+			"""
+			Alma. Nils, her
+			husband. Toby, their
+			son, nine years old.
+
+			They took this farm
+			four years after I
+			left it. Nobody in the
+			town would tell them
+			why it stood empty.
+
+			WHAT HE DID.""",
+
+			"""
+			He stood in the north
+			field for forty days
+			and let them watch him.
+			He came no closer for
+			a month.
+
+			Then he came nine
+			paces a night.
+
+			They packed to leave.
+			He took them the night
+			before they went.""",
+
+			"""
+			A man called Marek
+			went in for the animals
+			a week later and I
+			went in behind him.
+
+			Nils was against the
+			door of the small
+			room with both arms
+			broken backward at
+			the elbow, still holding
+			it shut.""",
+
+			"""
+			Alma was under the
+			bed. There was not
+			enough of her left to
+			carry out.
+
+			The walls were wet to
+			the height of my
+			chest.
+
+			Toby was not in that
+			house. Toby has
+			never been found.
+
+			WHAT I GOT WRONG.""",
+
+			"""
+			I left my ledger on
+			the kitchen shelf.
+
+			I should have burned
+			this farm the day I
+			walked away from it.
+			They read my
+			handwriting and
+			thought a man had
+			been happy here.
+
+			WHERE TO GO.""",
+
+			"""
+			East. Two days walk. A
+			walled town with a gate
+			that still shuts.
+
+			The rest of them ran
+			there. He followed
+			them there.
+
+			My second book is in
+			the church.""");
+	}
+
+	// ---- 2. THE TOWN --------------------------------------------------
 
 	/**
-	 * Chapter two, and it is the one that was missing entirely.
-	 *
-	 * The town's story was only ever told DOWN in the undercity, in the survivors'
-	 * accounts — six books that say what happened and one of which mentions the
-	 * well. Every word of that is unreachable until you have already found the way
-	 * down, so the chapter that is supposed to send you underground could only be
-	 * read by somebody who had got there without it.
-	 *
-	 * This goes on the surface, at the well, in the open. It says the two things
-	 * the player actually needs: THE TOWN IS UNDER THE TOWN, and the way in is the
-	 * thing you are standing next to.
+	 * Ashfold, in its own hand. Written from the bottom of the well they now live in.
 	 */
 	public static ItemStack theTown() {
-		return book("we went under", "the town",
+		return book("we went under", "the town of Ashfold",
 			"""
-			He walked into this square in the
-			middle of the afternoon.
+			There were four
+			hundred of us behind
+			this wall and we
+			thought that was
+			enough.
 
-			Nobody stopped him.
-			Nobody could say afterwards what
-			he did. Only that eleven of us
-			were gone by dark.""",
+			He came in through
+			the west lane at three
+			in the afternoon on a
+			market day.
 
-			"""
-			So we went under the town.
-
-			We dug out the cellars and joined
-			them and we live down there now,
-			in the dark, like something he put
-			there.
-
-			It is better than up here.""",
+			Eleven by dark.""",
 
 			"""
-			The way down is the well.
+			We found them in the
+			doorways. Not in the
+			square. In the
+			DOORWAYS, one to a
+			house, put there on
+			purpose so that we
+			would each find our
+			own.
 
-			Go over the side and keep going.
-			It is further than you think and
-			the water does not last.
+			So we went under the
+			town.""",
 
-			If we are still alive we are at the
-			bottom of it. Bring a light.""");
+			"""
+			We dug the cellars out
+			and joined them and
+			we live down there
+			now, in the dark, like
+			something he put
+			there himself.
+
+			It is better than up
+			here.
+
+			The way down is the
+			well in the square.""",
+
+			"""
+			Go over the side and
+			keep going. It is
+			further than you think
+			and the water does
+			not last. Bring a light.
+
+			If we are still alive we
+			are at the bottom of
+			it.
+
+			Knock twice. Never
+			three times. Three is
+			how he knocks.""");
 	}
 
-	// ---- 3. THE TOWER ------------------------------------------------------
+	/**
+	 * SITE TWO. Where the lying starts.
+	 *
+	 * Steve came to Ashfold three weeks before it happened and told four hundred
+	 * people Herobrine was dead. Eleven of them died with their shutters barred and
+	 * no reason on earth to be afraid. He says it is on him and not on the wall.
+	 */
+	public static ItemStack theTownAfter() {
+		return book("two: the town", "Steve",
+			"""
+			SITE TWO. THE TOWN.
+
+			You are standing in
+			the square. Read this
+			here.
+
+			WHO LIVED HERE.
+
+			Four hundred people
+			behind a wall eleven
+			feet high, with a forge,
+			a market and a gate
+			that shut every night
+			at dusk.""",
+
+			"""
+			They believed the wall
+			was the point. It was
+			not. He has never
+			once used a gate.
+
+			WHAT HE DID.""",
+
+			"""
+			Herobrine walked in
+			through the west lane
+			in the middle of the
+			afternoon. Not fast.
+			Nobody stopped him.
+			Nobody could say
+			afterwards what they
+			had seen.
+
+			Eleven were dead by
+			dark.""",
+
+			"""
+			He did not leave them
+			where he killed them.
+			He carried them.
+
+			He walked the whole
+			town and put one in
+			every doorway he
+			passed, sitting up,
+			facing in, so that
+			whoever opened that
+			door in the morning
+			would be the one to
+			find them.""",
+
+			"""
+			A girl of six opened
+			the fourth door.
+
+			The well ran red for
+			two days and they
+			drank from it anyway,
+			because there was
+			nothing else.
+
+			WHAT I GOT WRONG.""",
+
+			"""
+			I came here three
+			weeks before it
+			happened and I told
+			them he was dead.""",
+
+			"""
+			I told four hundred
+			people a lie because I
+			could not stand to
+			say the true thing out
+			loud, and eleven of
+			them died with their
+			doors shut and their
+			shutters barred and
+			no reason on earth to
+			be afraid.
+
+			That is on me. Not on
+			the wall.""",
+
+			"""
+			WHERE TO GO.
+
+			DOWN THE WELL.
+
+			Go over the side and
+			keep climbing. It is
+			further than you think
+			and the water does
+			not last. Bring a light.""",
+
+			"""
+			They dug the cellars
+			out and joined them
+			together and the rest
+			of the town is living
+			down there in the
+			dark.
+
+			They are still alive.
+			Some of them.""",
+
+			"""
+			My third book is with
+			the watch, in the tower
+			they built after this.
+			Northeast of here.
+			You will see it a long
+			way off.""");
+	}
+
+	// ---- 3. THE TOWER -------------------------------------------------
 
 	/**
-	 * Chapter three. They build somewhere to see him coming, and the point of
-	 * the chapter is that seeing him coming was never the problem.
+	 * Kadmus of the watch. Three men, and the one who does not come down is the boy.
 	 */
 	public static ItemStack buried() {
-		return book("the watch", "the watch",
+		return book("the watch", "Kadmus of the watch",
 			"""
-			We built this to see him coming.
+			We built this to see him
+			coming.
 
-			Eighty feet of it, and a clear line
-			to the wood on every side.
+			Eighty feet of it, and a
+			clear line to the wood
+			on every side.
 
-			Three of us. One awake at all times.""",
+			Three of us. Myself,
+			Old Bren, and the boy
+			Pip. One awake at all
+			times.
+
+			Night forty. Nothing.""",
 
 			"""
-			Night forty. Nothing.
-			Night forty-one. Nothing.
+			Night forty-one.
+			Nothing.
 
-			Night forty-two, the man on the deck
-			did not come down at dawn.
+			Night forty-two, Pip
+			did not come down at
+			dawn.
 
-			His lamp was still burning.
-			The stair was still barred.
+			His lamp was still
+			burning. The stair was
+			still barred.
+
 			From the inside.""",
 
 			"""
-			You do not watch for him.
+			I am not going to write
+			what was on the
+			underside of the
+			parapet. Bren saw it
+			and Bren has not
+			spoken since.
 
-			He was up here before we were.
+			You do not watch for
+			him.
 
-			The rest of us have gone to the gaol
-			on the ridge. They have worked out
-			what to do with the ones who come
-			back wrong.""");
+			He was up here
+			before we were.""",
+
+			"""
+			Bren and I are going
+			to the gaol on the
+			ridge, southeast. They
+			have worked out what
+			to do with the ones
+			who come back wrong.
+
+			Take a horse from the
+			paddock. Do not walk
+			it.""");
 	}
 
-	// ---- 4. THE GAOL -------------------------------------------------------
-
-	/** Chapter four. Fourteen cells, and what they were really for. */
-	public static ItemStack theDig() {
-		return book("count them out", "the warder",
+	/**
+	 * SITE THREE. Where it stops being a lie of omission.
+	 *
+	 * He helped them site this tower knowing that watching is not the problem, and
+	 * let three men spend a summer on it rather than say so. Pip was seventeen.
+	 */
+	public static ItemStack theTowerAfter() {
+		return book("three: the tower", "Steve",
 			"""
-			Fourteen cells. We cut them in a
-			week and we cut them badly.
+			SITE THREE. THE
+			TOWER.
+
+			WHO LIVED HERE.
+
+			Three men of the town
+			watch. Kadmus, Old
+			Bren, and a boy called
+			Pip who was seventeen
+			and volunteered.""",
+
+			"""
+			They built eighty feet
+			of stone with a clear
+			line to the wood on
+			every side, and they
+			kept one man awake on
+			the deck at all times.
+
+			The idea was to see
+			Herobrine coming.
+
+			WHAT HE DID.""",
+
+			"""
+			Night forty. Nothing.
+			Night forty-one.
+			Nothing.
+
+			Night forty-two, Pip
+			did not come down at
+			dawn.
+
+			The stair was still
+			barred. It was barred
+			from the INSIDE, and
+			they had to take the
+			bar off themselves to
+			get up to him.""",
+
+			"""
+			His lamp was still
+			burning and it had not
+			been knocked over.
+
+			There was blood on
+			the deck and on the
+			inside of the parapet
+			and on the UNDERSIDE
+			of the parapet, which
+			is a place a man
+			cannot bleed onto
+			unless he is being
+			held above it.""",
+
+			"""
+			They did not find all
+			of Pip. They found
+			enough to know.
+
+			WHAT I GOT WRONG.
+
+			I helped them site this
+			tower. I stood in that
+			field and pointed at
+			this hill.""",
+
+			"""
+			I knew he does not
+			walk toward a place. I
+			knew it four years
+			ago on the day he
+			came up out of that
+			hole.""",
+
+			"""
+			I let three men spend
+			a summer building a
+			thing to watch an
+			empty treeline
+			because I did not want
+			to tell them that
+			watching is not the
+			problem.
+
+			Pip was seventeen.
+
+			WHERE TO GO.""",
+
+			"""
+			Kadmus and Bren went
+			to the gaol on the
+			ridge. Southeast, and
+			further than it looks.
+
+			They had worked out
+			what to do with the
+			ones who come back
+			wrong, and they were
+			right, and it did not
+			save them either.""",
+
+			"""
+			There is a stable
+			below this tower with
+			horses in it. Take one.
+			You will want the
+			speed.
+
+			My fourth book is at
+			the bottom of the gaol,
+			past the cells, in the
+			warder's room. It is a
+			long way down and
+			there is something
+			living in the ninth cell.""");
+	}
+
+	// ---- 4. THE GAOL --------------------------------------------------
+
+	/**
+	 * Joren the warder — and the book that first makes Steve suspicious.
+	 *
+	 * Joren wrote to Steve asking how to tell them apart and got a correct answer
+	 * back inside a week. He notes that he did not think about that at the time.
+	 * A player who is paying attention gets the whole of site six two houses early,
+	 * and a player who is not loses nothing.
+	 */
+	public static ItemStack theDig() {
+		return book("count them out", "Joren, warder",
+			"""
+			Fourteen cells. We cut
+			them in a week and we
+			cut them badly.
 
 			Not for thieves.
 
-			For the ones who walk into that wood
-			and walk back out of it.""",
+			For the ones who walk
+			into that wood and
+			walk back out of it.
+
+			They look right. They
+			talk right.""",
 
 			"""
-			They look right. They talk right.
+			Then they say a thing
+			that only a dead man
+			could know, and you
+			put them behind iron
+			and you do not open it
+			again.
 
-			Then they say a thing that only a
-			dead man could know, and you put
-			them behind iron and you do not
-			open it again.
+			Count them in. Count
+			them out.
 
-			Count them in. Count them out.""",
-
-			"""
-			Cell nine has been empty a month.
-
-			The straw in it is still warm.
-
-			We have given up. What is left of
-			the town is in the church.
-
-			Go there. It is the last thing
-			anybody built on purpose.""");
-	}
-
-	// ---- 5. THE CHURCH -----------------------------------------------------
-
-	/** Chapter five. They stop praying and pick up a shovel. */
-	public static ItemStack theShrine() {
-		return book("the last of us", "the last of us",
-			"""
-			Everyone still alive is in this
-			room.
-
-			We prayed for a month.
-
-			Nothing came. Nothing left.""",
+			I wrote to Steve and
+			asked him how a man is
+			supposed to tell.""",
 
 			"""
-			So we have stopped praying and we
-			have started digging.
+			He wrote back the
+			same week with four
+			things to watch for. I
+			have copied them out
+			and left them in my
+			room at the bottom of
+			the hall.
 
-			There is a way under the world and
-			he has been using it the whole time.
-
-			We have found the seam.
-			We are going to open it and we are
-			going to put him through it.""",
-
-			"""
-			If you are reading this, we did it.
-
-			The stair behind this building goes
-			down to what is left of the town.
-
-			Take everything they left you.
-			You are going to need all of it.""");
-	}
-
-	// ---- WHAT WAS LEFT AFTERWARDS ------------------------------------------
-
-	/**
-	 * A SECOND BOOK IN EVERY PLACE, AND IT IS A DIFFERENT KIND OF WRITING.
-	 *
-	 * The chapters above are the community's own record: written while it was
-	 * happening, by people who did not yet know what it was, ending with somewhere
-	 * to go. They are deliberately understated because the people writing them
-	 * still thought they were describing an ordinary bad year.
-	 *
-	 * These are written by somebody who GOT OUT. They know exactly what it was,
-	 * they saw what it did, and they are not describing a bad year — they are
-	 * leaving a warning for whoever comes next and they have no reason left to be
-	 * polite about it. So they say the thing plainly, once, and then they say what
-	 * to do about it.
-	 *
-	 * That contrast is the point. Two books in one room, one written before and one
-	 * after, and the distance between the voices is the whole story of the place.
-	 *
-	 * EVERY ONE ENDS WITH AN INSTRUCTION, because a warning that does not tell you
-	 * what to do is a mood.
-	 */
-	public static ItemStack theHomesteadAfter() {
-		return book("what he did to that family", "one who got out",
-			"""
-			I went back for the animals.
-
-			The door was off its hinges and it
-			was off them OUTWARD.
-
-			Whatever left that house left it in
-			a hurry and it did not use the
-			handle.""",
+			He knew them straight
+			away. I did not think
+			about that at the time.
+			I have thought about
+			it since.""",
 
 			"""
-			They were all still in the small
-			room. All four.
+			Cell nine has been
+			quiet a month now.
 
-			He had put them in there together
-			and he had taken his time and I am
-			not going to write down what I saw
-			because you do not need it to
-			believe me.""",
+			The straw in it is still
+			warm.
 
-			"""
-			The boy was not with them.
+			What is left of us has
+			gone to the church,
+			west of the ridge, on
+			the high ground.
 
-			Do not sleep in that house.
-			Do not go down the hole under it.
-
-			And if you find something wearing
-			his face, it is not asking you for
-			help.""");
-	}
-
-	public static ItemStack theTownAfter() {
-		return book("eleven, in one afternoon", "one who got out",
-			"""
-			It was the middle of the day.
-
-			He came in through the west lane
-			and he was not in a hurry and
-			nobody stopped him.
-
-			Eleven of us by dark.""",
-
-			"""
-			We found them in the square.
-
-			Not in one place. He had walked the
-			whole town and left one in every
-			doorway he passed, facing in, so
-			that whoever opened it would be the
-			one to see.
-
-			The well ran red for two days.""",
-
-			"""
-			If you are standing in the square
-			reading this then you are standing
-			where they were.
-
-			GO DOWN THE WELL.
-
-			The rest of us are under your feet
-			and we are still alive.""");
-	}
-
-	public static ItemStack theTowerAfter() {
-		return book("we found what was left", "the last of the watch",
-			"""
-			Two of us went up at dawn for him.
-
-			The stair was still barred from the
-			inside. We took the bar off
-			ourselves. Nobody had touched it.""",
-
-			"""
-			There was blood on the deck and on
-			the inside of the wall and on the
-			underside of the parapet, which is
-			a place a man cannot bleed onto
-			without being held above it.
-
-			We did not find all of him.
-			We found enough.""",
-
-			"""
-			His lamp was still lit and it had
-			not been knocked over.
-
-			Whatever did that had time.
-
-			Do not stand watch alone. Do not
-			stand watch at all. There is
-			nothing to see until it is behind
-			you.""");
+			Go there. It is the last
+			thing anybody built on
+			purpose.""");
 	}
 
 	/**
-	 * HOW TO TELL HIM FROM A PERSON, which is the one thing this building knows
-	 * that nothing else in the mod tells you.
+	 * HOW TO TELL HIM FROM A PERSON, which is the one thing this building knows that
+	 * nothing else in the mod tells you.
 	 *
-	 * The gaol sits on Phase.MIMIC, and MIMIC is the phase where he stops being a
-	 * shape at the treeline and starts being one of your friends. Every tell in
-	 * here is a real one — they are read straight off MimicEntity.TheFriend, in
-	 * the order that goal actually runs them: COMES_TO 6, the crouch toggle on
-	 * GREET_EVERY, ransack, DRESSES_EVERY, STRIKES 3, then BOLTS at twice a
-	 * sprint. A player who reads this and then meets one has been given a fair
-	 * chance, which is the difference between a scare and a cheat.
+	 * Every tell is real, read off MimicEntity.TheFriend in the order that goal
+	 * runs them: COMES_TO 6, the crouch toggle on GREET_EVERY, ransack,
+	 * DRESSES_EVERY, STRIKES 3, then BOLTS at twice a sprint. The last page is the
+	 * counter — the goal will not start unless a player is SEPARATED — so "do not
+	 * be alone down here" is a mechanic stated plainly rather than atmosphere.
 	 *
-	 * The last page is the mechanic stated plainly: the goal will not start unless
-	 * a player is SEPARATED from the others. "Do not be alone down here" is not
-	 * atmosphere, it is the counter.
+	 * In Joren's hand, copied from a letter. Site four says who wrote the letter
+	 * and how he knew the answer, and that is the worse half of it.
 	 */
 	public static ItemStack theProtocol() {
-		return book("intake protocol", "the warder",
+		return book("Joren's protocol", "Joren, warder",
 			"""
-			A man came out of the wood
-			and he was my brother.
+			Steve sent me four
+			things to watch for. I
+			have copied them out
+			plainly.
 
-			His face. His coat. He knew
-			what my brother knew.
-
-			There is no test for this.""",
-
-			"""
-			We tried seventeen of them.
-			All seventeen passed.
-
-			So we stopped asking what
-			he KNOWS, and started
-			watching what he DOES.
-			Four things. In order.""",
+			A man walks out of the
+			wood and he is your
+			brother. His face. His
+			coat. He knows what
+			your brother knows.""",
 
 			"""
-			ONE. He comes close and
-			stops at six paces.
+			There is no test of
+			memory that works. We
+			tried seventeen. All
+			seventeen passed.
 
-			TWO. He crouches at you.
-			On, off, on, off, longer
-			than any greeting takes.
+			So stop asking what
+			he KNOWS. Watch what
+			he DOES.
 
-			A man does it once.""",
-
-			"""
-			THREE. He goes through
-			your chests while you are
-			stood there watching him.
-
-			FOUR. He puts your things
-			ON. Your mail. Your helm.
-			One piece at a time.""",
+			ONE. He comes close
+			and stops at six
+			paces. Not nearer, not
+			yet.""",
 
 			"""
-			Then he strikes. Three
-			times, no more. He is not
-			trying to kill you.
+			TWO. He crouches at
+			you. On, off, on, off,
+			far longer than any
+			greeting takes. A man
+			does that once.
 
-			He is trying to see.
+			THREE. He goes
+			through your chests
+			while you are stood
+			there watching him.""",
 
+			"""
+			FOUR. He puts your
+			things ON. Your mail.
+			Your helm. One piece
+			at a time.
+
+			Then he strikes.
+			Three times, no more.
+			He is not trying to kill
+			you. He is trying to
+			see.""",
+
+			"""
 			Then he runs, at twice
-			what a man can run.""",
+			what a man can run,
+			and by then you are
+			only watching him go.
+
+			DO NOT WAIT FOR THE
+			FOURTH. Leave at the
+			second.
+
+			The crouching is the
+			one part of him he did
+			not copy off
+			somebody else.""",
 
 			"""
-			Do not wait for the fourth.
+			And he only does this
+			to a man on his own.
+			Two of you inside
+			shouting distance and
+			he will not come at all.
 
-			Leave at the SECOND. The
-			crouching is the one part
-			of him he did not copy off
-			somebody else.
-
-			He comes for a man alone.""",
-
-			"""
-			Two of you within shouting
-			distance and he does not
-			come at all.
-
-			So do not be alone down
-			here.
-
-			That is the whole protocol.""");
+			So do not be alone
+			down here. That is the
+			whole of it.""");
 	}
-
-	public static ItemStack theGaolAfter() {
-		return book("cell nine", "the warder",
-			"""
-			We put fourteen behind iron and it
-			worked for a month.
-
-			They stop eating first. Then they
-			stop sleeping. Then they stand at
-			the bars all night with their faces
-			against them and they do not blink
-			and they say your children's names.""",
-
-			"""
-			Cell nine went quiet on a Tuesday.
-
-			The door was still locked. The bars
-			were still whole. There was a great
-			deal of blood and it was on the
-			CEILING, in a spiral, and the man
-			was gone.
-
-			Nothing came out. Something left.""",
-
-			"""
-			Iron holds them. Iron does not hold
-			HIM.
-
-			If a cell is quiet, do not open it
-			to find out why.
-
-			We went to the church after that.
-			It did not help either.""");
-	}
-
-	public static ItemStack theChurchAfter() {
-		return book("the last night in here", "one who got out",
-			"""
-			Forty of us in one room with the
-			doors barred and every candle we
-			had left.
-
-			We thought light was the answer.
-			Light is how he finds the room.""",
-
-			"""
-			He did not break the door.
-
-			He was already inside and he had
-			been for some time, standing among
-			us in the dark at the back, and
-			when the first candle went out we
-			learned how long.
-
-			I got out through the graves.""",
-
-			"""
-			There were nine of us at the wall
-			and four of us in the trees and one
-			of me by morning.
-
-			Do not gather. Do not count on
-			numbers. Numbers only tell him how
-			long it will take.
-
-			Go under. Go to the seam.""");
-	}
-
-	public static ItemStack theThresholdAfter() {
-		return book("what it cost to shut it", "the elder brother",
-			"""
-			It took nineteen of us to put him
-			through and eleven came back up.
-
-			We did not fight him. Nobody fights
-			him. We made a hole and we made
-			ourselves the reason he walked
-			toward it.""",
-
-			"""
-			Eight people stood in a line and
-			let him come, so that the ninth
-			could be behind him when he did.
-
-			I gave the order. I would give it
-			again. That is the worst sentence
-			in this book.""",
-
-			"""
-			We sealed it and we told everyone
-			he was dead.
-
-			HE IS NOT DEAD.
-			He is only somewhere else.
-
-			And if you are reading this at the
-			bottom of that stair, you have
-			already decided to go and get him,
-			and there is nothing I can write
-			that will stop you.""");
-	}
-
-	// ---- THE MECHANICS -----------------------------------------------------
 
 	/**
-	 * THIRTY-TWO CHARACTERS, AND GOING OVER DISCONNECTS THE PLAYER.
+	 * SITE FOUR. Where he admits he has done this before.
 	 *
-	 * A written book's title goes to the wire through Utf8String with a hard cap
-	 * of 32 and nothing checks it on the way in. A 33-character title compiles,
-	 * builds, boots and generates — and then the first person to OPEN the chest
-	 * gets EncoderException: String too big on container_set_content, which does
-	 * not throw an error in the chest, it severs the connection.
-	 *
-	 * It cost an evening once already, in Loot and Testimony, which both carry
-	 * this guard. This file did not, purely because its titles happened to be
-	 * short. Every title here is well under — and now it cannot stop being.
+	 * The protocol in the same chest is correct because Steve had already run it,
+	 * years earlier, on people who had no idea why they were in a cell. He did not
+	 * mention that in his reply. Joren died thinking he was clever.
 	 */
+	public static ItemStack theGaolAfter() {
+		return book("four: the gaol", "Steve",
+			"""
+			SITE FOUR. THE GAOL.
+
+			WHAT THIS PLACE WAS.
+
+			Fourteen cells cut in
+			a week, sixteen feet
+			under a stone
+			gatehouse, and it was
+			not built for thieves.
+
+			It was built for the
+			ones who walk into
+			that wood and walk
+			back out of it.""",
+
+			"""
+			WHO LIVED HERE.
+
+			A warder named
+			Joren, and whoever
+			the ridge sent him.
+
+			Fourteen people who
+			came home to their
+			families looking
+			exactly right.
+
+			WHAT HE DID.""",
+
+			"""
+			Nothing, for a month.
+			That is the worst part
+			of this place. It
+			worked for a month.
+
+			They stop eating first.
+			Then they stop
+			sleeping. Then they
+			stand at the bars all
+			night with their faces
+			pressed between them,
+			not blinking, saying
+			your children's names.""",
+
+			"""
+			Cell nine went quiet on
+			a Tuesday.
+
+			The door was still
+			locked and the bars
+			were still whole. There
+			was a great deal of
+			blood and it was on
+			the CEILING, in a
+			spiral, and the man
+			was gone.""",
+
+			"""
+			Nothing came out of
+			cell nine. Something
+			LEFT.
+
+			Iron holds the ones
+			he has touched. Iron
+			does not hold
+			Herobrine.""",
+
+			"""
+			Cell nine. I have
+			written that number
+			down before, in
+			another room, about
+			another man, and
+			Joren picked it by
+			accident out of
+			fourteen.
+
+			I have not been able
+			to stop thinking about
+			that.
+
+			WHAT I GOT WRONG.""",
+
+			"""
+			Joren wrote to me and
+			asked how to tell them
+			apart.""",
+
+			"""
+			I answered him. I gave
+			him four things to
+			watch for and every
+			one of them was
+			correct, and I knew
+			they were correct
+			because I HAD
+			ALREADY DONE THIS,
+			years before, in a
+			room under a hill, to
+			people who had no
+			idea why they were
+			there.""",
+
+			"""
+			I did not tell him that
+			part. He died thinking I
+			was clever.
+
+			His protocol is in this
+			chest. Read it. It will
+			keep you alive. It cost
+			more than you know.
+
+			WHERE TO GO.""",
+
+			"""
+			The church. West of
+			the ridge, on high
+			ground. You will see
+			the steeple.
+
+			It is the last thing
+			anybody in this
+			country built on
+			purpose.
+
+			Do not go into the
+			ninth cell.""");
+	}
+
+	// ---- 5. THE CHURCH ------------------------------------------------
+
+	/**
+	 * Wendel the cleric, and the last line is the mod's best warning.
+	 *
+	 * He tells you to ask Steve what he did to Herobrine before letting him near
+	 * you — written by a man who does not know he is already dead, in a building
+	 * Steve was four days away from and chose not to reach.
+	 */
+	public static ItemStack theShrine() {
+		return book("the last of us", "Wendel, cleric",
+			"""
+			Everyone still alive is
+			in this room. Forty of
+			us.
+
+			We prayed for a
+			month.
+
+			Nothing came. Nothing
+			left.
+
+			So we have stopped
+			praying and we have
+			started digging.""",
+
+			"""
+			There is a way under
+			this world and he has
+			been using it the
+			whole time.
+
+			We have found the
+			seam. We are going to
+			open it and we are
+			going to put him
+			through it.
+
+			If you are reading
+			this, then we did it.""",
+
+			"""
+			The stair behind this
+			building goes down to
+			what is left of the
+			town.
+
+			Take everything they
+			left you. You are
+			going to need all of it.""",
+
+			"""
+			And if a man comes
+			down that stair and
+			tells you he is Steve,
+			ask him what he did to
+			Herobrine before you
+			let him near you.""");
+	}
+
+	/**
+	 * SITE FIVE. Where he runs out of excuses one book early.
+	 *
+	 * He was four days away, he knew which night it was, and he did not come. He
+	 * writes down that he was afraid, says that is true and is not the reason, and
+	 * admits he has been putting the reason off for five of these.
+	 */
+	public static ItemStack theChurchAfter() {
+		return book("five: the church", "Steve",
+			"""
+			SITE FIVE. THE CHURCH.
+
+			WHO WAS HERE.
+
+			Everybody who was
+			still alive. Forty of
+			them, in one room, with
+			the doors barred and
+			every candle they
+			had left burning.""",
+
+			"""
+			A cleric called Wendel,
+			who would not stop
+			talking, and who I
+			knew, and who I will
+			come back to in the
+			last book.
+
+			WHAT HE DID.
+
+			They thought light was
+			the answer.
+
+			Light is how he finds
+			the room.""",
+
+			"""
+			Herobrine did not
+			break the door. He
+			was already inside
+			and he had been for
+			some time, standing
+			among them at the
+			back in the dark, and
+			when the first candle
+			burned out they
+			found out exactly how
+			long.""",
+
+			"""
+			Nine of them died at
+			the wall. Four in the
+			trees.
+
+			One got out through
+			the graves behind the
+			altar and wrote it
+			down, and that is the
+			only reason you are
+			reading any of this.""",
+
+			"""
+			DO NOT GATHER. Do not
+			put your faith in
+			numbers. Numbers
+			only tell him how long
+			it is going to take.
+
+			WHAT I GOT WRONG.
+
+			I could have come. I
+			was four days away
+			and I knew what night
+			it was and I did not
+			come.""",
+
+			"""
+			I have written down
+			that I was afraid. That
+			is true and it is not
+			the reason.
+
+			The reason is in the
+			last book and I have
+			been putting it off for
+			five of these.
+
+			WHERE TO GO.""",
+
+			"""
+			Under. There is a
+			stair behind this
+			building that goes
+			down to what is left of
+			the town.
+
+			They stopped praying
+			and they started
+			digging, and they
+			found the seam, and
+			they were right about
+			it.""",
+
+			"""
+			There is a way under
+			this world and he has
+			been using it the
+			whole time.
+
+			Take everything they
+			left you. Every scrap.
+			You are going to need
+			all of it.
+
+			My last book is at the
+			bottom, past the lab.""",
+
+			"""
+			I am sorry about the
+			lab.""");
+	}
+
+	// ---- 6. THE SEAM --------------------------------------------------
+
+	/**
+	 * SITE SIX, AND THE HEADINGS ARE GONE.
+	 *
+	 * The form has been degrading for two books and here it stops pretending. No
+	 * WHO LIVED HERE, no WHERE TO GO until the end, just a man writing the thing
+	 * he has avoided writing five times.
+	 *
+	 * He did not experiment on eleven people to save his friend. He did it to find
+	 * out whether he himself would have come up out of that hole the same way, and
+	 * the answer was yes. Then he used eight people as bait, gave the order, sealed
+	 * the door and told a walled town it was over.
+	 *
+	 * HE IS NOT DEAD used to be clipped off the end of a page. It is on its own
+	 * page now.
+	 */
+	public static ItemStack theThresholdAfter() {
+		return book("six: what I did", "Steve",
+			"""
+			SITE SIX.
+
+			I am not going to use
+			the headings for this
+			one.
+
+			Herobrine was my
+			friend. We built the
+			farm at site one
+			together and I have
+			never had a better
+			four years.""",
+
+			"""
+			We found the door
+			under the hill and he
+			touched it and I did
+			not, and he came up
+			out of that hole
+			knowing my mother's
+			name.
+
+			He was gone that same
+			day. I knew it that
+			same day.
+
+			I did not tell anybody
+			for two years.""",
+
+			"""
+			I brought people down
+			here instead.
+
+			A fletcher. Two
+			farmers. A cleric
+			called Wendel who
+			would not stop talking.
+			Eight more after them.
+			I told them it was work.""",
+
+			"""
+			I put them in cells and
+			I watched what the
+			door did to them, one
+			at a time, for eleven
+			months, because I
+			wanted to know
+			whether it could tell
+			the difference
+			between him and a man.
+
+			It can.""",
+
+			"""
+			I wrote in my notes
+			that I was doing it to
+			get him back.""",
+
+			"""
+			That is a lie and this
+			is the only page
+			where I put it plainly: I
+			did it because I
+			wanted to know
+			whether I COULD HAVE.
+			Whether it could have
+			been me who touched
+			it. Whether there was
+			anything in me that
+			would have come up
+			out of that hole the
+			same way.""",
+
+			"""
+			There was. That is
+			what I found out. That
+			is all I found out.
+
+			Nineteen of us put him
+			through the door in
+			the end. Eleven came
+			back up.""",
+
+			"""
+			We did not fight him.
+			Nobody fights him. We
+			made a hole and we
+			made ourselves the
+			reason he walked
+			toward it.
+
+			Eight people stood in
+			a line and let him come
+			so that the ninth
+			could be behind him
+			when he did.""",
+
+			"""
+			I gave that order. I
+			would give it again.
+
+			Then we sealed it and
+			I went to Ashfold and
+			told four hundred
+			people he was dead.
+
+			HE IS NOT DEAD.""",
+
+			"""
+			He is only somewhere
+			else, and it is
+			somewhere I can
+			describe, because I
+			built the room around
+			the door myself.""",
+
+			"""
+			If you are reading
+			this at the bottom of
+			that stair then you
+			have already decided
+			to go through and get
+			him, and there is
+			nothing I can write
+			that will stop you.""",
+
+			"""
+			So: he is stronger
+			there. He does not
+			have to pretend
+			there. And everything
+			you find in his chests
+			on the other side was
+			taken off somebody
+			who went before you.
+
+			I am not going with
+			you. I have not been
+			able to go near that
+			door in six years.""",
+
+			"""
+			My name is Steve and I
+			am the reason for all
+			of it.""");
+	}
+
 	private static final int TITLE_FITS = 32;
 
 	private static String title(String wanted) {

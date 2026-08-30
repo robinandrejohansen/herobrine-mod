@@ -11,147 +11,377 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.WrittenBookContent;
 
 /**
- * What the elder brother was doing down here.
+ * STEVE'S OWN NOTEBOOK, FROM THE TIME.
  *
- * The farmhouse books are a family writing about their lives. These are one man
- * writing up an experiment, and the change of register between the two is the
- * point: the person who wrote "he was under the hill two days, we dug for one
- * of them" is the same person who later wrote "four through eight, no change".
- * A player who reads the house and then reads this watches somebody stop
- * talking about his brother and start keeping records.
+ * HouseBooks.theThresholdAfter is Steve confessing years afterwards, with the
+ * headings gone and the worst sentence written on purpose. These are the notes
+ * he was actually keeping WHILE HE DID IT, and the gap between the two registers
+ * is the horror of the room: the retrospective one says "I made them out of my
+ * neighbours". The contemporaneous one says "no change".
  *
- * The rule from HouseBooks still holds and matters more here — NOTHING
- * SUPERNATURAL IS EVER DESCRIBED. There are no rituals, no incantations, no
- * glowing anything. A man measures a thing he does not understand, in the only
- * vocabulary he has, and the vocabulary is a farm ledger. That is what makes it
- * land: it reads like somebody's actual notebook.
+ * A player finds both in the same building, feet apart. That is deliberate.
  *
- * And it is never gratuitous. What happened to the villagers is in the gaps
- * between entries and in a count that does not add up — never on the page. The
- * worst thing in these books is a man noticing he has started writing "no
- * change" as though it were a disappointment.
+ * NOTHING SUPERNATURAL IS EVER DESCRIBED IN HERE, and this is the one file where
+ * that rule still earns its keep. No rituals, no incantations. A man measures a
+ * thing he does not understand in the only vocabulary he has, which is a farm
+ * ledger, and that is what makes it read like somebody's actual notebook.
+ *
+ * WHAT THIS FILE IS LOAD-BEARING FOR. Two things nothing else in the mod
+ * explains:
+ *
+ *   GauntEntity. Subject nine is Corin, from the mill road. Taller than he was,
+ *   no eating, no sleeping, no blinking, stands at the bars waiting for somebody
+ *   to be curious. lastDay names the seven who walked out with him. Every tall
+ *   pale thing in the forest is a neighbour of Steve's with a name.
+ *
+ *   Wendel. Subject three, the cleric who would not stop talking, is the same
+ *   Wendel who writes HouseBooks.theShrine at the church years later and tells
+ *   the player to ask Steve what he did to Herobrine. He is the only subject who
+ *   stayed. Steve does not say why and did not ask.
  */
 public final class LabBooks {
 	private LabBooks() {}
 
 	/**
-	 * The register.
+	 * THE REGISTER, and it is deliberately the driest thing in the mod.
 	 *
-	 * Deliberately the driest thing in the mod. A numbered list of people by
-	 * their trade is doing something no description could: it shows the exact
-	 * moment they stopped being neighbours and became entries, and it does it
-	 * in the format rather than in the words.
+	 * A numbered list of neighbours by their trade does something no description
+	 * could: it shows the exact moment they stopped being people and became
+	 * entries, and it does it in the FORMAT rather than in the words. The worst
+	 * line in it is a man noticing he has started writing "no change" as though it
+	 * were a disappointment.
+	 *
+	 * Subject three is Wendel, cleric. Wendel is also the author of
+	 * HouseBooks.theShrine, four sites and some years later — the man who tells you
+	 * to ask Steve what he did to Herobrine before you let him near you. He knows
+	 * because he was in one of these cells.
 	 */
 	public static ItemStack intake() {
-		return book("intake", "—",
+		return book("the register", "Steve",
 			"""
-			One. Fletcher, from the east village. Two days. No change.
+			One. Aldous, fletcher,
+			from the east village.
+			Two days. No change.
 
-			Two. Farmer. Four days. No change.
+			Two. Hesk, farmer.
+			Four days. No change.
 
-			Three. Cleric. Six days. No change, and he would not stop talking, which I have decided is also no change.""",
+			Three. Wendel, cleric.
+			Six days. No change,
+			and he would not stop
+			talking, which I have
+			decided is also no
+			change.""",
 
 			"""
-			Four through eight. No change.
+			Four. Mila, farmer.
+			Five. Bo, thatcher. Six.
+			Ren, miller. Seven.
+			Sera, weaver. Eight.
+			Gild, the smith's boy,
+			who is fifteen.
 
-			I have written "no change" nine times in this book.
+			No change. No change.
+			No change. No change.
+			No change.
 
-			I have started writing it as though it were a disappointment.
+			I have written those
+			two words eleven
+			times in this book.""",
 
-			It is the only good news in here.""");
+			"""
+			I have started writing
+			them as though they
+			were a disappointment.
+
+			They are the only
+			good news in here and
+			I have started
+			resenting them.
+
+			I told all eight of them
+			this was work. I paid
+			them for the first
+			week.""");
 	}
 
 	/**
-	 * The research, such as it is.
+	 * WHAT THE THING IN THE NEXT ROOM ACTUALLY IS, measured in a farm ledger's
+	 * vocabulary because that is the only vocabulary he has.
 	 *
-	 * The one book that says outright what the cells are for, and it says it in
-	 * the flattest possible sentence — "to see whether it can tell the
-	 * difference" — because a man who was horrified by what he was doing would
-	 * not have kept doing it for eleven months.
+	 * No ritual, no incantation, no glowing anything. A man notes that it opens for
+	 * one person and not for him, builds a room around it to test that, and records
+	 * the result in one word. "It can."
 	 */
 	public static ItemStack theDoor() {
-		return book("on the door", "—",
+		return book("on the door", "Steve",
 			"""
-			It is not a door. A door has two sides that agree about where they are.
+			It is not a door.
 
-			This has one side. Ours.
+			A door has two sides
+			that agree about
+			where they are.
 
-			Whatever is on the other is not a place. It is a direction, and the direction is towards us.""",
+			This has one side.
+			Ours.
+
+			Whatever is on the
+			other side is not a
+			place. It is a direction,
+			and the direction is
+			toward us.""",
 
 			"""
-			It gives when he is near it and it does not give when I am. That is the whole finding after eleven months.
+			It gives when he is
+			near it. It does not
+			give when I am.
 
-			So I have built a room around it, and filled the room with people who are not him, to find out whether it can tell the difference.
+			That is the whole
+			finding after eleven
+			months, and it is the
+			finding I did not want.""",
 
-			It can.""");
+			"""
+			So I have built a room
+			around it and filled
+			the room with people
+			who are not him, to
+			find out whether it
+			can tell the
+			difference.
+
+			It can.
+
+			It has never once
+			opened for a farmer.""");
 	}
 
 	/**
-	 * The one that changed.
+	 * SUBJECT NINE IS WHERE THE GAUNTS COME FROM.
 	 *
-	 * Ends on a sentence lifted word for word out of the farmhouse — "he stands
-	 * at them and waits for me to be curious" — and then tells the reader where
-	 * it came from. A player who found the sealed room in house one gets that
-	 * for free, and it is the best thing either book does.
+	 * Taller than he was, does not eat, does not sleep, does not blink, waits at
+	 * the bars for somebody to be curious — that is GauntEntity, described from the
+	 * outside by the man who made it. It is not a monster the mod happens to have;
+	 * it is a person from the mill road called Corin.
+	 *
+	 * The last line is the one that matters: he has written that sentence before,
+	 * years ago, about his brother.
 	 */
 	public static ItemStack subjectNine() {
-		return book("nine", "—",
+		return book("nine", "Steve",
 			"""
-			Nine changed.
+			Nine is Corin, from the
+			mill road. Sixteen days.
 
-			Not the way he changed. Slower, and less of it, and then it stopped.
+			NINE CHANGED.
 
-			Nine answers to his own name. He answers to mine as well, which is new.""",
-
-			"""
-			I have moved nine to the far cell.
-
-			He has not tried the bars. He stands at them and waits for me to be curious.
-
-			I have written that sentence before. Years ago. About my brother.""");
-	}
-
-	/** The end of it, and the only page written in a hurry. */
-	public static ItemStack lastDay() {
-		return book("the last day", "—",
-			"""
-			The bars are out, not in.
-
-			I want that written down because nobody will believe it and I will not be here to say it twice.
-
-			He did not break into anything. He walked out.""",
+			Not the way Herobrine
+			changed. Slower, and
+			less of it, and then it
+			stopped partway and
+			stayed there.""",
 
 			"""
-			I have put the door back. Stone, and more stone, and everything I had left.
+			He is taller than he
+			was. That should not
+			be possible and I
+			have measured him
+			four times.
 
-			It is not going to hold. It was never a door.
+			He does not eat and
+			he does not sleep and
+			he does not blink, and
+			when I stand at the
+			bars he stands at the
+			bars and waits for me
+			to be curious.""",
 
-			If you are reading this you have come a long way down, and I am sorry, because it means you were looking.""");
+			"""
+			Nine answers to his
+			own name.
+
+			He answers to mine as
+			well, which is new.
+
+			I have written that
+			sentence before.
+			Years ago. About my
+			brother.""");
 	}
 
 	/**
-	 * The confession, and the reason the whole place exists.
+	 * AND SEVEN OF THEM WALKED OUT.
 	 *
-	 * Placed furthest in, because it recontextualises everything behind it: the
-	 * three graves at the farmhouse, the ledger, the cells. He was not trying to
-	 * save anybody. And the last line hands the player the arithmetic rather
-	 * than the conclusion — three graves, four names, and nine intake numbers.
+	 * The bars are out, not in. This is the book that puts every tall silent thing
+	 * in the forest into the story by name — Aldous, Hesk, Mila, Bo, Ren, Sera and
+	 * a smith's boy of fifteen — and hands the player the sentence the whole mod
+	 * needed: they are mine, I made them out of my neighbours, and they are still
+	 * out there waiting for somebody to be curious.
+	 *
+	 * Wendel is the only one who stayed. He does not say why and he did not ask.
+	 */
+	public static ItemStack lastDay() {
+		return book("the last day", "Steve",
+			"""
+			The bars are out, not
+			in.
+
+			I want that written
+			down because nobody
+			is going to believe it
+			and I will not be here
+			to say it twice.
+
+			Corin did not break
+			into anything. He
+			walked OUT.""",
+
+			"""
+			The others went with
+			him. Aldous, Hesk, Mila,
+			Bo, Ren, Sera, and the
+			smith's boy who is
+			fifteen.
+
+			Seven of them, up the
+			shaft, in the dark,
+			without a lamp between
+			them.""",
+
+			"""
+			Wendel is the only one
+			who stayed and I do
+			not know why and I did
+			not ask.
+
+			If you have seen a
+			tall pale thing
+			standing still in the
+			wood, three blocks of
+			it, silent, shaped
+			almost like a person
+			and not quite:""",
+
+			"""
+			That is Corin. Or it is
+			one of the seven.
+
+			They are mine. I made
+			them out of my
+			neighbours in a room I
+			dug myself, and they
+			are still out there,
+			and they are still
+			standing very still,
+			and they are still
+			waiting for somebody
+			to be curious.""",
+
+			"""
+			I have put the door
+			back. Stone, and more
+			stone, and everything
+			I had left.
+
+			It is not going to hold.
+			It was never a door.""");
+	}
+
+	/**
+	 * PLAINLY, ONCE.
+	 *
+	 * The confession as he wrote it AT THE TIME, years before the six documents. He
+	 * did not do it to save his friend. He did it to find out whether it could have
+	 * been him, and the answer was yes.
+	 *
+	 * Then the count, which is the point of the whole file: nine names, and three
+	 * he had stopped writing down. Three graves at the farm and none of them are
+	 * theirs.
 	 */
 	public static ItemStack whatIWas() {
-		return book("plainly, once", "—",
+		return book("plainly, once", "Steve",
 			"""
-			I want this written plainly, once, and then I am going to stop writing.
+			I want this written
+			plainly, one time, and
+			then I am going to
+			stop keeping notes.
 
-			I did not do any of it to save him. He was gone before we broke through the hill. I knew it when he said my name.
-
-			I did it because I wanted to know whether I could have.""",
+			I did not do any of
+			this to get Herobrine
+			back.""",
 
 			"""
-			The others were farmers and fletchers and a cleric who would not stop talking.
+			He was gone before
+			we broke through the
+			hill. I knew it the day
+			he came up. He said my
+			mother's name and my
+			mother had been dead
+			eleven years.
 
-			I told myself they were not part of it.
+			I did it because I
+			wanted to know
+			whether I COULD HAVE.""",
 
-			There are three graves at the house and none of them are theirs, and I know exactly what that means.""");
+			"""
+			Whether it could have
+			been my hand on that
+			door. Whether there
+			was something in me
+			that would have come
+			up out of that hole
+			the same way he did.
+
+			There was.""",
+
+			"""
+			That is what I found
+			out. That is the whole
+			of what I found out,
+			and it cost twelve
+			people who thought
+			they were being paid
+			to dig.""",
+
+			"""
+			Aldous. Hesk. Wendel.
+			Mila. Bo. Ren. Sera. Gild.
+			Corin. And three I did
+			not write down
+			because I had
+			stopped writing them
+			down.
+
+			There are three
+			graves at the farm
+			and none of them are
+			theirs.""",
+
+			"""
+			I know exactly what
+			that means and so do
+			you now.""");
+	}
+
+	private static final int TITLE_FITS = 32;
+
+	/**
+	 * The wire caps a book title at 32 characters and THROWS rather than truncating.
+	 *
+	 * HouseBooks has carried this guard since a 41-character title disconnected the
+	 * player who opened the chest — an EncoderException out of Utf8String, which
+	 * looks like a network fault and not like a typo in a book. This file had no
+	 * guard at all and passed the title straight through.
+	 */
+	private static String title(String wanted) {
+		if (wanted.length() <= TITLE_FITS) {
+			return wanted;
+		}
+		String short_ = wanted.substring(0, TITLE_FITS).trim();
+		com.bloomlet.herobrine.HerobrineMod.LOGGER.warn(
+			"book title was {} characters and the wire allows {} — \"{}\" became \"{}\"",
+			wanted.length(), TITLE_FITS, wanted, short_);
+		return short_;
 	}
 
 	private static ItemStack book(String title, String author, String... pages) {
@@ -161,7 +391,7 @@ public final class LabBooks {
 		}
 		ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
 		stack.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
-			Filterable.passThrough(title), author, 0, written, true));
+			Filterable.passThrough(title(title)), author, 0, written, true));
 		return stack;
 	}
 }
