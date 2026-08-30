@@ -205,6 +205,7 @@ public class GauntEntity extends PathfinderMob {
 			return;
 		}
 		this.speak();
+		this.echo();
 
 		Player seen = this.watcher();
 		if (seen == null) {
@@ -300,6 +301,56 @@ public class GauntEntity extends PathfinderMob {
 	@Override
 	protected @org.jspecify.annotations.Nullable SoundEvent getAmbientSound() {
 		return null;      // nothing at all until it wants something
+	}
+
+	/** How often it lets the rock know. Roughly every eight to fourteen seconds. */
+	private static final int ECHOES_MIN = 160;
+	private static final int ECHOES_SPREAD = 120;
+	/** And how far the sound carries. Far enough to be followed. */
+	private static final float ECHO_CARRIES = 5.0F;
+
+	private int echoesIn = ECHOES_MIN;
+
+	/**
+	 * WHAT IT SOUNDS LIKE UNDERGROUND, WHICH IS THE ONLY WAY YOU FIND IT.
+	 *
+	 * Silence is the right rule out in a forest — the whole creature is built on
+	 * there being no warning, and the only way to find it there is to look at where
+	 * it already is. Underground that rule stops working and starts hiding it: a
+	 * player in a warren has no sightlines at all, so a thing that makes no noise
+	 * in a tunnel is a thing nobody ever meets.
+	 *
+	 * So below the surface it carries. Warden heartbeat pitched down and played
+	 * loud enough to travel through stone, on a slow irregular clock — which gives
+	 * a player the one thing a tunnel system can use, a direction to walk in. And
+	 * it is cursed rather than hostile: soft, low, patient, and coming from further
+	 * in every time you stop to listen.
+	 *
+	 * IRREGULAR ON PURPOSE. A metronome is a mechanic and a player starts counting
+	 * it; something that goes quiet for eleven seconds and then does not is a thing
+	 * you keep turning round for.
+	 */
+	private void echo() {
+		if (this.isSilent() || !(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		if (here.canSeeSky(this.blockPosition())) {
+			this.echoesIn = ECHOES_MIN;
+			return;      // out under the sky it says nothing, as before
+		}
+		if (--this.echoesIn > 0) {
+			return;
+		}
+		this.echoesIn = ECHOES_MIN + this.random.nextInt(ECHOES_SPREAD);
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, this.getSoundSource(),
+			ECHO_CARRIES, DEEP);
+		// And the shape of the room answers it. Two beats, quieter and late, so
+		// what reaches a player down a passage is a sound and then the rock.
+		com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), 9, () ->
+			here.playSound(null, this.getX(), this.getY(), this.getZ(),
+				net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT,
+				this.getSoundSource(), ECHO_CARRIES * 0.45F, DEEP * 0.9F));
 	}
 
 	private void speak() {

@@ -78,6 +78,24 @@ public final class Digging {
 				if (step > 0 && step % 9 == 0) {
 					line(level, BlockPos.containing(at), radius, random);
 				}
+				// AND A REAL TORCH, ON A REGULAR SPACING.
+				//
+				// The lamp above is a redstone wall torch placed on a one-in-nine
+				// roll — dim, red, and randomly spaced at roughly one every thirteen
+				// blocks. That is exactly right as the texture of his workings and
+				// it is useless as a route, and the sign at the mouth of the
+				// surveyed warren says KEEP TO THE LIT ONE.
+				//
+				// A trail you are told to follow has to be followable. Every fifth
+				// step, which is about seven blocks: close enough that the next one
+				// is always visible from the last, which is the only property a
+				// waymark actually needs.
+				//
+				// Only on the WAYMARKED bores. The failing warren and every spur
+				// stays on the dim red rolls, so "the lit one" still means something.
+				if (step > 0 && step % 5 == 0) {
+					torch(level, BlockPos.containing(at));
+				}
 			}
 		}
 		return BlockPos.containing(at);
@@ -268,6 +286,18 @@ public final class Digging {
 			BlockPos beam = post.above(height + 1);
 			if (level.getBlockState(beam).isAir()) {
 				level.setBlock(beam, Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	/** An ordinary torch, for the routes somebody was meant to walk twice. */
+	static void torch(ServerLevel level, BlockPos near) {
+		for (Direction side : Direction.Plane.HORIZONTAL) {
+			BlockPos wall = near.relative(side);
+			if (level.getBlockState(wall).isSolid() && level.getBlockState(near).isAir()) {
+				level.setBlock(near, Blocks.WALL_TORCH.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING, side.getOpposite()), 2);
+				return;
 			}
 		}
 	}

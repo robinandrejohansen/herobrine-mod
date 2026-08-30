@@ -332,6 +332,56 @@ public final class TheSurvey {
 		// attempt to reach the crossing from underneath.
 		sign(level, end.relative(heading, -1).relative(across, -1),
 			new String[] { "I WAS", "DIGGING", "TOWARD", "THE HOUSE" });
+
+		// ---- AND A WAY OUT, BECAUSE HE WAS NOT DIGGING A HOLE TO SIT IN.
+		//
+		// A man who drove two hundred and forty blocks toward the crossing did not
+		// climb down a well every morning to do it. There was a shaft, and it came
+		// up wherever the face happened to be that week.
+		//
+		// It is also the only mercy on the whole trail. Everything else here is a
+		// route you walk twice; this is a warren, a tunnel, a face, and then the
+		// same distance back with nothing new in it. A ladder to daylight turns the
+		// dead end into an arrival.
+		BlockPos shaft = end.relative(heading, -4);
+		int top = level.getHeight(
+			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+			shaft.getX(), shaft.getZ());
+		if (top - shaft.getY() > 4 && top - shaft.getY() < 140) {
+			for (int y = shaft.getY(); y <= top; y++) {
+				BlockPos at = new BlockPos(shaft.getX(), y, shaft.getZ());
+				level.setBlock(at, Blocks.LADDER.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING, heading), 2);
+				// The rung has to have something to hang off, and the shaft has to
+				// be air. Both, every course, or it is a ladder in a wall.
+				BlockPos back = at.relative(heading.getOpposite());
+				if (!level.getBlockState(back).isSolid()) {
+					level.setBlock(back, Blocks.COBBLESTONE.defaultBlockState(), 2);
+				}
+				for (int side = -1; side <= 1; side++) {
+					BlockPos clear = at.relative(heading, 1).relative(across, side);
+					if (level.getBlockState(clear).isSolid()) {
+						level.setBlock(clear, Blocks.CAVE_AIR.defaultBlockState(), 2);
+					}
+				}
+				if ((y - shaft.getY()) % 8 == 4) {
+					BlockPos lamp = at.relative(across, 1);
+					if (level.getBlockState(lamp).isSolid()) {
+						level.setBlock(at.relative(heading, 1),
+							Blocks.TORCH.defaultBlockState(), 2);
+					}
+				}
+			}
+			// A lid on it, so it is a hatch in a field rather than a hole to fall in.
+			BlockPos mouth = new BlockPos(shaft.getX(), top + 1, shaft.getZ());
+			level.setBlock(mouth, Blocks.OAK_TRAPDOOR.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, heading)
+				.setValue(BlockStateProperties.HALF,
+					net.minecraft.world.level.block.state.properties.Half.TOP)
+				.setValue(BlockStateProperties.OPEN, false), 2);
+			HerobrineMod.LOGGER.info("the survey comes up at [{}, {}, {}], {} blocks of ladder",
+				shaft.getX(), top + 1, shaft.getZ(), top - shaft.getY());
+		}
 	}
 
 	private static void chest(ServerLevel level, BlockPos at, RandomSource random,

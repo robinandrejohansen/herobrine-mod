@@ -165,8 +165,20 @@ public final class TheDig {
 			// The shut one is always the same distance in, so it is not the
 			// last cell and not the first — it is one they walk past twice.
 			boolean shut = i == CELLS_PER_SIDE - 2;
-			cell(level, start.offset(-3, 0, out), Direction.EAST, random, shut);
-			cell(level, start.offset(3, 0, out), Direction.WEST, random, false);
+			// AWAY FROM THE CORRIDOR, WHICH IS THE OPPOSITE OF WHAT THIS SAID.
+			//
+			// `into` is the direction a cell extends from its own mouth, and both of
+			// these named the way the DOOR faces instead. So the cell on the left of
+			// the hall was carved eastward — straight through the corridor the hall
+			// had just cut, into the cell opposite — and each one dropped its back
+			// wall at in == 5 in the middle of the walkway.
+			//
+			// The two then overwrote each other, last one wins, and what a player
+			// found on opening a door was the far cell's brickwork a block away.
+			// Reported as "the cell is blocked again on the other side of the door",
+			// which is exactly what it was.
+			cell(level, start.offset(-3, 0, out), Direction.WEST, random, shut);
+			cell(level, start.offset(3, 0, out), Direction.EAST, random, false);
 		}
 		return start.offset(0, 0, HALL - 1);
 	}
@@ -194,13 +206,30 @@ public final class TheDig {
 			}
 		}
 
-		// The frontage.
-		for (int side = -1; side <= 1; side++) {
-			for (int up = 0; up <= 2; up++) {
+		// ---- THE FRONTAGE, and it is built properly now.
+		//
+		// It used to be a three-wide strip of iron bars with a hole in the middle,
+		// floating: no frame, no lintel, nothing for the bars to be fixed to, and
+		// the top course level with the door so the whole thing read as a fence
+		// somebody had leaned against a hole. "Metal gjerde er dårlig laget", and
+		// it was.
+		//
+		// A stone frame either side and a lintel over, the bars running the full
+		// height between them, and the doorway two clear blocks. Which is how a
+		// barred frontage is actually built — the iron spans an opening in a wall
+		// rather than being the wall.
+		for (int up = 0; up <= 3; up++) {
+			for (int side = -2; side <= 2; side++) {
 				BlockPos at = mouth.relative(across, side).above(up);
-				level.setBlock(at, side == 0
-					? Blocks.CAVE_AIR.defaultBlockState()
-					: Blocks.IRON_BARS.defaultBlockState(), 2);
+				if (Math.abs(side) == 2 || up == 3) {
+					level.setBlock(at, brick(random), 2);      // frame and lintel
+				} else if (side == 0) {
+					level.setBlock(at, up <= 1
+						? Blocks.CAVE_AIR.defaultBlockState()
+						: brick(random), 2);                   // the doorway
+				} else {
+					level.setBlock(at, Blocks.IRON_BARS.defaultBlockState(), 2);
+				}
 			}
 		}
 		BlockState door = Blocks.IRON_DOOR.defaultBlockState()
@@ -253,18 +282,31 @@ public final class TheDig {
 		if (!shut) {
 			return;
 		}
-		// And the one that is still occupied.
-		Mob kept = com.bloomlet.herobrine.entity.ModEntities.INFECTED
+		// ---- AND WHAT IS STILL IN THERE.
+		//
+		// It was an INFECTED — a zombie in a box, which is the one thing fourteen
+		// cells full of straw did not need. The building's whole claim is that they
+		// were locking up people who came back from the wood WRONG, and a zombie
+		// resolves that instantly and downward: it is just a zombie, the gaol was
+		// for zombies, there is nothing else to think about.
+		//
+		// The tall one cannot be resolved like that. It is three blocks of pale,
+		// silent, villager-shaped nothing standing at the back of a cell that has
+		// been locked from the outside since before you were born, and it does not
+		// move while you are looking at it. The book on the desk four rooms away
+		// says "they say a thing only a dead man could know" and now there is
+		// something behind the iron that the sentence could be about.
+		//
+		// It also makes the lever a decision rather than a formality.
+		Mob kept = com.bloomlet.herobrine.entity.ModEntities.GAUNT
 			.create(level, EntitySpawnReason.STRUCTURE);
 		if (kept == null) {
 			return;
 		}
 		BlockPos stand = mouth.relative(into, 3);
 		kept.snapTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, 0.0F, 0.0F);
-		// Into the world first, THEN marked — attachments set before the entity
-		// is in a level have nowhere to be tracked from and never sync.
+		kept.setPersistenceRequired();
 		level.addFreshEntity(kept);
-		Feral.shutIn(kept);
 	}
 
 	/**
