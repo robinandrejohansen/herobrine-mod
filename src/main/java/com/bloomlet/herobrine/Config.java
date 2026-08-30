@@ -256,6 +256,50 @@ public final class Config {
 	 * taking their whole game away, and this is a horror mod rather than a
 	 * compiler.
 	 */
+	/**
+	 * The number this file was last brought up to date for.
+	 *
+	 * Bump it, and add a case, whenever a DEFAULT changes in a way an existing
+	 * world should get.
+	 */
+	private static final int SETTINGS_VERSION = 1;
+	public int settingsVersion = 0;
+
+	/**
+	 * WHY A CHANGED DEFAULT NEVER REACHED ANYBODY WHO WAS ALREADY PLAYING.
+	 *
+	 * load() writes the defaults only when the file does not exist. Every world
+	 * that has ever been started has one, so changing a default in this class
+	 * changes it for NEW worlds and for nobody else — and nothing said so, in the
+	 * file or in the log.
+	 *
+	 * It cost a playtest. blowsToKill went from thirty to seventy because thirty is
+	 * nineteen seconds of connecting with a netherite sword, the whole point of
+	 * that change was that the ending was too short, and the ending stayed exactly
+	 * as short because the config on disk still said thirty. Reported as "he still
+	 * has far too little health", which was completely correct.
+	 *
+	 * ONLY VALUES STILL AT THE OLD DEFAULT ARE TOUCHED. Somebody who deliberately
+	 * set thirty gets to keep thirty; this is for people who never opened the file
+	 * and are running a number they never chose. The file is rewritten afterwards
+	 * so the version stamp sticks and it only ever happens once.
+	 *
+	 * @return whether anything changed and the file needs writing back
+	 */
+	private static boolean migrate(Config it) {
+		if (it.settingsVersion >= SETTINGS_VERSION) {
+			return false;
+		}
+		if (it.settingsVersion < 1 && it.blowsToKill == 30) {
+			it.blowsToKill = 70;
+			HerobrineMod.LOGGER.info(
+				"blowsToKill was still the old default of 30 — raised to 70."
+					+ " Thirty blows is nineteen seconds of a netherite sword.");
+		}
+		it.settingsVersion = SETTINGS_VERSION;
+		return true;
+	}
+
 	public static void load() {
 		Path path = file();
 		try {
@@ -268,6 +312,10 @@ public final class Config {
 			Config read = GSON.fromJson(Files.readString(path), Config.class);
 			if (read != null) {
 				active = read;
+			}
+			if (migrate(active)) {
+				Files.writeString(path, GSON.toJson(active));
+				HerobrineMod.LOGGER.info("config brought up to date at {}", path);
 			}
 			HerobrineMod.LOGGER.info("config loaded: enabled={} breakIn={} damageToBreakOff={}",
 				active.enabled, active.breakIn, active.damageToBreakOff);
