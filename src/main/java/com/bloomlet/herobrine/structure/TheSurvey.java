@@ -66,12 +66,39 @@ public final class TheSurvey {
 		BlockPos middle = floor == null ? at : floor.above();
 
 		room(level, middle, random);
-		Direction heading = Direction.Plane.HORIZONTAL.getRandomDirection(random);
+
+		// IT IS DIGGING TOWARD THE WAY, AND IT ALWAYS SHOULD HAVE BEEN.
+		//
+		// The heading was a random horizontal direction, which makes two hundred and
+		// forty blocks of lit, paved, rail-laid tunnel a walk to nowhere in
+		// particular — and the sign at the far end says NOT FAR ENOUGH, which is a
+		// good line about a distance nobody can measure and a great one about a
+		// distance they can.
+		//
+		// Aimed at the homestead, because the way through is UNDER IT. He was
+		// tunnelling from the tower toward the crossing and he stopped short. That
+		// makes the sign literally true, it makes the direction checkable against a
+		// map the player already has, and it explains what the whole warren was for
+		// without a word: the plan was to reach the hole without going overground.
+		//
+		// Falls back to a roll if the homestead is not sited, which cannot happen in
+		// the normal sequence — the tower is third and the homestead is first — but
+		// this is also reachable by command.
+		BlockPos home = level.getServer() == null ? null
+			: Dwellings.origin(level.getServer().overworld());
+		Direction heading = home == null
+			? Direction.Plane.HORIZONTAL.getRandomDirection(random)
+			: Direction.getApproximateNearest(
+				home.getX() - middle.getX(), 0.0, home.getZ() - middle.getZ());
+
 		BlockPos end = tunnel(level, middle, heading, random);
 		abandoned(level, end, heading, random);
 
-		HerobrineMod.LOGGER.info("the survey at [{}, {}, {}], tunnel {} for {} blocks",
-			middle.getX(), middle.getY(), middle.getZ(), heading.getName(), RUN);
+		HerobrineMod.LOGGER.info(
+			"the survey at [{}, {}, {}], driving {} for {} blocks — {} short of the way",
+			middle.getX(), middle.getY(), middle.getZ(), heading.getName(), RUN,
+			home == null ? "aimed at nothing"
+				: (int) Math.sqrt(end.distSqr(home)) + " blocks");
 	}
 
 	/**
@@ -296,6 +323,15 @@ public final class TheSurvey {
 		}
 		sign(level, end.relative(heading, -1).relative(across, 1),
 			new String[] { "", "NOT", "FAR ENOUGH", "" });
+		// AND THE SECOND SIGN, which is the one that turns a dead end into a fact.
+		//
+		// A player who has walked two hundred and forty blocks of tunnel and found a
+		// worn pickaxe has been told nothing. Told which way he was digging, they
+		// can put it against the map in their pocket — and the answer is the first
+		// house, which they have already been to, which means this hole was an
+		// attempt to reach the crossing from underneath.
+		sign(level, end.relative(heading, -1).relative(across, -1),
+			new String[] { "I WAS", "DIGGING", "TOWARD", "THE HOUSE" });
 	}
 
 	private static void chest(ServerLevel level, BlockPos at, RandomSource random,
