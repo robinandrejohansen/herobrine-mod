@@ -14,6 +14,7 @@ public class HerobrineModClient implements ClientModInitializer {
 		EntityRenderers.register(ModEntities.MIMIC, MimicRenderer::new);
 		EntityRenderers.register(ModEntities.TURNED, TurnedRenderer::new);
 		EntityRenderers.register(ModEntities.GAUNT, GauntRenderer::new);
+		EntityRenderers.register(ModEntities.COMPANION, CompanionRenderer::new);
 		hisWeather();
 	}
 

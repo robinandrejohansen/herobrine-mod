@@ -11,6 +11,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -156,8 +157,21 @@ public class GauntEntity extends PathfinderMob {
 		// not politely wait for you to look away.
 		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0, true));
 		this.goalSelector.addGoal(2, new Close(this));
-		this.targetSelector.addGoal(1,
-			new NearestAttackableTargetGoal<>(this, Player.class, true));
+		// AND IT LOOKS FOR HER TOO, which is what makes her mortal enough to matter.
+		//
+		// This asked for Player.class, and so does everything else in the mod. Vera
+		// is not a player — so the entire flee-and-eat half of CompanionEntity was
+		// dead code: real health, a real threshold, a loaf of bread, and nothing in
+		// the world able to take one point off her.
+		//
+		// Nearest wins, so it will leave you for her if she is closer. That is the
+		// intended behaviour and not a compromise: something that ignores the person
+		// beside you is not frightening, it is scenery, and the moment she is the one
+		// being chased is the moment she stops being a follower and becomes a person
+		// you are standing between.
+		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(
+			this, LivingEntity.class, 10, true, false,
+			(who, level) -> CompanionEntity.canBeHurtBy(who)));
 	}
 
 	// ---- BEING LOOKED AT ---------------------------------------------------

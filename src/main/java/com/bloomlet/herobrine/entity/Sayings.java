@@ -1,0 +1,155 @@
+package com.bloomlet.herobrine.entity;
+
+import com.bloomlet.herobrine.HerobrineMod;
+
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.player.Player;
+
+/**
+ * WHAT SHE SAYS, AND WHY SHE IS THE ONE SAYING IT.
+ *
+ * The story is written down and that turned out to be the problem. Twenty-two
+ * books, six of them Steve's, found one at a time, hours apart, between two
+ * other things the player was doing — and every one of them has to be stopped
+ * for, opened and read. The playthrough note was that the story was too hard to
+ * follow, and the honest diagnosis is not that the writing was bad. It is that
+ * READING IS A COST and the mod was charging it twenty-two times.
+ *
+ * She is the same story with the cost removed. Nothing here is new information:
+ * every line below is something a book already says. What she does is say it
+ * ALOUD, IN THE PLACE IT HAPPENED, AT THE MOMENT IT MATTERS — Pip's name on the
+ * tower deck rather than on page two of a chest in a cellar.
+ *
+ * SHE IS NOT A NARRATOR AND SHE MUST NEVER SOUND LIKE ONE. Everything she says
+ * is either about somebody she knew or about what to do in the next ten seconds.
+ * She has no opinions about the plot, she cannot see the phase, and she never
+ * once tells the player what to feel.
+ *
+ * RED, NOT GREY. His whispers in TheHunt are §8§o — dim, italic, unattributed,
+ * deliberately hard to be sure you read. Hers are the opposite in every respect,
+ * because the one thing worse than missing a line of hers is mistaking it for
+ * one of his.
+ *
+ * AND SHE SHUTS UP. QUIET_FOR is the whole difference between a companion and a
+ * talking hat: a pool can be armed and correct and still be wrong to fire,
+ * because she said something ninety seconds ago.
+ */
+public final class Sayings {
+	private Sayings() {}
+
+	/** Nothing at all for this long after anything she said. */
+	private static final long QUIET_FOR = 400L;
+
+	// ---- WHAT SHE KNOWS ----------------------------------------------------
+
+	static final String[] JOINING = {
+		"I'm coming with you. There's nothing down here for me.",
+		"My daughter opened the fourth door. She was six. I'll come.",
+		"Take me with you. I can't sit in this well any longer.",
+	};
+
+	static final String[] NUDGED = {
+		"I'm here.",
+		"Still with you.",
+		"Right behind you.",
+	};
+
+	static final String[] FALTERING = {
+		"I can't — I have to get back, I'm sorry —",
+		"That's too much, that's too much, I'm going —",
+		"Finish it without me. Please.",
+	};
+
+	static final String[] BACK_UP = {
+		"All right. I'm all right.",
+		"I've eaten. Let's go.",
+		"Don't look at me like that. Walk.",
+	};
+
+	public static final String[] GAUNT_SEEN = {
+		"Don't. That was somebody. Do you understand that?",
+		"It won't move while you're looking. So look at it.",
+		"Corin. That one's called Corin, or it was.",
+	};
+
+	public static final String[] DARK = {
+		"Put the torch out. Light is how he finds the room.",
+		"I'd rather be in the dark than be found in the light.",
+		"Forty of them had candles. Every one they had left.",
+	};
+
+	public static final String[] HIS_WORLD = {
+		"This is his. Everything here is his.",
+		"Whatever's in the chests here came off somebody who came first.",
+		"I've heard about this place. Nobody who described it came back.",
+	};
+
+	public static final String[] YOU_DIED = {
+		"I'll wait here. Come back for your things.",
+		"I'm staying where you fell. Come and find me.",
+		"Go on. I'll be here. I'm not moving.",
+	};
+
+	public static final String[] WALKED_TO_YOU = {
+		"I waited. Then I walked.",
+		"You didn't come back, so I came to you.",
+		"Took me a while. I'm here now.",
+	};
+
+	// ---- SAYING IT --------------------------------------------------------
+
+	/**
+	 * One line, to one player, and not if she has just spoken.
+	 *
+	 * The gate is on HER rather than on the pool, which is the important half: six
+	 * separate triggers each politely rate-limiting themselves still adds up to
+	 * six lines at once when the player walks into a dark cave with a Gaunt in it.
+	 */
+	/**
+	 * The same thing, reachable from outside the entity package.
+	 *
+	 * Company lives in manifest/ because it needs the death event and a single
+	 * server-wide sweep, and the pools plus the quiet timer belong here with her.
+	 */
+	public static void toldOf(ServerLevel here, CompanionEntity her, Player to,
+	                          String[] pool) {
+		say(here, her, to, pool);
+	}
+
+	static void say(ServerLevel here, CompanionEntity her, Player to, String[] pool) {
+		if (!(to instanceof ServerPlayer heard)) {
+			return;
+		}
+		long now = here.getGameTime();
+		if (now - her.lastSpoke < QUIET_FOR) {
+			return;
+		}
+		her.lastSpoke = now;
+		String line = pool[here.getRandom().nextInt(pool.length)];
+		heard.sendSystemMessage(Component.literal("§c" + her.getName().getString()
+			+ "§7: " + line));
+		here.playSound(null, her.getX(), her.getY(), her.getZ(),
+			SoundEvents.VILLAGER_AMBIENT, her.getSoundSource(), 0.5F, 1.2F);
+		HerobrineMod.LOGGER.info("vera to {}: \"{}\"", heard.getName().getString(), line);
+	}
+
+	/**
+	 * Whether a thing in the world is one of his.
+	 *
+	 * Used by Falter to decide what to run from, so it has to be the mod's own
+	 * roster and not "anything hostile" — a cave spider is not what she is afraid
+	 * of, and a companion who bolts from a zombie is a companion who is always
+	 * bolting.
+	 */
+	static boolean isHis(Mob what) {
+		return what instanceof HerobrineEntity
+			|| what instanceof GauntEntity
+			|| what instanceof TurnedEntity
+			|| what instanceof MimicEntity
+			|| what instanceof InfectedEntity;
+	}
+}

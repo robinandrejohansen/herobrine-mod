@@ -94,6 +94,25 @@ public final class ModEntities {
 			.clientTrackingRange(24)
 	);
 
+	/**
+	 * Vera, and she is the only CREATURE in this registry.
+	 *
+	 * MobCategory.CREATURE rather than MONSTER, and that is not cosmetic: the
+	 * category drives despawn rules, spawn caps and what counts as a hostile for a
+	 * dozen vanilla systems. She is closer to a wolf than to anything else here.
+	 *
+	 * Tracked as far as the Gaunt. Everything else in the mod is tracked far
+	 * because it is meant to be seen at the treeline; she is tracked far because a
+	 * companion who pops out of existence at thirty blocks while you are checking
+	 * whether she is still behind you is a companion you cannot trust.
+	 */
+	public static final EntityType<CompanionEntity> COMPANION = register(
+		"companion",
+		EntityType.Builder.of(CompanionEntity::new, MobCategory.CREATURE)
+			.sized(0.6F, 1.95F)
+			.clientTrackingRange(24)
+	);
+
 	private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HerobrineMod.id(name));
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
@@ -106,5 +125,6 @@ public final class ModEntities {
 		FabricDefaultAttributeRegistry.register(MIMIC, MimicEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(TURNED, TurnedEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(GAUNT, GauntEntity.createAttributes());
+		FabricDefaultAttributeRegistry.register(COMPANION, CompanionEntity.createAttributes());
 	}
 }

@@ -919,6 +919,55 @@ public final class Undercity {
 			&& level.getBlockState(feet.below()).isSolid();
 	}
 
+	/**
+	 * VERA, AND SHE IS NOT ONE OF THE NINE.
+	 *
+	 * Placed at the middle of the chamber rather than scattered with the rest,
+	 * because the nine are scenery and she is a thing the player has to FIND. A
+	 * red coat among nine brown ones at the centre of the room, with her name over
+	 * her head, is discoverable without a marker, a quest arrow or a line of text.
+	 *
+	 * Down here specifically, and not up in the square, and that is the whole
+	 * reason she is worth meeting: everybody who is still alive from Ashfold is at
+	 * the bottom of a well, and she is the one who says she would rather leave.
+	 *
+	 * Last, after the nine, for the reason people() itself is called last — see
+	 * the comment at the end of build(). The grove plants trees by stacking logs
+	 * on a floor square without asking who is standing there.
+	 */
+	private static void her(ServerLevel level, BlockPos floor, RandomSource random) {
+		BlockPos feet = null;
+		for (int look = 0; look < LOOKS_FOR_A_SPOT && feet == null; look++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = random.nextDouble() * 6.0;
+			BlockPos at = new BlockPos(
+				floor.getX() + (int)Math.round(Math.cos(angle) * range),
+				floor.getY(),
+				floor.getZ() + (int)Math.round(Math.sin(angle) * range));
+			for (int dy = 0; dy <= 1 && feet == null; dy++) {
+				if (roomToStand(level, at.above(dy))) {
+					feet = at.above(dy);
+				}
+			}
+		}
+		if (feet == null) {
+			HerobrineMod.LOGGER.warn("nowhere in this undercity for her to stand");
+			return;
+		}
+		com.bloomlet.herobrine.entity.CompanionEntity vera =
+			com.bloomlet.herobrine.entity.ModEntities.COMPANION.create(
+				level, EntitySpawnReason.STRUCTURE);
+		if (vera == null) {
+			return;
+		}
+		vera.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5,
+			random.nextFloat() * 360.0F, 0.0F);
+		vera.setPersistenceRequired();
+		level.addFreshEntity(vera);
+		HerobrineMod.LOGGER.info("she is waiting at [{}, {}, {}]",
+			feet.getX(), feet.getY(), feet.getZ());
+	}
+
 	private static void people(ServerLevel level, BlockPos floor, RandomSource random) {
 		int placed = 0;
 		for (int i = 0; i < 9; i++) {
@@ -965,6 +1014,7 @@ public final class Undercity {
 			level.addFreshEntity(villager);
 		}
 		HerobrineMod.LOGGER.info("{} of them are still down there", placed);
+		her(level, floor, random);
 	}
 
 	private static BlockState paving(RandomSource random) {
