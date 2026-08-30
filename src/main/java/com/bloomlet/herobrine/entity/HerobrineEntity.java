@@ -3940,6 +3940,56 @@ public class HerobrineEntity extends PathfinderMob {
 	private int act() {
 		return Math.min(3, 1 + this.hits / Math.max(1, Config.get().blowsToKill / 3));
 	}
+
+	/**
+	 * HOW BIG HE IS IN EACH ACT, AND IT IS THE WHOLE POINT OF HAVING ACTS.
+	 *
+	 * The fight has had three of them since it was written and every one looked
+	 * identical. Act two starts throwing fireballs and calling lightning, act three
+	 * throws three at once and spends half its time off the ground — real
+	 * escalation, entirely invisible, so what a player experiences is one long
+	 * fight that gets vaguely harder for no stated reason.
+	 *
+	 * Size is the cheapest sentence a boss can say. SCALE carries the hitbox with
+	 * it, so a bigger him is bigger to hit as well as bigger to look at, and
+	 * nothing about the model or the animation changes: SAME MAN, WRONG SIZE, which
+	 * is worth more than any new mesh.
+	 *
+	 * 1.4 AND 1.7, NOT TWO. Two puts him at three and a half blocks, and the
+	 * Reckoning can happen anywhere — including inside somebody's house, where a
+	 * boss who cannot fit through his own doorway stops being frightening and
+	 * becomes a physics problem. 1.7 is a foot over two blocks: unmistakable next
+	 * to a player, and still able to get through a door.
+	 */
+	private static final double[] ACT_SIZE = { 1.0, 1.4, 1.7 };
+
+	/**
+	 * Applied on every blow, because that is the only moment the act can change.
+	 *
+	 * Set on the attribute rather than tracked in a field so the client gets it for
+	 * free — SCALE is synced, and the renderer reads the size back off the render
+	 * state to choose which face to draw. One number does both jobs and they cannot
+	 * come apart.
+	 */
+	private void wearTheAct() {
+		net.minecraft.world.entity.ai.attributes.AttributeInstance size =
+			this.getAttribute(Attributes.SCALE);
+		if (size == null) {
+			return;
+		}
+		double want = ACT_SIZE[Math.min(ACT_SIZE.length - 1, this.act() - 1)];
+		if (size.getBaseValue() == want) {
+			return;
+		}
+		size.setBaseValue(want);
+		if (this.level() instanceof ServerLevel here) {
+			// He grows where you can hear it.
+			here.playSound(null, this.getX(), this.getY(), this.getZ(),
+				SoundEvents.WARDEN_ROAR, this.getSoundSource(), 2.4F, 0.5F);
+			this.scorch(here, 6);
+		}
+		HerobrineMod.LOGGER.info("act {} — he stands {}x now", this.act(), want);
+	}
 	// ---- END THE RECKONING ------------------------------------------------
 
 	private static final int DEFIANCE_ENDURED = 130;
@@ -4030,6 +4080,8 @@ public class HerobrineEntity extends PathfinderMob {
 			// nothing. Monsters get this from createMonsterAttributes; he does
 			// not extend Monster, so he has to ask for it.
 			.add(Attributes.ATTACK_DAMAGE, STRIKE_DAMAGE)
+			// Registered so wearTheAct has something to set. Starts at a man's size.
+			.add(Attributes.SCALE, 1.0)
 			.add(Attributes.ATTACK_KNOCKBACK, 0.6)
 			.add(Attributes.MOVEMENT_SPEED, 0.3)
 			// He needs to be aware of you from much further than he ever
@@ -8265,6 +8317,7 @@ public class HerobrineEntity extends PathfinderMob {
 			super.hurtServer(level, source, Float.MAX_VALUE);
 			return true;
 		}
+		this.wearTheAct();
 		if (this.hits == Math.max(1, Config.get().blowsToKill / 3)) {
 			com.bloomlet.herobrine.manifest.Reckoning.theWarning(level, striker, this);
 		}

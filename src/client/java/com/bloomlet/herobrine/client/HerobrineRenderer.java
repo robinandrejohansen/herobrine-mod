@@ -25,6 +25,19 @@ public class HerobrineRenderer
 		extends HumanoidMobRenderer<HerobrineEntity, HumanoidRenderState, HumanoidModel<HumanoidRenderState>> {
 
 	private static final Identifier TEXTURE = HerobrineMod.id("textures/entity/herobrine.png");
+	/**
+	 * The face he makes once he has stopped pretending.
+	 *
+	 * Chosen off the render state's SCALE rather than off an act number, and that
+	 * is not a shortcut. SCALE is already synced because it is an attribute, so the
+	 * size and the face are one value — they physically cannot disagree, and there
+	 * is no second field to forget to update. He gets bigger and angrier in the
+	 * same frame because they are the same fact.
+	 */
+	private static final Identifier ANGRY =
+		HerobrineMod.id("textures/entity/herobrine_angry.png");
+	/** Anything above a man's size is a man who has stopped being one. */
+	private static final float STOPPED_PRETENDING = 1.05F;
 
 	public HerobrineRenderer(EntityRendererProvider.Context context) {
 		super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5F);
@@ -38,7 +51,7 @@ public class HerobrineRenderer
 
 	@Override
 	public Identifier getTextureLocation(HumanoidRenderState state) {
-		return TEXTURE;
+		return state.scale > STOPPED_PRETENDING ? ANGRY : TEXTURE;
 	}
 
 	/**

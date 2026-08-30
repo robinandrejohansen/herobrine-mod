@@ -73,6 +73,15 @@ SOCKET = (20, 16, 12, 255)
 # original screenshot worked, and it needs no help.
 EYE = (255, 255, 255, 255)
 
+# THE BROW, ONE ROW ABOVE THE EYES AND ANGLED IN.
+#
+# Eyes sit at y 12, x 9-10 and 13-14. The inner pair goes on row 11 — right on
+# top of the eye, where it presses down — and the outer pair on row 10, lifted
+# away. That difference of one pixel is the angle, and the angle is the anger.
+BROW_INNER = [(10, 11), (13, 11)]
+BROW_OUTER = [(9, 10), (14, 10)]
+BROW = (14, 10, 8, 255)
+
 
 def client_jar():
     jars = glob.glob(os.path.expanduser(
@@ -103,6 +112,30 @@ def main():
     write_png(os.path.join(OUT, "herobrine_eyes.png"), glow)
     print(f"wrote herobrine.png + herobrine_eyes.png from vanilla Steve "
           f"({len(EYES)} eye px, no halo)")
+
+    # ---- AND THE FACE HE MAKES WHEN HE HAS STOPPED PRETENDING.
+    #
+    # The fight already had three acts and every one of them looked identical, so
+    # the escalation was real and invisible: more fireballs, tighter spread, more
+    # time off the ground, and the same calm face throughout.
+    #
+    # A BROW IS FOUR PIXELS AND IT IS THE WHOLE EXPRESSION. Vanilla Steve has none
+    # at all — the face is eyebrows-by-implication, drawn in hair colour above the
+    # eyes — so putting a hard dark line there, ANGLED DOWN TOWARD THE NOSE, is the
+    # only change needed. Angled is the entire trick: two flat lines read as tired,
+    # and two lines that meet in the middle read as somebody who has decided
+    # something about you.
+    #
+    # Nothing else moves. Same skin, same eyes, same silhouette, and one row of
+    # pixels different — which is what makes a player check twice rather than
+    # notice a new mob.
+    cross = [row[:] for row in lit]
+    for x, y in BROW_INNER:
+        cross[y][x] = BROW
+    for x, y in BROW_OUTER:
+        cross[y][x] = BROW
+    write_png(os.path.join(OUT, "herobrine_angry.png"), cross)
+    print(f"wrote herobrine_angry.png ({len(BROW_INNER) + len(BROW_OUTER)} brow px)")
 
 
 if __name__ == "__main__":
