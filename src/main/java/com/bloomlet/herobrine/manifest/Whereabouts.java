@@ -827,6 +827,28 @@ public final class Whereabouts {
 		if (keep == null) {
 			return;
 		}
+		// AND IF THE KEEP IS NOT LOADED, WE CANNOT SEE HIM, SO WE DO NOT MAKE ANOTHER.
+		//
+		// HerobrineEntity.all asks the level's entity index, and an index only holds
+		// LOADED entities. That was always true and never mattered, because the keep
+		// used to be sited eighty to a hundred blocks from the crossing — inside
+		// anybody's view distance, so he was loaded whenever anybody was over there
+		// and the emptiness check was honest.
+		//
+		// Moving the castle two hundred and forty to three hundred and forty blocks
+		// off the city broke that in one line. At three hundred and one blocks the
+		// keep is outside a sixteen-chunk view distance, all() comes back empty
+		// whether he is there or not, and this spawns another. Every step. The log
+		// read "there were 23 of him over the keep — 22 sent back".
+		//
+		// The self-heal above was doing its job perfectly and cleaning up after a
+		// bug that had not existed when it was written.
+		//
+		// Absence of evidence is the whole problem, so the fix is to refuse to
+		// answer: if the chunk is not there, say nothing and try again in a second.
+		if (!his.isLoaded(keep)) {
+			return;
+		}
 		HerobrineEntity him = ModEntities.HEROBRINE.create(his, EntitySpawnReason.EVENT);
 		if (him == null) {
 			return;

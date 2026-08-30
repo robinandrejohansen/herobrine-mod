@@ -87,6 +87,9 @@ public class MimicEntity extends PathfinderMob {
 	 * anybody organises a search party, because a search party that FINDS him
 	 * standing still in a field has turned a ghost into an exhibit.
 	 */
+	/** He does not swing back until it is nearly over. Six of twenty. */
+	private static final float FIGHTS_BACK_UNDER = 6.0F;
+
 	private static final int LIFETIME = 2400;
 	private static final int SPREAD = 2400;
 
@@ -123,6 +126,10 @@ public class MimicEntity extends PathfinderMob {
 		// Over there you are the one who is a long way from anybody, and the thing
 		// that is worth doing is the opposite.
 		this.goalSelector.addGoal(1, new TheFriend(this));
+		// Only ever reached once hurtServer has given him a target, which only
+		// happens in his world and only under six health.
+		this.goalSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.MeleeAttackGoal(
+			this, 1.15, true));
 		this.goalSelector.addGoal(2, new AvoidEntityGoal<>(this, Player.class, 12.0F, 1.0, 1.0));
 		// Above strolling, so that when he has a pickaxe he is a person who came
 		// down here to do something rather than a person wandering a cave.
@@ -202,7 +209,10 @@ public class MimicEntity extends PathfinderMob {
 
 		@Override
 		public boolean canContinueToUse() {
-			return this.mark != null && this.mark.isAlive() && this.stage <= 5;
+			// A fight ends the visit. Once he has turned round he is not going back
+			// to crouching at you.
+			return this.mark != null && this.mark.isAlive() && this.stage <= 5
+				&& this.him.getTarget() == null;
 		}
 
 		@Override
@@ -329,7 +339,9 @@ public class MimicEntity extends PathfinderMob {
 			net.minecraft.world.entity.EquipmentSlot where =
 				this.him.getEquipmentSlotForItem(on);
 			this.him.setItemSlot(where, on);
-			this.him.setDropChance(where, 0.0F);
+			// AND IT DROPS. He took it out of your chest in front of you; killing him
+			// is how you get it back, and that is the only reason to try.
+			this.him.setDropChance(where, 1.0F);
 			if (this.him.level() instanceof ServerLevel here) {
 				here.playSound(null, this.him.blockPosition(),
 					net.minecraft.sounds.SoundEvents.ARMOR_EQUIP_IRON.value(),
@@ -581,11 +593,37 @@ public class MimicEntity extends PathfinderMob {
 
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
-		// Not invulnerable, not tough: ABSENT. A hit does not hurt him because
-		// there is nothing there to hurt, and the swing that proves it is also
-		// the swing that removes the evidence.
-		this.vanish();
-		return false;
+		// OUT IN THE OVERWORLD HE IS ABSENT. A hit does not hurt him because there
+		// is nothing there to hurt, and the swing that proves it is also the swing
+		// that removes the evidence. That is the seventh-name scare and it depends
+		// on him not being a thing you can fight.
+		if (!this.level().dimension().equals(
+				com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+			this.vanish();
+			return false;
+		}
+
+		// IN HIS WORLD HE BLEEDS, AND THAT IS A DIFFERENT AND BETTER SCARE.
+		//
+		// Vanishing says "it was never real" and hands the player an explanation.
+		// Twenty health, ordinary damage, an ordinary death and your own iron on
+		// the ground afterwards says the opposite, and there is no explanation to
+		// reach for. You killed somebody wearing your friend's face and their name
+		// is still on the tab list.
+		//
+		// Twenty is a player's exactly, and it is deliberate: he goes down in the
+		// number of hits a player would, which is the last thing making him read as
+		// one right up to the moment he stops.
+		boolean took = super.hurtServer(level, source, damage);
+		if (took && this.getHealth() <= FIGHTS_BACK_UNDER
+			&& source.getEntity() instanceof Player who) {
+			// AND HE ONLY SWINGS BACK AT THE END, which is the note as given: just
+			// enough to seem real. Somebody who fights from the first hit is a mob.
+			// Somebody who takes four in silence and then turns round is a person
+			// who has decided you meant it.
+			this.setTarget(who);
+		}
+		return took;
 	}
 
 	/**
