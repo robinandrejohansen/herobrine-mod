@@ -644,31 +644,181 @@ public final class Keep {
 	 * and it also does the practical job the motte creates: without it the
 	 * castle is six blocks up with no way down that is not a jump.
 	 */
+	/** Half-width of the causeway. Five blocks: a road, not a plaza. */
+	private static final int ROAD = 2;
+
+	/** How far it is allowed to run before it gives up and lands anyway. */
+	private static final int MAX_RUN = 56;
+
+	/** Beyond this drop the fill stops being a bank and becomes piers. */
+	private static final int PIERS_AT = 7;
+
+	/** Above this much clear air, the ramp stops strolling and starts descending. */
+	private static final int CHASES_OVER = 4;
+
+	/**
+	 * THE WAY UP, AND IT FOLLOWS THE GROUND NOW.
+	 *
+	 * The old one was nine identical treads, nine blocks wide, running dead south
+	 * from the gate, dropping one block each — and it sampled the ground ONCE, at
+	 * the centre of the castle, forty-seven blocks away from where it ended. On a
+	 * dark forest hillside that is a staircase in the air, and it was reported
+	 * exactly that way: the entrance is in the sky.
+	 *
+	 * It was in the sky on FLAT ground too, which is the part worth writing down.
+	 * The gate floor sits at MOTTE + 1 above the centre, the causeway began the
+	 * moment the motte stopped, and fill() only ever reached four blocks down — so
+	 * the first treads had two clear blocks of nothing under them before the
+	 * terrain had done anything wrong at all.
+	 *
+	 * WHAT VANILLA CALLS THIS IS BEARDING, and it is the documented answer rather
+	 * than an invention: a structure declares terrain_adaptation, and beard_thin —
+	 * what villages and pillager outposts use — means GENERATE GROUND UNDER THE
+	 * BUILDING AND CUT IT AWAY INSIDE. This mod places blocks directly and never
+	 * goes through a structure definition, so it gets no adaptation for free; what
+	 * it has to do instead is the same two things by hand. The cut-away half was
+	 * already here in clear(). This is the other half, and the wiki names the exact
+	 * failure it is fixing: terrain adaptation "doesn't account for drastic changes
+	 * in the y-axis".
+	 *
+	 * So the ground is read PER COLUMN. The ramp descends one block every second
+	 * block of run, stops the moment the treads reach the real surface, and fills
+	 * from every tread down to whatever is actually beneath it. Where the drop is
+	 * deeper than PIERS_AT it stops filling solid and stands on piers, which is
+	 * both cheaper to look at and the honest shape for a causeway over a dip.
+	 */
 	private static void steps(ServerLevel his, BlockPos base, RandomSource random) {
-		for (int step = 0; step <= MOTTE + 2; step++) {
-			int z = WALL + 1 + step * 2;
-			int y = -step;
-			for (int dx = -4; dx <= 4; dx++) {
-				put(his, base.offset(dx, y, z),
-					Blocks.POLISHED_DEEPSLATE_STAIRS.defaultBlockState()
-						.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH)
-						.setValue(BlockStateProperties.HALF, Half.BOTTOM));
-				put(his, base.offset(dx, y, z + 1), paving(random));
-				for (int dy = 1; dy <= 3; dy++) {
-					clear(his, base.offset(dx, y + dy, z));
-					clear(his, base.offset(dx, y + dy, z + 1));
+		int landed = -1;
+		int y = 0;
+
+		for (int run = 1; run <= MAX_RUN; run++) {
+			int z = WALL + run;
+			int here = Ground.topOf(his, base.getX(), base.getZ() + z) + 1;
+			// A 1:2 RAMP THAT CHASES WHEN IT IS LOSING.
+			//
+			// One block every second course reads as a road a cart could come up,
+			// and 1:1 reads as a ladder with slabs on it — so 1:2 is the default and
+			// worth keeping. But ground that falls away at a block per block cannot
+			// be caught by a ramp that falls at half that: the causeway simply flies
+			// out over the valley for ever, which is the "drop away" case and the one
+			// profile the first version of this never landed on.
+			//
+			// So when it is more than CHASES_OVER above the surface it takes a whole
+			// block per course until it is back in range. On anything short of a
+			// sustained cliff that converges, and the cliff is caught below.
+			if (base.getY() + y > here + CHASES_OVER || run % 2 == 0) {
+				y--;
+			}
+			int tread = base.getY() + y;
+			int ground = here;
+
+			// THE END CONDITION IS THE GROUND, NOT A COUNTER. The moment the ramp
+			// has come down to meet the surface it stops, however far out that is
+			// — which is what makes it fit a hillside, a dip and a flat field with
+			// the same code and no cases.
+			if (tread <= ground) {
+				landed = run;
+				break;
+			}
+			this_course(his, base, z, y, tread, random);
+		}
+
+		if (landed < 0) {
+			// A GENUINE CLIFF, and it still has to be walkable. The causeway is
+			// standing on piers over something that kept falling, so it ends the way
+			// a real viaduct ends: a narrow flight straight down off the last course.
+			HerobrineMod.LOGGER.info(
+				"the causeway ran the full {} and is coming down on steps", MAX_RUN);
+			landing(his, base, WALL + MAX_RUN, y, random);
+			return;
+		}
+		HerobrineMod.LOGGER.info("the way up is {} blocks long and lands at y {}",
+			landed, base.getY() + y);
+	}
+
+	/**
+	 * One course of the causeway: the tread, the walls, the air over it, and
+	 * whatever has to hold it up.
+	 */
+	private static void this_course(ServerLevel his, BlockPos base, int z, int y,
+	                               int tread, RandomSource random) {
+		for (int dx = -ROAD; dx <= ROAD; dx++) {
+			BlockPos at = base.offset(dx, y, z);
+			put(his, at, Blocks.POLISHED_DEEPSLATE_STAIRS.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH)
+				.setValue(BlockStateProperties.HALF, Half.BOTTOM));
+			for (int up = 1; up <= 4; up++) {
+				clear(his, at.above(up));
+			}
+
+			// ---- AND THIS IS THE BEARDING. Down to the real surface of this
+			// column, not to a fixed depth off a sample taken somewhere else.
+			int ground = Ground.topOf(his, at.getX(), at.getZ());
+			int drop = tread - ground;
+			if (drop <= PIERS_AT) {
+				for (int dy = 1; dy <= drop; dy++) {
+					fill(his, at.below(dy), stone(random));
 				}
-				for (int dy = -1; dy >= -4; dy--) {
-					fill(his, base.offset(dx, y + dy, z), stone(random));
-					fill(his, base.offset(dx, y + dy, z + 1), stone(random));
+				continue;
+			}
+			// Too deep to bank up. Three courses of roadbed, then piers — a
+			// causeway on legs rather than a wall of stone across a valley.
+			for (int dy = 1; dy <= 3; dy++) {
+				fill(his, at.below(dy), stone(random));
+			}
+			if (z % 5 != 0 || Math.abs(dx) == 1) {
+				continue;
+			}
+			for (int dy = 4; dy <= drop; dy++) {
+				fill(his, at.below(dy), Blocks.DEEPSLATE_BRICKS.defaultBlockState());
+			}
+		}
+		// A parapet either side, so it is a road with edges rather than a slab.
+		for (int dx : new int[] { -ROAD - 1, ROAD + 1 }) {
+			BlockPos at = base.offset(dx, y, z);
+			put(his, at, stone(random));
+			put(his, at.above(), Blocks.DEEPSLATE_BRICK_WALL.defaultBlockState());
+			int ground = Ground.topOf(his, at.getX(), at.getZ());
+			for (int dy = 1; dy <= Math.min(PIERS_AT, tread - ground); dy++) {
+				fill(his, at.below(dy), stone(random));
+			}
+		}
+	}
+
+	/**
+	 * The last resort: straight down, three wide, until it touches.
+	 *
+	 * Only reached when the ramp has run its whole length over ground that kept
+	 * falling. Bounded by the world floor rather than by a step count, because the
+	 * one thing this must not do is stop before it arrives — an entrance that ends
+	 * in mid-air is the bug the whole rewrite exists to remove.
+	 */
+	private static void landing(ServerLevel his, BlockPos base, int z, int y,
+	                            RandomSource random) {
+		for (int step = 1; step <= 64; step++) {
+			int tread = base.getY() + y - step;
+			if (tread <= his.getMinY() + 2) {
+				return;
+			}
+			boolean done = false;
+			for (int dx = -1; dx <= 1; dx++) {
+				BlockPos at = new BlockPos(base.getX() + dx, tread, base.getZ() + z + step);
+				put(his, at, Blocks.POLISHED_DEEPSLATE_STAIRS.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH)
+					.setValue(BlockStateProperties.HALF, Half.BOTTOM));
+				for (int up = 1; up <= 4; up++) {
+					clear(his, at.above(up));
+				}
+				int ground = Ground.topOf(his, at.getX(), at.getZ());
+				for (int dy = 1; dy <= Math.min(6, tread - ground); dy++) {
+					fill(his, at.below(dy), stone(random));
+				}
+				if (tread <= ground + 1) {
+					done = true;
 				}
 			}
-			// A balustrade, so it reads as a stair rather than a ramp.
-			for (int dx : new int[] { -5, 5 }) {
-				put(his, base.offset(dx, y, z), stone(random));
-				put(his, base.offset(dx, y, z + 1), stone(random));
-				put(his, base.offset(dx, y + 1, z),
-					Blocks.DEEPSLATE_BRICK_WALL.defaultBlockState());
+			if (done) {
+				return;
 			}
 		}
 	}
