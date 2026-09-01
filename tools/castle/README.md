@@ -38,3 +38,37 @@ blocks, 19 materials, no nether portal, four doors.
 
     TU19  castle    x  70..140   y 56..104   z -120..-49
                     20,102 blocks, 77 block types, 243 block states
+
+## Placing what you measured
+
+`extract.py` gives you `{(x,y,z): (name, properties)}`. Write it out as:
+
+    { "size":    { "x": 71, "y": 49, "z": 72 },
+      "palette": [ "cobblestone", "oak_stairs[facing=south,half=bottom]", ... ],
+      "blocks":  [ [x, y, z, paletteIndex], ... ] }
+
+Drop that in `config/herobrine/blueprints/<name>.json` and place it in game
+with `/herobrine blueprint <name>`.
+
+**Nothing is shipped with the mod.** A blueprint of somebody else's build is
+their build, this repository is public, and a release goes to a website. The mod
+carries the reader; the file lives in the player's own config directory.
+
+### Crossing versions
+
+`Blueprint.modernise` translates 1.13 states. Measured against the tutorial
+castle — 243 palette entries, 20,102 blocks — 98.6% land byte-identical with no
+translation at all. The other 1.4% is two changes:
+
+| | blocks | what happened |
+|---|---|---|
+| `*_wall` sides | 269 | booleans in 1.13, a `WallSide` enum since 1.16. `true` maps to `low`, `false` to `none`, which is what vanilla's own converter did |
+| `wall_sign` | 20 | became `oak_wall_sign` in 1.14. A renamed block does not fail on its properties, it fails entirely |
+
+Everything else passes through. `waterlogged`, `up`, `powered`, `open`,
+`occupied`, `enabled`, `lit`, `in_wall`, the brewing-stand bottles, and the four
+sides of a fence, pane or iron bars are all still booleans and all still mean the
+same thing.
+
+An entry this table does not know falls back to the bare block name, and then to
+being skipped — a building with a hole in it beats no building.

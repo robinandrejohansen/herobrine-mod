@@ -129,6 +129,44 @@ public final class HerobrineCommand {
 				// For a world that was played before the buildings moved to
 				// being sited near the players. Clears where they were going to
 				// go so they are chosen again; touches nothing already built.
+				.then(Commands.literal("blueprint")
+					.then(Commands.argument("name", StringArgumentType.word())
+						.suggests((context, builder) -> {
+							for (String have
+									: com.bloomlet.herobrine.structure.Blueprint.available()) {
+								builder.suggest(have);
+							}
+							return builder.buildFuture();
+						})
+						.executes(ctx -> {
+							ServerPlayer player = ctx.getSource().getPlayerOrException();
+							ServerLevel level = (ServerLevel) player.level();
+							String name = StringArgumentType.getString(ctx, "name");
+							// From the block in front of the player's feet, so the
+							// corner of the blueprint is somewhere they chose.
+							net.minecraft.core.BlockPos at = player.blockPosition();
+							var done = com.bloomlet.herobrine.structure.Blueprint
+								.place(level, at, name);
+							if (done == null) {
+								ctx.getSource().sendFailure(Component.literal(
+									"no blueprint called \"" + name + "\" in "
+										+ com.bloomlet.herobrine.structure.Blueprint.folder()));
+								return 0;
+							}
+							int plain = com.bloomlet.herobrine.structure.Blueprint.lastPlain();
+							ctx.getSource().sendSuccess(() -> Component.literal(
+								done.blocks() + " blocks going up, " + done.sizeX() + "x"
+									+ done.sizeY() + "x" + done.sizeZ() + ", corner at your"
+									+ " feet." + (plain > 0
+										? " " + plain + " palette entries lost their"
+											+ " properties — older format."
+										: "")
+									+ (done.skipped() > 0
+										? " " + done.skipped() + " blocks no longer exist."
+										: "")),
+								false);
+							return 1;
+						})))
 				.then(Commands.literal("castle").executes(ctx -> {
 					ServerPlayer player = ctx.getSource().getPlayerOrException();
 					ServerLevel level = (ServerLevel) player.level();
