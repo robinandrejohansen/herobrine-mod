@@ -102,9 +102,12 @@ public final class Blueprint {
 			.resolve("herobrine").resolve("blueprints");
 	}
 
-	/** What is in that folder, without the .json. */
+	/** Everything placeable: what ships with the mod, plus whatever you added. */
 	public static List<String> available() {
 		List<String> out = new ArrayList<>();
+		if (have("tutorial_castle")) {
+			out.add("tutorial_castle");
+		}
 		Path dir = folder();
 		if (!Files.isDirectory(dir)) {
 			return out;
@@ -113,7 +116,10 @@ public final class Blueprint {
 			files.filter(p -> p.getFileName().toString().endsWith(".json"))
 				.forEach(p -> {
 					String n = p.getFileName().toString();
-					out.add(n.substring(0, n.length() - 5));
+					n = n.substring(0, n.length() - 5);
+					if (!out.contains(n)) {
+						out.add(n);
+					}
 				});
 		} catch (Exception broken) {
 			HerobrineMod.LOGGER.warn("could not list {}: {}", dir, broken.getMessage());
@@ -201,25 +207,66 @@ public final class Blueprint {
 		}
 	}
 
+	/** Where the bundled ones live inside the jar. */
+	private static final String BUILT_IN = "/assets/herobrine/blueprints/";
+
+	/**
+	 * THE PLAYER'S FOLDER FIRST, THEN THE JAR.
+	 *
+	 * Both, and in that order, because they answer different needs. The bundled one
+	 * means everybody who installs the mod gets the castle without being handed a
+	 * file and told where to put it. The folder means anybody can override it — drop
+	 * a tutorial_castle.json in config and yours wins, with no setting to find and
+	 * nothing to uninstall.
+	 *
+	 * A shadowing file is logged, because a player who forgot they put one there and
+	 * is wondering why the castle is not the one in the screenshots deserves a line
+	 * that says so.
+	 */
 	private static @org.jspecify.annotations.Nullable JsonObject read(String name) {
 		Path file = folder().resolve(name + ".json");
-		if (!Files.isRegularFile(file)) {
-			HerobrineMod.LOGGER.warn("no blueprint at {}", file);
-			return null;
+		if (Files.isRegularFile(file)) {
+			try {
+				JsonObject own = GSON.fromJson(Files.readString(file), JsonObject.class);
+				HerobrineMod.LOGGER.info(
+					"blueprint {} read from {} — yours, not the bundled one", name, file);
+				return own;
+			} catch (Exception broken) {
+				HerobrineMod.LOGGER.warn("{} did not read as a blueprint: {}",
+					file, broken.getMessage());
+				return null;
+			}
 		}
-		try {
-			return GSON.fromJson(Files.readString(file), JsonObject.class);
+		try (java.io.InputStream in =
+				Blueprint.class.getResourceAsStream(BUILT_IN + name + ".json")) {
+			if (in == null) {
+				HerobrineMod.LOGGER.warn("no blueprint called {} in {} or in the jar",
+					name, folder());
+				return null;
+			}
+			return GSON.fromJson(new java.io.InputStreamReader(in,
+				java.nio.charset.StandardCharsets.UTF_8), JsonObject.class);
 		} catch (Exception broken) {
-			HerobrineMod.LOGGER.warn("{} did not read as a blueprint: {}",
-				file, broken.getMessage());
+			HerobrineMod.LOGGER.warn("bundled blueprint {} would not read: {}",
+				name, broken.getMessage());
 			return null;
 		}
 	}
 
-	/** Whether a named blueprint is there to be placed. */
+	/** Whether a named blueprint is there to be placed, in either place. */
 	public static boolean have(String name) {
-		return name != null && !name.isBlank()
-			&& Files.isRegularFile(folder().resolve(name + ".json"));
+		if (name == null || name.isBlank()) {
+			return false;
+		}
+		if (Files.isRegularFile(folder().resolve(name + ".json"))) {
+			return true;
+		}
+		try (java.io.InputStream in =
+				Blueprint.class.getResourceAsStream(BUILT_IN + name + ".json")) {
+			return in != null;
+		} catch (Exception broken) {
+			return false;
+		}
 	}
 
 	/** How many palette entries had to drop their properties, for the last load. */
