@@ -183,6 +183,21 @@ public final class Config {
 	 * then, which is a reasonable thing to want only if you are testing.
 	 */
 	public boolean hisKeep = true;
+	/**
+	 * WHICH CASTLE STANDS IN HIS WORLD.
+	 *
+	 * A blueprint name, looked for in config/herobrine/blueprints/<name>.json. If
+	 * the file is there it is placed block for block; if it is not, Keep builds its
+	 * own — the twelve-sided curtain, the towers, the causeway and the market.
+	 *
+	 * Defaulted to a name rather than to empty on purpose. The fallback is silent
+	 * and complete, so a player who has no blueprint loses nothing and never sees a
+	 * warning about a feature they did not ask for; a player who drops the file in
+	 * gets the other castle with no setting to find.
+	 *
+	 * Blank it to force the built-in one even when a file exists.
+	 */
+	public String keepBlueprint = "tutorial_castle";
 	/** Every animal turns on you at SIEGE. */
 	public boolean hostileAnimals = true;
 	/**
@@ -262,7 +277,7 @@ public final class Config {
 	 * Bump it, and add a case, whenever a DEFAULT changes in a way an existing
 	 * world should get.
 	 */
-	private static final int SETTINGS_VERSION = 1;
+	private static final int SETTINGS_VERSION = 2;
 	public int settingsVersion = 0;
 
 	/**
@@ -295,6 +310,17 @@ public final class Config {
 			HerobrineMod.LOGGER.info(
 				"blowsToKill was still the old default of 30 — raised to 70."
 					+ " Thirty blows is nineteen seconds of a netherite sword.");
+		}
+		if (it.settingsVersion < 2 && (it.keepBlueprint == null || it.keepBlueprint.isEmpty())) {
+			// A CHANGED DEFAULT HAS TO REACH AN EXISTING FILE. Gson leaves a field it
+			// does not find in the JSON at its declared value, so an old config gets
+			// the right behaviour in memory — but the KEY never appears in the file,
+			// so nobody can discover the setting or blank it. Writing it once here is
+			// the only way it becomes visible.
+			it.keepBlueprint = "tutorial_castle";
+			HerobrineMod.LOGGER.info(
+				"keepBlueprint added — drop a file in config/herobrine/blueprints"
+					+ " and his castle becomes that building instead");
 		}
 		it.settingsVersion = SETTINGS_VERSION;
 		return true;

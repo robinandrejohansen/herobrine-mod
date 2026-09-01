@@ -799,7 +799,21 @@ public final class Whereabouts {
 	// ---- HE IS OVER THE KEEP ----------------------------------------------
 
 	/** How far above the keep floor he is put when somebody arrives. */
-	private static final double OVER_THE_KEEP = 24.0;
+	/**
+	 * How far over the site he hangs — AND IT WAS INSIDE THE BUILDING.
+	 *
+	 * Twenty-four, measured from Keep.site(), which carries the SURFACE height. The
+	 * keep is KEEP_HEIGHT 32 courses on a motte of MOTTE 6, so its roof is
+	 * thirty-eight above that surface, and the tutorial-castle blueprint is
+	 * forty-nine tall with its ground layer eleven up — thirty-eight again.
+	 *
+	 * So he was being spawned eleven blocks INSIDE the great hall, in stone. He
+	 * prowls out of it, which is why this was never obvious, but the first thing
+	 * anybody saw of him was a figure clipping out of a roof.
+	 *
+	 * Forty-four clears both by six.
+	 */
+	private static final double OVER_THE_KEEP = 44.0;
 	private static boolean announced;
 
 	/**

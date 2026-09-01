@@ -63,6 +63,37 @@ public final class Blueprint {
 	/** How many blocks go down per tick. */
 	private static final int PER_TICK = 2000;
 
+	/**
+	 * Make the folder and drop a note in it, once, at startup.
+	 *
+	 * An empty directory that exists is a hundred times more discoverable than a
+	 * path in a log line nobody reads. Called from the mod initialiser.
+	 */
+	public static void ready() {
+		Path dir = folder();
+		try {
+			Files.createDirectories(dir);
+			Path note = dir.resolve("README.txt");
+			if (!Files.exists(note)) {
+				Files.writeString(note,
+					"Put blueprint .json files in this folder.\n\n"
+					+ "  /herobrine blueprint <name>   places one where you stand\n\n"
+					+ "Set keepBlueprint in herobrine.json to the name of one and it\n"
+					+ "becomes his castle in the dimension instead of the built-in\n"
+					+ "one. Blank it to go back.\n\n"
+					+ "Format:\n"
+					+ "  { \"size\":    { \"x\": 71, \"y\": 49, \"z\": 72 },\n"
+					+ "    \"ground\":  11,\n"
+					+ "    \"palette\": [ \"cobblestone\", \"oak_stairs[facing=south]\" ],\n"
+					+ "    \"blocks\":  [ [x, y, z, paletteIndex] ] }\n\n"
+					+ "\"ground\" is the local y that sits at the terrain surface —\n"
+					+ "everything below it is foundation. Omit it and 0 is used.\n");
+			}
+		} catch (Exception broken) {
+			HerobrineMod.LOGGER.warn("could not make {}: {}", dir, broken.getMessage());
+		}
+	}
+
 	/** Where the player puts the files. */
 	public static Path folder() {
 		return FabricLoader.getInstance().getConfigDir()
@@ -92,6 +123,93 @@ public final class Blueprint {
 	/** What a load either produced or could not. */
 	public record Placed(int blocks, int skipped, int sizeX, int sizeY, int sizeZ) {}
 
+	/**
+	 * STAND IT UP ON THE GROUND, CENTRED, which is what a building wants.
+	 *
+	 * place() puts a corner at a point, which is right for a command where somebody
+	 * is standing where they want the corner. It is wrong for everything else. A
+	 * castle handed to Keep has to be CENTRED on the site — Herobrine is spawned
+	 * over Keep.site() and the weather measures from it, so a corner-placed castle
+	 * would put him hovering over one of its towers — and it has to sit at the
+	 * right HEIGHT, which is not its own y 0.
+	 *
+	 * The file says where its ground is. The tutorial castle's widest layer is
+	 * local y 11 with 1330 blocks in it; that is its main floor, and the eleven
+	 * courses below are foundation and cellar. Placing y 0 at the surface would
+	 * float the whole building eleven blocks.
+	 *
+	 * And it beards: every column of the footprint is filled from the blueprint's
+	 * own lowest course down to whatever the terrain actually is, the same fix the
+	 * causeway and the curtain got. A building measured off a hill, dropped on a
+	 * slope, otherwise has daylight under half of it.
+	 */
+	public static @org.jspecify.annotations.Nullable Placed stand(
+			ServerLevel level, BlockPos centre, String name) {
+		JsonObject root = read(name);
+		if (root == null) {
+			return null;
+		}
+		JsonObject size = root.getAsJsonObject("size");
+		int sx = size.get("x").getAsInt();
+		int sy = size.get("y").getAsInt();
+		int sz = size.get("z").getAsInt();
+		int ground = root.has("ground") ? root.get("ground").getAsInt() : 0;
+
+		BlockPos corner = new BlockPos(centre.getX() - sx / 2,
+			centre.getY() - ground, centre.getZ() - sz / 2);
+		for (int cx = corner.getX() >> 4; cx <= (corner.getX() + sx) >> 4; cx++) {
+			for (int cz = corner.getZ() >> 4; cz <= (corner.getZ() + sz) >> 4; cz++) {
+				level.getChunk(cx, cz);
+			}
+		}
+		// Cut the space out first, then hold it up, then build in it. Same order
+		// Keep.ground uses and for the same reason: a tree left standing inside a
+		// hall is worse than no hall.
+		clear(level, corner, sx, sy, sz);
+		beard(level, corner, sx, sz);
+		return place(level, corner, name);
+	}
+
+	/**
+	 * Hold the footprint up. Down to the real surface, per column, capped.
+	 */
+	private static void beard(ServerLevel level, BlockPos corner, int sx, int sz) {
+		for (int dx = 0; dx < sx; dx++) {
+			for (int dz = 0; dz < sz; dz++) {
+				int x = corner.getX() + dx;
+				int z = corner.getZ() + dz;
+				int surface = Ground.topOf(level, x, z);
+				for (int y = corner.getY() - 1; y > surface && y > corner.getY() - 24; y--) {
+					BlockPos at = new BlockPos(x, y, z);
+					if (!level.getBlockState(at).isSolid()) {
+						level.setBlock(at, Blocks.DEEPSLATE.defaultBlockState(), 2);
+					}
+				}
+			}
+		}
+	}
+
+	private static @org.jspecify.annotations.Nullable JsonObject read(String name) {
+		Path file = folder().resolve(name + ".json");
+		if (!Files.isRegularFile(file)) {
+			HerobrineMod.LOGGER.warn("no blueprint at {}", file);
+			return null;
+		}
+		try {
+			return GSON.fromJson(Files.readString(file), JsonObject.class);
+		} catch (Exception broken) {
+			HerobrineMod.LOGGER.warn("{} did not read as a blueprint: {}",
+				file, broken.getMessage());
+			return null;
+		}
+	}
+
+	/** Whether a named blueprint is there to be placed. */
+	public static boolean have(String name) {
+		return name != null && !name.isBlank()
+			&& Files.isRegularFile(folder().resolve(name + ".json"));
+	}
+
 	/** How many palette entries had to drop their properties, for the last load. */
 	private static int lastPlain;
 
@@ -107,17 +225,8 @@ public final class Blueprint {
 	 */
 	public static @org.jspecify.annotations.Nullable Placed place(
 			ServerLevel level, BlockPos at, String name) {
-		Path file = folder().resolve(name + ".json");
-		if (!Files.isRegularFile(file)) {
-			HerobrineMod.LOGGER.warn("no blueprint at {}", file);
-			return null;
-		}
-		JsonObject root;
-		try {
-			root = GSON.fromJson(Files.readString(file), JsonObject.class);
-		} catch (Exception broken) {
-			HerobrineMod.LOGGER.warn("{} did not read as a blueprint: {}",
-				file, broken.getMessage());
+		JsonObject root = read(name);
+		if (root == null) {
 			return null;
 		}
 

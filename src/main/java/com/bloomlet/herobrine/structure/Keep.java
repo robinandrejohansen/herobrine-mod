@@ -636,6 +636,33 @@ public final class Keep {
 	 * confuse the sequence in his world, and two of them can stand at once.
 	 */
 	public static void raise(ServerLevel his, BlockPos site) {
+		// ---- A BLUEPRINT, IF THERE IS ONE.
+		//
+		// Centred on the site and grounded on its own ground layer, because
+		// Whereabouts spawns him over Keep.site() and HisWeather measures its storm
+		// from it — a corner-placed castle would put him above one of its towers.
+		//
+		// Falls through to the built-in castle when the file is absent, and that
+		// order matters more than it looks: this runs once per world and there is no
+		// second chance. A missing file must not mean no castle, because no castle
+		// means Whereabouts never has a site to put him over and the last chapter of
+		// the mod quietly does not happen.
+		String plan = Config.get().keepBlueprint;
+		if (Blueprint.have(plan)) {
+			int surface = Ground.topOf(his, site.getX(), site.getZ()) + 1;
+			Blueprint.Placed done = Blueprint.stand(his,
+				new BlockPos(site.getX(), surface, site.getZ()), plan);
+			if (done != null) {
+				HerobrineMod.LOGGER.info(
+					"the castle at [{}, {}, {}] is the blueprint \"{}\" — {} blocks,"
+						+ " {}x{}x{}", site.getX(), surface, site.getZ(), plan,
+					done.blocks(), done.sizeX(), done.sizeY(), done.sizeZ());
+				return;
+			}
+			HerobrineMod.LOGGER.warn(
+				"blueprint \"{}\" would not place — building the ordinary castle", plan);
+		}
+
 		RandomSource random = his.getRandom();
 		// LEVELLED OFF THE MIDDLE, not off each column. A castle that follows
 		// the ground is a wall with a wobble in it, and the whole claim this

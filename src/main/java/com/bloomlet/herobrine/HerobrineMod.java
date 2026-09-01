@@ -72,6 +72,7 @@ public class HerobrineMod implements ModInitializer {
 		Heat.register();
 		com.bloomlet.herobrine.manifest.Whereabouts.register();
 		com.bloomlet.herobrine.manifest.Company.listen();
+		com.bloomlet.herobrine.structure.Blueprint.ready();
 		com.bloomlet.herobrine.manifest.Demonstration.register();
 		com.bloomlet.herobrine.manifest.Dread.register();
 		ManifestationDirector.register();
