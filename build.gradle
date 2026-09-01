@@ -61,6 +61,23 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
+	// A TOOLCHAIN, SO THE BUILD DOES NOT DEPEND ON WHAT `java` HAPPENS TO BE.
+	//
+	// Without this, Gradle compiles with whatever JDK started its daemon, and that
+	// is whatever is first on PATH. On this machine that is openjdk@21, which
+	// cannot target release 25 — so `./gradlew runClient` failed with "release
+	// version 25 not supported" while every build that set JAVA_HOME by hand
+	// worked. Worse, it was intermittent: a warm daemon started earlier under the
+	// right JDK gets reused and succeeds, and the next invocation that has to spawn
+	// a fresh one fails. Same command, same code, different answer.
+	//
+	// A toolchain states the requirement instead of inheriting it. Gradle finds a
+	// JDK that satisfies it, or says plainly that it cannot — either of which beats
+	// compiling against the wrong one by accident.
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(26)
+	}
+
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
 }
