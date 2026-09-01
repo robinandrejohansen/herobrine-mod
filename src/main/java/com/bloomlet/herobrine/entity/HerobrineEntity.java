@@ -3987,8 +3987,80 @@ public class HerobrineEntity extends PathfinderMob {
 			here.playSound(null, this.getX(), this.getY(), this.getZ(),
 				SoundEvents.WARDEN_ROAR, this.getSoundSource(), 2.4F, 0.5F);
 			this.scorch(here, 6);
+			this.ascend(here);
 		}
 		HerobrineMod.LOGGER.info("act {} — he stands {}x now", this.act(), want);
+	}
+
+	/** How high he goes, how long he hangs there, and how wide the ring is. */
+	private static final int RISES = 10;
+	private static final int HANGS_FOR = 60;
+	private static final double RING = 4.5;
+
+	/** Ticks left of the pause. Nothing he does runs while this is above zero. */
+	private int ascending;
+
+	public boolean isAscending() {
+		return this.ascending > 0;
+	}
+
+	/**
+	 * THE PAUSE BEFORE THE VIOLENCE, and the fight had none.
+	 *
+	 * He grew, roared, scorched the ground and carried straight on swinging, so the
+	 * three acts were a number going up rather than three things happening. A fight
+	 * with no breath in it is noise — the same fault the books had, and the same
+	 * fix: stop, and let the thing that just happened land.
+	 *
+	 * So at every change he breaks off, climbs ten blocks, and HANGS THERE FOR
+	 * THREE SECONDS doing nothing at all. No fireballs, no arrows, no lightning at
+	 * the player. He burns, the eyes are the only light in the fog, and the bolts
+	 * come down in a ring around HIM.
+	 *
+	 * THAT IS WHY THE RING IS ROUND HIM AND NOT ROUND YOU. Every other bolt in this
+	 * fight is thrown at the player and is a threat; these are not aimed at
+	 * anybody, they are what he looks like now. Visual-only for the same reason —
+	 * the one moment the player is meant to stand still and look is the one moment
+	 * nothing should be punishing them for it.
+	 *
+	 * And it is three seconds of free hits. That is deliberate and it is the trade:
+	 * he buys the spectacle by handing the player the only opening in the fight.
+	 */
+	private void ascend(ServerLevel here) {
+		this.ascending = HANGS_FOR;
+		this.takeOff();
+		this.setDeltaMovement(0.0, 0.0, 0.0);
+		this.snapTo(this.getX(), this.getY() + RISES, this.getZ(),
+			this.getYRot(), 0.0F);
+		this.hurtMarked = true;
+		this.setRemainingFireTicks(HANGS_FOR + 40);
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.LIGHTNING_BOLT_THUNDER, this.getSoundSource(), 3.0F, 0.6F);
+
+		int bolts = 6;
+		for (int i = 0; i < bolts; i++) {
+			double angle = Math.PI * 2.0 * i / bolts
+				+ this.random.nextDouble() * 0.4;
+			final double x = this.getX() + Math.cos(angle) * RING;
+			final double z = this.getZ() + Math.sin(angle) * RING;
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(),
+					6 + i * 7, () -> {
+				int y = here.getHeight(
+					net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+					net.minecraft.util.Mth.floor(x), net.minecraft.util.Mth.floor(z));
+				net.minecraft.world.entity.LightningBolt bolt =
+					net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
+						.create(here, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+				if (bolt == null) {
+					return;
+				}
+				bolt.setVisualOnly(true);
+				bolt.snapTo(x, y, z, 0.0F, 0.0F);
+				here.addFreshEntity(bolt);
+			});
+		}
+		HerobrineMod.LOGGER.info("he is hanging over it, on fire, for {} ticks",
+			HANGS_FOR);
 	}
 	// ---- END THE RECKONING ------------------------------------------------
 
@@ -4212,6 +4284,22 @@ public class HerobrineEntity extends PathfinderMob {
 		super.tick();
 		if (this.level().isClientSide()) {
 			return;
+		}
+
+		// THE PAUSE HOLDS HIM WHERE HE IS. See ascend().
+		//
+		// Ticked before anything else so nothing downstream sees a stale count, and
+		// the velocity is zeroed every tick rather than once: he is flying, and a
+		// flying mob that is merely told to stop drifts. Hanging perfectly still is
+		// the entire image.
+		if (this.ascending > 0) {
+			this.ascending--;
+			this.setDeltaMovement(0.0, 0.0, 0.0);
+			this.setNoGravity(true);
+			if (this.ascending == 0) {
+				this.setNoGravity(false);
+				HerobrineMod.LOGGER.info("he is coming down");
+			}
 		}
 
 		// ONE increment, then decide. Written as two separate `++this.age`
@@ -8109,6 +8197,12 @@ public class HerobrineEntity extends PathfinderMob {
 		if (!(this.level() instanceof ServerLevel here)) {
 			return;
 		}
+		// NOTHING WHILE HE IS HANGING THERE. The three seconds are free hits and
+		// that is the trade — he buys the moment by handing over the only opening
+		// in the fight. A fireball out of the middle of it would take both.
+		if (this.ascending > 0) {
+			return;
+		}
 		if (--this.arsenalTicks > 0) {
 			return;
 		}
@@ -8235,52 +8329,115 @@ public class HerobrineEntity extends PathfinderMob {
 	 *
 	 * The fire it leaves is the threat. The rain is already taking it back out.
 	 */
-	private void callDown(ServerLevel here, ServerPlayer target) {
-		// REAL, at act three. It burns and it hurts.
-		//
-		// Everything else in this mod that throws lightning is visual-only,
-		// because a bolt that sets a wood costs a player their world rather
-		// than the fight. The ending is the deliberate exception: defeating him
-		// is supposed to leave a mark, and a last act that cannot break
-		// anything is a fireworks display.
-		//
-		// The permanent SIEGE storm is doing real work against it the whole
-		// time, which is why this is survivable at all — and Config.realLightning
-		// turns the whole thing back to cosmetic for anybody who would rather
-		// keep their forest.
-		boolean real = Config.get().realLightning;
+	/** How wide he misses by, per act. He gets better. */
+	private static final double[] AIM_OFF = { 5.5, 3.5, 1.5 };
 
-		// The volley VARIES rather than repeating one beat: a scatter of
-		// distant flashes with one or two that actually land near them. A
-		// uniform burst reads as an effect; an uneven one reads as weather that
-		// has taken an interest.
-		int bolts = 3 + this.random.nextInt(3);
-		for (int i = 0; i < bolts; i++) {
-			boolean near = this.random.nextInt(3) == 0;
-			double angle = this.random.nextDouble() * Math.PI * 2.0;
-			double range = near
-				? 2.0 + this.random.nextDouble() * 4.0
-				: 9.0 + this.random.nextDouble() * 14.0;
-			final double x = target.getX() + Math.cos(angle) * range;
-			final double z = target.getZ() + Math.sin(angle) * range;
+	/** How much of your own speed he throws ahead of you. He learns. */
+	private static final double[] LEADS_BY = { 0.0, 0.5, 1.0 };
+
+	/** How long the ground shows where it is going to land. */
+	private static final int WINDS_UP = 22;
+
+	/**
+	 * HE THROWS IT. It is not weather any more.
+	 *
+	 * This scattered bolts round the player at a random bearing and let a third of
+	 * them bite, which reads as a storm taking an interest — atmospheric, and
+	 * nothing to do with him. Asked for the other thing: he throws it, the way Thor
+	 * does, and of course he misses a bit, and if it lands on you it hurts.
+	 *
+	 * THE MISS IS EARNED, NOT ROLLED. He aims at where the player is standing AT
+	 * THE MOMENT HE THROWS, marks that spot, and the bolt arrives WINDS_UP ticks
+	 * later. Stand still and it lands on your head for the full five points and the
+	 * fire. Move and he has thrown it at a patch of ground you used to be on.
+	 *
+	 * That is worth more than any random chance to miss. A dice roll teaches
+	 * nothing; a second of warning teaches you to keep moving, and a player who has
+	 * learned that has been taught it by the fight rather than by a wiki. AIM_OFF
+	 * then closes from five and a half blocks to one and a half across the three
+	 * acts, so the lesson stops being enough.
+	 *
+	 * The flanking bolts stay visual-only. They are the spectacle and they are
+	 * deliberately harmless — the danger has to be in the one place the player was
+	 * shown, or the warning means nothing.
+	 */
+	private void callDown(ServerLevel here, ServerPlayer target) {
+		boolean real = Config.get().realLightning;
+		int act = this.act();
+		double off = AIM_OFF[Math.min(AIM_OFF.length - 1, act - 1)];
+
+		// ---- THE THROW. Where he is aiming, decided now.
+		//
+		// AND HE LEARNS TO LEAD. Aiming at where somebody IS, with a second of
+		// warning, is a shot that lands on people who stand still and on nobody
+		// else — simulated, act three was a hundred per cent against a standing
+		// player and exactly zero against a walking one. Which teaches the lesson
+		// once and then never matters again.
+		//
+		// So the aim point drifts along the player's own velocity, none of it in
+		// act one and all of it in act three. Now standing still is death, walking
+		// in a straight line is death by act three, and the thing that saves you is
+		// CHANGING DIRECTION — which is a harder lesson, learnable, and the right
+		// one for the last act of the fight.
+		double lead = LEADS_BY[Math.min(LEADS_BY.length - 1, act - 1)];
+		Vec3 going = target.getDeltaMovement().scale(WINDS_UP * lead);
+		double angle = this.random.nextDouble() * Math.PI * 2.0;
+		double slip = Math.sqrt(this.random.nextDouble()) * off;
+		final double ax = target.getX() + going.x + Math.cos(angle) * slip;
+		final double az = target.getZ() + going.z + Math.sin(angle) * slip;
+		final int ay = here.getHeight(
+			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+			net.minecraft.util.Mth.floor(ax), net.minecraft.util.Mth.floor(az));
+
+		this.getLookControl().setLookAt(target, 60.0F, 60.0F);
+		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.TRIDENT_THUNDER.value(), this.getSoundSource(), 2.0F, 1.6F);
+
+		// The mark, ticking on the ground for a second. This is the whole fairness
+		// of the move: the player is TOLD, in the world, with time to walk out.
+		for (int t = 0; t < WINDS_UP; t += 2) {
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), t, () -> {
+				here.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
+					ax, ay + 0.2, az, 12, 1.1, 0.1, 1.1, 0.02);
+				here.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+					ax, ay + 0.1, az, 4, 0.9, 0.05, 0.9, 0.0);
+			});
+		}
+
+		com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), WINDS_UP, () -> {
+			net.minecraft.world.entity.LightningBolt bolt =
+				net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
+					.create(here, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+			if (bolt == null) {
+				return;
+			}
+			bolt.setVisualOnly(!real);
+			bolt.snapTo(ax, ay, az, 0.0F, 0.0F);
+			here.addFreshEntity(bolt);
+		});
+
+		// ---- AND THE SHOW, well out of the way and harmless.
+		int flanking = 2 + this.random.nextInt(3);
+		for (int i = 0; i < flanking; i++) {
+			double a2 = this.random.nextDouble() * Math.PI * 2.0;
+			double r2 = 14.0 + this.random.nextDouble() * 16.0;
+			final double x = target.getX() + Math.cos(a2) * r2;
+			final double z = target.getZ() + Math.sin(a2) * r2;
 			final int y = here.getHeight(
 				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
 				net.minecraft.util.Mth.floor(x), net.minecraft.util.Mth.floor(z));
-			// The far ones are flashes; only the close ones bite. It keeps the
-			// spectacle wide and the danger where the player can see it coming.
-			final boolean bites = real && near;
-
 			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(),
-					i * (4 + this.random.nextInt(9)), () -> {
-				net.minecraft.world.entity.LightningBolt bolt =
+					WINDS_UP - 4 + this.random.nextInt(10), () -> {
+				net.minecraft.world.entity.LightningBolt flash =
 					net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
 						.create(here, net.minecraft.world.entity.EntitySpawnReason.EVENT);
-				if (bolt == null) {
+				if (flash == null) {
 					return;
 				}
-				bolt.setVisualOnly(!bites);
-				bolt.snapTo(x, y, z, 0.0F, 0.0F);
-				here.addFreshEntity(bolt);
+				flash.setVisualOnly(true);
+				flash.snapTo(x, y, z, 0.0F, 0.0F);
+				here.addFreshEntity(flash);
 			});
 		}
 		this.scorch(here, 3);
