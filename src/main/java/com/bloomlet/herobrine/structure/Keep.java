@@ -597,10 +597,23 @@ public final class Keep {
 		stage(server, 0, () -> ground(his, base, random));
 		stage(server, 6, () -> curtain(his, base, random));
 		stage(server, 12, () -> {
-			for (int sx : new int[] { -1, 1 }) {
-				for (int sz : new int[] { -1, 1 }) {
-					tower(his, base.offset(sx * WALL, 0, sz * WALL), random);
+			// ON THE CORNERS OF THE CIRCUIT, and they used to be at (+-WALL, +-WALL).
+			//
+			// Which was the right answer for a square and is a floating tower for
+			// anything else — the wall now reaches anywhere from 22 to 46 out, so
+			// three of the four would have stood in the trees with daylight between
+			// them and the rampart they are supposed to anchor.
+			//
+			// Every third corner, which is four towers on a twelve-sided circuit,
+			// and the one at the gate corner is skipped because the gatehouse is
+			// already there.
+			int[] reach = circuit(base);
+			for (int i = 0; i < CORNERS; i += 3) {
+				if (i == GATE_CORNER) {
+					continue;
 				}
+				int[] c = corner(reach, i);
+				tower(his, base.offset(c[0], 0, c[1]), random);
 			}
 		});
 		stage(server, 16, () -> {
@@ -609,6 +622,23 @@ public final class Keep {
 		});
 		stage(server, 22, () -> keep(his, base, random));
 		stage(server, 26, () -> Remembering.furnish(his, base, KEEP, KEEP_HEIGHT, random));
+		// AND SOMETHING STANDING IN THE COURTYARD, at last.
+		//
+		// Four thousand square blocks of paving with a hall in the middle of it was
+		// the whole of the bailey, and it read exactly as it was built: open,
+		// generic, nothing to walk over to. The street runs from the gate to the
+		// hall door with eight dead stalls on it, which is the shortest path from
+		// "an empty yard" to "somewhere people used to be".
+		//
+		// Last of all, after the keep and after the furnishing, because the stalls
+		// put chests down and nothing may carve afterwards.
+		stage(server, 30, () -> {
+			int[] reach = circuit(base);
+			TheShambles.lay(his, base.offset(0, 0, WALL), Direction.NORTH,
+				where -> room(reach, where.getX() - base.getX(),
+					where.getZ() - base.getZ()),
+				random);
+		});
 		// NO CITY HERE. It is its own place now, sited near the crossing and raised
 		// long before this — see onTick. A castle that builds a town around itself
 		// is a castle you were already standing in.
@@ -844,9 +874,16 @@ public final class Keep {
 	 * not stand on stilts over a dip.
 	 */
 	private static void ground(ServerLevel his, BlockPos base, RandomSource random) {
-		for (int dx = -WALL - TOWER; dx <= WALL + TOWER; dx++) {
-			for (int dz = -WALL - TOWER; dz <= WALL + TOWER; dz++) {
-				if (Math.abs(dx) > WALL || Math.abs(dz) > WALL) {
+		int[] reach = circuit(base);
+		for (int dx = -WALL_FAR - TOWER; dx <= WALL_FAR + TOWER; dx++) {
+			for (int dz = -WALL_FAR - TOWER; dz <= WALL_FAR + TOWER; dz++) {
+				// LEVELLED TO THE CIRCUIT, NOT TO A BOX. This tested |dx| and |dz|
+				// against a flat WALL, which was correct while the wall was a square
+				// and is now wrong in both directions at once: on the sides where
+				// the wall stands out to WALL_FAR the paving stopped sixteen blocks
+				// short of it, and where it comes in to WALL_NEAR the paving ran out
+				// through the wall and into the forest.
+				if (!inside(reach, dx, dz)) {
 					continue;
 				}
 				for (int dy = 0; dy <= WALL_HEIGHT + 2; dy++) {
@@ -873,45 +910,221 @@ public final class Keep {
 	}
 
 	/** The curtain, battlemented, with an arrow slit every eight. */
-	private static void curtain(ServerLevel his, BlockPos base, RandomSource random) {
-		for (int dx = -WALL; dx <= WALL; dx++) {
-			for (int dz = -WALL; dz <= WALL; dz++) {
-				if (Math.abs(dx) != WALL && Math.abs(dz) != WALL) {
+	/**
+	 * The nearest and furthest the wall ever stands from the middle.
+	 *
+	 * 22 and 50 are not chosen, they are TU19's, measured by bearing off its own
+	 * centre in tools/castle. Anything tighter and the smoothing pass eats the
+	 * shape: at 22..46 four hundred seeds came out with a median spread of twenty
+	 * against the real one's twenty-eight.
+	 *
+	 * It costs nothing. The old square paved 61x61 = 3,721 columns; a polygon with
+	 * a mean reach of 36 covers about 4,070, and ground() only writes inside the
+	 * circuit — the wider bounding box is loop iterations, not setBlock calls.
+	 */
+	private static final int WALL_NEAR = 22;
+	private static final int WALL_FAR = 50;
+
+	/** How many straight runs the circuit is made of. */
+	private static final int CORNERS = 12;
+
+	/** Which corner faces the gate. CORNERS/4 puts it due south, on +z. */
+	private static final int GATE_CORNER = CORNERS / 4;
+
+	/**
+	 * THE CIRCUIT, AND IT IS NOT A SQUARE ANY MORE.
+	 *
+	 * It was a perfect box: |dx| == WALL or |dz| == WALL, thirty out on every side,
+	 * one flat course of battlements all the way round. Reported as open, generic
+	 * and with no personality, and the box is most of why.
+	 *
+	 * MEASURED OFF A REAL ONE. tools/castle reads the Legacy Console tutorial
+	 * world; TU19's castle wall was measured by bearing from its own centre and it
+	 * comes in between 22 and 50 blocks out — a 2.3x swing, on a wall whose foot
+	 * runs from y 56 to y 92. It is not a square, it is not a circle, and it is
+	 * nowhere near level. That is what a wall built round a hill by people looks
+	 * like, and it is the difference between a castle and a fence.
+	 *
+	 * So: a twelve-sided circuit with a different reach on every side, drawn as
+	 * straight runs between corners — angular rather than curved, because a curtain
+	 * wall is built in straight lengths between towers and reads wrong as an arc.
+	 *
+	 * DETERMINISTIC FROM THE SITE. Seeded off base.asLong() rather than the level
+	 * random, because this is called from a staged build: ground, curtain, towers,
+	 * gate and causeway run on separate ticks and every one of them has to agree
+	 * about where the wall is. A shared RandomSource would hand each stage a
+	 * different castle.
+	 *
+	 * And the corner facing the gate is pinned to exactly WALL, because gate() and
+	 * the causeway both measure from there.
+	 */
+	private static int[] circuit(BlockPos base) {
+		RandomSource own = RandomSource.create(base.asLong());
+		int[] reach = new int[CORNERS];
+		for (int i = 0; i < CORNERS; i++) {
+			reach[i] = WALL_NEAR + own.nextInt(WALL_FAR - WALL_NEAR + 1);
+		}
+		reach[GATE_CORNER] = WALL;
+		// No corner may differ from its neighbour by more than this, or the "wall"
+		// becomes a star and the runs stop reading as runs. Two thirds of the range
+		// rather than one third: at a third the smoothing ate the shape, and four
+		// hundred seeds came out with a median spread of sixteen blocks against the
+		// twenty-eight measured on the real one. This lands on twenty-four.
+		int most = (WALL_FAR - WALL_NEAR) * 2 / 3;
+		for (int pass = 0; pass < 4; pass++) {
+			for (int i = 0; i < CORNERS; i++) {
+				if (i == GATE_CORNER) {
 					continue;
 				}
-				for (int dy = 0; dy <= WALL_HEIGHT; dy++) {
-					BlockPos at = base.offset(dx, dy, dz);
-					if (dy == WALL_HEIGHT) {
-						// The crenellations. Every other block, so it reads as a
-						// wall somebody stands behind rather than a straight
-						// line with a texture on it.
-						boolean merlon = ((dx + dz) & 1) == 0;
-						put(his, at, merlon
-							? stone(random)
-							: Blocks.DEEPSLATE_BRICK_SLAB.defaultBlockState()
-								.setValue(BlockStateProperties.SLAB_TYPE, SlabType.BOTTOM));
-						continue;
-					}
-					put(his, at, stone(random));
-				}
-				// Arrow slits, at head height on the wall walk.
-				if ((dx + dz) % 8 == 0 && Math.abs(dx) + Math.abs(dz) > WALL) {
-					put(his, base.offset(dx, WALL_HEIGHT - 3, dz),
-						Blocks.AIR.defaultBlockState());
+				int before = reach[(i + CORNERS - 1) % CORNERS];
+				reach[i] = net.minecraft.util.Mth.clamp(reach[i], before - most, before + most);
+				reach[i] = net.minecraft.util.Mth.clamp(reach[i], WALL_NEAR, WALL_FAR);
+			}
+		}
+		return reach;
+	}
+
+	/** Corner i as an offset from the middle. */
+	private static int[] corner(int[] reach, int i) {
+		double a = Math.PI * 2.0 * i / CORNERS;
+		return new int[] {
+			(int) Math.round(Math.cos(a) * reach[i]),
+			(int) Math.round(Math.sin(a) * reach[i]),
+		};
+	}
+
+	/**
+	 * Whether an offset is within the circuit — POINT IN POLYGON, not a radius.
+	 *
+	 * The first version blended the two neighbouring reaches by bearing and
+	 * compared distances, which is a smooth curve through the corners. curtain()
+	 * draws STRAIGHT runs between them, and a chord sags below its own arc by
+	 * r(1 - cos(pi/12)) — about a block and a half at forty out. So the courtyard
+	 * levelled itself to the arc and the wall was built on the chord, and the
+	 * paving came out through the wall at the middle of every side.
+	 *
+	 * Ray casting against the twelve corners is exact and agrees with the drawn
+	 * wall by construction, which is the only property that matters here.
+	 */
+	private static boolean inside(int[] reach, int dx, int dz) {
+		boolean in = false;
+		for (int i = 0, j = CORNERS - 1; i < CORNERS; j = i++) {
+			int[] a = corner(reach, i);
+			int[] b = corner(reach, j);
+			if ((a[1] > dz) != (b[1] > dz)
+				&& dx < (double) (b[0] - a[0]) * (dz - a[1]) / (b[1] - a[1]) + a[0]) {
+				in = !in;
+			}
+		}
+		return in;
+	}
+
+	/**
+	 * Whether there is room to BUILD at an offset — which is not the same question
+	 * as whether it is inside.
+	 *
+	 * inside() is ray casting, and ray casting counts the boundary as in. So the
+	 * wall's own blocks answer yes, and a stall laid flush against the rampart
+	 * passed every test and then overwrote it: twenty-nine clipped bays across
+	 * three hundred seeds, all of them a single block of overlap on the outermost
+	 * course.
+	 *
+	 * Eroded by one, which is exactly enough — the eight neighbours all have to be
+	 * inside too, so nothing built through here can sit on the line curtain() draws.
+	 * Two costs a stall and buys nothing.
+	 *
+	 * The hall is excluded here as well. inside() knows about the circuit and
+	 * nothing about the building in the middle of it.
+	 */
+	private static boolean room(int[] reach, int dx, int dz) {
+		if (Math.abs(dx) <= KEEP && Math.abs(dz) <= KEEP) {
+			return false;
+		}
+		for (int ox = -1; ox <= 1; ox++) {
+			for (int oz = -1; oz <= 1; oz++) {
+				if (!inside(reach, dx + ox, dz + oz)) {
+					return false;
 				}
 			}
 		}
-		// The wall walk itself, one course below the battlements and one in.
-		for (int dx = -WALL + 1; dx <= WALL - 1; dx++) {
-			for (int dz = -WALL + 1; dz <= WALL - 1; dz++) {
-				if (Math.abs(dx) != WALL - 1 && Math.abs(dz) != WALL - 1) {
-					continue;
-				}
-				put(his, base.offset(dx, WALL_HEIGHT - 1, dz),
-					Blocks.POLISHED_DEEPSLATE.defaultBlockState());
+		return true;
+	}
+
+	private static void curtain(ServerLevel his, BlockPos base, RandomSource random) {
+		int[] reach = circuit(base);
+		java.util.List<int[]> line = new java.util.ArrayList<>();
+		for (int i = 0; i < CORNERS; i++) {
+			int[] from = corner(reach, i);
+			int[] to = corner(reach, (i + 1) % CORNERS);
+			run(line, from, to);
+		}
+		java.util.Set<Long> done = new java.util.HashSet<>();
+		for (int[] at : line) {
+			if (!done.add((long) at[0] << 32 | (at[1] & 0xFFFFFFFFL))) {
+				continue;
 			}
+			column(his, base, at[0], at[1], random);
+		}
+		HerobrineMod.LOGGER.info("the wall runs {} blocks, {} to {} out",
+			done.size(), WALL_NEAR, WALL_FAR);
+	}
+
+	/** Every block on the straight between two corners. */
+	private static void run(java.util.List<int[]> into, int[] from, int[] to) {
+		int dx = to[0] - from[0];
+		int dz = to[1] - from[1];
+		int steps = Math.max(Math.abs(dx), Math.abs(dz));
+		for (int i = 0; i <= steps; i++) {
+			into.add(new int[] {
+				from[0] + (int) Math.round((double) dx * i / steps),
+				from[1] + (int) Math.round((double) dz * i / steps),
+			});
 		}
 	}
+
+	/**
+	 * One column of wall, footed on the ground under it rather than on a number.
+	 *
+	 * The same bearding the causeway does, and for the same reason: the courtyard
+	 * is levelled off the middle of the plot, so on any slope a wall drawn at a
+	 * fixed y is a wall with daylight under one end of it. Down to whatever is
+	 * actually there, and never more than DIGS_IN so a wall crossing a ravine does
+	 * not turn into a dam.
+	 */
+	private static void column(ServerLevel his, BlockPos base, int dx, int dz,
+	                           RandomSource random) {
+		BlockPos foot = base.offset(dx, 0, dz);
+		for (int dy = 0; dy <= WALL_HEIGHT; dy++) {
+			BlockPos at = foot.above(dy);
+			if (dy == WALL_HEIGHT) {
+				// The crenellations. Every other block, so it reads as a wall
+				// somebody stands behind rather than a line with a texture on it.
+				put(his, at, ((dx + dz) & 1) == 0
+					? stone(random)
+					: Blocks.DEEPSLATE_BRICK_SLAB.defaultBlockState()
+						.setValue(BlockStateProperties.SLAB_TYPE, SlabType.BOTTOM));
+				continue;
+			}
+			put(his, at, stone(random));
+		}
+		// Arrow slits, at head height on the wall walk.
+		if (((dx * 7 + dz * 13) & 15) == 0) {
+			put(his, foot.above(WALL_HEIGHT - 3), Blocks.AIR.defaultBlockState());
+		}
+		// The walk, one course down and one block in toward the middle.
+		int inx = dx - (int) Math.signum((double) dx);
+		int inz = dz - (int) Math.signum((double) dz);
+		put(his, base.offset(inx, WALL_HEIGHT - 1, inz),
+			Blocks.POLISHED_DEEPSLATE.defaultBlockState());
+
+		int ground = Ground.topOf(his, foot.getX(), foot.getZ());
+		for (int dy = 1; dy <= Math.min(DIGS_IN, foot.getY() - ground); dy++) {
+			fill(his, foot.below(dy), stone(random));
+		}
+	}
+
+	/** How far the wall's foot will chase the ground before it gives up. */
+	private static final int DIGS_IN = 14;
 
 	/**
 	 * A corner tower, and the fire on top of it is the whole navigation system.
