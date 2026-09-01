@@ -15,6 +15,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import com.bloomlet.herobrine.manifest.Cadence;
+
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -162,12 +164,22 @@ public final class Blueprint {
 				level.getChunk(cx, cz);
 			}
 		}
-		// Cut the space out first, then hold it up, then build in it. Same order
-		// Keep.ground uses and for the same reason: a tree left standing inside a
-		// hall is worse than no hall.
-		clear(level, corner, sx, sy, sz);
-		beard(level, corner, sx, sz);
-		return place(level, corner, name);
+		// CUT, HOLD UP, BUILD — and all three staged, on one shared clock.
+		//
+		// The clear is the big one and it was not staged at all: a 71x49x72 box is
+		// 250,488 setBlock calls, and doing that in a single tick is a visible
+		// multi-second freeze. It has to be, though — the blueprint records every
+		// non-air block in its box and nothing else, so the rooms, doorways and
+		// windows are AIR BY OMISSION. Skip the clear and the host terrain stands
+		// inside the great hall.
+		//
+		// So the three phases queue behind each other rather than each starting at
+		// tick zero. Getting that wrong is worse than not staging: the placing would
+		// run while the clearing was still going and erase what it had just built.
+		int ticks = stagedClear(level, corner, sx, sy, sz);
+		com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), ticks,
+			() -> beard(level, corner, sx, sz));
+		return place(level, corner, name, ticks + 1);
 	}
 
 	/**
@@ -225,6 +237,11 @@ public final class Blueprint {
 	 */
 	public static @org.jspecify.annotations.Nullable Placed place(
 			ServerLevel level, BlockPos at, String name) {
+		return place(level, at, name, 0);
+	}
+
+	private static @org.jspecify.annotations.Nullable Placed place(
+			ServerLevel level, BlockPos at, String name, int after) {
 		JsonObject root = read(name);
 		if (root == null) {
 			return null;
@@ -295,7 +312,7 @@ public final class Blueprint {
 		for (int from = 0; from < rows.size(); from += PER_TICK) {
 			final int start = from;
 			final int end = Math.min(rows.size(), from + PER_TICK);
-			com.bloomlet.herobrine.manifest.Cadence.in(server, from / PER_TICK, () -> {
+			com.bloomlet.herobrine.manifest.Cadence.in(server, after + from / PER_TICK, () -> {
 				for (int i = start; i < end; i++) {
 					JsonArray r = rows.get(i).getAsJsonArray();
 					BlockState state = states[r.get(3).getAsInt()];
@@ -354,6 +371,38 @@ public final class Blueprint {
 			}
 		}
 		return name + props;
+	}
+
+	/** How many blocks are emptied per tick. Higher than PER_TICK: air is cheap. */
+	private static final int CLEARED_PER_TICK = 6000;
+
+	/**
+	 * Empty the box across as many ticks as it takes, and say how many that was.
+	 *
+	 * The return value is the whole point — everything after this has to queue
+	 * behind it, and a caller that guesses will start building into a box that is
+	 * still being emptied.
+	 */
+	private static int stagedClear(ServerLevel level, BlockPos at,
+	                               int sx, int sy, int sz) {
+		MinecraftServer server = level.getServer();
+		int total = sx * sy * sz;
+		int ticks = 0;
+		for (int from = 0; from < total; from += CLEARED_PER_TICK) {
+			final int start = from;
+			final int end = Math.min(total, from + CLEARED_PER_TICK);
+			Cadence.in(server, ticks, () -> {
+				for (int i = start; i < end; i++) {
+					int dy = i / (sx * sz);
+					int rest = i % (sx * sz);
+					level.setBlock(at.offset(rest % sx, dy, rest / sx),
+						Blocks.AIR.defaultBlockState(), 2);
+				}
+			});
+			ticks++;
+		}
+		HerobrineMod.LOGGER.info("clearing {} blocks over {} ticks", total, ticks);
+		return ticks;
 	}
 
 	/**
