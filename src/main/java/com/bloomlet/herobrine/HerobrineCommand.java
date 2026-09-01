@@ -129,6 +129,23 @@ public final class HerobrineCommand {
 				// For a world that was played before the buildings moved to
 				// being sited near the players. Clears where they were going to
 				// go so they are chosen again; touches nothing already built.
+				.then(Commands.literal("recastle").executes(ctx -> {
+					// The castle only, and only in his world — Dwellings.forget is the
+					// six overworld houses and has never touched the keep.
+					net.minecraft.server.MinecraftServer server = ctx.getSource().getServer();
+					ServerLevel his = server.getLevel(
+						com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD);
+					if (his == null) {
+						ctx.getSource().sendFailure(Component.literal("no such world"));
+						return 0;
+					}
+					boolean had = com.bloomlet.herobrine.structure.Keep.forget(his);
+					ctx.getSource().sendSuccess(() -> Component.literal(had
+						? "the castle is forgotten — walk into his world and it will be"
+							+ " chosen and built again. the old one stays standing."
+						: "there was no castle to forget yet"), false);
+					return 1;
+				}))
 				.then(Commands.literal("resite").executes(ctx -> {
 					ServerLevel level = (ServerLevel)ctx.getSource()
 						.getPlayerOrException().level();

@@ -24,10 +24,34 @@ import net.minecraft.world.level.block.state.properties.Half;
 /**
  * WHAT IS INSIDE THE KEEP, AND IT IS THE ANSWER.
  *
- * LORE.md has held this since the beginning and nothing in the mod has ever been
- * able to say it: two brothers, a valley, a house. The younger dug too deep,
- * something came up wearing him, and it killed the family WITH HIS HANDS. The
- * elder could not put an axe in his own brother, so he tore a hole and put him
+ * REALIGNED WITH THE BOOKS, which were rewritten under it and left this room
+ * quietly contradicting them.
+ *
+ * These notes are HIS, written in his own keep, by something trying to reassemble
+ * a person out of what it has left. They were written against the old framing —
+ * two brothers, a valley, a house — and HouseBooks now says something both more
+ * specific and compatible: Steve and Herobrine came to that valley together, built
+ * the farm between them, dug under the hill for iron, and one of them put his hand
+ * on a door.
+ *
+ * So two numbers moved and one line was added, and that is the whole of it:
+ *
+ *   THE NAME HAS FIVE LETTERS. It was four, which fitted nobody. Five is STEVE —
+ *   the name signed on the ledger in the farm kitchen at site one, the author of
+ *   all six of the documents the player has been following, and the man who gave
+ *   the order. The thing in the castle is trying to remember the name of the
+ *   person who put it through the door, and by the time you read this you have
+ *   read that name a hundred times.
+ *
+ *   THE TABLE IS LAID FOR TWO. It was four, from a family of four that the new
+ *   books do not have. Two is the table in Steve's ledger: "we ate at the same
+ *   table for four years and I called him brother."
+ *
+ *   AND HE DUG THE WELL. One line in "the house", because the ledger credits the
+ *   well to Herobrine and it is the only thing in these notes he gets RIGHT.
+ *
+ * What survives untouched is the shape of it, because the shape was always this:
+ * the elder could not put an axe in his own brother, so he tore a hole and put him
  * through it and sealed it.
  *
  * This is the far side of that hole. He has been here ever since.
@@ -183,8 +207,8 @@ public final class Remembering {
 			that I have it somewhere
 			that is not me.
 
-			It has four letters. I am
-			certain of the four.
+			It has five letters. I am
+			certain of the five.
 
 			""",
 			"""
@@ -211,6 +235,9 @@ public final class Remembering {
 			side and there is a step,
 			and the step was worn down
 			on the left.
+
+			There is a well. I dug the
+			well.
 			""",
 			"""
 			I have built it four times.
@@ -249,9 +276,8 @@ public final class Remembering {
 			supper
 			""",
 			"""
-			Four. It has always been
-			four and I have laid it for
-			four.
+			Two. It has always been two
+			and I have laid it for two.
 
 			I do not put it away. If it
 			is on the table then they

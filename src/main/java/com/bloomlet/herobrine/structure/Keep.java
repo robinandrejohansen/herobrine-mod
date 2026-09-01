@@ -173,8 +173,43 @@ public final class Keep {
 		return Boolean.TRUE.equals(his.getAttached(RAISED));
 	}
 
+	/**
+	 * How near counts as "at the keep", for the weather and for Whereabouts.
+	 *
+	 * OFF WALL_FAR, NOT WALL. This was WALL + 24 = 54, which gave twenty-four
+	 * blocks of apron past a wall that stood at thirty on every side. The circuit
+	 * now reaches fifty, so on its widest bearings the apron had shrunk to four —
+	 * and a player standing outside the gate on the wide side would have been
+	 * "away from the keep" with the rampart in front of them.
+	 */
+	/**
+	 * FORGET THE CASTLE, so a world that already has one can be given the new one.
+	 *
+	 * RAISED is the first thing onTick tests, and once it is set nothing in this
+	 * file ever runs again — which is correct for ordinary play and means every
+	 * change to the castle's shape reaches new worlds only. The wall was a square
+	 * for eleven versions and any save that has stood a castle up still has the
+	 * square, with no way to ask for the other one. Same failure as the settings
+	 * migration: a change that never arrives.
+	 *
+	 * IT DOES NOT DEMOLISH ANYTHING. The old blocks stay exactly where they are and
+	 * the new castle is sited fresh, so a world that runs this ends up with a
+	 * derelict one somewhere and a standing one somewhere else. In his dimension
+	 * that reads as history rather than as a bug, which is the only reason this is
+	 * allowed to be the cheap version.
+	 */
+	public static boolean forget(ServerLevel his) {
+		boolean had = his.hasAttached(SITE) || his.hasAttached(CITY);
+		his.removeAttached(SITE);
+		his.removeAttached(CITY);
+		his.removeAttached(CITY_UP);
+		his.removeAttached(RAISED);
+		HerobrineMod.LOGGER.info("the castle was forgotten — it will be chosen again");
+		return had;
+	}
+
 	public static int reach() {
-		return WALL + 24;
+		return WALL_FAR + 24;
 	}
 
 	/** Where his city stands, for anything that has to keep away from it. */
@@ -894,8 +929,16 @@ public final class Keep {
 				// doing under it, so the castle stands on a mound rather than on
 				// a slab hanging over a dip. Batter the edge by a block per
 				// course, which is what stops it reading as a cardboard box.
-				int edge = Math.max(Math.abs(dx), Math.abs(dz));
-				int down = MOTTE + 8 + (WALL - edge > 3 ? 0 : 4);
+				// THE BATTER, AND IT HAS TO BE AT THE REAL EDGE.
+				//
+				// max(|dx|,|dz|) against a flat WALL is the distance to a SQUARE's
+				// rim. The rim is a twelve-sided polygon now, so this put the extra
+				// four courses of skirt in a ring at thirty out — inside the wall on
+				// the wide bearings and outside it on the narrow ones, which is the
+				// one place it does nothing.
+				int edge = (int) Math.round(Math.hypot(dx, dz));
+				int rim = (int) Math.round(edgeOf(reach, dx, dz));
+				int down = MOTTE + 8 + (rim - edge > 3 ? 0 : 4);
 				for (int dy = -2; dy >= -down; dy--) {
 					BlockPos under = base.offset(dx, dy, dz);
 					if (his.getBlockState(under).isSolid()) {
@@ -1006,6 +1049,24 @@ public final class Keep {
 	 * Ray casting against the twelve corners is exact and agrees with the drawn
 	 * wall by construction, which is the only property that matters here.
 	 */
+	/**
+	 * How far out the circuit is on this bearing, for anything that only needs a
+	 * distance rather than the exact boundary. inside() is the authority on what is
+	 * in; this is for measuring how close to the rim something sits.
+	 */
+	private static double edgeOf(int[] reach, int dx, int dz) {
+		if (dx == 0 && dz == 0) {
+			return reach[0];
+		}
+		double turn = Math.atan2(dz, dx) / (Math.PI * 2.0) * CORNERS;
+		if (turn < 0) {
+			turn += CORNERS;
+		}
+		int i = (int) Math.floor(turn) % CORNERS;
+		double t = turn - Math.floor(turn);
+		return reach[i] * (1 - t) + reach[(i + 1) % CORNERS] * t;
+	}
+
 	private static boolean inside(int[] reach, int dx, int dz) {
 		boolean in = false;
 		for (int i = 0, j = CORNERS - 1; i < CORNERS; j = i++) {
@@ -1171,14 +1232,41 @@ public final class Keep {
 	 * down.
 	 */
 	private static void gate(ServerLevel his, BlockPos base) {
+		// A SOLID BLOCK OF WALL ROUND THE ARCH FIRST, and it is not decoration.
+		//
+		// The gate sits at exactly z = WALL because the corner facing it is pinned
+		// there — but the curtain is drawn as CHORDS between corners, and a chord
+		// leaves the corner going inward. So at dx +-2, four blocks along the run
+		// from the pinned corner, the wall has already stepped a block or two in,
+		// and the arch had daylight down both sides of it.
+		//
+		// Nine wide and two courses over the opening, written before the arch is cut
+		// so the cut lands in stone rather than in air.
+		RandomSource own = RandomSource.create(base.asLong() ^ 0x9E3779B9L);
+		for (int dx = -4; dx <= 4; dx++) {
+			for (int dy = 0; dy <= WALL_HEIGHT; dy++) {
+				for (int dz = -1; dz <= 1; dz++) {
+					put(his, base.offset(dx, dy, WALL + dz), dy == WALL_HEIGHT
+						? (((dx + dz) & 1) == 0
+							? stone(own)
+							: Blocks.DEEPSLATE_BRICK_SLAB.defaultBlockState()
+								.setValue(BlockStateProperties.SLAB_TYPE, SlabType.BOTTOM))
+						: stone(own));
+				}
+			}
+		}
 		for (int dx = -2; dx <= 2; dx++) {
 			for (int dy = 0; dy <= 4; dy++) {
 				boolean arch = Math.abs(dx) == 2 && dy == 4 || dy == 4 && Math.abs(dx) < 2;
-				BlockPos at = base.offset(dx, dy, WALL);
-				if (arch) {
-					put(his, at, Blocks.CHISELED_DEEPSLATE.defaultBlockState());
-				} else if (Math.abs(dx) <= 2 && dy < 4) {
-					clear(his, at);
+				// Through all three courses of the gatehouse, or the passage is a
+				// doorway in the front of a solid block of stone.
+				for (int dz = -1; dz <= 1; dz++) {
+					BlockPos at = base.offset(dx, dy, WALL + dz);
+					if (arch) {
+						put(his, at, Blocks.CHISELED_DEEPSLATE.defaultBlockState());
+					} else if (dy < 4) {
+						his.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+					}
 				}
 			}
 			// The portcullis, raised into the arch.
