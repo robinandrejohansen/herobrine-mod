@@ -620,7 +620,22 @@ public final class Keep {
 	 * this happens — it fires at a hundred and forty-four blocks, well beyond
 	 * sight in this fog — so the staging is invisible and costs nothing.
 	 */
-	private static void raise(ServerLevel his, BlockPos site) {
+	/**
+	 * PUBLIC, AND IT WORKS IN ANY LEVEL.
+	 *
+	 * Nothing in here or anywhere below it asks which dimension it is in: it reads
+	 * the ground, levels a platform, and places deepslate. The only thing in this
+	 * file that was ever his-world-only is onTick, which is the SITING — the clock,
+	 * the attachments and the city. The building itself never cared.
+	 *
+	 * So the overworld command is not a port of anything. It is the same call with
+	 * a different level handed in, and the reason it did not exist is that nobody
+	 * had asked for it.
+	 *
+	 * It writes NO attachments. A castle raised by hand in the overworld cannot
+	 * confuse the sequence in his world, and two of them can stand at once.
+	 */
+	public static void raise(ServerLevel his, BlockPos site) {
 		RandomSource random = his.getRandom();
 		// LEVELLED OFF THE MIDDLE, not off each column. A castle that follows
 		// the ground is a wall with a wobble in it, and the whole claim this
@@ -635,8 +650,8 @@ public final class Keep {
 			// ON THE CORNERS OF THE CIRCUIT, and they used to be at (+-WALL, +-WALL).
 			//
 			// Which was the right answer for a square and is a floating tower for
-			// anything else — the wall now reaches anywhere from 22 to 46 out, so
-			// three of the four would have stood in the trees with daylight between
+			// anything else — the wall reaches anywhere from WALL_NEAR to WALL_FAR
+			// out, so three of the four would have stood in the trees with daylight
 			// them and the rampart they are supposed to anchor.
 			//
 			// Every third corner, which is four towers on a twelve-sided circuit,

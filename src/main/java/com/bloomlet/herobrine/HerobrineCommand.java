@@ -129,6 +129,44 @@ public final class HerobrineCommand {
 				// For a world that was played before the buildings moved to
 				// being sited near the players. Clears where they were going to
 				// go so they are chosen again; touches nothing already built.
+				.then(Commands.literal("castle").executes(ctx -> {
+					ServerPlayer player = ctx.getSource().getPlayerOrException();
+					ServerLevel level = (ServerLevel) player.level();
+					// FIFTY BLOCKS AHEAD, NOT UNDERFOOT.
+					//
+					// raise() levels a platform and stacks a curtain eleven courses
+					// high over about four thousand square blocks, and its own comment
+					// says nobody is standing in it while that happens — in his world
+					// it fires at a hundred and forty-four blocks out. Centred on the
+					// caller it would bury them inside the motte fill.
+					//
+					// Ahead of where they are looking, so they watch it come up.
+					net.minecraft.world.phys.Vec3 look = player.getLookAngle();
+					double away = 50.0;
+					int x = (int) Math.round(player.getX() + look.x * away);
+					int z = (int) Math.round(player.getZ() + look.z * away);
+					// AND THE CHUNKS HAVE TO BE THERE FIRST.
+					//
+					// The circuit reaches fifty blocks from the site and the site is
+					// fifty from the caller, so the far side of the curtain is a
+					// hundred blocks out — five chunks past whoever typed this. In
+					// single-player at sixteen chunks that is loaded anyway; on a
+					// server with a short view distance it is not, and setBlock into
+					// nothing builds half a castle without reporting anything.
+					for (int cx = (x - 56) >> 4; cx <= (x + 56) >> 4; cx++) {
+						for (int cz = (z - 56) >> 4; cz <= (z + 56) >> 4; cz++) {
+							level.getChunk(cx, cz);
+						}
+					}
+					net.minecraft.core.BlockPos site = new net.minecraft.core.BlockPos(
+						x, com.bloomlet.herobrine.structure.Ground.topOf(level, x, z), z);
+					com.bloomlet.herobrine.structure.Keep.raise(level, site);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						"a castle is going up at [" + x + ", " + z + "] — fifty blocks"
+							+ " ahead of you. it takes about two seconds of ticks."),
+						false);
+					return 1;
+				}))
 				.then(Commands.literal("recastle").executes(ctx -> {
 					// The castle only, and only in his world — Dwellings.forget is the
 					// six overworld houses and has never touched the keep.
