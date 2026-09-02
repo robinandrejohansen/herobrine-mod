@@ -52,6 +52,7 @@ public class GauntRenderer extends HumanoidMobRenderer<
 
 	public GauntRenderer(EntityRendererProvider.Context context) {
 		super(context, new EndermanModel<>(context.bakeLayer(ModelLayers.ENDERMAN)), 0.5F);
+		reshape(this.getModel());
 	}
 
 	@Override
@@ -71,6 +72,52 @@ public class GauntRenderer extends HumanoidMobRenderer<
 	 * holding a block is a creature going about its business, which is the exact
 	 * opposite of what this one is doing.
 	 */
+	/**
+	 * A VILLAGER'S HEAD AND A BODY WITH SOMETHING IN IT.
+	 *
+	 * The enderman mesh brought its proportions with it, and those proportions are
+	 * the one thing about it that is wrong for this: an eight-cube head where a
+	 * villager's is eight by ten, and limbs two units square. So it read as an
+	 * enderman wearing villager paint — which was the third of three attempts this
+	 * creature has had, arrived at from the other direction.
+	 *
+	 * SCALED, NOT REMODELLED, which is the same call TurnedRenderer makes about the
+	 * nose and for the same reason. A larger cube samples a larger UV rectangle and
+	 * starts pulling in whatever sits next to it on the sheet — and this sheet has
+	 * alpha-0 padding around the parts, which solid materials draw as BLACK. That
+	 * cost an evening once already, on the shoulders and the arms. Scaling a baked
+	 * part stretches the SAME texels over more space: safe, and exactly the look.
+	 *
+	 * A quarter taller on the head, which is the villager's own ratio. Sixty per
+	 * cent thicker on the limbs — two units is a stick, and the thing is meant to
+	 * read as a man who has been drawn out rather than as a spider. The body only a
+	 * sixth, because the enderman torso is already wide and the silhouette should
+	 * stay narrow-shouldered.
+	 *
+	 * The hat is the mouth. It is left alone — see the note above. Scaling it moves
+	 * the recess off the hole and the whole effect with it.
+	 */
+	private static void reshape(EndermanModel<EndermanRenderState> model) {
+		// THE PUBLIC FIELDS, NOT root().getChild("head").
+		//
+		// HumanoidModel hands these out directly as public final ModelParts, and
+		// getChild is a string lookup that throws at RUNTIME on a name that is not
+		// there — so a typo or a rename compiles perfectly and then crashes the
+		// client the first time one of these walks on screen. The fields are checked
+		// by the compiler and cannot be wrong.
+		model.head.yScale = 1.25F;
+
+		model.body.xScale = 1.16F;
+		model.body.zScale = 1.16F;
+
+		for (net.minecraft.client.model.geom.ModelPart limb : new
+				net.minecraft.client.model.geom.ModelPart[] {
+					model.rightArm, model.leftArm, model.rightLeg, model.leftLeg }) {
+			limb.xScale = 1.6F;
+			limb.zScale = 1.6F;
+		}
+	}
+
 	@Override
 	public void extractRenderState(GauntEntity entity, EndermanRenderState state,
 	                               float partialTick) {

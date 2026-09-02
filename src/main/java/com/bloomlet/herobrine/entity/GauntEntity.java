@@ -142,7 +142,14 @@ public class GauntEntity extends PathfinderMob {
 	 *
 	 * Still most of a block over a player, which was the whole point of the height.
 	 */
-	public static final float WIDE = 0.6F;
+	/**
+	 * AND THE HITBOX FOLLOWS THE DRAWING. GauntRenderer thickens the limbs by
+	 * sixty per cent, which pushes the silhouette out past the enderman's 0.6 —
+	 * and ModEntities says the thing about a hitbox that disagrees with the mesh
+	 * being the oldest bug in modded Minecraft, so it is not going to be left
+	 * disagreeing here.
+	 */
+	public static final float WIDE = 0.7F;
 	public static final float TALL = 2.9F;
 
 	// No getDimensions override: LivingEntity marks it final, and it does not need
@@ -259,6 +266,81 @@ public class GauntEntity extends PathfinderMob {
 		if (this.watchedFor > STARE_COSTS) {
 			seen.addEffect(new MobEffectInstance(MobEffects.DARKNESS, DARK_FOR, 0,
 				false, false));
+			// AND EVERY TIME THE SCREEN GOES, IT IS NEARER.
+			if (++this.pulsing >= PULSE) {
+				this.pulsing = 0;
+				this.step(seen);
+			}
+		} else {
+			this.pulsing = 0;
+		}
+	}
+
+	/** Vanilla's DARKNESS period. The screen dips once a second. */
+	private static final int PULSE = 20;
+
+	/**
+	 * How far it comes on each dip, and how near it will get this way.
+	 *
+	 * FOUR AND A HALF, WHICH IS ITS WALKING PACE. At two and a half the arithmetic
+	 * came out the wrong way round: 0.25 movement speed is about 4.9 blocks a
+	 * second, so staring closed 2.5 a second and LOOKING AWAY WAS WORSE. The
+	 * punishment for solving the puzzle has to cost about what the puzzle costs, or
+	 * it is not a punishment, it is a discount.
+	 *
+	 * Matched to the walk, so neither answer is the answer. The difference between
+	 * them is not speed any more, it is that one of them you can see.
+	 */
+	private static final double STEPS_IN = 4.5;
+	private static final double NO_NEARER = 2.0;
+
+	private int pulsing;
+
+	/**
+	 * THE PUNISHMENT FOR LOOKING, AND IT CLOSES THE LAST WAY OUT.
+	 *
+	 * The creature had exactly one rule: frozen while watched, closing when not. A
+	 * player who worked that out had a perfect answer — keep it on screen and it
+	 * can never reach you — and a monster with a perfect answer is a puzzle that
+	 * has been solved.
+	 *
+	 * So staring costs. Past STARE_COSTS it hands out DARKNESS, and DARKNESS is
+	 * the Warden's effect: it PULSES, the screen dips about once a second, and on
+	 * every dip this moves. Two and a half blocks, instantly, with no walk — it is
+	 * frozen, so it cannot be walking, and something that is nearer without having
+	 * crossed the distance is the whole of what this creature is for.
+	 *
+	 * Now there is no safe action. Look away and it walks at you. Keep looking and
+	 * it arrives in the dark between blinks.
+	 *
+	 * NO_NEARER stops it at two blocks. Inside that it is in reach and REACHES has
+	 * already taken the freeze off, so stepping further would be teleporting into
+	 * somebody's face — which reads as a bug rather than as dread.
+	 */
+	private void step(Player seen) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		Vec3 gap = seen.position().subtract(this.position());
+		double away = gap.horizontalDistance();
+		if (away <= NO_NEARER + STEPS_IN) {
+			return;
+		}
+		Vec3 to = this.position().add(gap.normalize().scale(STEPS_IN));
+		// Down to whatever it lands on, and never up through a ceiling. A blind
+		// step into a hillside is how a stalker ends up inside the terrain.
+		BlockPos foot = BlockPos.containing(to.x, this.getY(), to.z);
+		for (int drop = 0; drop <= 3; drop++) {
+			BlockPos at = foot.below(drop);
+			if (here.getBlockState(at).isAir()
+				&& here.getBlockState(at.above()).isAir()
+				&& here.getBlockState(at.below()).isSolid()) {
+				this.snapTo(to.x, at.getY(), to.z, this.getYRot(), this.getXRot());
+				this.getNavigation().stop();
+				here.playSound(null, this.getX(), this.getY(), this.getZ(),
+					SoundEvents.WARDEN_STEP, this.getSoundSource(), 0.9F, DEEP);
+				return;
+			}
 		}
 	}
 

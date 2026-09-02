@@ -77,6 +77,12 @@ BRIDGE = (11, 12)
 BROW_ROW = 9
 PUPIL_WIDE = 3
 
+# The villager's own green, measured off the real sheet in gen_turned.py, and the
+# ring is five so a three-wide pupil sits inside it with a pixel of iris showing
+# all the way round. Seven filled the socket and lost the white.
+IRIS = (56, 148, 56, 255)
+IRIS_WIDE = 5
+
 
 def client_jar():
 	jars = glob.glob(os.path.expanduser(
@@ -178,14 +184,28 @@ def main():
 		for y in EYE_ROWS:
 			block(big, x, y, WHITE)
 
-	# A SHEEP'S EYE, WHICH IS WHITE WITH A DOT IN IT.
+	# THE CRAZY VILLAGER'S EYE AFTER ALL, and this reverses a call made here.
 	#
-	# Not the villager's. A villager eye is white, green iris, black pupil in two
-	# pixels — three values in a space that barely holds one, and on a face this
-	# size the green just muddies the white. A sheep's is the same eye with the
-	# middle value taken out, which at range is the only part that was doing any
-	# work: a bright field, and something small and dark inside it that is pointed
-	# at you.
+	# It was a sheep's — white with a dot in it — on the argument that a villager
+	# eye is three values in a space that barely holds one, and that at range the
+	# green only muddies the white. That argument is not wrong, and it is not what
+	# was asked for: the Turned's eyes are the thing people find unsettling in this
+	# mod, and the tall one should have them.
+	#
+	# So the middle value goes back in. White field, IRIS ring, black pupil in the
+	# centre of it — the same three layers gen_turned.py builds, at the same green,
+	# and the iris is sized to leave white on all four sides of it. An iris that
+	# reaches the edge of the socket reads as a coloured eye; one with white around
+	# it reads as an eye that is OPEN too wide.
+	for eye in (8, 13):
+		wide = 3 * SCALE
+		tall = 2 * SCALE
+		ix = eye * SCALE + (wide - IRIS_WIDE) // 2
+		iy = EYE_ROWS[0] * SCALE + (tall - IRIS_WIDE) // 2
+		for y in range(iy, iy + IRIS_WIDE):
+			for x in range(ix, ix + IRIS_WIDE):
+				big[y][x] = IRIS
+
 	for eye in (8, 13):
 		wide = 3 * SCALE
 		tall = 2 * SCALE

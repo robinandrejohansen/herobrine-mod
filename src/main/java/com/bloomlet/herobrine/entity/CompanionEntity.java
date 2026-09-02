@@ -287,10 +287,12 @@ public class CompanionEntity extends PathfinderMob {
 		 * her and starts managing her.
 		 */
 		private void appearNear(ServerLevel here, Player with) {
-			for (int tries = 0; tries < 12; tries++) {
-				net.minecraft.util.RandomSource roll = this.her.getRandom();
+			net.minecraft.util.RandomSource roll = this.her.getRandom();
+			// A WIDER LOOK THAN THREE BLOCKS. Somebody moving fast is not going to
+			// have solid ground in the seven-block box they happen to be over.
+			for (int tries = 0; tries < 24; tries++) {
 				BlockPos at = with.blockPosition().offset(
-					roll.nextInt(7) - 3, roll.nextInt(3) - 1, roll.nextInt(7) - 3);
+					roll.nextInt(11) - 5, roll.nextInt(7) - 3, roll.nextInt(11) - 5);
 				if (!here.getBlockState(at).isAir()
 					|| !here.getBlockState(at.above()).isAir()
 					|| !here.getBlockState(at.below()).isSolid()) {
@@ -301,6 +303,23 @@ public class CompanionEntity extends PathfinderMob {
 				this.her.getNavigation().stop();
 				return;
 			}
+			// AND IF THERE IS NO FLOOR AT ALL, GO ANYWAY.
+			//
+			// Reported as her not keeping up with a player FLYING IN CREATIVE, and
+			// this was the whole of it: every candidate had to have a solid block
+			// under it, and a player two hundred blocks up over open air has none
+			// within reach. All twenty-four tries failed, every tick, so the one
+			// mechanism that exists to stop her being lost never fired — and the
+			// faster you went the further behind she stayed.
+			//
+			// Landing her in mid-air and letting her fall is not elegant. It is also
+			// unambiguously better than the alternative, which is losing her: she
+			// cannot die, Company fishes her out from under the world, and Follow
+			// will simply do this again on the way down.
+			this.her.snapTo(with.getX(), with.getY(), with.getZ(),
+				this.her.getYRot(), this.her.getXRot());
+			this.her.setDeltaMovement(Vec3.ZERO);
+			this.her.getNavigation().stop();
 		}
 	}
 
