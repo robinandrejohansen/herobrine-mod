@@ -217,25 +217,18 @@ public class GauntRenderer extends HumanoidMobRenderer<
 	 * cost an evening once already, on the shoulders and the arms. Scaling a baked
 	 * part stretches the SAME texels over more space: safe, and exactly the look.
 	 *
-	 * HALF AGAIN ON THE HEAD, WHICH IS PAST A VILLAGER ON PURPOSE.
+	 * FOUR TENTHS OF IT IS FACE. See HEAD_TALL.
 	 *
-	 * A villager's head is eight by ten and the first attempt at this matched it
-	 * exactly — 1.25 — on the reasoning that the creature is a villager underneath
-	 * and should wear a villager's proportion. That reasoning ignores what the head
-	 * is sitting ON. A villager is thirty-one units tall, so ten units of head is a
-	 * third of it; this thing is fifty, so the same ten units is a fifth, and a
-	 * fifth reads as a small head on a long body no matter whose ratio it came
-	 * from. Proportion is a fraction and only one of its terms was being copied.
+	 * Two earlier attempts are worth recording because both were reasonable and
+	 * both were wrong in the same way. First 1.25 — a villager's head is eight by
+	 * ten, so match it exactly. That ignores what the head is sitting ON: ten units
+	 * is a third of a villager and a fifth of this, and proportion is a fraction
+	 * with two terms. Then 1.5, which fixed the fraction and left the limbs at
+	 * thirty units two thick — so the head was right and everything under it was
+	 * still a spider.
 	 *
-	 * Twelve units, so: half again the enderman's, a fifth over a villager's, and
-	 * near enough a villager's FRACTION of this body. Eight wide and twelve tall is
-	 * also a long skull rather than a big one, which is the difference between the
-	 * thing being imposing and the thing being a bobblehead.
-	 *
-	 * Sixty per cent thicker on the limbs — two units is a stick, and it should
-	 * read as a man drawn out rather than as a spider. The body only a sixth,
-	 * because the enderman torso is already wide and the silhouette wants to stay
-	 * narrow-shouldered.
+	 * The answer was never to stretch it more evenly. It was to stop stretching the
+	 * body at all and put the height in the skull.
 	 */
 	/**
 	 * IT SWINGS LIKE AN IRON GOLEM, WHICH MEANS BOTH ARMS AT ONCE.
@@ -278,8 +271,39 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		model.leftArm.zRot = 0.0F;
 	}
 
-	/** Twelve units against the enderman's eight and the villager's ten. */
-	private static final float HEAD_TALL = 1.5F;
+	/**
+	 * A VILLAGER'S BODY WITH A HEAD THAT WAS PULLED UP OUT OF IT.
+	 *
+	 * The last version was the enderman's own proportions gently adjusted: a
+	 * twelve-unit head on thirty-unit limbs two units square. That reads as a
+	 * spider — long, thin, evenly stretched everywhere — and the thing being asked
+	 * for is the opposite of even. It is a villager whose HEAD has been drawn out
+	 * and whose body has not.
+	 *
+	 * So the height moves from the legs into the skull, and the total barely
+	 * changes: 30 + 12 + 12 was 54 units, and 18 + 12 + 20.8 is 50.8. Still three
+	 * blocks of it, still looming over a doorframe, and now four tenths of it is
+	 * face.
+	 *
+	 * THE LIMBS AND BODY LAND ON THE VILLAGER'S OWN NUMBERS, which is the whole
+	 * point of the exercise rather than a coincidence:
+	 *
+	 *     limb thickness   2 x 2.0 = 4      a villager's arm is 4 wide
+	 *     body depth       4 x 1.5 = 6      a villager's body is 6 deep
+	 *
+	 * Read off VillagerModel: arms 4x8x4, body 8x12x6, head 8x10x8. Scaled rather
+	 * than remodelled, for the reason the note above gives — a bigger cube samples
+	 * a bigger UV rectangle and starts pulling in the alpha-0 padding next to it,
+	 * which solid materials draw as black. That cost an evening once.
+	 *
+	 * AND THE LIMBS SHORTEN BY SCALE, which is the same trick in the other
+	 * direction. yScale 0.6 on a thirty-unit box is eighteen units of the same
+	 * texels squashed, and eighteen is close to a villager's twelve without making
+	 * something three blocks tall look like it is kneeling.
+	 */
+	private static final float HEAD_TALL = 2.6F;
+	private static final float LIMB_THICK = 2.0F;
+	private static final float LIMB_SHORT = 0.6F;
 
 	private static void reshape(EndermanModel<EndermanRenderState> model) {
 		// THE PUBLIC FIELDS, NOT root().getChild("head").
@@ -307,13 +331,14 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		model.hat.y /= HEAD_TALL;
 
 		model.body.xScale = 1.16F;
-		model.body.zScale = 1.16F;
+		model.body.zScale = 1.5F;
 
 		for (net.minecraft.client.model.geom.ModelPart limb : new
 				net.minecraft.client.model.geom.ModelPart[] {
 					model.rightArm, model.leftArm, model.rightLeg, model.leftLeg }) {
-			limb.xScale = 1.6F;
-			limb.zScale = 1.6F;
+			limb.xScale = LIMB_THICK;
+			limb.zScale = LIMB_THICK;
+			limb.yScale = LIMB_SHORT;
 		}
 	}
 

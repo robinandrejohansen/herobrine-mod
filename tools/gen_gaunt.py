@@ -122,14 +122,25 @@ EYE_WIDE = 3             # and how many texels wide it is
 # above, half again as long below, and the eye's centre has gone from three
 # eighths of the way down the face to a little under three tenths — up, and
 # smaller as a share of the face, while staying about the same size on screen.
-# ON WHOLE TEXELS AGAIN, because the mouth took the room the half-row bought.
+# BACK TO SUB-PIXELS, BECAUSE THE HEAD IS 2.6 NOW AND A TEXEL ROW IS EXPENSIVE.
 #
-# The sub-pixel eye existed to win back forehead and cheek on an eight-row face
-# where the mouth was two rows. The mouth is four rows now, so there is no cheek
-# left to win and the eye simply sits on texels 9 and 10 with the forehead above
-# it and the nose below.
-EYE_TOP_PX = 9 * SCALE
-EYE_TALL_PX = 2 * SCALE
+# The head was stretched 1.5 when the eye was given two whole texels, so it stood
+# three units tall and that was right. At 2.6 the same two rows are five and a
+# quarter units of eye on a twenty-unit face — a pair of dinner plates. The
+# reference this is drawn from has small eyes set high, and the mouth doing all
+# the work.
+#
+# Five sub-pixels, starting half a texel down. Over a face where one texel row is
+# 2.6 units that comes out as:
+#
+#     forehead   texel 8    -> 9.5      3.9 units
+#     eye                   -> 10.75    3.25
+#     nose, cheek           -> 12       3.25
+#     mouth                 -> 16      10.4     <- half the face
+#
+# Which is the whole silhouette in four numbers.
+EYE_TOP_PX = 38
+EYE_TALL_PX = 5
 
 # RED BEHIND THE BLACK, NOT GREEN.
 #
