@@ -1323,7 +1323,7 @@ public final class Undercity {
 	 * or a line of text.
 	 *
 	 * Down here specifically, and not up in the square, and that is the whole
-	 * reason she is worth meeting: everybody who is still alive from Ashfold is at
+	 * reason it is worth coming down: everybody who is still alive from Ashfold is at
 	 * the bottom of a well, and she is the one who says she would rather leave.
 	 *
 	 * Last, after the nine, for the reason people() itself is called last — see

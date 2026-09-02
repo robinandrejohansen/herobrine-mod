@@ -14,7 +14,7 @@ DOC = {
  "seven": "7. THE ONE WHO CAME BACK. A survivor's account, transcribed and untidied.\n\t *\n\t * Eleven weeks in cell nine, and the men doing it were the town's own. The\n\t * point is stated by the man it was done to: the ordinary ones had to be cut\n\t * too, or the numbers mean nothing. The man with the book was Steve, and he\n\t * was only ever testing himself.",
  "eight": "8. WHERE HE LIVES. Two boys and a dog find the second door. The church is where\n\t * two hundred people decided whether to walk into it, and where Wendel wrote\n\t * down the question nobody would let him ask out loud. Four of nine came back,\n\t * and what they saw was a paved road and lit windows: he built a house.",
  "nine": "9. THE LAST HOUSE. The one fight Addexio is not ashamed of, and it lasts a\n\t * sentence. He reaches Herobrine, swings, connects, and wakes against the far\n\t * wall with a hand that never works again. Sixty-one dead in one room. They\n\t * wall the door up and tell the valley it is over.",
- "ten": "10. HE HAS BEEN SEEN. Written last spring, at the bottom of the stair, next to\n\t * the hole in his own wall.\n\t *\n\t * The list of what he got wrong is the mod's own advice in order, and the last\n\t * page is why the numbering exists at all: he is still alive, he is under the\n\t * town with the last of Ashfold, and he tells you to come and find him. That\n\t * is the companion in Undercity.people — the man who wrote all ten.",
+ "ten": "10. HE HAS BEEN SEEN. Written last spring, at the bottom of the stair, next to\n\t * the hole in his own wall.\n\t *\n\t * The list of what he got wrong is the mod's own advice in order, and the last\n\t * page is why the numbering exists at all: he is still alive, he refuses to say\n\t * where he is because you already know, and he has been walking behind you\n\t * since the first house. He came down here alone to leave this book at the\n\t * door and then went back up to the farm to wait. See Company.arrives.",
 }
 
 def block(pages):
@@ -65,8 +65,9 @@ HEAD = '''/**
  *
  * WHO IS TELLING IT. Addexio. He lived in the first house, he was at every one
  * of these places while it happened, and he is the companion you can still find
- * alive under the town — see Undercity.people. Book 10 is addressed to you and
- * ends by telling you where he is, which is the whole reason the books are
+ * who walks in out of the distance at that same first house — see
+ * Company.arrives. Book 10 is addressed to you and its last page is the man
+ * already standing next to you, which is the whole reason the books are
  * numbered rather than scattered.
  *
  * HE IS A HERO WHO FAILED. He had a weapon every time. Book 4 is the one the

@@ -12,8 +12,9 @@ nobody does.
 
 So it is one man now and the books are numbered 1 to 10. He is called Addexio,
 he lived in the first house, and he is the companion you can still find alive
-under the town — which is the whole reason the numbering matters. Book 10 is
-addressed to you and ends by telling you where he is.
+the first house on the trail — which is the whole reason the numbering matters.
+Book 10 is addressed to you and its last page is the man who is standing next to
+you by the time you read it.
 
 HE IS A HERO WHO FAILED. Not a chronicler and not a victim. He was there for all
 of it, he had a weapon every time, and the story he is telling is the story of
@@ -526,13 +527,23 @@ WHERE I AM.
 
 I am still alive. That surprises me more than anything else in these ten books.
 
-I am under the town, with the last of Ashfold, in the dark where he does not look.
+And I am not going to tell you where I am, because you already know.
 
-Come down and find me. I will help you as far as I can still walk.
+I came down here on my own to leave this book at the door, and then I walked back up and went to the farm, because the farm is where anybody who picks up this trail starts. I sat on the wall and I waited.
+
+If you have read these in the order they are numbered, then I saw you at the first house and I have been behind you ever since.
+
+I am not much use. I am eighty-one and my left hand has not worked since the hall. But I have kept the good armour all these years for exactly one day, and I can still get in front of you once.
+
+That is all I have. It is more than anyone did for me.
+
+WHAT IS LEFT.
+
+Do not wall it up. Go through.
 
 My name is Addexio. I failed at this for sixty years.
 
-Finish it.
+Let us go and finish it.
 """)
 
 HOUSEBOOKS = [

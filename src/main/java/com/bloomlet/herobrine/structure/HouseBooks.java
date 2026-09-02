@@ -21,8 +21,9 @@ import net.minecraft.world.item.component.WrittenBookContent;
  *
  * WHO IS TELLING IT. Addexio. He lived in the first house, he was at every one
  * of these places while it happened, and he is the companion you can still find
- * alive under the town — see Undercity.people. Book 10 is addressed to you and
- * ends by telling you where he is, which is the whole reason the books are
+ * who walks in out of the distance at that same first house — see
+ * Company.arrives. Book 10 is addressed to you and its last page is the man
+ * already standing next to you, which is the whole reason the books are
  * numbered rather than scattered.
  *
  * HE IS A HERO WHO FAILED. He had a weapon every time. Book 4 is the one the
@@ -1295,9 +1296,10 @@ public final class HouseBooks {
 	 * the hole in his own wall.
 	 *
 	 * The list of what he got wrong is the mod's own advice in order, and the last
-	 * page is why the numbering exists at all: he is still alive, he is under the
-	 * town with the last of Ashfold, and he tells you to come and find him. That
-	 * is the companion in Undercity.people — the man who wrote all ten.
+	 * page is why the numbering exists at all: he is still alive, he refuses to say
+	 * where he is because you already know, and he has been walking behind you
+	 * since the first house. He came down here alone to leave this book at the
+	 * door and then went back up to the farm to wait. See Company.arrives.
 	 */
 	public static ItemStack ten() {
 		return book("10. he has been seen", "Addexio",
@@ -1419,22 +1421,58 @@ public final class HouseBooks {
 			than anything else in
 			these ten books.
 
-			I am under the town,
-			with the last of
-			Ashfold, in the dark
-			where he does not
-			look.
-
-			Come down and find
-			me. I will help you as
-			far as I can still walk.""",
+			And I am not going to
+			tell you where I am,
+			because you already
+			know.""",
 
 			"""
+			I came down here on
+			my own to leave this
+			book at the door, and
+			then I walked back up
+			and went to the farm,
+			because the farm is
+			where anybody who
+			picks up this trail
+			starts. I sat on the
+			wall and I waited.""",
+
+			"""
+			If you have read
+			these in the order
+			they are numbered,
+			then I saw you at the
+			first house and I
+			have been behind you
+			ever since.""",
+
+			"""
+			I am not much use. I
+			am eighty-one and my
+			left hand has not
+			worked since the hall.
+			But I have kept the
+			good armour all these
+			years for exactly one
+			day, and I can still get
+			in front of you once.
+
+			That is all I have. It is
+			more than anyone did
+			for me.""",
+
+			"""
+			WHAT IS LEFT.
+
+			Do not wall it up. Go
+			through.
+
 			My name is Addexio. I
 			failed at this for sixty
 			years.
 
-			Finish it.""");
+			Let us go and finish it.""");
 	}
 
 	private static final int TITLE_FITS = 32;
