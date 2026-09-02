@@ -52,7 +52,32 @@ public final class Undercity {
 	/** How far under the square. Deep enough that nothing above hints at it. */
 	private static final int DEPTH = 26;
 	/** Half-width of the chamber floor. */
-	private static final int SPAN = 21;
+	/**
+	 * FORTY, AND IT WAS TWENTY-ONE.
+	 *
+	 * The claim this place makes is that it is the TOWN AGAIN, underneath the town.
+	 * Township walls a radius of sixty-four. At twenty-one this was forty-three
+	 * across against a hundred and twenty-eight — a NINTH of the area — with eight
+	 * things crammed into it: pillars, streets, a pool, a library, a farm, a grove,
+	 * pens and nine people. Reported as reading like a generic cave, and it did,
+	 * because it was not a settlement. It was one room with a settlement's worth of
+	 * furniture in it.
+	 *
+	 * Forty is eighty-one across, four times the floor, and still comfortably
+	 * inside the town's wall so the two do not disagree about where the town is.
+	 *
+	 * Everything sized off this scales with it — chamber(), streets(), people(),
+	 * the field, the grove and the pens all read SPAN. What did NOT, and what had
+	 * to be changed with it, was the furniture: the library sat at a hardcoded
+	 * (-13, -13), the pillars on hardcoded rings of 9 and 17, and the houses on a
+	 * hardcoded ring of fourteen. Left alone, a bigger SPAN would have given a
+	 * bigger cave with the same small village in the middle of it — which is worse
+	 * than the thing being complained about, not better.
+	 */
+	private static final int SPAN = 40;
+
+	/** How many dwellings, and how far out they stand. Both off SPAN now. */
+	private static final int HOUSES = 11;
 	private static final int HEIGHT = 13;
 
 	/**
@@ -117,9 +142,13 @@ public final class Undercity {
 		// them hold anything. Which is what makes the ones that do land.
 		java.util.List<BlockPos> accounts = new java.util.ArrayList<>();
 		java.util.List<BlockPos> pantries = new java.util.ArrayList<>();
-		BlockPos libraryAt = floor.offset(-13, 0, -13);
+		// OFF SPAN, NOT (-13, -13). At SPAN 21 that was two thirds of the way to
+		// the rim; at 40 it would have been a third, which puts the one landmark
+		// in the place almost on top of the well.
+		int inner = SPAN * 2 / 3;
+		BlockPos libraryAt = floor.offset(-inner / 2 - 4, 0, -inner / 2 - 4);
 		library(level, libraryAt, random);
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < HOUSES; i++) {
 			// AND ONE OF THE FIVE WAS BUILT THROUGH THE LIBRARY.
 			//
 			// Five houses on a ring of fourteen and the library at (-13, -13):
@@ -134,12 +163,20 @@ public final class Undercity {
 			// to twelve blocks on some bearings and pushing a house further from
 			// the middle can put it through the cavern wall instead. The radius
 			// is what keeps it indoors; the bearing is the free variable.
-			double angle = i * (Math.PI * 2.0 / 5.0) + 0.6;
+			// TWO RINGS NOW, because eleven on one ring at this radius stand
+			// shoulder to shoulder and read as a terrace rather than a village.
+			// The inner ring is the old fourteen scaled; the outer sits two thirds
+			// of the way to the rim, which is as far as the wandering wall allows.
+			boolean out = i >= HOUSES / 2;
+			double reach = out ? SPAN * 0.62 : SPAN * 0.34;
+			int on = out ? HOUSES - HOUSES / 2 : HOUSES / 2;
+			double angle = (out ? i - HOUSES / 2 : i) * (Math.PI * 2.0 / on)
+				+ (out ? 0.6 : 0.9);
 			BlockPos site = null;
 			for (int nudge = 0; nudge < 10 && site == null; nudge++) {
 				double bearing = angle + nudge * 0.22;
-				int hx = floor.getX() + (int)Math.round(Math.cos(bearing) * 14);
-				int hz = floor.getZ() + (int)Math.round(Math.sin(bearing) * 14);
+				int hx = floor.getX() + (int)Math.round(Math.cos(bearing) * reach);
+				int hz = floor.getZ() + (int)Math.round(Math.sin(bearing) * reach);
 				if (!overlaps(hx, hz, 7, 6, libraryAt.getX(), libraryAt.getZ(), 11, 9)) {
 					site = new BlockPos(hx, floor.getY(), hz);
 				}
@@ -198,7 +235,76 @@ public final class Undercity {
 		// the books go down last because boring a passage after a chest existed
 		// drove through it. Entities are the same problem with a worse symptom: a
 		// chest in a wall is invisible, and a villager in a wall is a death message.
+		// THE WILD BEFORE THE PEOPLE, and after everything that carves. Reported as
+		// having no nature in it, and it had none: the chamber is cut stone, the
+		// streets are paved and the only growing things were the farm's crops and
+		// the grove's four trees, both fenced off in their own corners.
+		//
+		// A cave people have lived in for years is not clean. Moss takes the damp
+		// corners, lichen climbs whatever is lit, and mushrooms come up wherever
+		// nobody walks — and none of that is decoration here, it is the argument
+		// that time has passed.
+		wild(level, floor, random);
 		people(level, floor, random);
+	}
+
+	/** How many patches of it, and how far in from the rim they start. */
+	private static final int PATCHES = 90;
+
+	/**
+	 * WHAT HAS GROWN IN HERE SINCE THEY CAME DOWN.
+	 *
+	 * Placed with Grounds' own discipline rather than scattered: never on a road,
+	 * never over anything built, and only where there is air above a solid floor.
+	 * The failure mode this is guarding against is a mushroom inside somebody's
+	 * kitchen, which is the same class of bug as a tree through a roof.
+	 *
+	 * Damp near the pool and dry away from it, because a cave that is uniformly
+	 * mossy reads as a texture and one that is mossy in the low corners reads as
+	 * water having been there.
+	 */
+	private static void wild(ServerLevel level, BlockPos floor, RandomSource random) {
+		int put = 0;
+		for (int i = 0; i < PATCHES; i++) {
+			double turn = random.nextDouble() * Math.PI * 2.0;
+			double out = 6 + random.nextDouble() * (SPAN - 10);
+			int x = floor.getX() + (int) Math.round(Math.cos(turn) * out);
+			int z = floor.getZ() + (int) Math.round(Math.sin(turn) * out);
+			BlockPos on = new BlockPos(x, floor.getY() - 1, z);
+			BlockPos over = on.above();
+			if (!level.getBlockState(on).isSolid()
+				|| !level.getBlockState(over).isAir()
+				|| level.getBlockState(on).is(Blocks.DIRT_PATH)
+				|| com.bloomlet.herobrine.manifest.DwellTracker.isBuilt(level, over)) {
+				continue;
+			}
+			// Nearer the middle is nearer the pool, so it is wetter.
+			boolean damp = out < SPAN * 0.45;
+			switch (random.nextInt(damp ? 5 : 7)) {
+				case 0, 1 -> {
+					level.setBlock(on, Blocks.MOSS_BLOCK.defaultBlockState(), 2);
+					if (random.nextBoolean()) {
+						level.setBlock(over, Blocks.MOSS_CARPET.defaultBlockState(), 2);
+					}
+				}
+				case 2 -> level.setBlock(over, random.nextBoolean()
+					? Blocks.BROWN_MUSHROOM.defaultBlockState()
+					: Blocks.RED_MUSHROOM.defaultBlockState(), 2);
+				case 3 -> {
+					level.setBlock(on, Blocks.PODZOL.defaultBlockState(), 2);
+					level.setBlock(over, Blocks.FERN.defaultBlockState(), 2);
+				}
+				case 4 -> level.setBlock(over, Blocks.GLOW_LICHEN.defaultBlockState()
+					.setValue(net.minecraft.world.level.block.MultifaceBlock
+						.getFaceProperty(net.minecraft.core.Direction.DOWN), true), 2);
+				case 5 -> level.setBlock(over,
+					Blocks.HANGING_ROOTS.defaultBlockState(), 2);
+				default -> level.setBlock(on,
+					Blocks.MOSSY_COBBLESTONE.defaultBlockState(), 2);
+			}
+			put++;
+		}
+		HerobrineMod.LOGGER.info("{} things have grown in the undercity", put);
 	}
 
 	/** How far out from the chamber the workings run. */
@@ -487,8 +593,12 @@ public final class Undercity {
 	 * across it is.
 	 */
 	private static void pillars(ServerLevel level, BlockPos floor, RandomSource random) {
-		for (int ring : new int[] { 9, 17 }) {
-			int count = ring == 9 ? 6 : 10;
+		// THREE RINGS OFF SPAN. Nine and seventeen were right under a ceiling
+		// forty-three across and hold up nothing at eighty-one — the roof would
+		// have been unsupported for two thirds of its width, which is exactly
+		// what makes a big room read as a hangar.
+		for (int ring : new int[] { SPAN / 4, SPAN / 2, SPAN * 3 / 4 }) {
+			int count = 6 + ring / 4;
 			for (int i = 0; i < count; i++) {
 				double angle = i * (Math.PI * 2.0 / count);
 				int px = floor.getX() + (int)Math.round(Math.cos(angle) * ring);
@@ -970,7 +1080,10 @@ public final class Undercity {
 
 	private static void people(ServerLevel level, BlockPos floor, RandomSource random) {
 		int placed = 0;
-		for (int i = 0; i < 9; i++) {
+		// EIGHTEEN, NOT NINE. Nine was right in a forty-three block room; in an
+		// eighty-one block one it is a village with two people in every third
+		// house, and the whole point of the place is that the town moved down here.
+		for (int i = 0; i < 18; i++) {
 			BlockPos feet = null;
 			for (int look = 0; look < LOOKS_FOR_A_SPOT && feet == null; look++) {
 				double angle = random.nextDouble() * Math.PI * 2.0;
