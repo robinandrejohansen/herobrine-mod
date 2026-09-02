@@ -3,7 +3,6 @@ package com.bloomlet.herobrine.entity;
 import com.bloomlet.herobrine.Config;
 import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.structure.Blueprint;
-import com.bloomlet.herobrine.structure.Ground;
 import com.bloomlet.herobrine.structure.Keep;
 import java.util.ArrayList;
 import java.util.List;
@@ -810,10 +809,13 @@ final class Duel {
 		if (site == null || !Blueprint.have(plan)) {
 			return found;
 		}
-		int surface = Ground.topOf(here, site.getX(), site.getZ()) + 1;
-		BlockPos corner = Blueprint.corner(new BlockPos(site.getX(), surface, site.getZ()), plan);
+		// NOT MEASURED — REMEMBERED. Ground.topOf at the site is the castle's roof
+		// once the castle is there; the corner and the ground course are what Keep
+		// wrote down before it placed anything. See Keep.corner.
+		BlockPos corner = Keep.corner(here);
+		int surface = Keep.surface(here);
 		BlockPos size = Blueprint.measure(plan);
-		if (corner == null || size == null) {
+		if (corner == null || surface < 0 || size == null) {
 			return found;
 		}
 		int sx = size.getX();

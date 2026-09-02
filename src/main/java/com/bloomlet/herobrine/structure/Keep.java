@@ -190,6 +190,31 @@ public final class Keep {
 	private static final AttachmentType<Long> STANDS_AT =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("keep_stands_at"), Codec.LONG);
 
+	/**
+	 * WHERE THE BOX IS, REMEMBERED — because it cannot be re-measured.
+	 *
+	 * The castle is centred on the site and grounded on Ground.topOf(site), taken
+	 * BEFORE it is placed. Anything that measures topOf(site) afterwards gets the
+	 * castle's own roof: the Duel did, put its box twenty blocks up, found 181
+	 * places to stand instead of two thousand, and stood him in a room at the top
+	 * of the keep where nobody could find him. So the corner and the ground course
+	 * are written down here at raise time and read back, never recomputed.
+	 */
+	private static final AttachmentType<Long> KEEP_CORNER =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("keep_corner"), Codec.LONG);
+	private static final AttachmentType<Integer> KEEP_SURFACE =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("keep_surface"), Codec.INT);
+
+	public static @org.jspecify.annotations.Nullable BlockPos corner(ServerLevel his) {
+		Long at = his.getAttached(KEEP_CORNER);
+		return at == null ? null : BlockPos.of(at);
+	}
+
+	/** The castle's ground course in world Y, or -1 for a castle that is not a blueprint. */
+	public static int surface(ServerLevel his) {
+		return his.getAttachedOrElse(KEEP_SURFACE, -1);
+	}
+
 	public static boolean standing(ServerLevel his) {
 		if (!raised(his)) {
 			return false;
@@ -806,6 +831,8 @@ public final class Keep {
 				BlockPos where = Blueprint.corner(
 					new BlockPos(site.getX(), surface, site.getZ()), plan);
 				if (where != null) {
+					his.setAttached(KEEP_CORNER, where.asLong());
+					his.setAttached(KEEP_SURFACE, surface);
 					Hoard.stock(his, where, done.sizeX(), done.sizeY(), done.sizeZ(),
 						done.ticks() + 5);
 				}
