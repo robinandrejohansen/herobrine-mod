@@ -20,6 +20,7 @@ import com.bloomlet.herobrine.manifest.Cadence;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -158,7 +159,19 @@ public final class Blueprint {
 	}
 
 	/** What a load either produced or could not. */
-	public record Placed(int blocks, int skipped, int sizeX, int sizeY, int sizeZ) {}
+	/**
+	 * `ticks` IS HOW LONG THIS WILL STILL BE GOING ON FOR.
+	 *
+	 * stand() queues clearing, then bearding, then placing, and hands back before
+	 * any of it has run. A caller that wants to do something to the finished
+	 * building — put loot in its chests, lay a path to its door — has no way to
+	 * know when that is, and Hamlet needs it six times over with a different answer
+	 * each time. Guessing it as a fixed delay is the "silent limit" mistake: too
+	 * short and the loot goes into chests that do not exist yet, too long and the
+	 * village stands empty for half a minute for no reason.
+	 */
+	public record Placed(int blocks, int skipped, int sizeX, int sizeY, int sizeZ,
+	                     int ticks) {}
 
 	/**
 	 * STAND IT UP ON THE GROUND, CENTRED, which is what a building wants.
@@ -182,14 +195,22 @@ public final class Blueprint {
 	 */
 	public static @org.jspecify.annotations.Nullable Placed stand(
 			ServerLevel level, BlockPos centre, String name) {
+		return stand(level, centre, name, Rotation.NONE);
+	}
+
+	public static @org.jspecify.annotations.Nullable Placed stand(
+			ServerLevel level, BlockPos centre, String name, Rotation rot) {
 		JsonObject root = read(name);
 		if (root == null) {
 			return null;
 		}
 		JsonObject size = root.getAsJsonObject("size");
-		int sx = size.get("x").getAsInt();
 		int sy = size.get("y").getAsInt();
-		int sz = size.get("z").getAsInt();
+		// The OCCUPIED box, so the clear, the bearding and the centring are all
+		// about the building that ends up on the ground rather than the one in the
+		// file. See spinX.
+		int sx = quarter(rot) ? size.get("z").getAsInt() : size.get("x").getAsInt();
+		int sz = quarter(rot) ? size.get("x").getAsInt() : size.get("z").getAsInt();
 		int ground = root.has("ground") ? root.get("ground").getAsInt() : 0;
 
 		BlockPos corner = new BlockPos(centre.getX() - sx / 2,
@@ -214,7 +235,7 @@ public final class Blueprint {
 		int ticks = stagedClear(level, corner, sx, sy, sz, ground);
 		com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), ticks,
 			() -> beard(level, corner, sx, sz));
-		return place(level, corner, name, ticks + 1);
+		return place(level, corner, name, ticks + 1, rot);
 	}
 
 	/**
@@ -234,6 +255,71 @@ public final class Blueprint {
 				}
 			}
 		}
+	}
+
+	/**
+	 * TURNING A BLUEPRINT, WHICH IS TWO LINES OF VANILLA AND ONE OF ARITHMETIC.
+	 *
+	 * Oakhold went in as one enormous object with one orientation, because that is
+	 * all a blueprint could do. It is also why six buildings round a square was not
+	 * possible: every one of them fronts its own -X face, so unrotated they would
+	 * all look the same way and half of them would present their backs to the
+	 * street.
+	 *
+	 * BlockState.rotate(Rotation) is the whole of the hard part and it is vanilla's.
+	 * It is what structure blocks use, and it already knows every property that has
+	 * a handedness — stair facing AND its inner/outer shape, door hinges, rail
+	 * curves, sign rotation in sixteenths, the four sides of a wall, log axis. A
+	 * hand-written facing swap gets doors and stairs right and then quietly ruins
+	 * every corner stair in the building.
+	 *
+	 * So only the coordinates are ours, and they turn about the footprint's corner:
+	 *
+	 *     NONE      (dx,          dz         )
+	 *     CW 90     (sz - 1 - dz, dx         )
+	 *     180       (sx - 1 - dx, sz - 1 - dz)
+	 *     CCW 90    (dz,          sx - 1 - dx)
+	 *
+	 * AND THE FOOTPRINT SWAPS at 90 and 270. Every caller that reasons about the
+	 * box has to ask for the turned size rather than the file's — see turned().
+	 */
+	private static int spinX(int dx, int dz, int sx, int sz, Rotation rot) {
+		return switch (rot) {
+			case NONE -> dx;
+			case CLOCKWISE_90 -> sz - 1 - dz;
+			case CLOCKWISE_180 -> sx - 1 - dx;
+			case COUNTERCLOCKWISE_90 -> dz;
+		};
+	}
+
+	private static int spinZ(int dx, int dz, int sx, int sz, Rotation rot) {
+		return switch (rot) {
+			case NONE -> dz;
+			case CLOCKWISE_90 -> dx;
+			case CLOCKWISE_180 -> sz - 1 - dz;
+			case COUNTERCLOCKWISE_90 -> sx - 1 - dx;
+		};
+	}
+
+	/** A quarter turn swaps width and depth; a half turn does not. */
+	private static boolean quarter(Rotation rot) {
+		return rot == Rotation.CLOCKWISE_90 || rot == Rotation.COUNTERCLOCKWISE_90;
+	}
+
+	/** The size this blueprint occupies once turned, which is what a layout needs. */
+	public static @org.jspecify.annotations.Nullable BlockPos turned(String name,
+			Rotation rot) {
+		BlockPos sz = measure(name);
+		if (sz == null) {
+			return null;
+		}
+		return quarter(rot) ? new BlockPos(sz.getZ(), sz.getY(), sz.getX()) : sz;
+	}
+
+	/** And the same turn applied to a point named inside the file, such as descent. */
+	public static BlockPos turnedPoint(BlockPos at, int sx, int sz, Rotation rot) {
+		return new BlockPos(spinX(at.getX(), at.getZ(), sx, sz, rot), at.getY(),
+			spinZ(at.getX(), at.getZ(), sx, sz, rot));
 	}
 
 	/** Where the bundled ones live inside the jar. */
@@ -349,11 +435,11 @@ public final class Blueprint {
 	 */
 	public static @org.jspecify.annotations.Nullable Placed place(
 			ServerLevel level, BlockPos at, String name) {
-		return place(level, at, name, 0);
+		return place(level, at, name, 0, Rotation.NONE);
 	}
 
 	private static @org.jspecify.annotations.Nullable Placed place(
-			ServerLevel level, BlockPos at, String name, int after) {
+			ServerLevel level, BlockPos at, String name, int after, Rotation rot) {
 		JsonObject root = read(name);
 		if (root == null) {
 			return null;
@@ -398,6 +484,17 @@ public final class Blueprint {
 			lost++;
 			HerobrineMod.LOGGER.warn("blueprint {}: no block called {}", name, spec);
 		}
+		// TURNED ONCE, HERE, not once per block. The palette is a couple of hundred
+		// entries and the block list is thousands; rotating a state is a property
+		// lookup and a table walk, and doing it inside the placing loop would be
+		// the same answer computed ten times over for every entry.
+		if (rot != Rotation.NONE) {
+			for (int i = 0; i < states.length; i++) {
+				if (states[i] != null) {
+					states[i] = states[i].rotate(rot);
+				}
+			}
+		}
 		lastPlain = plain;
 		if (plain > 0) {
 			HerobrineMod.LOGGER.info(
@@ -411,8 +508,13 @@ public final class Blueprint {
 		MinecraftServer server = level.getServer();
 
 		// ---- the chunks, before anything is written
-		int sx = size.get("x").getAsInt();
-		int sz = size.get("z").getAsInt();
+		int fx = size.get("x").getAsInt();
+		int fz = size.get("z").getAsInt();
+		// THE FILE'S WIDTH AND THE OCCUPIED WIDTH ARE NOT THE SAME AT 90 DEGREES.
+		// Loading chunks over the file's box would leave the far edge of a turned
+		// building unloaded, and setBlock into an unloaded chunk is a silent miss.
+		int sx = quarter(rot) ? fz : fx;
+		int sz = quarter(rot) ? fx : fz;
 		for (int cx = at.getX() >> 4; cx <= (at.getX() + sx) >> 4; cx++) {
 			for (int cz = at.getZ() >> 4; cz <= (at.getZ() + sz) >> 4; cz++) {
 				level.getChunk(cx, cz);
@@ -431,15 +533,18 @@ public final class Blueprint {
 					if (state == null) {
 						continue;
 					}
-					level.setBlock(at.offset(r.get(0).getAsInt(), r.get(1).getAsInt(),
-						r.get(2).getAsInt()), state, 2);
+					int dx = r.get(0).getAsInt();
+					int dz = r.get(2).getAsInt();
+					level.setBlock(at.offset(spinX(dx, dz, fx, fz, rot),
+						r.get(1).getAsInt(), spinZ(dx, dz, fx, fz, rot)), state, 2);
 				}
 			});
 			placed += end - start;
 		}
 		HerobrineMod.LOGGER.info("blueprint {}: {} blocks at [{}, {}, {}], {} palette"
 			+ " entries unplaceable", name, placed, at.getX(), at.getY(), at.getZ(), lost);
-		return new Placed(placed, lost, sx, size.get("y").getAsInt(), sz);
+		return new Placed(placed, lost, sx, size.get("y").getAsInt(), sz,
+			after + (rows.size() + PER_TICK - 1) / PER_TICK);
 	}
 
 	/**

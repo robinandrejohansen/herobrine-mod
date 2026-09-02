@@ -50,9 +50,21 @@ blocks, 19 materials, no nether portal, four doors.
 Drop that in `config/herobrine/blueprints/<name>.json` and place it in game
 with `/herobrine blueprint <name>`.
 
-**Nothing is shipped with the mod.** A blueprint of somebody else's build is
-their build, this repository is public, and a release goes to a website. The mod
-carries the reader; the file lives in the player's own config directory.
+**What ships and what does not.** The mod carries the reader, and a blueprint
+dropped in the player's own config directory always wins over a bundled one. Two
+sets are bundled because the author holds or was granted the rights to them:
+`tutorial_castle` and the six `village_*` files. Anything measured out of a build
+that is not yours belongs in the config directory and not in this repository —
+it is public, and a release goes to a website.
+
+**`modern.py` reads a 1.18-or-later save.** `anvil.py` reads the NBT either way;
+what moved is the layout — `Level.Sections[]` became `sections[]`, `Palette` and
+`BlockStates` became `block_states.{palette,data}`, and values stopped straddling
+longs. That last one is the dangerous change: `anvil.unpack` takes a `spanning`
+flag and passing the wrong one does not fail, it returns plausible indices for
+the wrong blocks. `modern.bits_for` derives the stride from the palette and then
+argues with the array length, and a section whose two disagree is solved from the
+length.
 
 ### Crossing versions
 

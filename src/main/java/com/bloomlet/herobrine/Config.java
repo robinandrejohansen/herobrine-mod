@@ -199,18 +199,25 @@ public final class Config {
 	 */
 	public String keepBlueprint = "tutorial_castle";
 	/**
-	 * WHAT THE LAST HOUSE IS, and it is the biggest thing the mod places.
+	 * A SINGLE BLUEPRINT FOR THE LAST HOUSE, INSTEAD OF THE VILLAGE.
 	 *
-	 * A blueprint name, looked for the same way keepBlueprint is. With one the
-	 * threshold becomes that build with an infected descent cut down through it to
-	 * the door; blank it and the threshold is the mine and the cells it has always
-	 * been.
+	 * BLANK IS NOT "OFF" ANY MORE, IT IS THE DEFAULT, and that is the reverse of
+	 * how this key used to work. Blank means the threshold is the six-building
+	 * village in structure/Hamlet.java: a hall with its flag at the head of a
+	 * square, a chapel, a smithy, a store and two cottages, with an infected cave
+	 * under the hall down to the door.
 	 *
-	 * Oakhold is 1.5 million blocks and about forty seconds to stand up. Nobody is
-	 * standing in it — the threshold sites eight hundred to thirteen hundred blocks
-	 * out at SIEGE — but it is worth knowing before it is switched on.
+	 * Put a blueprint name here and that one build replaces the whole village
+	 * instead — your own measured build, dropped in config/herobrine/blueprints,
+	 * with the descent cut through it if its file names one.
+	 *
+	 * IT USED TO SAY "oakhold", which was a castle city of four hundred thousand
+	 * blocks, and being too big was the whole of what was wrong with it: a
+	 * metropolis at the end of a story about six houses is a change of subject. It
+	 * is gone from the mod. A world that still names it in its own config file will
+	 * find no such blueprint, log it, and get the village.
 	 */
-	public String lastHouseBlueprint = "oakhold";
+	public String lastHouseBlueprint = "";
 	/** Every animal turns on you at SIEGE. */
 	public boolean hostileAnimals = true;
 	/**
@@ -290,7 +297,7 @@ public final class Config {
 	 * Bump it, and add a case, whenever a DEFAULT changes in a way an existing
 	 * world should get.
 	 */
-	private static final int SETTINGS_VERSION = 3;
+	private static final int SETTINGS_VERSION = 4;
 	public int settingsVersion = 0;
 
 	/**
@@ -337,10 +344,20 @@ public final class Config {
 		}
 		if (it.settingsVersion < 3
 			&& (it.lastHouseBlueprint == null || it.lastHouseBlueprint.isEmpty())) {
-			it.lastHouseBlueprint = "oakhold";
+			it.lastHouseBlueprint = "";
 			HerobrineMod.LOGGER.info(
-				"lastHouseBlueprint added — the threshold is a city now. blank it to"
-					+ " go back to the mine.");
+				"lastHouseBlueprint added — blank means the village. put a blueprint"
+					+ " name here to use one build instead.");
+		}
+		// A WORLD THAT ALREADY SAYS "oakhold" HAS TO BE TOLD, because nothing else
+		// would tell it. The setting is valid, the file is not there any more, and
+		// the only symptom is a warning in a log nobody reads followed by the mine
+		// getting dug instead of the village. Blanked, named, once.
+		if (it.settingsVersion < 4 && "oakhold".equals(it.lastHouseBlueprint)) {
+			it.lastHouseBlueprint = "";
+			HerobrineMod.LOGGER.info(
+				"oakhold is gone — it was too big. lastHouseBlueprint blanked, so the"
+					+ " last house is the village now.");
 		}
 		it.settingsVersion = SETTINGS_VERSION;
 		return true;

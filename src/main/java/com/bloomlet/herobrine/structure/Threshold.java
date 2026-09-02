@@ -79,8 +79,32 @@ public final class Threshold {
 		// Same shape as Keep.raise: the blueprint wins if it is there and the
 		// hand-built version is the fallback, because raise() runs once per world
 		// with no second chance and a missing file must not mean no last house.
+		// ---- A VILLAGE, IF THE SIX FILES ARE THERE.
+		//
+		// Same shape as Keep.raise: the built version wins if it can be built and
+		// the hand-dug complex is the fallback, because raise() runs once per world
+		// with no second chance and a missing file must not mean no last house.
+		//
+		// THE VILLAGE IS FIRST AND lastHouseBlueprint IS THE OVERRIDE, which is the
+		// other way round from how this used to read. Oakhold was the default and
+		// the default was wrong: four hundred thousand blocks of castle city at the
+		// end of a story about six houses. The key is kept because somebody
+		// pointing it at their own build is a feature; it is simply no longer the
+		// thing that happens when nobody has asked for anything.
 		String plan = com.bloomlet.herobrine.Config.get().lastHouseBlueprint;
-		if (Blueprint.have(plan) && standTheCity(level, site, plan, random)) {
+		if (plan == null || plan.isEmpty()) {
+			BlockPos head = Hamlet.raise(level, site, random);
+			if (head != null) {
+				// LAST OF ALL, and staged well behind the village. Hamlet queues its
+				// clearing, placing, stocking and lanes; cutting the shaft before
+				// that finishes would be cutting a hole and then filling it in.
+				com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), 900,
+					() -> infected(level, head, random));
+				return;
+			}
+			HerobrineMod.LOGGER.warn(
+				"the village blueprints are missing — digging the old complex instead");
+		} else if (Blueprint.have(plan) && standTheCity(level, site, plan, random)) {
 			return;
 		}
 
@@ -1088,10 +1112,6 @@ public final class Threshold {
 		}
 	}
 
-	/** How far under the city the door sits, and how wide the shaft is. */
-	private static final int SINKS = 34;
-	private static final int SHAFT = 2;
-
 	/**
 	 * THE LAST HOUSE AS A CITY, WITH SOMETHING GROWING UNDER IT.
 	 *
@@ -1155,53 +1175,83 @@ public final class Threshold {
 		return true;
 	}
 
+	/** The hatch through the hall's foundation, and how far the cave falls. */
+	private static final int HATCH = 7;
+	private static final int LEGS = 4;
+	private static final int LEG = 14;
+	private static final double LEG_WIDE = 1.9;
+
+	/**
+	 * A HOLE IN THE HALL FLOOR, THEN CAVE, THEN THE DOOR.
+	 *
+	 * This was a seven-by-seven shaft dropped thirty-four blocks straight down. Two
+	 * things were wrong with it and they pull in opposite directions.
+	 *
+	 * It was too WIDE for where it starts. Seven by seven cut through the middle of
+	 * a finished building takes the floor, the furniture and usually a wall with
+	 * it — fine when the thing above was the mod's own castle courtyard and not
+	 * fine at all above somebody's hall. So the first seven blocks are a ladder in
+	 * a one-block hole: the size of a cellar hatch, which is what it is.
+	 *
+	 * And it was too STRAIGHT for what it is meant to be. A vertical box with a
+	 * stair down one side is a mineshaft — a thing that was engineered, by people,
+	 * on purpose. What is wanted under here is the opposite: something that OPENED.
+	 * So below the hatch it is bored, four legs of it, each wandering and each
+	 * dropping, with a little chamber at every turn so you cannot see the next leg
+	 * from the last one.
+	 *
+	 * THE INFECTION IS PAINTED AFTERWARDS AND BY EXPOSURE, not while digging. bore
+	 * hands back where it ended and not the path it took — it curves, on purpose —
+	 * so there is no route to follow. What there is, is a box containing all of it,
+	 * and inside that box every solid face touching air is a wall of the cave
+	 * however it wandered. Sculk goes on those, thicker the deeper it is. Nothing
+	 * can be missed, because the test is "is this a surface" rather than "did I dig
+	 * here".
+	 */
 	private static void infected(ServerLevel level, BlockPos head, RandomSource random) {
-		BlockPos floor = head;
-		for (int down = 0; down <= SINKS; down++) {
-			// How far gone this course is. Nothing at the top, everything at the
-			// bottom — see the note in standTheCity.
-			double gone = (double) down / SINKS;
-			for (int dx = -SHAFT - 1; dx <= SHAFT + 1; dx++) {
-				for (int dz = -SHAFT - 1; dz <= SHAFT + 1; dz++) {
-					BlockPos at = floor.offset(dx, -down, dz);
-					boolean shell = Math.abs(dx) > SHAFT || Math.abs(dz) > SHAFT;
-					if (!shell) {
-						level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
-						continue;
-					}
-					level.setBlock(at, skin(gone, random), 2);
-				}
-			}
-			// A stair down one side, so it is walkable rather than a drop.
-			if (down > 0) {
-				level.setBlock(floor.offset(SHAFT, -down, 0),
-					Blocks.COBBLESTONE_STAIRS.defaultBlockState()
-						.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
-			}
-			if (down % 6 == 3) {
-				level.setBlock(floor.offset(-SHAFT, -down + 1, 0),
-					Blocks.SOUL_LANTERN.defaultBlockState()
-						.setValue(BlockStateProperties.HANGING, true), 2);
-			}
+		BlockPos cellar = hatch(level, head, random);
+
+		// ---- THE CAVE, and it goes down and around rather than down.
+		BlockPos at = cellar;
+		int lowX = cellar.getX();
+		int lowZ = cellar.getZ();
+		int highX = lowX;
+		int highZ = lowZ;
+		for (int leg = 0; leg < LEGS; leg++) {
+			// Alternating sideways so it doubles back under itself. A cave that
+			// only ever bears one way is a corridor on a slope.
+			double sway = (leg % 2 == 0 ? 1.0 : -1.0) * (0.6 + random.nextDouble() * 0.5);
+			double turn = (leg < 2 ? 1.0 : -1.0) * (0.5 + random.nextDouble() * 0.6);
+			at = Digging.bore(level, at, new Vec3(sway, -0.85, turn), LEG, LEG_WIDE,
+				random, false);
+			Digging.hollow(level, at, 3.6 + random.nextDouble(), random);
+			Digging.props(level, at, 3, random);
+			lowX = Math.min(lowX, at.getX());
+			lowZ = Math.min(lowZ, at.getZ());
+			highX = Math.max(highX, at.getX());
+			highZ = Math.max(highZ, at.getZ());
 		}
 
+		creep(level, lowX - 8, highX + 8, at.getY() - 4, cellar.getY(), lowZ - 8,
+			highZ + 8, random);
+
 		// ---- AND THE ROOM AT THE BOTTOM, which is all sculk.
-		BlockPos base = floor.below(SINKS);
+		BlockPos base = at.below(2);
 		for (int dx = -6; dx <= 6; dx++) {
 			for (int dz = -6; dz <= 6; dz++) {
 				for (int up = -1; up <= 7; up++) {
-					BlockPos at = base.offset(dx, up, dz);
+					BlockPos spot = base.offset(dx, up, dz);
 					boolean shell = Math.abs(dx) == 6 || Math.abs(dz) == 6
 						|| up == -1 || up == 7;
-					level.setBlock(at, shell
+					level.setBlock(spot, shell
 						? Blocks.SCULK.defaultBlockState()
 						: Blocks.AIR.defaultBlockState(), 2);
 				}
 			}
 		}
 		for (int i = 0; i < 5; i++) {
-			BlockPos at = base.offset(random.nextInt(9) - 4, 0, random.nextInt(9) - 4);
-			level.setBlock(at, i == 0
+			BlockPos spot = base.offset(random.nextInt(9) - 4, 0, random.nextInt(9) - 4);
+			level.setBlock(spot, i == 0
 				? Blocks.SCULK_SHRIEKER.defaultBlockState()
 					// NOT SUMMONING. A Warden here would take the ending off him.
 					.setValue(net.minecraft.world.level.block.SculkShriekerBlock
@@ -1210,8 +1260,117 @@ public final class Threshold {
 		}
 		seal(level, base.offset(6, 0, 0), random);
 		HerobrineMod.LOGGER.info(
-			"an infected shaft runs {} blocks down from [{}, {}, {}] to the door",
-			SINKS, head.getX(), head.getY(), head.getZ());
+			"an infected cave falls {} blocks from the hall at [{}, {}, {}] to the door"
+				+ " at [{}, {}, {}]", cellar.getY() - base.getY(),
+			head.getX(), head.getY(), head.getZ(),
+			base.getX(), base.getY(), base.getZ());
+	}
+
+	/**
+	 * The way down out of the hall: one block wide, laddered, and lit at the top.
+	 *
+	 * Narrow on purpose — see the note on infected(). The floor tile it starts from
+	 * was picked at extraction time and asserted to have a brick floor under it and
+	 * three clear blocks over it, because the first one chosen by eye off a plan
+	 * view was underneath a lectern.
+	 *
+	 * @return the bottom of the ladder, which is where the cave starts
+	 */
+	private static BlockPos hatch(ServerLevel level, BlockPos head, RandomSource random) {
+		Direction rungs = Direction.NORTH;
+		for (int down = 0; down <= HATCH; down++) {
+			BlockPos spot = head.below(down);
+			// The shell first, so the ladder is not put up against open air. Only
+			// where there is something — this passes through the building's own
+			// foundation and then through rock, and neither wants replacing where
+			// it is already solid stone brick.
+			for (Direction side : Direction.Plane.HORIZONTAL) {
+				BlockPos wall = spot.relative(side);
+				if (!level.getBlockState(wall).isSolid()) {
+					level.setBlock(wall, skin(0.15, random), 2);
+				}
+			}
+			level.setBlock(spot, Blocks.AIR.defaultBlockState(), 2);
+			if (down > 0) {
+				level.setBlock(spot, Blocks.LADDER.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING,
+						rungs.getOpposite()), 2);
+			}
+		}
+		// A trapdoor over it, open, so it reads as a way down rather than a gap in
+		// the boards somebody forgot to mention.
+		level.setBlock(head, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, rungs)
+			.setValue(BlockStateProperties.OPEN, true)
+			.setValue(BlockStateProperties.HALF, Half.TOP), 2);
+		level.setBlock(head.above().relative(rungs.getOpposite()),
+			Blocks.SOUL_LANTERN.defaultBlockState()
+				.setValue(BlockStateProperties.HANGING, true), 2);
+		return head.below(HATCH);
+	}
+
+	/**
+	 * Sculk on every wall of the cave, found by exposure rather than by route.
+	 *
+	 * Staged, because the box is large — forty on a side is sixty-four thousand
+	 * columns and this runs on a tick that also has a village finishing on it.
+	 * COLUMNS at a time, on Cadence, same discipline as Blueprint's own clearing.
+	 *
+	 * The gradient is the point. Nothing at the top, where it is still the
+	 * building's own foundation; total at the bottom, where the door is. Somebody
+	 * climbing down should be able to tell how far in they are by looking at the
+	 * wall, which is the only navigation a cave system gets.
+	 */
+	private static final int COLUMNS = 900;
+
+	private static void creep(ServerLevel level, int x0, int x1, int y0, int y1,
+	                          int z0, int z1, RandomSource random) {
+		int wide = x1 - x0 + 1;
+		int deep = z1 - z0 + 1;
+		int columns = wide * deep;
+		int span = Math.max(1, y1 - y0);
+		int tick = 0;
+		for (int from = 0; from < columns; from += COLUMNS) {
+			final int begin = from;
+			final int stop = Math.min(columns, from + COLUMNS);
+			com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), tick++, () -> {
+				for (int i = begin; i < stop; i++) {
+					int x = x0 + i % wide;
+					int z = z0 + i / wide;
+					for (int y = y0; y <= y1; y++) {
+						BlockPos spot = new BlockPos(x, y, z);
+						BlockState was = level.getBlockState(spot);
+						if (!was.isSolid() || was.is(Blocks.SCULK)) {
+							continue;
+						}
+						// A WALL IS A SOLID BLOCK NEXT TO AIR. Anything buried is
+						// not a surface of this cave and painting it would be
+						// painting the inside of the rock.
+						boolean face = false;
+						for (Direction side : Direction.values()) {
+							if (level.getBlockState(spot.relative(side)).isAir()) {
+								face = true;
+								break;
+							}
+						}
+						if (!face) {
+							continue;
+						}
+						double gone = (double) (y1 - y) / span;
+						if (random.nextDouble() < gone * gone * 0.85) {
+							level.setBlock(spot, Blocks.SCULK.defaultBlockState(), 2);
+						} else if (random.nextDouble() < gone * 0.06) {
+							// A CATALYST AND NOT A VEIN. sculk_vein is a multiface
+							// block: its default state has all six faces false, which
+							// is a state that is not attached to anything and pops off
+							// as an item on the first update. It would have looked
+							// like the sculk simply had not been placed.
+							level.setBlock(spot, Blocks.SCULK_CATALYST.defaultBlockState(), 2);
+						}
+					}
+				}
+			});
+		}
 	}
 
 	/**
