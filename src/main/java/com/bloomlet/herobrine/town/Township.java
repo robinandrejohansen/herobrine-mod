@@ -134,8 +134,20 @@ public final class Township {
 		}
 
 		footpaths(level, centre, plots, random);
-		commons(level, centre, random);
+		// THE TREES BEFORE THE GROUND COVER, and this was the wrong way round.
+		//
+		// grove() requires clear air over the ground, which is correct — a trunk
+		// grown up through something is the bug it is guarding against. But
+		// commons() runs Grounds.dress, which puts a fern, a flower or a moss
+		// carpet on most of the ground it touches, so by the time the trees were
+		// planted almost nothing was air any more. A playthrough log: 35 trees out
+		// of 260 attempts.
+		//
+		// The other order costs nothing, because dress() has the same guard in the
+		// other direction — it skips a column that is not air — so the ground cover
+		// simply fills in around the trunks instead of pre-empting them.
 		grove(level, centre, approach, plots, random);
+		commons(level, centre, random);
 		populate(level, centre, plots, random);
 
 		HerobrineMod.LOGGER.info("township laid out at [{}, {}, {}], gate facing {}, {} plots",

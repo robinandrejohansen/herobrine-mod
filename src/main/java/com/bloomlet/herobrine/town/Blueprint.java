@@ -210,10 +210,32 @@ public final class Blueprint {
 	 * most of the plot already is, so most of the work is nothing and the cut and
 	 * the fill stay small.
 	 *
-	 * @return false only for water, which is the one thing terracing cannot fix
+	 * AND WATER IS NOT A REASON EITHER. IT WAS, AND IT WAS THE SAME BUG AGAIN.
+	 *
+	 * The comment that used to sit here said water is "the one thing terracing
+	 * cannot fix", and one wet block anywhere in the sampled area refused the plot
+	 * outright. Read terrace(): it walks DOWN from the target height filling stone
+	 * bricks until it hits something solid, and water is not solid. It has been
+	 * able to fill a puddle the whole time.
+	 *
+	 * So the failure was identical in shape to the slope one this docstring already
+	 * describes at length — silent, and landing hardest on the biggest building. The
+	 * church is nineteen by thirty-one, so it samples six hundred and ninety-three
+	 * columns, so it has the best chance of finding one puddle, so the most
+	 * important structure in the town was again the one that reliably did not exist.
+	 * A playthrough log: four plots refused, and the 19x31 was one of them.
+	 *
+	 * What is left is the one case filling genuinely should not fix. A plot mostly
+	 * under water is a LAKE, and a stone terrace standing in one is not a terrace,
+	 * it is a plinth. Two thirds, measured on the columns rather than guessed at.
+	 *
+	 * @return false only for a plot that is mostly lake
 	 */
+	private static final double MOSTLY_LAKE = 0.66;
+
 	private static boolean clearEnough(ServerLevel level, BlockPos origin, int width, int depth) {
 		List<Integer> heights = new ArrayList<>();
+		int wet = 0;
 		for (int x = -1; x <= width + 1; x++) {
 			for (int z = -1; z <= depth + 1; z++) {
 				int gx = origin.getX() + x;
@@ -221,16 +243,25 @@ public final class Blueprint {
 				int y = Ground.topOf(level, gx, gz);
 				if (!level.getFluidState(new BlockPos(gx, y, gz)).isEmpty()
 					|| !level.getFluidState(new BlockPos(gx, y + 1, gz)).isEmpty()) {
-					com.bloomlet.herobrine.HerobrineMod.LOGGER.info(
-						"a {}x{} plot at [{}, {}] is in water", width, depth, gx, gz);
-					return false;
+					wet++;
 				}
 				heights.add(y);
 			}
 		}
+		if (wet > heights.size() * MOSTLY_LAKE) {
+			com.bloomlet.herobrine.HerobrineMod.LOGGER.info(
+				"a {}x{} plot at [{}, {}] is a lake — {} of {} columns under water",
+				width, depth, origin.getX(), origin.getZ(), wet, heights.size());
+			return false;
+		}
 		heights.sort(null);
 		int level0 = heights.get(heights.size() / 2);
 		terrace(level, origin, width, depth, level0);
+		if (wet > 0) {
+			com.bloomlet.herobrine.HerobrineMod.LOGGER.info(
+				"a {}x{} plot at [{}, {}] had {} wet columns — filled",
+				width, depth, origin.getX(), origin.getZ(), wet);
+		}
 		return true;
 	}
 
