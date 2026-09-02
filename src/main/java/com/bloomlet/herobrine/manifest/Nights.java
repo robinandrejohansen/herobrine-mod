@@ -94,6 +94,13 @@ public final class Nights {
 	}
 
 	private static void onTick(MinecraftServer server) {
+		// Removed Herobrine. Not a plain return: the hold on the clock has to be
+		// let go, or the night he died in never ends.
+		if (Wrath.removed(server)) {
+			hold(server, false);
+			apply(server, 1.0F);
+			return;
+		}
 		if (++tickCounter % CHECK_INTERVAL != 0) {
 			return;
 		}

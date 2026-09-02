@@ -198,6 +198,32 @@ public final class Wrath {
 	 * Backwards as well as forwards, deliberately. Half of testing a chapter is
 	 * watching the one before it hand over.
 	 */
+	/**
+	 * REMOVED HEROBRINE.
+	 *
+	 * The patch note, the joke, and the ending — and until now it had no bit. He
+	 * died, the rain stopped for five minutes, and then Nights held the clock at
+	 * midnight again because the story was still SIEGE, Skies rolled another
+	 * storm, TheTurning added another villager to the town, and Whereabouts stood
+	 * a fresh one of him over the keep. The world went on being haunted by a man
+	 * whose body was on the floor of his own hall.
+	 *
+	 * The story stays where it is — SIEGE is what they earned and the books say
+	 * so — but this is the switch every tick handler that makes the world WRONG
+	 * checks first. Set once, by his death, and never cleared.
+	 */
+	private static final AttachmentType<Boolean> REMOVED = AttachmentRegistry
+		.createPersistent(HerobrineMod.id("removed"), Codec.BOOL);
+
+	public static boolean removed(MinecraftServer server) {
+		return Boolean.TRUE.equals(server.overworld().getAttached(REMOVED));
+	}
+
+	public static void remove(MinecraftServer server) {
+		server.overworld().setAttached(REMOVED, true);
+		HerobrineMod.LOGGER.info("Removed Herobrine.");
+	}
+
 	public static void jumpTo(MinecraftServer server, Phase phase) {
 		set(server, phase);
 		HerobrineMod.LOGGER.info("story set to {} by command", phase.name());

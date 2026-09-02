@@ -41,6 +41,41 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
  * house is not frightening, it is a bug report.
  */
 public final class Reckoning {
+
+	// ---- WHAT THE FIGHT REMEMBERS ------------------------------------------------
+	//
+	// The count of blows and whether the sky has been taken from him, kept on HIS
+	// level rather than on him. He is discarded when everybody leaves and a fresh
+	// one is stood over the keep when they come back; the Ender Dragon does not
+	// forget how much of her you have already done, and neither does he. Cleared
+	// by the death that ends it.
+
+	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Integer> HITS =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.createPersistent(
+			com.bloomlet.herobrine.HerobrineMod.id("reckoning_hits"),
+			com.mojang.serialization.Codec.INT);
+	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> BOUND =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.createPersistent(
+			com.bloomlet.herobrine.HerobrineMod.id("reckoning_bound"),
+			com.mojang.serialization.Codec.BOOL);
+
+	public static int hits(ServerLevel his) {
+		return his.getAttachedOrElse(HITS, 0);
+	}
+
+	public static boolean bound(ServerLevel his) {
+		return Boolean.TRUE.equals(his.getAttached(BOUND));
+	}
+
+	public static void record(ServerLevel his, int hits, boolean bound) {
+		his.setAttached(HITS, hits);
+		his.setAttached(BOUND, bound);
+	}
+
+	public static void clear(ServerLevel his) {
+		his.removeAttached(HITS);
+		his.removeAttached(BOUND);
+	}
 	private Reckoning() {}
 
 	/** Far enough to be a thing you walk to, near enough that you cannot miss it. */

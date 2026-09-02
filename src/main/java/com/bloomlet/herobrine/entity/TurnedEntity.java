@@ -699,10 +699,54 @@ public class TurnedEntity extends PathfinderMob {
 	 * work bench is the wrong image — this one wants him squared up to you,
 	 * doing nothing, in the middle of the afternoon.
 	 */
+	/**
+	 * HE GETS BETTER.
+	 *
+	 * When Herobrine is removed, whatever was wrong with these people goes with
+	 * him. The ones in loaded chunks are cured from die() directly; this is for
+	 * the rest — a Turned that loads in a week later, in a town nobody has been
+	 * back to, checks the flag once a second and becomes a villager on the spot.
+	 *
+	 * A real Villager, spawned as a CONVERSION so finalizeSpawn dresses him for
+	 * the biome, with the name kept if he had one, and no profession — he has
+	 * been through enough to be allowed to stand around. The Turned is discarded
+	 * rather than killed, so nothing drops and no death is counted.
+	 */
+	public void redeem() {
+		if (!(this.level() instanceof ServerLevel here) || !this.isAlive()) {
+			return;
+		}
+		net.minecraft.world.entity.npc.villager.Villager man =
+			net.minecraft.world.entity.EntityTypes.VILLAGER.create(here,
+				net.minecraft.world.entity.EntitySpawnReason.CONVERSION);
+		if (man == null) {
+			return;
+		}
+		man.snapTo(this.getX(), this.getY(), this.getZ(), this.getYRot(), this.getXRot());
+		man.finalizeSpawn(here, here.getCurrentDifficultyAt(this.blockPosition()),
+			net.minecraft.world.entity.EntitySpawnReason.CONVERSION, null);
+		if (this.getCustomName() != null) {
+			man.setCustomName(this.getCustomName());
+		}
+		man.setPersistenceRequired();
+		here.addFreshEntity(man);
+		here.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+			this.getX(), this.getY() + 1.0, this.getZ(), 24, 0.5, 0.8, 0.5, 0.0);
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			net.minecraft.sounds.SoundEvents.ZOMBIE_VILLAGER_CURE, this.getSoundSource(),
+			1.0F, 1.0F);
+		this.discard();
+	}
+
 	@Override
 	public void tick() {
 		super.tick();
 		if (this.level().isClientSide()) {
+			return;
+		}
+		if (this.tickCount % 20 == 0 && this.level().getServer() != null
+			&& com.bloomlet.herobrine.wrath.Wrath.removed(this.level().getServer())) {
+			this.redeem();
 			return;
 		}
 		this.talk();

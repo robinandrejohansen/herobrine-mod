@@ -485,6 +485,9 @@ public final class Whereabouts {
 	}
 
 	private static void onTick(MinecraftServer server) {
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			return;      // Removed Herobrine. See Wrath.removed.
+		}
 		if (++ticks % STEP_EVERY != 0 || !Config.get().enabled) {
 			return;
 		}
@@ -883,7 +886,12 @@ public final class Whereabouts {
 		if (him == null) {
 			return;
 		}
-		double y = keep.getY() + OVER_THE_KEEP;
+		// FORTY-FOUR UP FOR THE ENTRANCE. ON THE FLOOR IF THE FIGHT HAS STARTED.
+		//
+		// Once the first blow has bound him he does not fly, so a fresh one of him
+		// spawned in the sky would simply fall forty-four blocks onto his own roof.
+		// He is put down at the keep instead, and the Duel walks him into a room.
+		double y = Reckoning.bound(his) ? keep.getY() + 1.0 : keep.getY() + OVER_THE_KEEP;
 		him.snapTo(keep.getX() + 0.5, y, keep.getZ() + 0.5,
 			his.getRandom().nextFloat() * 360.0F, 0.0F);
 		him.beginProwl();

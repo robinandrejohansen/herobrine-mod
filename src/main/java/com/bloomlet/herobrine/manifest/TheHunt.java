@@ -375,6 +375,9 @@ public final class TheHunt {
 	private static final double CLAIMS_WITHIN = 128.0;
 
 	private static void onTick(MinecraftServer server) {
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			return;      // Removed Herobrine. See Wrath.removed.
+		}
 		++tickCounter;
 		if (tickCounter % DUE_INTERVAL != 0) {
 			return;

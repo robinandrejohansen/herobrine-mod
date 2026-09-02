@@ -83,6 +83,9 @@ public final class Dread {
 	}
 
 	private static void onTick(MinecraftServer server) {
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			return;      // Removed Herobrine. See Wrath.removed.
+		}
 		if (++ticks % EVERY != 0 || !Config.get().enabled) {
 			return;
 		}

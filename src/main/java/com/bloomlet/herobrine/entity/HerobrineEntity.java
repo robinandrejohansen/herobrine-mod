@@ -101,7 +101,7 @@ public class HerobrineEntity extends PathfinderMob {
 	//
 	// So the ladder keeps exactly one job — the six buildings, in order, in the
 	// overworld — and everything about HIM reads this instead.
-	private boolean hisGround() {
+	boolean hisGround() {
 		return this.level().dimension().equals(
 			com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD);
 	}
@@ -257,6 +257,17 @@ public class HerobrineEntity extends PathfinderMob {
 
 	private boolean flying;
 	private int flyTicks;
+	/**
+	 * THE SKY HAS BEEN TAKEN FROM HIM. Set by the first blow in his castle, never
+	 * cleared while he lives, and kept on the level as well so a save or a fresh
+	 * one of him finds it. takeOff refuses while it is set — except for the pause
+	 * between acts, which is a ceremony and not a tactic. See Duel.
+	 */
+	private boolean bound;
+	private boolean recalled;
+	private int helperBlows;
+	private java.util.@org.jspecify.annotations.Nullable UUID lastStruckBy;
+	private final Duel theDuel = new Duel(this);
 
 	/**
 	 * He does not only ever run at you.
@@ -584,21 +595,34 @@ public class HerobrineEntity extends PathfinderMob {
 	/** Two hearts, and not oftener than once a second. */
 	private static final float STRIKE_DAMAGE = 4.0F;
 	/**
-	 * What he hits for once he can be hit back, and it goes THROUGH armour.
+	 * WHAT A BLOW OF HIS IS WORTH IN THE LAST FIGHT — AND IT GOES THROUGH NOTHING.
 	 *
-	 * Four damage is two hearts to somebody in a shirt and about half of one to
-	 * somebody in enchanted netherite, which would have made the last fight in
-	 * the mod the easiest thing in it: the player who did the work to get here
-	 * is precisely the player it stops threatening. Scaling the number instead
-	 * only moves the problem — it would then flatten anyone who arrived in iron.
+	 * It used to. herobrine:reckoning sat in bypasses_armor and
+	 * bypasses_enchantments, so eight points arrived as eight points whatever you
+	 * had on, and a full set of netherite was cosmetic. That was put in to answer
+	 * a playtest where his hits did nothing, and it answered it by deleting the
+	 * armour system rather than by hitting harder.
 	 *
-	 * So the damage type ignores armour AND enchantments, declared properly in
-	 * data/minecraft/tags/damage_type rather than borrowed from magic(). Eight
-	 * is eight whatever they are wearing, which makes the fight about the same
-	 * thing for everybody: not being hit. Break his line, use the gaps, do not
-	 * stand there. Armour buys nothing here and it is not supposed to.
+	 * The tags are gone. Armour reduces it, Protection reduces it again, the
+	 * plates take durability for it, and a shield held up in time stops it and
+	 * takes the wear — all four of which are the game working as the player
+	 * expects, and all four of which are ways to be GOOD at this fight rather
+	 * than merely present at it.
+	 *
+	 * Twelve, then, instead of eight, because it has to survive the armour:
+	 *
+	 *     nothing on           12.0    six hearts — one mistake, not death
+	 *     iron                  6.7
+	 *     diamond               4.1
+	 *     netherite             3.6
+	 *     netherite, Prot IV    1.3    and the plates are wearing out
+	 *
+	 * A Prot IV netherite player takes little per hit and that is correct: they
+	 * earned it. What they cannot do any more is stand still, because seventy
+	 * blows' worth of fight is a long time for durability, and because the
+	 * arrows, the fire and the lightning are all still coming.
 	 */
-	private static final float RECKONING_DAMAGE = 8.0F;
+	private static final float RECKONING_DAMAGE = 12.0F;
 
 	/** Declared in data/herobrine/damage_type/reckoning.json. */
 	private static final net.minecraft.resources.ResourceKey<
@@ -1105,6 +1129,7 @@ public class HerobrineEntity extends PathfinderMob {
 	 * him leaving.
 	 */
 	public void beginProwl() {
+		this.recall();
 		this.present = true;
 		this.wade(false);
 		this.prowlTicks = PROWL_TICKS;
@@ -1868,7 +1893,7 @@ public class HerobrineEntity extends PathfinderMob {
 	private boolean patrol() {
 		// Anything with his attention outranks it — a duel, the opening, a hunt.
 		// This is what he does when nothing does.
-		if (this.hunting || this.busyWith != null || this.opening > 0 || this.fleeing
+		if (this.bound || this.hunting || this.busyWith != null || this.opening > 0 || this.fleeing
 			|| !(this.level() instanceof ServerLevel his)
 			|| !his.dimension().equals(
 				com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
@@ -4474,6 +4499,14 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 		this.showBar(watchers);
 
+		// FROM THE FIRST BLOW IN HIS CASTLE, THE DUEL HAS THE TICK. Nothing below
+		// this line moves him while it does. See Duel for why there has to be
+		// exactly one owner.
+		if (this.theDuel.owns(watchers)) {
+			this.theDuel.tick(watchers);
+			return;
+		}
+
 		// A DUEL OUTRANKS EVERYTHING BELOW IT, in either mood. He is not walking
 		// past an iron golem to get to somebody.
 		if (this.duel()) {
@@ -6751,6 +6784,38 @@ public class HerobrineEntity extends PathfinderMob {
 		// dropping is what releases both — but the current storm has five
 		// minutes left on it and would sit there over the ending.
 		server.setWeatherParameters(6000, 0, false, false);
+
+		// REMOVED HEROBRINE.
+		//
+		// The switch every haunting tick handler checks. Without it the rain stopped
+		// for five minutes and then the world went back to being his: Nights held
+		// the clock at midnight because the story was still SIEGE, Skies rolled the
+		// next storm, TheTurning put another wrong villager in the town, and
+		// Whereabouts stood a fresh one of him over the keep he had just died in.
+		com.bloomlet.herobrine.wrath.Wrath.remove(server);
+
+		// AND IT IS MORNING. Not "the night ends when it ends" — he held it at
+		// midnight for as long as he lived, and the first thing that should happen
+		// when he is gone is the sun. The overworld clock is moved to DAY, which is
+		// dawn; his own world has no clock to move, its dark is a timeline baked
+		// into the dimension, so over there it is the rain stopping that says it.
+		java.util.Optional<? extends net.minecraft.core.Holder<net.minecraft.world.clock.WorldClock>>
+			clock = server.overworld().registryAccess()
+				.get(net.minecraft.world.clock.WorldClocks.OVERWORLD);
+		clock.ifPresent(held -> server.clockManager().moveToTimeMarker(held,
+			net.minecraft.world.clock.ClockTimeMarkers.DAY));
+
+		// AND THE PEOPLE HE TURNED GET BETTER. Every Turned in a loaded chunk, in any
+		// dimension, is a villager again before the smoke clears; the ones in
+		// unloaded chunks cure themselves on load — see TurnedEntity.redeem.
+		int cured = 0;
+		for (ServerLevel each : server.getAllLevels()) {
+			for (TurnedEntity turned : each.getEntities(ModEntities.TURNED, e -> e.isAlive())) {
+				turned.redeem();
+				cured++;
+			}
+		}
+		HerobrineMod.LOGGER.info("morning: the clock moved to day, {} of the turned cured", cured);
 		// The total that used to be zeroed here does not exist any more. Nothing
 		// replaces it: the story stays where it is because the story is what the
 		// player earned, and heat expires on its own within the minute.
@@ -6767,6 +6832,8 @@ public class HerobrineEntity extends PathfinderMob {
 		for (ServerPlayer survivor : here.players()) {
 			survivor.sendSystemMessage(net.minecraft.network.chat.Component.literal(
 				"§7The rain stops."));
+			survivor.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+				"§7Somewhere behind you, it is getting light."));
 		}
 		HerobrineMod.LOGGER.info("he is dead. wrath reset, weather cleared");
 	}
@@ -7022,6 +7089,12 @@ public class HerobrineEntity extends PathfinderMob {
 
 	private void takeOff() {
 		if (this.flying) {
+			return;
+		}
+		// NOT ONCE HE IS BOUND — unless this is the pause, which sets ascending
+		// before it calls here. Every other reason to go up is refused at the door,
+		// which is how twenty-one call sites were made safe with one line.
+		if (this.bound && this.ascending <= 0) {
 			return;
 		}
 		this.flying = true;
@@ -7557,7 +7630,17 @@ public class HerobrineEntity extends PathfinderMob {
 
 	private void blink(double x, double y, double z, float yaw) {
 		this.setInvisible(true);
+		// SEEN LEAVING, SEEN ARRIVING — in the duel. The hunt's blink is silent on
+		// purpose, because arriving behind somebody in the dark is the point of it.
+		// In the castle he is a fighter repositioning, and a reposition you cannot
+		// read is a cheat, so both ends get smoke and the sound.
+		if (this.bound && this.level() instanceof ServerLevel from) {
+			this.announceBlink(from, this.getX(), this.getY(), this.getZ());
+		}
 		this.snapTo(x, y, z, yaw, 0.0F);
+		if (this.bound && this.level() instanceof ServerLevel to) {
+			this.announceBlink(to, x, y, z);
+		}
 		if (this.level() instanceof ServerLevel here) {
 			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), BLINK_TICKS, () -> {
 				// He may have discarded himself in the meantime — the hunt can
@@ -7793,7 +7876,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// fixed he would have been hitting for damage with no shove behind it.
 		// At SIEGE he stops caring what they are wearing.
 		boolean landed;
-		if (Wrath.phase(here.getServer()) == Phase.SIEGE) {
+		if (this.hisGround() || Wrath.phase(here.getServer()) == Phase.SIEGE) {
 			landed = player.hurtServer(here,
 				new net.minecraft.world.damagesource.DamageSource(
 					here.registryAccess()
@@ -8173,11 +8256,16 @@ public class HerobrineEntity extends PathfinderMob {
 		//
 		// Opening him up belongs on the drive-off branch instead. See below.
 		if (source.getEntity() instanceof ServerPlayer striker
-			&& Wrath.phase(level.getServer()) == Phase.SIEGE) {
+			&& (this.hisGround() || Wrath.phase(level.getServer()) == Phase.SIEGE)) {
 			// THE DAMAGE COMES WITH IT NOW. It was dropped here, which was fine
 			// while the blow was only ever counted — the Reckoning is thirty blows
 			// whatever they are struck with. The shove is not: see stagger.
 			return this.takeTheBlow(level, source, striker, damage);
+		}
+		// AND IN HIS CASTLE NOTHING ELSE REACHES THE HUNT'S LEDGER. A helper's blow
+		// is a quarter of one, and it is never an ending — see helperBlow.
+		if (this.hisGround()) {
+			return this.helperBlow(level, source, damage);
 		}
 
 		// ANYTHING ELSE THAT TOUCHES HIM SIMPLY STOPS.
@@ -8612,9 +8700,83 @@ public class HerobrineEntity extends PathfinderMob {
 	 * by the time it arrived, and here he simply stands and takes it and gets
 	 * worse.
 	 */
+	/**
+	 * A HELPER'S BLOW, IN HIS CASTLE.
+	 *
+	 * Addexio hits him for nine. That used to go through the hunt's damage ledger
+	 * at a quarter, and forty points of that ledger is the hunt ENDING — "driven
+	 * off", back through the door, a fresh one of him over the keep with the count
+	 * at zero. The log said "act 2" twice in one fight and that was why: not two
+	 * systems pulling at once, two systems with different ideas of the finish.
+	 *
+	 * So in here a helper's blow is worth what a hand on him is worth divided by
+	 * four — every fourth one is a blow of the seventy, credited to the nearest
+	 * player — and it touches nothing else. Addexio matters; Addexio cannot end
+	 * it; and nothing but the count can send him anywhere.
+	 */
+	private static final int HELPER_BLOWS_PER = 4;
+
+	private boolean helperBlow(ServerLevel level, DamageSource source, float damage) {
+		if (!(source.getEntity() instanceof net.minecraft.world.entity.Mob other)
+			|| com.bloomlet.herobrine.manifest.TheHunt.isHis(other) || damage <= 0.0F) {
+			return false;
+		}
+		this.hurtTime = 10;
+		this.hurtDuration = 10;
+		this.playHurtSound(source);
+		if (++this.helperBlows % HELPER_BLOWS_PER == 0
+			&& level.getNearestPlayer(this, 48.0) instanceof ServerPlayer credit) {
+			this.takeTheBlow(level, source, credit, damage);
+		}
+		return false;
+	}
+
+	/**
+	 * What a save, or a fresh one of him, is told about the fight so far.
+	 *
+	 * The Ender Dragon does not heal because you went to bed. Neither does he: the
+	 * count and the binding live on his level, and whichever of him comes to stand
+	 * over the keep next picks them up on the way in. Once per entity, or
+	 * loseInterest would re-arm the hunt every time it put him back to prowling.
+	 */
+	private void recall() {
+		if (this.recalled || !(this.level() instanceof ServerLevel his) || !this.hisGround()) {
+			return;
+		}
+		this.recalled = true;
+		int had = com.bloomlet.herobrine.manifest.Reckoning.hits(his);
+		boolean was = com.bloomlet.herobrine.manifest.Reckoning.bound(his);
+		if (had <= 0 && !was) {
+			return;
+		}
+		this.hits = had;
+		this.bound = was;
+		this.hunting = true;
+		this.wearTheAct();
+		this.setHealth(Math.max(1.0F, Config.get().blowsToKill - this.hits));
+		HerobrineMod.LOGGER.info("he remembers: {} blows taken, bound={}", had, was);
+	}
+
+	private void announceBlink(ServerLevel where, double x, double y, double z) {
+		where.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+			x, y + 1.0, z, 24, 0.35, 0.7, 0.35, 0.02);
+		where.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
+			x, y + 1.0, z, 10, 0.3, 0.6, 0.3, 0.01);
+		where.playSound(null, x, y, z, SoundEvents.ENDERMAN_TELEPORT,
+			this.getSoundSource(), 1.4F, 0.45F);
+	}
+
 	private boolean takeTheBlow(ServerLevel level, DamageSource source, ServerPlayer striker,
 	                            float damage) {
+		int was = this.act();
 		this.hits++;
+		this.lastStruckBy = striker.getUUID();
+		// THE FIRST BLOW TAKES THE SKY FROM HIM. Only in his castle — the overworld
+		// siege is still the hunt's fight, and the hunt needs the air for walls.
+		if (this.hisGround()) {
+			this.bind();
+			com.bloomlet.herobrine.manifest.Reckoning.record(level, this.hits, this.bound);
+		}
 		this.hunting = true;      // whatever he was doing, he is doing this now
 		this.relenting = false;
 		// AND THE LATCH TOO. Without this a hunt he had already broken off would
@@ -8636,6 +8798,7 @@ public class HerobrineEntity extends PathfinderMob {
 		this.stagger(striker, damage);
 
 		if (this.hits >= Config.get().blowsToKill) {
+			com.bloomlet.herobrine.manifest.Reckoning.clear(level);
 			super.hurtServer(level, source, Float.MAX_VALUE);
 			return true;
 		}
@@ -8786,5 +8949,116 @@ public class HerobrineEntity extends PathfinderMob {
 	@Override
 	public boolean removeWhenFarAway(double distanceSquared) {
 		return !this.hunting && !this.present;
+	}
+
+	// ---- THE DUEL'S HANDS ON HIM ------------------------------------------------
+	//
+	// Duel lives in its own file because this one is eight thousand lines, and
+	// these are the only things it is allowed to touch. Each is a name for one
+	// private primitive above, so the fight can be read in one place without the
+	// primitives becoming public to the world.
+
+	boolean isBound() {
+		return this.bound;
+	}
+
+	boolean inTheAir() {
+		return this.flying;
+	}
+
+	int hitsTaken() {
+		return this.hits;
+	}
+
+	int actNow() {
+		return this.act();
+	}
+
+	java.util.@org.jspecify.annotations.Nullable UUID lastStruckBy() {
+		return this.lastStruckBy;
+	}
+
+	void down() {
+		this.land();
+	}
+
+	void noStalemate() {
+		this.stalemate = 0;
+	}
+
+	/** Whatever mood the hunt left him in, he is in a fight now. */
+	void engaged() {
+		this.hunting = true;
+		this.relenting = false;
+		this.brokenOff = false;
+		this.watching = false;
+		this.fleeing = false;
+		this.opening = 0;
+	}
+
+	void face(net.minecraft.world.entity.Entity foe) {
+		this.squareUp(foe);
+	}
+
+	void slash(ServerPlayer player) {
+		this.strike(player);
+	}
+
+	void fire(ServerLevel here, ServerPlayer target, int act) {
+		this.throwFire(here, target, act);
+	}
+
+	void volley(ServerLevel here, ServerPlayer target, int act) {
+		this.loose(here, target, act);
+	}
+
+	void bolt(ServerLevel here, ServerPlayer target) {
+		this.callDown(here, target);
+	}
+
+	boolean appearAt(Player quarry, double min, double max, boolean wantSeen) {
+		return this.reappearAt(quarry, min, max, wantSeen);
+	}
+
+	boolean beside(Player quarry) {
+		return this.alongside(quarry);
+	}
+
+	boolean upTo(Player quarry) {
+		return this.closeIn(quarry);
+	}
+
+	boolean theyAreAloft(Player quarry) {
+		return this.aloft(quarry);
+	}
+
+	boolean seesSpot(Player quarry, BlockPos at) {
+		return this.level() instanceof ServerLevel here && clearTo(here, quarry, at);
+	}
+
+	void blinkTo(double x, double y, double z, float yaw) {
+		this.blink(x, y, z, yaw);
+	}
+
+	/** The entrance orbit, for the Duel's first stage. False if there is nothing to circle. */
+	boolean circleTheKeep() {
+		return this.patrol();
+	}
+
+	/**
+	 * The sky is taken from him. Once; by the first blow he takes in his castle, or
+	 * by the first one he gives when you stood in his hall too long.
+	 */
+	void bind() {
+		if (this.bound) {
+			return;
+		}
+		this.bound = true;
+		this.hunting = true;
+		this.land();
+		if (this.level() instanceof ServerLevel his && this.hisGround()) {
+			com.bloomlet.herobrine.manifest.Reckoning.record(his, this.hits, true);
+		}
+		HerobrineMod.LOGGER.info("the first blow — his feet are on the ground for the rest of this");
 	}
 }

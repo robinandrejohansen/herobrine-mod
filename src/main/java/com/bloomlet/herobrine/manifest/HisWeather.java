@@ -135,6 +135,12 @@ public final class HisWeather {
 		if (his == null) {
 			return;
 		}
+		// Removed Herobrine. The rain over his world was his; it stops with him.
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			his.setRainLevel(0.0F);
+			his.setThunderLevel(0.0F);
+			return;
+		}
 		// Every tick, and before the interval check — this is what makes it wet
 		// and it has to hold whether or not anybody is standing in it, or a fire
 		// started on the way out keeps burning after they leave.

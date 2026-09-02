@@ -65,6 +65,9 @@ public final class TheDogKnows {
 	}
 
 	private static void onTick(MinecraftServer server) {
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			return;      // Removed Herobrine. See Wrath.removed.
+		}
 		if (++tickCounter % CHECK_INTERVAL != 0) {
 			return;
 		}

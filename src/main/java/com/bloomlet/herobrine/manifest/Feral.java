@@ -140,6 +140,9 @@ public final class Feral {
 	private static final int LOOKS_EVERY = 4;
 
 	private static void onTick(MinecraftServer server) {
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			return;      // Removed Herobrine. See Wrath.removed.
+		}
 		if (server.getTickCount() % LOOKS_EVERY != 0) {
 			return;
 		}

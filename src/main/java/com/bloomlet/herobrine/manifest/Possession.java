@@ -703,6 +703,9 @@ public final class Possession {
 	 * not something to do twenty times a second.
 	 */
 	private static void onTick(MinecraftServer server) {
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			return;      // Removed Herobrine. See Wrath.removed.
+		}
 		boolean sweep = ++tickCounter % SWEEP_INTERVAL == 0;
 
 		for (ServerLevel level : server.getAllLevels()) {

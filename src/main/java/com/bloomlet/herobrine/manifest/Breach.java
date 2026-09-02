@@ -91,6 +91,9 @@ public final class Breach {
 	private static final int CHEWS_EVERY = 3;
 
 	private static void onTick(MinecraftServer server) {
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			return;      // Removed Herobrine. See Wrath.removed.
+		}
 		if (server.getTickCount() % CHEWS_EVERY != 0) {
 			return;
 		}

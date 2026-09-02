@@ -65,6 +65,9 @@ public final class TheHerd {
 	}
 
 	private static void onTick(MinecraftServer server) {
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			return;      // Removed Herobrine. See Wrath.removed.
+		}
 		if (++tickCounter % INTERVAL != 0) {
 			return;
 		}

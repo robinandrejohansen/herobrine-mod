@@ -94,6 +94,7 @@ public final class HisHost {
 	                                   @org.jspecify.annotations.Nullable BlockEntity be) {
 		if (!(level instanceof ServerLevel here) || !Config.get().enabled
 			|| !Config.get().hisHost
+			|| com.bloomlet.herobrine.wrath.Wrath.removed(here.getServer())
 			|| !here.dimension().equals(TheWayBlock.HIS_WORLD)) {
 			return;
 		}
@@ -145,7 +146,8 @@ public final class HisHost {
 
 	private static void hive(net.minecraft.server.MinecraftServer server) {
 		if (++tickCounter % HIVE_INTERVAL != 0
-			|| !Config.get().enabled || !Config.get().hisHost) {
+			|| !Config.get().enabled || !Config.get().hisHost
+			|| com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
 			return;
 		}
 		ServerLevel his = server.getLevel(TheWayBlock.HIS_WORLD);

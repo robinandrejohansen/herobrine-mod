@@ -128,6 +128,9 @@ public final class Demonstration {
 	private static final int WATCHES_EVERY = 10;
 
 	private static void onTick(MinecraftServer server) {
+		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
+			return;      // Removed Herobrine. See Wrath.removed.
+		}
 		if (server.getTickCount() % WATCHES_EVERY != 0 || !Config.get().enabled) {
 			return;
 		}
