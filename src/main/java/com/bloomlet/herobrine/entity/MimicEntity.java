@@ -111,6 +111,29 @@ public class MimicEntity extends PathfinderMob {
 			// this is set to read as somebody walking with somewhere to be.
 			.add(Attributes.MOVEMENT_SPEED, 0.3)
 			.add(Attributes.MAX_HEALTH, 20.0)
+			// THREE OF THESE, AND WITHOUT THIS LINE IT CRASHED THE SERVER.
+			//
+			// Mob.createMobAttributes gives health, speed, armour, follow range and
+			// knockback resistance. It does NOT give attack damage — that comes from
+			// Monster.createMonsterAttributes or from the entity itself — and this
+			// one is a PathfinderMob, so it had none.
+			//
+			// Mob.doHurtTarget reads getAttributeValue(ATTACK_DAMAGE) with nothing
+			// guarding it, and AttributeMap throws on an attribute the supplier does
+			// not carry. So TheFriend.strike took the server down the first time one
+			// of these ever actually hit somebody.
+			//
+			// WHICH IS WHY IT SURVIVED THIS LONG. Striking is stage four of a goal
+			// that has to come to you, greet you, go through your chests and change
+			// its coat first, and it only runs at all while you are alone. Every
+			// earlier stage works perfectly. The mod shipped a betrayal that could
+			// not be reached without a hundred and eighty ticks of theatre, and the
+			// hundred and eighty-first killed it.
+			//
+			// Three, so three hits is four and a half hearts. Between the Gaunt's
+			// two and Herobrine's five, and survivable on purpose: this is the
+			// moment you learn what it is, not the moment it kills you.
+			.add(Attributes.ATTACK_DAMAGE, 3.0)
 			.add(Attributes.STEP_HEIGHT, 1.0);
 	}
 

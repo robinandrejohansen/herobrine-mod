@@ -66,6 +66,17 @@ public final class Keep {
 		AttachmentRegistry.createPersistent(HerobrineMod.id("city_site"), Codec.LONG);
 	private static final AttachmentType<Boolean> CITY_UP =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("city_raised"), Codec.BOOL);
+	/**
+	 * Whether the map to the castle has actually been left somewhere.
+	 *
+	 * SEPARATE FROM SITE, because it used to be tied to it and that is how the
+	 * trail ended. Siting the keep and leaving the way to it happened in the same
+	 * branch, once, and if the chest search came up empty the site was recorded
+	 * anyway and nothing ever tried again — one warning in a log and the dimension
+	 * had no route to the only thing in it.
+	 */
+	private static final AttachmentType<Boolean> WAY_LEFT =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("keep_way_left"), Codec.BOOL);
 
 	/**
 	 * THE CITY AND THE CASTLE ARE TWO PLACES NOW.
@@ -352,43 +363,77 @@ public final class Keep {
 	 * can see, you go through the houses because that is what anybody does, and the
 	 * castle comes out of a drawer.
 	 *
-	 * SEARCHED FROM THE MIDDLE OUTWARD so it lands in a house rather than in the
-	 * rampart stores — HisCity lays its plots on rings out from the centre, and the
-	 * nearest container to the middle is somebody's kitchen.
+	 * NEAREST THE MIDDLE, so it lands in a house rather than in the rampart stores
+	 * — HisCity lays its plots on rings out from the centre, and the closest
+	 * container to the square is somebody's kitchen.
+	 *
+	 * ASKED OF THE CHUNKS, NOT WALKED. This used to step out in rings of four with
+	 * a stride of two and a dy band of -4 to +8, which sounds thorough and is not:
+	 * it could only ever see thirteen per cent of the city's columns, and the city
+	 * is built six blocks up on the motte so its floors sat at the very top of that
+	 * band. Between the two it was quite capable of walking the whole city and
+	 * finding nothing.
+	 *
+	 * A chunk already keeps a map of its block entities. Reading that finds every
+	 * chest in the city whatever lattice it happens to sit on, at any height, and
+	 * costs a fraction of what the walk did. Same trick as Hamlet.stock.
+	 *
+	 * @return whether the map is now in something
 	 */
-	private static void theWayFromTheCity(ServerLevel his, BlockPos city, BlockPos keep) {
-		for (int ring = 0; ring <= HisCity.REACH; ring += 4) {
-			for (int dx = -ring; dx <= ring; dx += 2) {
-				for (int dz = -ring; dz <= ring; dz += 2) {
-					if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) {
+	private static boolean theWayFromTheCity(ServerLevel his, BlockPos city,
+	                                         BlockPos keep) {
+		int reach = HisCity.REACH;
+		net.minecraft.world.level.block.entity.ChestBlockEntity best = null;
+		double nearest = Double.MAX_VALUE;
+		for (int cx = (city.getX() - reach) >> 4; cx <= (city.getX() + reach) >> 4; cx++) {
+			for (int cz = (city.getZ() - reach) >> 4; cz <= (city.getZ() + reach) >> 4; cz++) {
+				if (!his.hasChunk(cx, cz)) {
+					continue;
+				}
+				for (var entry : his.getChunk(cx, cz).getBlockEntities().entrySet()) {
+					if (!(entry.getValue() instanceof net.minecraft.world.level.block
+							.entity.ChestBlockEntity box)) {
 						continue;
 					}
-					for (int dy = -4; dy <= 8; dy++) {
-						BlockPos at = city.offset(dx, dy, dz);
-						if (!his.getBlockState(at).is(Blocks.CHEST)) {
-							continue;
+					BlockPos at = entry.getKey();
+					double away = Math.sqrt(at.distSqr(city));
+					if (away > reach || away >= nearest) {
+						continue;
+					}
+					// It has to have room, or the nearest chest is a full one and
+					// the map goes nowhere.
+					boolean room = false;
+					for (int slot = 0; slot < box.getContainerSize(); slot++) {
+						if (box.getItem(slot).isEmpty()) {
+							room = true;
+							break;
 						}
-						if (!(his.getBlockEntity(at) instanceof net.minecraft.world.level
-								.block.entity.ChestBlockEntity box)) {
-							continue;
-						}
-						for (int slot = 0; slot < box.getContainerSize(); slot++) {
-							if (!box.getItem(slot).isEmpty()) {
-								continue;
-							}
-							box.setItem(slot, theWay(his, keep));
-							box.setChanged();
-							HerobrineMod.LOGGER.info(
-								"the way to the keep is in a house at [{}, {}, {}]",
-								at.getX(), at.getY(), at.getZ());
-							return;
-						}
+					}
+					if (room) {
+						best = box;
+						nearest = away;
 					}
 				}
 			}
 		}
-		HerobrineMod.LOGGER.warn(
-			"no chest in his city to leave the way to the keep — THE TRAIL ENDS HERE");
+		if (best == null) {
+			HerobrineMod.LOGGER.info(
+				"nothing in his city to leave the way in yet — trying again");
+			return false;
+		}
+		for (int slot = 0; slot < best.getContainerSize(); slot++) {
+			if (best.getItem(slot).isEmpty()) {
+				best.setItem(slot, theWay(his, keep));
+				best.setChanged();
+				BlockPos at = best.getBlockPos();
+				HerobrineMod.LOGGER.info(
+					"the way to the keep is in a house at [{}, {}, {}], {} blocks"
+						+ " off the square", at.getX(), at.getY(), at.getZ(),
+					(int) nearest);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static void register() {
@@ -444,8 +489,19 @@ public final class Keep {
 			HerobrineMod.LOGGER.info(
 				"the keep will stand at [{}, {}] — {} blocks off the city",
 				site.getX(), site.getZ(), (int) Math.sqrt(site.distSqr(city)));
-			theWayFromTheCity(his, city, site);
 			return;
+		}
+
+		// AND IT KEEPS TRYING UNTIL THE MAP IS SOMEWHERE.
+		//
+		// HisCity places one house per tick, so on the pass right after the city is
+		// started most of it does not exist yet and there is nothing to put a map
+		// in. That used to be the end of it — the site was recorded, the search
+		// failed once, and the only route to the only building in this dimension
+		// was a warning in a log nobody reads.
+		if (!Boolean.TRUE.equals(his.getAttached(WAY_LEFT))
+			&& theWayFromTheCity(his, city, BlockPos.of(chosen))) {
+			his.setAttached(WAY_LEFT, true);
 		}
 
 		BlockPos site = BlockPos.of(chosen);
