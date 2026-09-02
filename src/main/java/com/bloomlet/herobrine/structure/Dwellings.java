@@ -100,6 +100,23 @@ public final class Dwellings {
 	 * default simulation radius.
 	 */
 	private static final int RAISE_RANGE = 192;
+
+	/**
+	 * WHETHER BOOK NINE IS ACTUALLY IN SOMETHING.
+	 *
+	 * It was left in the same breath as the village being raised, and Hamlet places
+	 * one building per tick — so the search for a container ran before a single
+	 * block of the village existed. The log said "nowhere in the threshold to leave
+	 * the last word" and meant it: book nine, the account of the fight in the hall,
+	 * was never placed in any world.
+	 *
+	 * Exactly the bug the keep's map had, with the same fix. A separate persisted
+	 * flag, retried every pass until it lands, so a village that is still going up
+	 * gets tried again instead of losing a book for good.
+	 */
+	private static final AttachmentType<Boolean> LAST_WORD =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("threshold_last_word"),
+			Codec.BOOL);
 	private static final int CHECK_INTERVAL = 40;
 
 	/**
@@ -604,30 +621,24 @@ public final class Dwellings {
 	 * has earned it by being five buildings deep and by being written by somebody
 	 * who is plainly past caring who reads it.
 	 */
-	private static void theLastWord(ServerLevel over, BlockPos threshold) {
+	private static boolean theLastWord(ServerLevel over, BlockPos threshold) {
 		Long home = over.getAttached(Place.HOMESTEAD.site);
 		if (home == null) {
-			return;
+			return false;
 		}
 		BlockPos house = BlockPos.of(home);
 		net.minecraft.world.level.block.entity.BlockEntity holder =
 			nearestHolder(over, threshold);
 		if (!(holder instanceof net.minecraft.world.Container box)) {
-			HerobrineMod.LOGGER.info("nowhere in the threshold to leave the last word");
-			return;
+			// Not a failure yet. The village places one building a tick and this is
+			// called every pass until it works — see LAST_WORD.
+			return false;
 		}
 
 		// BOOK NINE, in the same box as the map home. The one fight Addexio is not
 		// ashamed of, and it lasts a sentence: he reaches Herobrine, swings,
 		// connects, and wakes against the far wall with a hand that never works
 		// again. Book ten is at the bottom of the stair — see Threshold.infected.
-		for (int slot = 0; slot < box.getContainerSize(); slot++) {
-			if (box.getItem(slot).isEmpty()) {
-				box.setItem(slot, com.bloomlet.herobrine.structure.HouseBooks
-					.nine());
-				break;
-			}
-		}
 
 		// Scale two and the coordinates in the name, same as every other map on the
 		// trail. Four is two thousand blocks across and the arrow falls off it.
@@ -654,19 +665,37 @@ public final class Dwellings {
 						net.minecraft.network.chat.Component.literal(LAST_PAGE_TWO))),
 				true));
 
+		// THREE THINGS, AND BOOK NINE IS THE ONE THAT DECIDES.
+		//
+		// The note and the map home were always here; book nine was added with the
+		// numbered set and then never actually placed, because this whole method
+		// ran in the same breath as the village being queued and there was no
+		// container in the world yet. See LAST_WORD.
+		//
+		// So success is measured on the BOOK. If the nearest container turns out to
+		// be one of the store's thirty-nine stocked barrels with no room in it, this
+		// reports failure and is asked again next pass rather than quietly dropping
+		// the account of the fight in the hall.
+		java.util.List<net.minecraft.world.item.ItemStack> leave = java.util.List.of(
+			com.bloomlet.herobrine.structure.HouseBooks.nine(), book, map);
 		int put = 0;
-		for (int slot = 0; slot < box.getContainerSize() && put < 2; slot++) {
+		for (int slot = 0; slot < box.getContainerSize() && put < leave.size(); slot++) {
 			if (!box.getItem(slot).isEmpty()) {
 				continue;
 			}
-			box.setItem(slot, put == 0 ? book : map);
+			box.setItem(slot, leave.get(put));
 			put++;
 		}
 		box.setChanged();
+		if (put == 0) {
+			return false;
+		}
 		HerobrineMod.LOGGER.info(
-			"the last word was left in the threshold at [{}, {}, {}] — it points home",
+			"{} of 3 left in the threshold at [{}, {}, {}] — book nine, the note"
+				+ " under the floor, and the map home", put,
 			holder.getBlockPos().getX(), holder.getBlockPos().getY(),
 			holder.getBlockPos().getZ());
+		return true;
 	}
 
 	/**
@@ -815,6 +844,14 @@ public final class Dwellings {
 				Long where = overworld.getAttached(place.site);
 				if (where != null) {
 					Approach.heard(overworld, BlockPos.of(where), place.from);
+					// AND BOOK NINE, UNTIL IT IS SOMEWHERE. This used to fire once,
+					// in the same breath as the village being queued, before any of
+					// it existed. See LAST_WORD.
+					if (place == Place.THRESHOLD
+						&& !Boolean.TRUE.equals(overworld.getAttached(LAST_WORD))
+						&& theLastWord(overworld, BlockPos.of(where))) {
+						overworld.setAttached(LAST_WORD, true);
+					}
 				}
 				// THE STORY MOVES ON WHEN SOMEBODY FINDS IT, NOT WHEN IT IS BUILT.
 				//
@@ -959,9 +996,6 @@ public final class Dwellings {
 
 			if (nearest <= RAISE_RANGE && build(overworld, place, site)) {
 				overworld.setAttached(place.up, true);
-				if (place == Place.THRESHOLD) {
-					theLastWord(overworld, site);
-				}
 				// Roads, smoke and a sign, laid at build time for the same reason
 				// the building is: nobody is close enough to watch it happen.
 				Approach.lay(overworld, site, phase);

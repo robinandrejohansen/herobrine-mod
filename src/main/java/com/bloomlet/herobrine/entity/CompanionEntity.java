@@ -137,6 +137,55 @@ public class CompanionEntity extends PathfinderMob {
 		return this.walkingIn > 0;
 	}
 
+	/** How far below the local surface counts as down there rather than indoors. */
+	private static final int TOO_DEEP = 8;
+	private static final int SAYS_SO_EVERY = 200;
+
+	private int excused;
+
+	/**
+	 * HE DOES NOT COME UNDERGROUND, AND HE NEVER COULD CROSS OVER.
+	 *
+	 * The dimension was already handled and by accident: companion() looks the
+	 * player up with level().getPlayerByUUID, which is level-LOCAL, so the moment
+	 * you step through the way he simply has no companion any more and Follow
+	 * stops. He was never going to be over there. The portal only moves
+	 * ServerPlayers anyway — see TheWayBlock.entityInside.
+	 *
+	 * Underground was not handled at all. He was dragged down every shaft, into the
+	 * gaol, through the warren and down forty blocks of infected cave, and the
+	 * teleport made sure of it: over twenty-six blocks he appears next to you
+	 * wherever you are.
+	 *
+	 * SO HE STOPS AT THE HOLE. Which is what book ten says he would — "I will help
+	 * you as far as I can still walk" — and it is what makes the underground worth
+	 * anything: every frightening room in this mod is a room you are in on your
+	 * own, and the way you know that is the man who has been behind you all day
+	 * stopping at the top of the stair.
+	 *
+	 * EIGHT BLOCKS BELOW THE LOCAL SURFACE, not "cannot see sky". A doorway is not
+	 * a cave and neither is a cellar with a window; measuring against the ground
+	 * directly overhead means a player in a house is still outdoors as far as he is
+	 * concerned, and a player who has gone down a ladder is not.
+	 */
+	public boolean willNotGoDown(Player with) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return false;
+		}
+		int surface = com.bloomlet.herobrine.structure.Ground.topOf(here,
+			with.getBlockX(), with.getBlockZ());
+		if (with.getBlockY() > surface - TOO_DEEP) {
+			this.excused = 0;
+			return false;
+		}
+		// AND HE SAYS SO, on a slow clock. Silently refusing to follow is
+		// indistinguishable from being stuck, and being stuck is a bug report.
+		if (this.excused++ % SAYS_SO_EVERY == 0) {
+			Sayings.say(here, this, with, Sayings.FALTERING);
+		}
+		return true;
+	}
+
 	/** Who she is with. Persistent, because she has to still be yours tomorrow. */
 	private static final AttachmentType<String> WITH =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("companion_with"),
@@ -231,7 +280,24 @@ public class CompanionEntity extends PathfinderMob {
 			// item's attribute modifiers. Base low on purpose: unarmed he is a man
 			// with sixty years of failing behind him, and what makes him dangerous
 			// is the kit.
-			.add(Attributes.ATTACK_DAMAGE, 2.0)
+			// NINE, AND IT WAS TWO.
+			//
+			// Two plus a diamond sword's seven is nine on paper and reads as nothing
+			// in practice, because what he is being asked to fight is not a zombie.
+			// A Turned has twenty-six health, a Gaunt forty, and the Gaunt freezes
+			// while it is watched and steps four blocks at a time in the dark — so
+			// five clean hits is not five swings, it is a minute of him chasing
+			// something that keeps not being where he swung.
+			//
+			// Reported as "he does so little damage on them, making them too
+			// powerful", and the report is right: an ally who cannot finish anything
+			// is not an ally, he is a second health bar you have to watch.
+			//
+			// Nine base, so about sixteen with the sword. Two hits for a Turned,
+			// three for a Gaunt, two for a mimic. He wins the fights he starts and
+			// he still cannot touch Herobrine, who is the only thing here that is
+			// not supposed to be winnable by somebody else.
+			.add(Attributes.ATTACK_DAMAGE, 9.0)
 			// A WOLF'S PACE AND A BIT. A tamed wolf at 0.3 keeps up with a
 			// sprinting player and this has to as well, with the catch-up modifier
 			// in Follow doing the rest. Too much and she runs ahead, which reads as
@@ -482,6 +548,7 @@ public class CompanionEntity extends PathfinderMob {
 		public boolean canUse() {
 			Player with = this.her.companion();
 			return with != null && !with.isSpectator()
+				&& !this.her.willNotGoDown(with)
 				&& this.her.distanceTo(with) > CompanionEntity.DAWDLES_WITHIN;
 		}
 
@@ -505,6 +572,7 @@ public class CompanionEntity extends PathfinderMob {
 			double away = this.her.distanceTo(with);
 
 			if (away > GIVES_UP_AND_APPEARS && !this.her.walkingIn()
+				&& !this.her.willNotGoDown(with)
 				&& this.her.level() instanceof ServerLevel here) {
 				this.appearNear(here, with);
 				return;
