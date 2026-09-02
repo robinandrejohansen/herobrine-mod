@@ -224,6 +224,14 @@ public final class Wrath {
 		HerobrineMod.LOGGER.info("Removed Herobrine.");
 	}
 
+	/** The ending, undone — for /herobrine boss, so he can be fought again. */
+	public static void restore(MinecraftServer server) {
+		if (removed(server)) {
+			server.overworld().removeAttached(REMOVED);
+			HerobrineMod.LOGGER.info("un-removed Herobrine, by command");
+		}
+	}
+
 	public static void jumpTo(MinecraftServer server, Phase phase) {
 		set(server, phase);
 		HerobrineMod.LOGGER.info("story set to {} by command", phase.name());

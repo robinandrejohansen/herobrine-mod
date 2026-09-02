@@ -167,6 +167,7 @@ public final class HerobrineCommand {
 								false);
 							return 1;
 						})))
+				.then(Commands.literal("boss").executes(ctx -> boss(ctx)))
 				.then(Commands.literal("castle").executes(ctx -> {
 					ServerPlayer player = ctx.getSource().getPlayerOrException();
 					ServerLevel level = (ServerLevel) player.level();
@@ -418,6 +419,59 @@ public final class HerobrineCommand {
 						})
 						.executes(HerobrineCommand::phase)))
 			));
+	}
+
+	/**
+	 * /herobrine boss — STRAIGHT TO THE FIGHT.
+	 *
+	 * The story to SIEGE, the ending undone if a previous test reached it, the
+	 * count of blows reset, his city and his keep stood up in his world, and the
+	 * player put down seventy blocks from the keep facing it — which is outside
+	 * the idle brain's first ring, so the entrance plays: the circling, the walls,
+	 * the hall. Whereabouts sees a player in his world with a keep to stand over
+	 * and puts him there within a couple of seconds.
+	 *
+	 * Seventy, not at the gate: a test that skips the approach is not a test of
+	 * the approach, and the approach is half of what was just built.
+	 */
+	private static int boss(CommandContext<CommandSourceStack> ctx)
+			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		net.minecraft.server.MinecraftServer server = ctx.getSource().getServer();
+		ServerLevel his = server.getLevel(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD);
+		if (his == null) {
+			ctx.getSource().sendFailure(Component.literal("his world does not exist"));
+			return 0;
+		}
+		com.bloomlet.herobrine.wrath.Wrath.jumpTo(server, com.bloomlet.herobrine.wrath.Phase.SIEGE);
+		com.bloomlet.herobrine.wrath.Wrath.restore(server);
+		com.bloomlet.herobrine.manifest.Reckoning.clear(his);
+
+		// Through the door, as far as the world is concerned: the landing is cut
+		// where the portal would have put them, and the city is anchored on it.
+		net.minecraft.core.BlockPos landing =
+			com.bloomlet.herobrine.structure.TheWay.landing(his, player);
+		net.minecraft.core.BlockPos site =
+			com.bloomlet.herobrine.structure.Keep.summon(his, landing);
+
+		double angle = his.getRandom().nextDouble() * Math.PI * 2.0;
+		int x = site.getX() + (int) Math.round(Math.cos(angle) * 70.0);
+		int z = site.getZ() + (int) Math.round(Math.sin(angle) * 70.0);
+		his.getChunk(x >> 4, z >> 4);
+		int y = com.bloomlet.herobrine.structure.Ground.topOf(his, x, z) + 1;
+		float yaw = (float) Math.toDegrees(Math.atan2(site.getZ() - z, site.getX() - x)) - 90.0F;
+		player.teleport(new net.minecraft.world.level.portal.TeleportTransition(his,
+			new net.minecraft.world.phys.Vec3(x + 0.5, y, z + 0.5),
+			net.minecraft.world.phys.Vec3.ZERO, yaw, 0.0F,
+			net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+
+		ctx.getSource().sendSuccess(() -> Component.literal(
+			"SIEGE. his city and his keep are going up — the keep is 70 blocks ahead"
+				+ " of you at [" + site.getX() + ", " + site.getZ() + "]. he will be"
+				+ " over it in a couple of seconds. walk in."), false);
+		HerobrineMod.LOGGER.info("boss: {} put down 70 blocks from the keep at [{}, {}]",
+			player.getName().getString(), site.getX(), site.getZ());
+		return 1;
 	}
 
 	private static int status(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {

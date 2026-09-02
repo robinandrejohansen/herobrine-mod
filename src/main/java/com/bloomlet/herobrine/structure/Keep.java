@@ -691,6 +691,62 @@ public final class Keep {
 	 * It writes NO attachments. A castle raised by hand in the overworld cannot
 	 * confuse the sequence in his world, and two of them can stand at once.
 	 */
+	/**
+	 * THE WHOLE CHAIN, NOW. For /herobrine boss.
+	 *
+	 * onTick does this over minutes and only while somebody is standing in the
+	 * right place: the city is chosen when the first player arrives, raised when
+	 * one comes within a hundred blocks of it, the keep sited after that, and
+	 * raised when somebody walks to within a hundred and forty of IT — two hundred
+	 * and forty blocks further on. That is the intended walk and nobody testing the
+	 * boss should have to make it eleven times.
+	 *
+	 * So the same steps, in the same order, setting the same flags, so onTick
+	 * finds everything done and stays out of the way. Whatever is already done is
+	 * skipped, so this is safe to run in a world that is half way through.
+	 *
+	 * @param came where they came through, which anchors the city the way the real
+	 *             arrival does
+	 * @return the keep's site
+	 */
+	public static BlockPos summon(ServerLevel his, BlockPos came) {
+		Long town = his.getAttached(CITY);
+		BlockPos city;
+		if (town == null) {
+			city = pick(his, came, CITY_NEAR, CITY_FAR);
+			his.setAttached(CITY, city.asLong());
+			arrival(his, came);
+			HerobrineMod.LOGGER.info("boss: his city will stand at [{}, {}]",
+				city.getX(), city.getZ());
+		} else {
+			city = BlockPos.of(town);
+		}
+		if (!Boolean.TRUE.equals(his.getAttached(CITY_UP))) {
+			his.setAttached(CITY_UP, true);
+			HisCity.raise(his, city.above(MOTTE), 0, MOTTE, his.getRandom());
+		}
+		Long chosen = his.getAttached(SITE);
+		BlockPos site;
+		if (chosen == null) {
+			site = pick(his, city, NEAR, FAR);
+			his.setAttached(SITE, site.asLong());
+			HerobrineMod.LOGGER.info("boss: the keep will stand at [{}, {}]",
+				site.getX(), site.getZ());
+		} else {
+			site = BlockPos.of(chosen);
+		}
+		if (!Boolean.TRUE.equals(his.getAttached(WAY_LEFT))
+			&& theWayFromTheCity(his, city, site)) {
+			his.setAttached(WAY_LEFT, true);
+		}
+		if (!Boolean.TRUE.equals(his.getAttached(RAISED))) {
+			his.getChunk(site.getX() >> 4, site.getZ() >> 4);
+			raise(his, site);
+			his.setAttached(RAISED, true);
+		}
+		return site;
+	}
+
 	public static void raise(ServerLevel his, BlockPos site) {
 		// ---- A BLUEPRINT, IF THERE IS ONE.
 		//
