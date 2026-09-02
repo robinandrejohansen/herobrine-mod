@@ -453,6 +453,7 @@ public final class Demonstration {
 	private static void snowRows(ServerLevel end, int fromX) {
 		BlockPos middle = new BlockPos(0, 64, 0);   // the End's island is always the origin
 		int laid = 0;
+		boolean last = fromX + SNOW_ROWS > 64;
 		for (int dx = fromX; dx <= Math.min(64, fromX + SNOW_ROWS - 1); dx++) {
 			for (int dz = -64; dz <= 64; dz++) {
 				if (dx * dx + dz * dz > 64 * 64) {
@@ -482,7 +483,10 @@ public final class Demonstration {
 				laid++;
 			}
 		}
-		HerobrineMod.LOGGER.info("{} of it settled", laid);
+		settled += laid;
+		if (last) {
+			HerobrineMod.LOGGER.info("{} of it settled", settled);
+		}
 	}
 
 	private static void strike(ServerLevel end, BlockPos at, boolean real) {
