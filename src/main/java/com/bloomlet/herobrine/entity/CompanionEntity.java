@@ -96,6 +96,46 @@ public class CompanionEntity extends PathfinderMob {
 	private static final double DAWDLES_WITHIN = 4.0;
 	private static final double HURRIES_AFTER = 9.0;
 	private static final double GIVES_UP_AND_APPEARS = 26.0;
+	/** How far he aims at a time while walking in. Inside what pathing solves. */
+	private static final double LEG = 20.0;
+
+	/**
+	 * HE IS ALLOWED TO WALK IN, ONCE, AND THE TELEPORT IS SWITCHED OFF WHILE HE DOES.
+	 *
+	 * Company.arrives puts him down fifty-six to eighty-four blocks off so that you
+	 * see a figure on a ridge and watch it come. Follow's backstop teleports him
+	 * whenever he is more than twenty-six blocks out, which is correct for the whole
+	 * rest of the mod and destroyed the arrival on its first tick: he was over the
+	 * line the instant he existed, so the entrance was a man blinking into being
+	 * four blocks from your face.
+	 *
+	 * Reported as "is addexio coming?" over a log line saying he was seventy-nine
+	 * blocks off. He had already arrived. There was nothing to come.
+	 *
+	 * So the entrance gets a budget. While it lasts he walks and cannot teleport;
+	 * when it runs out, or when he is close enough to be a person rather than a
+	 * silhouette, the ordinary rules come back and never leave again.
+	 *
+	 * TWO MINUTES, WHICH IS FOUR TIMES WHAT THE WALK NEEDS. Eighty blocks at his
+	 * pace is about twenty seconds on the flat, and this has to survive a mountain,
+	 * a lake and a fence. The budget is not the plan, it is the give-up: if he is
+	 * still out there after two minutes he is stuck on something and the teleport is
+	 * the right answer after all.
+	 */
+	private static final int WALKS_IN_FOR = 2400;
+	/** Near enough that watching him arrive is over and following begins. */
+	private static final double ARRIVED_WITHIN = 10.0;
+
+	private int walkingIn;
+
+	public void beginTheWalkIn() {
+		this.walkingIn = WALKS_IN_FOR;
+	}
+
+	/** True while the entrance is still happening and the teleport is held off. */
+	public boolean walkingIn() {
+		return this.walkingIn > 0;
+	}
 
 	/** Who she is with. Persistent, because she has to still be yours tomorrow. */
 	private static final AttachmentType<String> WITH =
@@ -290,6 +330,51 @@ public class CompanionEntity extends PathfinderMob {
 	 * sound plays, the animation runs, and on a server everybody reads it in the
 	 * chat. Nothing downstream of this ever sees a lethal number.
 	 */
+	/**
+	 * The entrance ends when it is over, one way or the other.
+	 *
+	 * Called from tick rather than from Follow, because Follow only runs while he
+	 * is further than DAWDLES_WITHIN — so the goal that would notice he had arrived
+	 * is the one that stops running the moment he does.
+	 */
+	private void theWalkIn() {
+		if (this.walkingIn <= 0) {
+			return;
+		}
+		Player with = this.companion();
+		if (with == null || this.distanceTo(with) <= ARRIVED_WITHIN) {
+			if (with != null) {
+				HerobrineMod.LOGGER.info("addexio walked in — {} blocks and {} seconds",
+					(int) this.distanceTo(with), (WALKS_IN_FOR - this.walkingIn) / 20);
+			}
+			this.walkingIn = 0;
+			return;
+		}
+		if (--this.walkingIn <= 0) {
+			HerobrineMod.LOGGER.info(
+				"addexio could not walk it — still {} blocks off after {} seconds,"
+					+ " the teleport has him now",
+				(int) this.distanceTo(with), WALKS_IN_FOR / 20);
+		}
+	}
+
+	/**
+	 * HE HAD NO TICK OF HIS OWN, and the entrance needs one.
+	 *
+	 * Everything he did lived in goals, which is the right place for behaviour and
+	 * the wrong place for the thing that decides a goal's rules have changed.
+	 * theWalkIn cannot live in Follow: Follow only runs while he is further than
+	 * DAWDLES_WITHIN, so the goal that would notice he had finally arrived is the
+	 * one that stops running the moment he does.
+	 */
+	@Override
+	public void tick() {
+		super.tick();
+		if (!this.level().isClientSide()) {
+			this.theWalkIn();
+		}
+	}
+
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
 		float room = Math.max(0.0F, this.getHealth() - LOWEST);
@@ -374,7 +459,8 @@ public class CompanionEntity extends PathfinderMob {
 			this.her.getLookControl().setLookAt(with, 30.0F, 30.0F);
 			double away = this.her.distanceTo(with);
 
-			if (away > GIVES_UP_AND_APPEARS && this.her.level() instanceof ServerLevel here) {
+			if (away > GIVES_UP_AND_APPEARS && !this.her.walkingIn()
+				&& this.her.level() instanceof ServerLevel here) {
 				this.appearNear(here, with);
 				return;
 			}
@@ -383,6 +469,29 @@ public class CompanionEntity extends PathfinderMob {
 				return;
 			}
 			this.repath = 10;
+
+			// ---- AND OVER A LONG DISTANCE HE WALKS IT IN LEGS.
+			//
+			// Vanilla's navigation will not path much past thirty blocks — the
+			// follow-range attribute caps it, and beyond that moveTo simply fails
+			// and he stands still. That never showed up while the teleport was
+			// covering every distance over twenty-six, because nothing was ever
+			// asked to walk further than that.
+			//
+			// So while the entrance is running he is aimed at a point twenty blocks
+			// along the line to you rather than at you, and re-aimed every ten
+			// ticks as he closes. Each leg is inside what the pathfinder can
+			// actually solve, and the legs are what make eighty blocks a walk
+			// instead of a stand.
+			if (this.her.walkingIn() && away > LEG) {
+				net.minecraft.world.phys.Vec3 toward = with.position()
+					.subtract(this.her.position()).normalize().scale(LEG);
+				net.minecraft.core.BlockPos leg = net.minecraft.core.BlockPos.containing(
+					this.her.position().add(toward));
+				this.her.getNavigation().moveTo(leg.getX() + 0.5, leg.getY(),
+					leg.getZ() + 0.5, 1.15);
+				return;
+			}
 			// The catch-up modifier. A sprinting player pulls away from 1.0 no
 			// matter what the base attribute is, because they are also going in a
 			// straight line and she is going round things.
@@ -485,7 +594,15 @@ public class CompanionEntity extends PathfinderMob {
 
 		@Override
 		public void stop() {
-			this.her.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+			// THE BREAD IS IN THE OFF HAND, AND THE SWORD IS NEVER TOUCHED.
+			//
+			// This used to swap the MAIN hand between empty and bread, which was
+			// harmless while his hands were empty and is not any more: he carries
+			// enchanted diamond now, setItemInHand overwrites rather than stores,
+			// and the first time he broke off to eat his sword would have stopped
+			// existing. Permanently, and with no way to notice except wondering why
+			// he had got worse.
+			this.her.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
 			this.her.getNavigation().stop();
 			if (this.her.level() instanceof ServerLevel here) {
 				Player with = this.her.companion();
@@ -499,7 +616,8 @@ public class CompanionEntity extends PathfinderMob {
 		public void tick() {
 			Mob threat = this.nearestThreat();
 			if (threat != null) {
-				this.her.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+				// Bread away, and the sword is already where it always is.
+				this.her.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
 				this.her.getLookControl().setLookAt(threat, 30.0F, 30.0F);
 				if (this.her.getNavigation().isDone()) {
 					Vec3 out = DefaultRandomPos.getPosAway(this.her, 16, 7,
@@ -512,7 +630,7 @@ public class CompanionEntity extends PathfinderMob {
 			}
 			// Nothing near. Sit down and eat.
 			this.her.getNavigation().stop();
-			this.her.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BREAD));
+			this.her.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.BREAD));
 			if (++this.chewing < BITE_EVERY) {
 				return;
 			}

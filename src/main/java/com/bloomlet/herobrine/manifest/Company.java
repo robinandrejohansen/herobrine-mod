@@ -165,6 +165,11 @@ public final class Company {
 					near.getX() - feet.getX())) - 90.0F, 0.0F);
 			him.setPersistenceRequired();
 			him.setTarget(null);
+			// AND THE TELEPORT IS HELD OFF WHILE HE COVERS IT. Without this he is
+			// eighty blocks out and over Follow's twenty-six block backstop on his
+			// very first tick, so the entrance is a man blinking into being next to
+			// you. See CompanionEntity.beginTheWalkIn.
+			him.beginTheWalkIn();
 			level.addFreshEntity(him);
 			came(level);
 			HerobrineMod.LOGGER.info(
