@@ -97,8 +97,18 @@ public final class Spire {
 		tower(level, base, random);
 		BlockPos deck = base.above(RISE);
 		lower(level, deck, random);
-		between(level, deck, random);
+		java.util.List<BlockPos> stones = between(level, deck, random);
 		island(level, deck.above(GAP + 1), random);
+		// THE CHESTS LAST, AFTER THE ISLAND IS STANDING.
+		//
+		// between() used to hang them itself and seventy-seven per cent of worlds
+		// lost one, simulated over four thousand. hoard() sorts the stones HIGHEST
+		// FIRST — deliberately, so the reward is at the top of the climb — and the
+		// highest a stone can be is deck + GAP, which puts its chest at
+		// deck + GAP + 1. island() starts at deck + GAP + 1 with a half-width of
+		// two. So the sort was aiming the chests at the one course that was about
+		// to be built over them.
+		hoard(level, stones, random);
 		// AND IT IS OPEN FROM THE FIRST DAY.
 		//
 		// The portal used to be the reward for killing him — the halves came
@@ -534,7 +544,19 @@ public final class Spire {
 	 * toward the middle, and chains that hang out of the island and reach nothing.
 	 * Nothing here is climbable on purpose.
 	 */
-	private static void between(ServerLevel level, BlockPos deck, RandomSource random) {
+	/**
+	 * The stepping stones, AND IT NO LONGER FURNISHES THEM.
+	 *
+	 * It used to call hoard() at the end of itself, which put chests on the stones
+	 * before island() had been built — and island() builds downward-first from
+	 * deck + GAP + 1, which is exactly where a chest on the highest stone stands.
+	 * See the note on hoard().
+	 *
+	 * Returns the list instead, so raise() can furnish after it has finished
+	 * carving. Warren has the rule written in it and this file broke it.
+	 */
+	private static java.util.List<BlockPos> between(ServerLevel level, BlockPos deck,
+	                                                RandomSource random) {
 		java.util.List<BlockPos> stones = new java.util.ArrayList<>();
 		for (int i = 0; i < 26; i++) {
 			int dy = 1 + random.nextInt(GAP);
@@ -554,7 +576,7 @@ public final class Spire {
 				level.setBlock(at.below(), Blocks.PALE_HANGING_MOSS.defaultBlockState(), 2);
 			}
 		}
-		hoard(level, stones, random);
+		return stones;
 	}
 
 	/**
