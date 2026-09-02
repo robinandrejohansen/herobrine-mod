@@ -442,7 +442,11 @@ public final class Demonstration {
 	 * It is a one-off, so this is not about throughput. It is about the stutter
 	 * landing on the beat the player is supposed to be looking at.
 	 */
+	/** Totted up across the batches, so the log says one number and not eleven. */
+	private static int settled;
+
 	private static void snow(ServerLevel end) {
+		settled = 0;
 		for (int from = -64; from <= 64; from += SNOW_ROWS) {
 			final int start = from;
 			com.bloomlet.herobrine.manifest.Cadence.in(end.getServer(),
