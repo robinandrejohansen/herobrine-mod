@@ -102,6 +102,35 @@ public final class Blueprint {
 			.resolve("herobrine").resolve("blueprints");
 	}
 
+	/**
+	 * Where a blueprint says to cut down to the portal, or null if it does not say.
+	 *
+	 * A blueprint is somebody else's building and the mod has no business guessing
+	 * which of its rooms matters. Oakhold's file carries a `descent` measured off
+	 * the build itself — the densest stone-brick square in its southern half, which
+	 * is its castle — and anything without the field simply does not get a descent.
+	 */
+	public static @org.jspecify.annotations.Nullable BlockPos descent(String name) {
+		JsonObject root = read(name);
+		if (root == null || !root.has("descent")) {
+			return null;
+		}
+		JsonObject d = root.getAsJsonObject("descent");
+		return new BlockPos(d.get("x").getAsInt(), d.get("y").getAsInt(),
+			d.get("z").getAsInt());
+	}
+
+	/** The blueprint's own size, for a caller that has to reason about the box. */
+	public static @org.jspecify.annotations.Nullable BlockPos measure(String name) {
+		JsonObject root = read(name);
+		if (root == null) {
+			return null;
+		}
+		JsonObject sz = root.getAsJsonObject("size");
+		return new BlockPos(sz.get("x").getAsInt(), sz.get("y").getAsInt(),
+			sz.get("z").getAsInt());
+	}
+
 	/** Everything placeable: what ships with the mod, plus whatever you added. */
 	public static List<String> available() {
 		List<String> out = new ArrayList<>();
@@ -182,7 +211,7 @@ public final class Blueprint {
 		// So the three phases queue behind each other rather than each starting at
 		// tick zero. Getting that wrong is worse than not staging: the placing would
 		// run while the clearing was still going and erase what it had just built.
-		int ticks = stagedClear(level, corner, sx, sy, sz);
+		int ticks = stagedClear(level, corner, sx, sy, sz, ground);
 		com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), ticks,
 			() -> beard(level, corner, sx, sz));
 		return place(level, corner, name, ticks + 1);
@@ -223,7 +252,28 @@ public final class Blueprint {
 	 * is wondering why the castle is not the one in the screenshots deserves a line
 	 * that says so.
 	 */
+	/**
+	 * A blueprint may be gzipped, and the big ones have to be.
+	 *
+	 * Oakhold is twenty-one megabytes of JSON and three and a bit gzipped, so the
+	 * uncompressed form is not something to put in a jar. Both are accepted and
+	 * .json.gz is preferred, so a hand-edited plain file still shadows a bundled
+	 * compressed one — which is the override rule this class already has.
+	 */
 	private static @org.jspecify.annotations.Nullable JsonObject read(String name) {
+		Path zipped = folder().resolve(name + ".json.gz");
+		if (Files.isRegularFile(zipped)) {
+			try (java.io.InputStream in = new java.util.zip.GZIPInputStream(
+					Files.newInputStream(zipped))) {
+				HerobrineMod.LOGGER.info("blueprint {} read from {}", name, zipped);
+				return GSON.fromJson(new java.io.InputStreamReader(in,
+					java.nio.charset.StandardCharsets.UTF_8), JsonObject.class);
+			} catch (Exception broken) {
+				HerobrineMod.LOGGER.warn("{} would not read: {}", zipped,
+					broken.getMessage());
+				return null;
+			}
+		}
 		Path file = folder().resolve(name + ".json");
 		if (Files.isRegularFile(file)) {
 			try {
@@ -237,14 +287,13 @@ public final class Blueprint {
 				return null;
 			}
 		}
-		try (java.io.InputStream in =
-				Blueprint.class.getResourceAsStream(BUILT_IN + name + ".json")) {
-			if (in == null) {
+		try (java.io.InputStream raw = bundled(name)) {
+			if (raw == null) {
 				HerobrineMod.LOGGER.warn("no blueprint called {} in {} or in the jar",
 					name, folder());
 				return null;
 			}
-			return GSON.fromJson(new java.io.InputStreamReader(in,
+			return GSON.fromJson(new java.io.InputStreamReader(raw,
 				java.nio.charset.StandardCharsets.UTF_8), JsonObject.class);
 		} catch (Exception broken) {
 			HerobrineMod.LOGGER.warn("bundled blueprint {} would not read: {}",
@@ -253,20 +302,36 @@ public final class Blueprint {
 		}
 	}
 
+	/**
+	 * The bundled copy, decompressed if it is stored that way.
+	 *
+	 * Tries .json.gz first for the same reason read() does — a twenty-megabyte
+	 * resource is not worth shipping uncompressed when the deflate in the jar
+	 * would not reach it anyway.
+	 */
+	private static java.io.@org.jspecify.annotations.Nullable InputStream bundled(
+			String name) throws java.io.IOException {
+		java.io.InputStream gz =
+			Blueprint.class.getResourceAsStream(BUILT_IN + name + ".json.gz");
+		if (gz != null) {
+			return new java.util.zip.GZIPInputStream(gz);
+		}
+		return Blueprint.class.getResourceAsStream(BUILT_IN + name + ".json");
+	}
+
 	/** Whether a named blueprint is there to be placed, in either place. */
 	public static boolean have(String name) {
 		if (name == null || name.isBlank()) {
 			return false;
 		}
-		if (Files.isRegularFile(folder().resolve(name + ".json"))) {
+		if (Files.isRegularFile(folder().resolve(name + ".json"))
+			|| Files.isRegularFile(folder().resolve(name + ".json.gz"))) {
 			return true;
 		}
-		try (java.io.InputStream in =
-				Blueprint.class.getResourceAsStream(BUILT_IN + name + ".json")) {
-			return in != null;
-		} catch (Exception broken) {
-			return false;
+		if (Blueprint.class.getResource(BUILT_IN + name + ".json.gz") != null) {
+			return true;
 		}
+		return Blueprint.class.getResource(BUILT_IN + name + ".json") != null;
 	}
 
 	/** How many palette entries had to drop their properties, for the last load. */
@@ -430,25 +495,56 @@ public final class Blueprint {
 	 * behind it, and a caller that guesses will start building into a box that is
 	 * still being emptied.
 	 */
+	/** How many columns are emptied per tick. */
+	private static final int COLUMNS_PER_TICK = 3000;
+
+	/**
+	 * BY COLUMN, AND ONLY ABOVE THE GROUND LINE.
+	 *
+	 * The first version walked the whole box. For a castle at 71x49x72 that is
+	 * 250,000 setBlock calls and about two seconds, which is fine. For Oakhold at
+	 * 272x78x304 it is SIX AND A HALF MILLION and fifty-four seconds — on its own,
+	 * before a single block of the city is placed, and more than the placing costs.
+	 *
+	 * Two observations make it cheap. Below the ground line nothing needs clearing
+	 * at all: a blueprint that carries its own terrain simply overwrites the host's,
+	 * and where the blueprint has a gap the host's rock filling it is underground
+	 * and invisible. And above the line, the only thing in the way is whatever the
+	 * world generator put there — which the heightmap already knows the top of, so
+	 * the work per column is the handful of blocks between the street and the
+	 * treetops rather than the full sixty-three.
+	 *
+	 * 82,688 columns instead of 6.4 million blocks. Six seconds instead of
+	 * fifty-four.
+	 */
 	private static int stagedClear(ServerLevel level, BlockPos at,
-	                               int sx, int sy, int sz) {
+	                               int sx, int sy, int sz, int ground) {
 		MinecraftServer server = level.getServer();
-		int total = sx * sy * sz;
+		int columns = sx * sz;
 		int ticks = 0;
-		for (int from = 0; from < total; from += CLEARED_PER_TICK) {
+		for (int from = 0; from < columns; from += COLUMNS_PER_TICK) {
 			final int start = from;
-			final int end = Math.min(total, from + CLEARED_PER_TICK);
+			final int end = Math.min(columns, from + COLUMNS_PER_TICK);
 			Cadence.in(server, ticks, () -> {
 				for (int i = start; i < end; i++) {
-					int dy = i / (sx * sz);
-					int rest = i % (sx * sz);
-					level.setBlock(at.offset(rest % sx, dy, rest / sx),
-						Blocks.AIR.defaultBlockState(), 2);
+					int x = at.getX() + i % sx;
+					int z = at.getZ() + i / sx;
+					int floor = at.getY() + ground;
+					int top = Math.min(at.getY() + sy - 1, level.getHeight(
+						net.minecraft.world.level.levelgen.Heightmap.Types
+							.MOTION_BLOCKING, x, z));
+					for (int y = floor; y <= top; y++) {
+						BlockPos pos = new BlockPos(x, y, z);
+						if (!level.getBlockState(pos).isAir()) {
+							level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+						}
+					}
 				}
 			});
 			ticks++;
 		}
-		HerobrineMod.LOGGER.info("clearing {} blocks over {} ticks", total, ticks);
+		HerobrineMod.LOGGER.info(
+			"clearing {} columns above the ground line over {} ticks", columns, ticks);
 		return ticks;
 	}
 

@@ -74,6 +74,16 @@ public final class Threshold {
 	private static final int WING_W = 11;
 
 	public static void raise(ServerLevel level, BlockPos site, RandomSource random) {
+		// ---- A CITY, IF THERE IS ONE.
+		//
+		// Same shape as Keep.raise: the blueprint wins if it is there and the
+		// hand-built version is the fallback, because raise() runs once per world
+		// with no second chance and a missing file must not mean no last house.
+		String plan = com.bloomlet.herobrine.Config.get().lastHouseBlueprint;
+		if (Blueprint.have(plan) && standTheCity(level, site, plan, random)) {
+			return;
+		}
+
 		int surface = Ground.topOf(level, site.getX(), site.getZ());
 		BlockPos mouth = new BlockPos(site.getX(), surface, site.getZ());
 
@@ -1076,5 +1086,156 @@ public final class Threshold {
 			sign.setText(text, true);
 			sign.setWaxed(true);
 		}
+	}
+
+	/** How far under the city the door sits, and how wide the shaft is. */
+	private static final int SINKS = 34;
+	private static final int SHAFT = 2;
+
+	/**
+	 * THE LAST HOUSE AS A CITY, WITH SOMETHING GROWING UNDER IT.
+	 *
+	 * The threshold has always been a mine mouth and fourteen cells. As the last
+	 * thing in a six-building chain that is thin — five places announce themselves
+	 * across three thousand blocks and the finale is a hole. So the surface becomes
+	 * a whole abandoned city and the door goes underneath it.
+	 *
+	 * WHAT THE DESCENT IS FOR. A blueprint is somebody else's building and the mod
+	 * cannot know which of its rooms means anything, so it does not guess: the file
+	 * names a `descent` and this cuts from there. Oakhold's is measured off the
+	 * build — the densest stone-brick square in its southern half, which is its
+	 * castle — so the shaft opens in the castle floor and goes down.
+	 *
+	 * AND THE INFECTION IS THE POINT OF THE WALK. Sculk, because it is the one
+	 * vanilla block set that reads as something SPREADING rather than something
+	 * built or something decayed, and the whole claim of this place is that
+	 * whatever is behind the door has been coming through for a long time.
+	 *
+	 * It gets worse with depth and that ordering is the story: cracked masonry at
+	 * the top, then veins over the stone, then sculk instead of stone, and at the
+	 * bottom the sensors. Somebody walking down learns the rule in eight blocks and
+	 * then has thirty more of it.
+	 *
+	 * THE SHRIEKERS CANNOT SUMMON. can_summon is false, explicitly, because a
+	 * Warden in the last room of this mod would take the ending off Herobrine and
+	 * hand it to a vanilla boss.
+	 */
+	private static boolean standTheCity(ServerLevel level, BlockPos site, String plan,
+	                                    RandomSource random) {
+		BlockPos size = Blueprint.measure(plan);
+		BlockPos anchor = Blueprint.descent(plan);
+		if (size == null) {
+			return false;
+		}
+		int surface = Ground.topOf(level, site.getX(), site.getZ()) + 1;
+		Blueprint.Placed done = Blueprint.stand(level,
+			new BlockPos(site.getX(), surface, site.getZ()), plan);
+		if (done == null) {
+			return false;
+		}
+		HerobrineMod.LOGGER.info(
+			"the last house is the blueprint \"{}\" — {} blocks, {}x{}x{}",
+			plan, done.blocks(), done.sizeX(), done.sizeY(), done.sizeZ());
+
+		if (anchor == null) {
+			HerobrineMod.LOGGER.warn(
+				"blueprint \"{}\" names no descent — the last house has no door", plan);
+			return true;
+		}
+		// The blueprint's corner, worked back from where stand() put it.
+		BlockPos corner = new BlockPos(site.getX() - size.getX() / 2,
+			surface - anchor.getY(), site.getZ() - size.getZ() / 2);
+		BlockPos head = corner.offset(anchor.getX(), anchor.getY(), anchor.getZ());
+
+		// LAST OF ALL, and staged well behind the city. stand() queues about
+		// eight hundred ticks of clearing and placing; cutting the shaft before
+		// that finishes would be cutting a hole and then filling it in again.
+		com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), 900,
+			() -> infected(level, head, random));
+		return true;
+	}
+
+	private static void infected(ServerLevel level, BlockPos head, RandomSource random) {
+		BlockPos floor = head;
+		for (int down = 0; down <= SINKS; down++) {
+			// How far gone this course is. Nothing at the top, everything at the
+			// bottom — see the note in standTheCity.
+			double gone = (double) down / SINKS;
+			for (int dx = -SHAFT - 1; dx <= SHAFT + 1; dx++) {
+				for (int dz = -SHAFT - 1; dz <= SHAFT + 1; dz++) {
+					BlockPos at = floor.offset(dx, -down, dz);
+					boolean shell = Math.abs(dx) > SHAFT || Math.abs(dz) > SHAFT;
+					if (!shell) {
+						level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+						continue;
+					}
+					level.setBlock(at, skin(gone, random), 2);
+				}
+			}
+			// A stair down one side, so it is walkable rather than a drop.
+			if (down > 0) {
+				level.setBlock(floor.offset(SHAFT, -down, 0),
+					Blocks.COBBLESTONE_STAIRS.defaultBlockState()
+						.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
+			}
+			if (down % 6 == 3) {
+				level.setBlock(floor.offset(-SHAFT, -down + 1, 0),
+					Blocks.SOUL_LANTERN.defaultBlockState()
+						.setValue(BlockStateProperties.HANGING, true), 2);
+			}
+		}
+
+		// ---- AND THE ROOM AT THE BOTTOM, which is all sculk.
+		BlockPos base = floor.below(SINKS);
+		for (int dx = -6; dx <= 6; dx++) {
+			for (int dz = -6; dz <= 6; dz++) {
+				for (int up = -1; up <= 7; up++) {
+					BlockPos at = base.offset(dx, up, dz);
+					boolean shell = Math.abs(dx) == 6 || Math.abs(dz) == 6
+						|| up == -1 || up == 7;
+					level.setBlock(at, shell
+						? Blocks.SCULK.defaultBlockState()
+						: Blocks.AIR.defaultBlockState(), 2);
+				}
+			}
+		}
+		for (int i = 0; i < 5; i++) {
+			BlockPos at = base.offset(random.nextInt(9) - 4, 0, random.nextInt(9) - 4);
+			level.setBlock(at, i == 0
+				? Blocks.SCULK_SHRIEKER.defaultBlockState()
+					// NOT SUMMONING. A Warden here would take the ending off him.
+					.setValue(net.minecraft.world.level.block.SculkShriekerBlock
+						.CAN_SUMMON, false)
+				: Blocks.SCULK_SENSOR.defaultBlockState(), 2);
+		}
+		seal(level, base.offset(6, 0, 0), random);
+		HerobrineMod.LOGGER.info(
+			"an infected shaft runs {} blocks down from [{}, {}, {}] to the door",
+			SINKS, head.getX(), head.getY(), head.getZ());
+	}
+
+	/**
+	 * The wall of the shaft at a given depth. Masonry at the top, sculk at the
+	 * bottom, and the veins are what makes the change read as a spread rather than
+	 * as two different tunnels bolted together.
+	 */
+	private static BlockState skin(double gone, RandomSource random) {
+		double roll = random.nextDouble();
+		if (gone < 0.3) {
+			return roll < 0.25
+				? Blocks.CRACKED_STONE_BRICKS.defaultBlockState()
+				: Blocks.STONE_BRICKS.defaultBlockState();
+		}
+		if (gone < 0.7) {
+			if (roll < gone) {
+				return Blocks.SCULK.defaultBlockState();
+			}
+			return roll < 0.8
+				? Blocks.COBBLESTONE.defaultBlockState()
+				: Blocks.MOSSY_COBBLESTONE.defaultBlockState();
+		}
+		return roll < gone
+			? Blocks.SCULK.defaultBlockState()
+			: Blocks.COBBLED_DEEPSLATE.defaultBlockState();
 	}
 }

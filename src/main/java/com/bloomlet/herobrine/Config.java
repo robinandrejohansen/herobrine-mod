@@ -198,6 +198,19 @@ public final class Config {
 	 * Blank it to force the built-in one even when a file exists.
 	 */
 	public String keepBlueprint = "tutorial_castle";
+	/**
+	 * WHAT THE LAST HOUSE IS, and it is the biggest thing the mod places.
+	 *
+	 * A blueprint name, looked for the same way keepBlueprint is. With one the
+	 * threshold becomes that build with an infected descent cut down through it to
+	 * the door; blank it and the threshold is the mine and the cells it has always
+	 * been.
+	 *
+	 * Oakhold is 1.5 million blocks and about forty seconds to stand up. Nobody is
+	 * standing in it — the threshold sites eight hundred to thirteen hundred blocks
+	 * out at SIEGE — but it is worth knowing before it is switched on.
+	 */
+	public String lastHouseBlueprint = "oakhold";
 	/** Every animal turns on you at SIEGE. */
 	public boolean hostileAnimals = true;
 	/**
@@ -277,7 +290,7 @@ public final class Config {
 	 * Bump it, and add a case, whenever a DEFAULT changes in a way an existing
 	 * world should get.
 	 */
-	private static final int SETTINGS_VERSION = 2;
+	private static final int SETTINGS_VERSION = 3;
 	public int settingsVersion = 0;
 
 	/**
@@ -321,6 +334,13 @@ public final class Config {
 			HerobrineMod.LOGGER.info(
 				"keepBlueprint added — drop a file in config/herobrine/blueprints"
 					+ " and his castle becomes that building instead");
+		}
+		if (it.settingsVersion < 3
+			&& (it.lastHouseBlueprint == null || it.lastHouseBlueprint.isEmpty())) {
+			it.lastHouseBlueprint = "oakhold";
+			HerobrineMod.LOGGER.info(
+				"lastHouseBlueprint added — the threshold is a city now. blank it to"
+					+ " go back to the mine.");
 		}
 		it.settingsVersion = SETTINGS_VERSION;
 		return true;
