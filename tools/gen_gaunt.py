@@ -77,11 +77,32 @@ BRIDGE = (11, 12)
 BROW_ROW = 9
 PUPIL_WIDE = 3
 
-# The villager's own green, measured off the real sheet in gen_turned.py, and the
-# ring is five so a three-wide pupil sits inside it with a pixel of iris showing
-# all the way round. Seven filled the socket and lost the white.
-IRIS = (56, 148, 56, 255)
+# RED BEHIND THE BLACK, NOT GREEN.
+#
+# The green was the villager's own, copied off gen_turned.py, and on the Turned it
+# is right: he is one of them and the green says so. On this it says the same
+# thing, which is the problem — the tall one is not one of them any more, and an
+# eye that files it under "villager" is doing the opposite of the work.
+#
+# A dark red reads as blood behind the pupil rather than as an iris at all, and it
+# is the one hue that appears nowhere else on this creature. Muted rather than
+# bright: a saturated red is a GLOWING eye, and glowing eyes are his.
+IRIS = (124, 26, 26, 255)
 IRIS_WIDE = 5
+
+# AND THE PUPIL SITS LOW IN THE SOCKET.
+#
+# Centred, there was as much white under the pupil as over it, which is a level
+# gaze. Dropped two pixels there is a band of white above and almost none below —
+# the eye of something looking UP at you from under its own brow. The brow is
+# gone now, so the eye has to do that on its own.
+#
+# ONE, NOT TWO. Two put the iris flush against the bottom of the socket, which
+# breaks the rule this file argued for when the ring went in: white on all four
+# sides, or it stops reading as an eye and starts reading as a coloured square.
+# One is three rows of white above and one below — asymmetric enough to be a
+# heavy lid, and still an eye.
+PUPIL_DROP = 1
 
 
 def client_jar():
@@ -208,7 +229,7 @@ def main():
 		wide = 3 * SCALE
 		tall = 2 * SCALE
 		ix = eye * SCALE + (wide - IRIS_WIDE) // 2
-		iy = EYE_ROWS[0] * SCALE + (tall - IRIS_WIDE) // 2
+		iy = EYE_ROWS[0] * SCALE + (tall - IRIS_WIDE) // 2 + PUPIL_DROP
 		for y in range(iy, iy + IRIS_WIDE):
 			for x in range(ix, ix + IRIS_WIDE):
 				big[y][x] = IRIS
@@ -217,7 +238,7 @@ def main():
 		wide = 3 * SCALE
 		tall = 2 * SCALE
 		x0 = eye * SCALE + (wide - PUPIL_WIDE) // 2
-		y0 = EYE_ROWS[0] * SCALE + (tall - PUPIL_WIDE) // 2
+		y0 = EYE_ROWS[0] * SCALE + (tall - PUPIL_WIDE) // 2 + PUPIL_DROP
 		for y in range(y0, y0 + PUPIL_WIDE):
 			for x in range(x0, x0 + PUPIL_WIDE):
 				big[y][x] = PUPIL
