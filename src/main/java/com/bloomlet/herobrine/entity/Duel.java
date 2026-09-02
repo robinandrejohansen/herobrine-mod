@@ -243,6 +243,13 @@ final class Duel {
 	private static final int SPEAK_REST = 400;
 	private static final double APPROACH_PACE = 0.6;
 
+	private static final String[] WATCHING = {
+		"i can see you from here",
+		"look up",
+		"you are walking the right way",
+		"the gate is open. it has always been open",
+	};
+
 	private static final String[] WAITING = {
 		"you came all this way",
 		"i have been standing here a long time",
@@ -323,7 +330,10 @@ final class Duel {
 		if (this.perches == null || this.perches.isEmpty()) {
 			return;
 		}
-		boolean seen = target.hasLineOfSight(this.him);
+		// SEEN MEANS LOOKED AT. A clear raycast to a dark figure forty blocks off and
+		// thirty up is not somebody seeing him, and with that test he never moved —
+		// the first playtest spent a minute under the walls asking where he was.
+		boolean seen = this.him.inTheirView(target);
 		this.unseenFor = seen ? 0 : this.unseenFor + 1;
 		if (--this.perchIn > 0) {
 			return;
@@ -339,24 +349,72 @@ final class Duel {
 			&& this.him.distanceTo(target) > STARES_WITHIN) {
 			return;
 		}
-		// Somewhere on the wall that can see them, not too close, not the one he is on.
-		List<BlockPos> fit = new ArrayList<>();
+		// A PLACE THEY WILL ACTUALLY SEE. Wall height rather than a tower top, sixteen
+		// to thirty blocks rather than forty-eight, and in front of them — in that
+		// order of preference, falling back a rung at a time. Being findable is the
+		// whole job of this stage; a perch nobody notices is a man who is not there.
+		Vec3 look = target.getViewVector(1.0F).normalize();
+		List<BlockPos> best = new ArrayList<>();
+		List<BlockPos> fair = new ArrayList<>();
 		for (BlockPos p : this.perches) {
 			double d = Math.sqrt(p.distToCenterSqr(target.position()));
-			if (d < 14.0 || d > 48.0 || p.closerToCenterThan(this.him.position(), 3.0)) {
+			if (d < 14.0 || d > 40.0 || p.closerToCenterThan(this.him.position(), 3.0)
+				|| !this.him.seesSpot(target, p)) {
 				continue;
 			}
-			if (this.him.seesSpot(target, p)) {
-				fit.add(p);
+			Vec3 toward = new Vec3(p.getX() + 0.5 - target.getX(),
+				p.getY() + 1.0 - target.getEyeY(), p.getZ() + 0.5 - target.getZ()).normalize();
+			boolean ahead = look.dot(toward) > 0.35;
+			boolean low = p.getY() <= this.surface + 12;
+			if (ahead && low && d <= 30.0) {
+				best.add(p);
+			} else {
+				fair.add(p);
 			}
 		}
-		if (fit.isEmpty()) {
-			fit.addAll(this.perches);
-		}
+		List<BlockPos> fit = !best.isEmpty() ? best : !fair.isEmpty() ? fair : this.perches;
 		BlockPos to = fit.get(this.him.getRandom().nextInt(fit.size()));
 		this.him.blinkTo(to.getX() + 0.5, to.getY(), to.getZ() + 0.5, this.yawTo(to, target));
 		this.perchIn = PERCH_REST;
 		this.unseenFor = 0;
+		this.silhouette(here, target, to);
+		if (here.getGameTime() - this.spokeAt > SPEAK_REST) {
+			this.spokeAt = here.getGameTime();
+			target.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+				"§8§o" + WATCHING[this.him.getRandom().nextInt(WATCHING.length)]));
+		}
+	}
+
+	/**
+	 * THE FIGURE AGAINST THE SKY. A bolt that does nothing, twenty-odd blocks
+	 * behind him on the line from you, half a second after he takes the perch: the
+	 * flash puts him in silhouette for one frame, which is the oldest way there is
+	 * of showing somebody a shape in the dark. One per perch, and he only changes
+	 * perch when you have failed to look at him for eight seconds — so it is a hint
+	 * that stops the moment you take it.
+	 */
+	private void silhouette(ServerLevel here, ServerPlayer target, BlockPos perch) {
+		Vec3 along = new Vec3(perch.getX() + 0.5 - target.getX(), 0.0,
+			perch.getZ() + 0.5 - target.getZ());
+		if (along.lengthSqr() < 1.0E-4) {
+			return;
+		}
+		Vec3 beyond = along.normalize().scale(22.0);
+		final int x = (int) Math.floor(perch.getX() + 0.5 + beyond.x);
+		final int z = (int) Math.floor(perch.getZ() + 0.5 + beyond.z);
+		com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), 10, () -> {
+			int y = here.getHeight(
+				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
+			net.minecraft.world.entity.LightningBolt flash =
+				net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
+					.create(here, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+			if (flash == null) {
+				return;
+			}
+			flash.setVisualOnly(true);
+			flash.snapTo(x + 0.5, y, z + 0.5, 0.0F, 0.0F);
+			here.addFreshEntity(flash);
+		});
 	}
 
 	/**

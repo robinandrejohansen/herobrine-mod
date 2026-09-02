@@ -5849,6 +5849,11 @@ public class HerobrineEntity extends PathfinderMob {
 		return this.aloft(quarry);
 	}
 
+	/** Loosely in front of them with a clear line — being LOOKED AT, not merely visible. */
+	boolean inTheirView(Player quarry) {
+		return this.inViewOf(quarry);
+	}
+
 	boolean seesSpot(Player quarry, BlockPos at) {
 		return this.level() instanceof ServerLevel here && clearTo(here, quarry, at);
 	}
