@@ -228,8 +228,9 @@ public final class HerobrineCommand {
 					int cleared = Dwellings.forget(level);
 					ctx.getSource().sendSuccess(() -> Component.literal(
 						cleared + " places forgotten — they will be chosen again near"
-							+ " whoever is online, within a couple of seconds."
-							+ " Anything already built is left where it is."), false);
+							+ " whoever is online, within a couple of seconds, and"
+							+ " clear of anything already standing. Places that are"
+							+ " already built keep the ground they are on."), false);
 					return 1;
 				}))
 

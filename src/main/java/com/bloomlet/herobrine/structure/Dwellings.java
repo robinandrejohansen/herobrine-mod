@@ -1240,6 +1240,80 @@ public final class Dwellings {
 	 * a house somebody watches arrive, and nothing here is ever watched
 	 * arriving.
 	 */
+	/**
+	 * HOW MUCH GROUND EACH ONE ACTUALLY TAKES, so they can be kept off each other.
+	 *
+	 * Nothing checked this before. pick() asked two questions — is the ground
+	 * buildable, and is anybody standing too close — and never once asked whether
+	 * something else was already there. Six buildings sited independently, and the
+	 * last house came down on top of the first.
+	 *
+	 * WHY IT HAPPENS IS THE CHAIN ITSELF. Each place is sited a few hundred blocks
+	 * from where the players are STANDING, which is the building they have just
+	 * finished reading. So the six sites are a six-step random walk, and a random
+	 * walk folds back over itself: the sum of the steps is four thousand blocks and
+	 * the expected distance from the start is nothing like that. Simulating the real
+	 * bands, twenty thousand worlds: 6.5% of them put two buildings inside each
+	 * other, worst of all the town, which is the biggest thing here by a factor of
+	 * two and had the same claim on its ground as a garden shed.
+	 *
+	 * The numbers are read off the builders rather than chosen. Township's wall is
+	 * at 64 and its fields and grove reach WALL_RADIUS + 12; the village is 63 by
+	 * 56, so 42 to a corner, and its lanes go a little past that; TheDig's hall is
+	 * 34 long; the church is 19 by 31 with the undercity's 40-block span beneath
+	 * it. Rounded up in every case, because being generous here costs a tenth of a
+	 * rejected candidate per world and being mean costs a village inside a town.
+	 */
+	private static int spread(Place place) {
+		return switch (place) {
+			case TOWN -> 88;
+			case THRESHOLD -> 48;
+			case GAOL -> 34;
+			case CHURCH -> 32;
+			case HOMESTEAD -> 30;
+			case TOWER -> 24;
+		};
+	}
+
+	/**
+	 * And a walk between them, on top of the two footprints.
+	 *
+	 * Touching is not the only failure. Two buildings twenty blocks apart are one
+	 * location with two buildings in it, and the whole point of the sequence is
+	 * that each one is somewhere you went.
+	 */
+	private static final int ELBOW = 24;
+
+	/**
+	 * Is something already here?
+	 *
+	 * Every OTHER place that has been sited, built or not. Not built or not makes
+	 * no difference: a site that exists is where a building is going, and moving
+	 * this one out of the way now is free while moving it later is not possible.
+	 *
+	 * Cheap enough to do per candidate — five squared distances, no chunk loaded,
+	 * no world touched. It runs before ready(), which is the expensive one.
+	 */
+	private static boolean crowded(ServerLevel level, Place place, int x, int z) {
+		for (Place other : Place.values()) {
+			if (other == place) {
+				continue;
+			}
+			Long taken = level.getAttached(other.site);
+			if (taken == null) {
+				continue;
+			}
+			BlockPos was = BlockPos.of(taken);
+			long need = spread(place) + spread(other) + ELBOW;
+			long dx = x - was.getX();
+			long dz = z - was.getZ();
+			if (dx * dx + dz * dz < need * need) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Candidate sites examined per tick. Each one may generate a chunk. */
 	private static final int TRIES = 6;
 	/** How many ticks of failure before it says so. */
@@ -1258,6 +1332,7 @@ public final class Dwellings {
 		cz /= level.players().size();
 
 		RandomSource random = level.getRandom();
+		int shoved = 0;
 		// Six a tick, every two seconds. Sampling is free now, so this could be far
 		// higher — it stays low because a candidate that PASSES generates a chunk,
 		// and there is no reason to find six winners when the loop only uses one.
@@ -1266,6 +1341,12 @@ public final class Dwellings {
 			double range = place.near + random.nextDouble() * (place.far - place.near);
 			int x = (int)Math.round(cx + Math.cos(angle) * range);
 			int z = (int)Math.round(cz + Math.sin(angle) * range);
+
+			// SOMETHING ELSE FIRST, because it is arithmetic and ready() is noise.
+			if (crowded(level, place, x, z)) {
+				shoved++;
+				continue;
+			}
 
 			// Judged straight off the noise, with nothing loaded and nothing
 			// generated — see buildable(), which is where the four evenings went.
@@ -1289,11 +1370,17 @@ public final class Dwellings {
 		// missing without a single line in the log to point at.
 		int missed = refused.merge(place, 1, Integer::sum);
 		if (missed % GRUMBLES_AFTER == 0) {
+			// TWO FAILURES, NAMED SEPARATELY. "Nowhere to put it" that actually
+			// means "everywhere was already taken" sends whoever reads this log
+			// looking at terrain, and the terrain is fine. `shoved` is the count
+			// from the last tick's six rather than from all of them, which is
+			// enough to tell which of the two is happening.
 			HerobrineMod.LOGGER.warn(
 				"nowhere to put the {} after {} tries — wanted {}-{} blocks out from"
-					+ " the players, and every candidate was water, sea level or"
-					+ " unbuildable", place.name().toLowerCase(java.util.Locale.ROOT),
-				missed * TRIES, place.near, place.far);
+					+ " the players; {} of the last {} were too close to something"
+					+ " already sited, the rest were water, sea level or unbuildable",
+				place.name().toLowerCase(java.util.Locale.ROOT),
+				missed * TRIES, place.near, place.far, shoved, TRIES);
 		}
 		return null;
 	}
@@ -1336,9 +1423,26 @@ public final class Dwellings {
 	public static int forget(ServerLevel level) {
 		ServerLevel overworld = level.getServer().overworld();
 		int cleared = 0;
+		int standing = 0;
 		for (Place place : Place.values()) {
-			if (overworld.getAttached(place.site) != null
-				|| Boolean.TRUE.equals(overworld.getAttached(place.up))) {
+			// A PLACE THAT IS BUILT KEEPS ITS SITE, AND THAT IS NOT A DETAIL.
+			//
+			// This used to clear the site of every place including the built ones,
+			// which left the blocks standing in the world with nothing recording
+			// that they were there. Harmless while nothing consulted the record;
+			// crowded() consults it, so clearing it made every already-built
+			// building invisible to the one check that keeps buildings apart — and
+			// the next thing sited could come down straight on top of a house the
+			// player had already found.
+			//
+			// Keeping it costs nothing else. The loop skips a place whose `up` is
+			// set, so a built place is not rebuilt; what the site is still doing is
+			// telling everything else that this ground is taken.
+			if (Boolean.TRUE.equals(overworld.getAttached(place.up))) {
+				standing++;
+				continue;
+			}
+			if (overworld.getAttached(place.site) != null) {
 				cleared++;
 			}
 			overworld.setAttached(place.site, null);
@@ -1348,7 +1452,9 @@ public final class Dwellings {
 		// reporting a farmhouse that is no longer anybody's business.
 		overworld.setAttached(ORIGIN, null);
 		overworld.setAttached(THRESHOLD_ORIGIN, null);
-		HerobrineMod.LOGGER.info("forgot {} sites; they will be chosen again", cleared);
+		HerobrineMod.LOGGER.info(
+			"forgot {} sites; they will be chosen again, clear of the {} already"
+				+ " standing", cleared, standing);
 		return cleared;
 	}
 
