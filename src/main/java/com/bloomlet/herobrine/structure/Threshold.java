@@ -229,7 +229,146 @@ public final class Threshold {
 		trodden(level, at, at.offset(-2, 0, 12), random);
 
 		scatter(level, at, random);
+		// THE MOUTH BEFORE THE CAMP, and the order is the chain.
+		//
+		// theEight hangs the hoist rope down the middle of the shaft, which is the
+		// one detail that says the headframe was ever used — and mouth() carves that
+		// shaft. Built the other way round the rope goes in first and is cut out
+		// four blocks later, leaving a winch with nothing on it.
 		mouth(level, at, random);
+		theEight(level, at, random);
+	}
+
+	/** How tall the headframe stands over the shaft. */
+	private static final int WINCH = 9;
+
+	/** Nineteen went down. Eleven came back up. */
+	private static final int WENT_DOWN = 19;
+	private static final int CAME_BACK = 11;
+
+	/**
+	 * WHAT NINETEEN PEOPLE LEFT ON THE SURFACE, and the last place had nothing.
+	 *
+	 * Reported as an open plain with a slope into nowhere, and the file said so
+	 * itself in its own docstring: almost nothing on the surface, a player could
+	 * walk within twenty blocks and never look twice. That is a defensible choice
+	 * for a hidden thing and it is the wrong one for the LAST thing. Five buildings
+	 * announce themselves across three thousand blocks and then the finale is a
+	 * hole in a field.
+	 *
+	 * IT IS STILL NOT A HOUSE. Making it one would break what the place is — the
+	 * cells are the point and they are underneath. What goes up here is the WORK,
+	 * and the story has already specified it exactly. HouseBooks.theThresholdAfter:
+	 * "It took nineteen of us to put him through and eleven came back up." "Eight
+	 * people stood in a line and let him come."
+	 *
+	 * So: a headframe, because nobody sinks a hundred blocks of shaft without a
+	 * hoist and it is the only thing here with any height — that is what fixes the
+	 * open plain. Spoil, because a hundred blocks of bore came out somewhere. The
+	 * camp, nineteen beds, ELEVEN OF THEM STILL MADE. And eight graves.
+	 *
+	 * The count is the whole thing and it needs no book. Nineteen beds, eleven
+	 * neat, eight torn, eight graves. Anybody who counts gets the story; anybody
+	 * who does not still walks through a camp somebody left in a hurry.
+	 */
+	private static void theEight(ServerLevel level, BlockPos at, RandomSource random) {
+		// ---- THE HEADFRAME. Four legs clear of the mouth, braced, with a beam.
+		int floor = Ground.topOf(level, at.getX(), at.getZ()) + 1;
+		for (int sx : new int[] { -3, 3 }) {
+			for (int sz : new int[] { -3, 3 }) {
+				for (int up = 0; up < WINCH; up++) {
+					int y = Ground.topOf(level, at.getX() + sx, at.getZ() + sz) + 1 + up;
+					level.setBlock(new BlockPos(at.getX() + sx, y, at.getZ() + sz),
+						Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
+							.setValue(BlockStateProperties.AXIS, Direction.Axis.Y), 2);
+				}
+			}
+		}
+		for (int dx = -3; dx <= 3; dx++) {
+			for (int sz : new int[] { -3, 3 }) {
+				level.setBlock(new BlockPos(at.getX() + dx, floor + WINCH, at.getZ() + sz),
+					Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
+			}
+		}
+		// The axle, across the middle, with the rope still on it.
+		for (int dz = -3; dz <= 3; dz++) {
+			level.setBlock(new BlockPos(at.getX(), floor + WINCH, at.getZ() + dz),
+				Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
+					.setValue(BlockStateProperties.AXIS, Direction.Axis.Z), 2);
+		}
+		for (int down = 1; down <= 4; down++) {
+			level.setBlock(new BlockPos(at.getX(), floor + WINCH - down, at.getZ()),
+				Blocks.IRON_CHAIN.defaultBlockState(), 2);
+		}
+
+		// ---- THE SPOIL. A hundred blocks of bore had to come out somewhere.
+		for (int heap = 0; heap < 3; heap++) {
+			double angle = Math.PI * 2.0 * heap / 3.0 + 0.6;
+			int hx = at.getX() + (int) Math.round(Math.cos(angle) * 13);
+			int hz = at.getZ() + (int) Math.round(Math.sin(angle) * 13);
+			for (int dx = -3; dx <= 3; dx++) {
+				for (int dz = -3; dz <= 3; dz++) {
+					int high = 3 - (Math.abs(dx) + Math.abs(dz));
+					for (int up = 0; up < high; up++) {
+						int y = Ground.topOf(level, hx + dx, hz + dz) + 1 + up;
+						level.setBlock(new BlockPos(hx + dx, y, hz + dz),
+							random.nextInt(3) == 0
+								? Blocks.GRAVEL.defaultBlockState()
+								: Blocks.COBBLESTONE.defaultBlockState(), 2);
+					}
+				}
+			}
+		}
+
+		// ---- THE CAMP. Nineteen, in rows, and the state of them is the story.
+		int laid = 0;
+		for (int row = 0; row < 4 && laid < WENT_DOWN; row++) {
+			for (int i = 0; i < 5 && laid < WENT_DOWN; i++) {
+				int bx = at.getX() - 17 + i * 3;
+				int bz = at.getZ() + 6 + row * 3;
+				int y = Ground.topOf(level, bx, bz) + 1;
+				BlockPos foot = new BlockPos(bx, y, bz);
+				if (!level.getBlockState(foot).isAir()
+					|| !level.getBlockState(foot.north()).isAir()) {
+					continue;
+				}
+				boolean made = laid < CAME_BACK;
+				// ELEVEN MADE, EIGHT NOT, and that is the count in the book.
+				// A bed still made is somebody who came back and rolled it up; a
+				// bed left open is somebody who did not.
+				BlockState bed = Blocks.BED
+					.pick(made ? net.minecraft.world.item.DyeColor.WHITE
+						: net.minecraft.world.item.DyeColor.BROWN)
+					.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH);
+				level.setBlock(foot, bed.setValue(BlockStateProperties.BED_PART,
+					net.minecraft.world.level.block.state.properties.BedPart.FOOT), 2);
+				level.setBlock(foot.north(), bed.setValue(BlockStateProperties.BED_PART,
+					net.minecraft.world.level.block.state.properties.BedPart.HEAD), 2);
+				if (!made) {
+					level.setBlock(foot.above(), Blocks.COBWEB.defaultBlockState(), 2);
+				}
+				laid++;
+			}
+		}
+
+		// ---- AND EIGHT GRAVES, for the eight who stood in the line.
+		int dug = WENT_DOWN - CAME_BACK;
+		for (int g = 0; g < dug; g++) {
+			int gx = at.getX() + 8 + (g % 4) * 3;
+			int gz = at.getZ() - 8 - (g / 4) * 4;
+			int y = Ground.topOf(level, gx, gz) + 1;
+			for (int dz = 0; dz < 2; dz++) {
+				level.setBlock(new BlockPos(gx, y - 1, gz + dz),
+					Blocks.PODZOL.defaultBlockState(), 2);
+			}
+			level.setBlock(new BlockPos(gx, y, gz - 1),
+				Blocks.COBBLESTONE_WALL.defaultBlockState(), 2);
+		}
+
+		HerobrineMod.LOGGER.info(
+			"the threshold camp: a {}-block headframe, {} beds ({} still made),"
+				+ " {} graves", WINCH, laid, Math.min(laid, CAME_BACK), dug);
 	}
 
 	/** A line of worn ground between two places somebody went often. */
