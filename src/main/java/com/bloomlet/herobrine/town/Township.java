@@ -135,6 +135,7 @@ public final class Township {
 
 		footpaths(level, centre, plots, random);
 		commons(level, centre, random);
+		grove(level, centre, approach, plots, random);
 		populate(level, centre, plots, random);
 
 		HerobrineMod.LOGGER.info("township laid out at [{}, {}, {}], gate facing {}, {} plots",
@@ -238,6 +239,110 @@ public final class Township {
 	 * gathers at the edges and along the wall rather than covering the middle,
 	 * because the middle is where people walked and the edges are where nobody did.
 	 */
+	/** The wedge left to the wood, and where it sits relative to the gate. */
+	private static final double GROVE_SPREAD = Math.PI / 2.4;
+	private static final int GROVE_IN = SQUARE + 9;
+	private static final int GROVE_OUT = WALL_RADIUS - 7;
+
+	/**
+	 * TREES INSIDE THE WALL, because commons() only ever laid ground.
+	 *
+	 * Grounds.dress puts moss, podzol, ferns, coarse dirt and flowers between the
+	 * lanes, which is green and has NO HEIGHT — the same fault the threshold's
+	 * surface had, and it reads the same way: from inside the gate the town is
+	 * buildings and paving out to a wall, with some texture on the floor.
+	 *
+	 * Oakhold gives a whole quadrant inside its wall to a wood and a cemetery, and
+	 * that is most of why it reads as a place rather than a compound. Same idea
+	 * here, in the sector BEHIND the square from the gate: you come in, the town is
+	 * in front of you, and what is behind it is trees.
+	 *
+	 * BUILT RATHER THAN GROWN. A vanilla sapling feature would be one call and it
+	 * would also be a different wood every time and occasionally a two-block shrub;
+	 * these are placed, so the canopy is a known height and the trunks stand where
+	 * they were put.
+	 *
+	 * The clearance rules are Grounds' own, plus the plots. dress() already refuses
+	 * to sit on a road or inside anything, and a tree has the same requirement with
+	 * a much worse failure — a trunk through a roof is not a texture, it is a hole
+	 * in somebody's house.
+	 */
+	private static void grove(ServerLevel level, BlockPos centre, Direction gate,
+	                          List<Plot> plots, RandomSource random) {
+		Direction behind = gate.getOpposite();
+		double aim = Math.atan2(behind.getStepZ(), behind.getStepX());
+		int planted = 0;
+
+		for (int tries = 0; tries < 260; tries++) {
+			double turn = aim + (random.nextDouble() - 0.5) * GROVE_SPREAD;
+			double out = GROVE_IN + random.nextDouble() * (GROVE_OUT - GROVE_IN);
+			int x = centre.getX() + (int) Math.round(Math.cos(turn) * out);
+			int z = centre.getZ() + (int) Math.round(Math.sin(turn) * out);
+			if (!level.isLoaded(new BlockPos(x, centre.getY(), z))
+				|| !Ground.dry(level, x, z)) {
+				continue;
+			}
+			int y = Ground.topOf(level, x, z);
+			BlockPos on = new BlockPos(x, y, z);
+			if (!level.getBlockState(on.above()).isAir()
+				|| level.getBlockState(on).is(Blocks.DIRT_PATH)
+				|| !level.getBlockState(on).isSolid()) {
+				continue;
+			}
+			if (onAPlot(plots, x, z, 3)) {
+				continue;
+			}
+			tree(level, on.above(), random);
+			planted++;
+		}
+		HerobrineMod.LOGGER.info("{} trees left standing inside the town wall",
+			planted);
+	}
+
+	/** Whether a spot is inside any plot's footprint, plus a margin. */
+	private static boolean onAPlot(List<Plot> plots, int x, int z, int margin) {
+		for (Plot plot : plots) {
+			BlockPos c = plot.corner();
+			if (x >= c.getX() - margin && x <= c.getX() + plot.width() + margin
+				&& z >= c.getZ() - margin && z <= c.getZ() + plot.depth() + margin) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * One tree. Trunk, then a canopy two blocks wide with the corners off.
+	 *
+	 * Leaves are only ever written into AIR, so a canopy that reaches a wall walk
+	 * or another tree stops there instead of growing through it.
+	 */
+	private static void tree(ServerLevel level, BlockPos foot, RandomSource random) {
+		boolean birch = random.nextInt(4) == 0;
+		BlockState log = (birch ? Blocks.BIRCH_LOG : Blocks.OAK_LOG).defaultBlockState();
+		BlockState leaf = (birch ? Blocks.BIRCH_LEAVES : Blocks.OAK_LEAVES)
+			.defaultBlockState()
+			.setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true);
+		int tall = 4 + random.nextInt(3);
+		for (int up = 0; up < tall; up++) {
+			level.setBlock(foot.above(up), log, 2);
+		}
+		for (int up = tall - 2; up <= tall + 1; up++) {
+			int reach = (up >= tall) ? 1 : 2;
+			for (int dx = -reach; dx <= reach; dx++) {
+				for (int dz = -reach; dz <= reach; dz++) {
+					if (Math.abs(dx) == reach && Math.abs(dz) == reach) {
+						continue;      // corners off, so it is round
+					}
+					BlockPos at = foot.offset(dx, up, dz);
+					if (level.getBlockState(at).isAir()) {
+						level.setBlock(at, leaf, 2);
+					}
+				}
+			}
+		}
+	}
+
 	private static void commons(ServerLevel level, BlockPos centre, RandomSource random) {
 		com.bloomlet.herobrine.structure.Grounds.dress(level, centre,
 			SQUARE + 3, WALL_RADIUS - 1, random);
