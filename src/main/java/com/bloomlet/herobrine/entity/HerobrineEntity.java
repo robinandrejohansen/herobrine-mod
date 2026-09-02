@@ -5752,6 +5752,69 @@ public class HerobrineEntity extends PathfinderMob {
 	 * full-length hunt, because hitting him three times is not a way of avoiding
 	 * his attention — it is the loudest way there is of getting it.
 	 */
+	/**
+	 * A GOOD SWORD MOVES HIM, AND A BARE HAND VERY NEARLY DOES NOT.
+	 *
+	 * He never budged, for a reason that is invisible from the outside: both of the
+	 * paths a player's blow takes through hurtServer end in `return false`. He
+	 * counts the hit, he takes the damage off his own tally, and he tells vanilla
+	 * the damage was refused — which is correct, because his health is not what
+	 * this fight is about. But vanilla knockback is applied by the damage code that
+	 * was just told nothing happened, so there has never been a shove at all.
+	 *
+	 * Not zero knockback. NO knockback, from any weapon, ever, and no way to tell
+	 * that from a boss with high resistance.
+	 *
+	 * SO IT IS DONE HERE, FROM THE DAMAGE THAT WAS ACTUALLY ROLLED. Which is the
+	 * one number that already knows about the weapon, the enchantments, the
+	 * critical and the cooldown — reading the held item instead would be
+	 * reimplementing all four and getting the last two wrong.
+	 *
+	 *     an empty hand   ~1 damage    0.09   a twitch, and it should be
+	 *     an iron sword   ~6           0.25
+	 *     netherite       ~8           0.31
+	 *     netherite, Sharpness V  ~11  0.40   capped
+	 *
+	 * FOUR TENTHS IS THE CEILING and it is deliberately short of vanilla's own
+	 * shove. He is three blocks of him in act three; a boss that skates backwards
+	 * off every hit is a boss you can kite into a corner and beat with a stick, and
+	 * the whole fight is built on him choosing the distance. What is wanted is the
+	 * sword FEELING like a sword, not a crowd-control tool.
+	 *
+	 * HORIZONTAL ONLY, AND ONLY WITH HIS FEET ON THE GROUND. Lifting him is how
+	 * this turns into an iron golem juggling somebody; and shoving him mid-flight
+	 * would fight the scripted ascents — the act change, the pause, the way he
+	 * hangs over the keep on fire — which own his movement outright while they run.
+	 *
+	 * The wound window is what makes it visible. See linger: a WOUND does not damp
+	 * his motion, so ordinary friction settles him over about half a second, which
+	 * is what being hit by something heavy looks like. The same shove during his
+	 * OWN window would be eaten in four ticks.
+	 */
+	private static final double SHOVE_LEAST = 0.09;
+	private static final double SHOVE_MOST = 0.40;
+	private static final float SHOVE_FULL_AT = 11.0F;
+
+	private void stagger(ServerPlayer striker, float damage) {
+		if (!this.onGround() || this.flying) {
+			return;
+		}
+		double from = Math.min(1.0, Math.max(0.0, damage / SHOVE_FULL_AT));
+		double push = SHOVE_LEAST + from * (SHOVE_MOST - SHOVE_LEAST);
+		net.minecraft.world.phys.Vec3 away = this.position()
+			.subtract(striker.position());
+		if (away.horizontalDistanceSqr() < 1.0E-4) {
+			// Standing inside him. Shove him off the way he is facing instead of
+			// dividing by nothing.
+			away = net.minecraft.world.phys.Vec3.directionFromRotation(0.0F,
+				this.getYRot());
+		}
+		away = new net.minecraft.world.phys.Vec3(away.x, 0.0, away.z).normalize();
+		this.setDeltaMovement(this.getDeltaMovement()
+			.add(away.x * push, 0.0, away.z * push));
+		this.hurtMarked = true;   // tells the client the shove happened
+	}
+
 	private void tookOne(ServerLevel level, ServerPlayer striker, float damage) {
 		this.tookOne(level, striker, damage, this.damageSources().generic());
 	}
@@ -5920,6 +5983,7 @@ public class HerobrineEntity extends PathfinderMob {
 			this.linger = WOUND_WINDOW;
 		}
 		this.lingerWounded = true;
+		this.stagger(striker, damage);
 		// THE WEAPON, NOT JUST THE NUMBER.
 		//
 		// A playtest logged eleven hits at "last 1,0" each and the conclusion drawn
@@ -8017,7 +8081,10 @@ public class HerobrineEntity extends PathfinderMob {
 		// Opening him up belongs on the drive-off branch instead. See below.
 		if (source.getEntity() instanceof ServerPlayer striker
 			&& Wrath.phase(level.getServer()) == Phase.SIEGE) {
-			return this.takeTheBlow(level, source, striker);
+			// THE DAMAGE COMES WITH IT NOW. It was dropped here, which was fine
+			// while the blow was only ever counted — the Reckoning is thirty blows
+			// whatever they are struck with. The shove is not: see stagger.
+			return this.takeTheBlow(level, source, striker, damage);
 		}
 
 		// ANYTHING ELSE THAT TOUCHES HIM SIMPLY STOPS.
@@ -8452,7 +8519,8 @@ public class HerobrineEntity extends PathfinderMob {
 	 * by the time it arrived, and here he simply stands and takes it and gets
 	 * worse.
 	 */
-	private boolean takeTheBlow(ServerLevel level, DamageSource source, ServerPlayer striker) {
+	private boolean takeTheBlow(ServerLevel level, DamageSource source, ServerPlayer striker,
+	                            float damage) {
 		this.hits++;
 		this.hunting = true;      // whatever he was doing, he is doing this now
 		this.relenting = false;
@@ -8469,6 +8537,10 @@ public class HerobrineEntity extends PathfinderMob {
 
 		Heat.noticed(striker, DEFIANCE_STRUCK);
 		this.anger(level);
+		// The Reckoning gets the same shove as the hunt. Same reason, same
+		// numbers — see stagger. It is read off the source's own damage so a
+		// netherite sword still feels different from a fist in the last fight.
+		this.stagger(striker, damage);
 
 		if (this.hits >= Config.get().blowsToKill) {
 			super.hurtServer(level, source, Float.MAX_VALUE);
