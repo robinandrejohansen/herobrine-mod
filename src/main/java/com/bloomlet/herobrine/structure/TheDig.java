@@ -218,7 +218,19 @@ public final class TheDig {
 			int out = i * spacing;
 			// The shut one is always the same distance in, so it is not the
 			// last cell and not the first — it is one they walk past twice.
-			boolean shut = i == CELLS_PER_SIDE - 2;
+			// FOUR SHUT, NOT ONE.
+			//
+			// Cell nine was the only one with anything in it, which made the other
+			// thirteen a corridor you check once and then stop checking. Four means
+			// the room never finishes being checked — and only the first one opens
+			// for you. See GauntEntity.die: killing one draws a bolt somewhere
+			// further up the hall, so the place fills in behind you whether you
+			// looked in those cells or not.
+			//
+			// On the west side only, which is where the shut one has always been —
+			// theGaolAfter and HouseBooks.seven both call it cell nine and the
+			// warder's ledger is written from that side.
+			boolean shut = i >= CELLS_PER_SIDE - 4 && i <= CELLS_PER_SIDE - 1;
 			// AWAY FROM THE CORRIDOR, WHICH IS THE OPPOSITE OF WHAT THIS SAID.
 			//
 			// `into` is the direction a cell extends from its own mouth, and both of

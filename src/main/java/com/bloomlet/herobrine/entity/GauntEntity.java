@@ -196,13 +196,22 @@ public class GauntEntity extends PathfinderMob {
 	 * happen behind you.
 	 */
 	private void unbolt() {
+		this.unbolt(false);
+	}
+
+	private void unbolt(boolean regardless) {
 		if (this.cell == null || !(this.level() instanceof ServerLevel here)) {
 			return;
 		}
-		Player near = here.getNearestPlayer(this.cell.getX() + 0.5,
-			this.cell.getY() + 0.5, this.cell.getZ() + 0.5, LETS_ITSELF_OUT, false);
-		if (near == null) {
-			return;
+		// `regardless` is the one that is let out because somebody killed its
+		// neighbour. Nobody has to be standing at ITS door for that — the point is
+		// that it happens somewhere up the hall behind you.
+		if (!regardless) {
+			Player near = here.getNearestPlayer(this.cell.getX() + 0.5,
+				this.cell.getY() + 0.5, this.cell.getZ() + 0.5, LETS_ITSELF_OUT, false);
+			if (near == null) {
+				return;
+			}
 		}
 		net.minecraft.world.level.block.state.BlockState was =
 			here.getBlockState(this.cell);
@@ -292,7 +301,30 @@ public class GauntEntity extends PathfinderMob {
 	 * disagreeing here.
 	 */
 	public static final float WIDE = 0.7F;
-	public static final float TALL = 2.9F;
+	/**
+	 * IT HAS TO GET THROUGH A DOOR, AND AT 2.9 IT COULD NOT.
+	 *
+	 * A hitbox of 2.9 needs THREE clear blocks to path through. Every door in this
+	 * mod is two. So the thing let itself out of its cell — the trapdoor opened,
+	 * the latch sounded, everything worked — and then stood in the doorway forever,
+	 * because vanilla's pathfinder will not route a body through a gap it does not
+	 * fit in and there is no error when it refuses.
+	 *
+	 * Reported as "he won't move", and then as "the sound is gone", which was the
+	 * same bug seen twice: tread() plays a footstep every 2.4 blocks of ground
+	 * COVERED, so a creature that cannot leave a doorway is also a silent one.
+	 *
+	 * 1.95, which is a villager's, a player's, and the height every two-block
+	 * opening in the game is cut for.
+	 *
+	 * THE MODEL STAYS THREE BLOCKS TALL AND OVERHANGS IT, deliberately. That is
+	 * vanilla's own trick — an enderman is 2.9 with fifty units of mesh — and it is
+	 * the whole silhouette: a thing that has to stoop through your door and then
+	 * straightens up on the other side. The alternative was shrinking the creature
+	 * to fit its own hitbox, which is the one thing everybody has asked me not to
+	 * do to it.
+	 */
+	public static final float TALL = 1.95F;
 
 	// No getDimensions override: LivingEntity marks it final, and it does not need
 	// one. EntityType.Builder.sized in ModEntities is fed these same two constants,
@@ -869,11 +901,46 @@ public class GauntEntity extends PathfinderMob {
 		return false;
 	}
 
+	/**
+	 * AND WHEN ONE GOES DOWN, THE NEXT DOOR GOES OVER.
+	 *
+	 * Four of them are shut in down there and only the first opens for you. Kill
+	 * that one and a bolt draws somewhere further up the hall, and then you are
+	 * standing in a corridor of thirteen empty cells and three that are not,
+	 * knowing exactly what the sound was.
+	 *
+	 * The other three never have to be found, which is the good part: they let
+	 * themselves out on your progress rather than on your searching, so the room
+	 * fills up behind you whether you looked in it or not.
+	 *
+	 * NEAREST FIRST, so it walks up the hall towards you rather than opening the
+	 * far end and leaving something to cross fourteen cells in the dark. It is a
+	 * gaol, not a joke.
+	 */
+	private static final double SAME_GAOL = 96.0;
+
 	@Override
 	public void die(DamageSource source) {
 		super.die(source);
 		if (source.getEntity() instanceof net.minecraft.server.level.ServerPlayer killer) {
 			HerobrineMod.LOGGER.info("{} put the tall one down", killer.getName().getString());
+		}
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		GauntEntity next = null;
+		double nearest = Double.MAX_VALUE;
+		for (GauntEntity other : here.getEntitiesOfClass(GauntEntity.class,
+				this.getBoundingBox().inflate(SAME_GAOL),
+				kept -> kept != this && kept.isAlive() && kept.cell != null)) {
+			double away = this.distanceToSqr(other);
+			if (away < nearest) {
+				nearest = away;
+				next = other;
+			}
+		}
+		if (next != null) {
+			next.unbolt(true);
 		}
 	}
 }

@@ -140,7 +140,7 @@ EYE_WIDE = 3             # and how many texels wide it is
 #
 # Which is the whole silhouette in four numbers.
 EYE_TOP_PX = 38
-EYE_TALL_PX = 5
+EYE_TALL_PX = 6
 
 # RED BEHIND THE BLACK, NOT GREEN.
 #
@@ -170,6 +170,32 @@ EYE_TALL_PX = 5
 # reference has exactly that. It is also why the glow sheet is worth having: see
 # eyes() below.
 SOCKET = (22, 16, 18, 255)
+
+# AND A BLACK DOT BACK IN THE MIDDLE OF IT.
+#
+# The pupil came out when the iris did, on the argument that a pupil is what
+# makes an eye read as LOOKING somewhere and this face should look at nothing.
+# That argument holds for a creature standing in a field at forty blocks. Up
+# close it stops being eerie and starts being unfinished: two flat white
+# rectangles with no centre are a texture that has not been drawn yet.
+#
+# A dot is not an iris. It is one dark mark in a field of white, and what it
+# does is give the glow somewhere to be AROUND — the eye now reads as lit from
+# behind rather than as painted.
+PUPIL = (16, 14, 16, 255)
+PUPIL_WIDE = 3
+PUPIL_TALL = 2
+
+# HOW HARD THE GLOW SHEET BURNS.
+#
+# EyesLayer draws at full brightness with world lighting ignored, so a solid
+# white eye on that layer is the brightest thing on the screen in a dark cell —
+# it was reported as glowing too much and it was: two headlamps.
+#
+# Alpha is the only dimmer there is, and it works because the render type is
+# translucent rather than additive. 110 of 255 keeps them clearly lit in the
+# dark and stops them being the only thing you can see.
+GLOW_ALPHA = 110
 
 
 
@@ -332,6 +358,10 @@ def main():
 		x1 = (eye + EYE_WIDE) * SCALE
 		rect(big, x0, EYE_TOP_PX, x1, EYE_TOP_PX + EYE_TALL_PX, SOCKET)
 		rect(big, x0 + 1, EYE_TOP_PX + 1, x1 - 1, EYE_TOP_PX + EYE_TALL_PX - 1, WHITE)
+		# The dot, centred in the white on both axes.
+		px0 = x0 + (EYE_WIDE * SCALE - PUPIL_WIDE) // 2
+		py0 = EYE_TOP_PX + (EYE_TALL_PX - PUPIL_TALL) // 2
+		rect(big, px0, py0, px0 + PUPIL_WIDE, py0 + PUPIL_TALL, PUPIL)
 
 	# ---- THE NOSE'S NET, AND THE PAINTED ONE IS GONE.
 	#
@@ -383,12 +413,17 @@ def main():
 	# punched in the light; the rim's job is on the base sheet, where it is lit
 	# normally and gives the white something to sit against.
 	glow = [[(0, 0, 0, 0)] * (width * SCALE) for _ in range(height * SCALE)]
+	lit = WHITE[:3] + (GLOW_ALPHA,)
 	for eye in EYE_COLS:
 		x0 = eye * SCALE
 		x1 = (eye + EYE_WIDE) * SCALE
 		for y in range(EYE_TOP_PX + 1, EYE_TOP_PX + EYE_TALL_PX - 1):
 			for x in range(x0 + 1, x1 - 1):
-				glow[y][x] = WHITE
+				# THE WHITE ONLY. Reading it back off the finished sheet rather
+				# than recomputing the rectangle, so the dot cannot end up glowing
+				# because somebody moved it and forgot this loop.
+				if big[y][x][:3] == WHITE[:3]:
+					glow[y][x] = lit
 	eyes_path = os.path.join(OUT, 'gaunt_eyes.png')
 	pngio.write(eyes_path, width * SCALE, height * SCALE, glow)
 	lit = sum(1 for r in glow for c in r if c[3] != 0)
