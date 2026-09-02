@@ -114,9 +114,8 @@ public final class Shop {
 			case 'P' -> Blueprint.put(level, at, Blocks.SPRUCE_PLANKS.defaultBlockState());
 			// The counter, and the whole reason the room reads as a shop.
 			case 'n' -> Blueprint.put(level, at, counter(trade));
-			case 't' -> Blueprint.put(level, at, bench(trade)
-				.setValue(BlockStateProperties.HORIZONTAL_FACING,
-					Blueprint.turned(Direction.SOUTH, facing)));
+			case 't' -> Blueprint.put(level, at,
+				bench(trade, Blueprint.turned(Direction.SOUTH, facing)));
 			case 'A' -> Blueprint.barrel(level, at, random,
 				com.bloomlet.herobrine.structure.Loot.Tier.TOWN_TRADE);
 			case 'K' -> chest(level, at, facing, random);
@@ -137,11 +136,36 @@ public final class Shop {
 	 * a different floor plan to say so. Cheap, and it means the second shop in
 	 * the town is never a copy of the first.
 	 */
-	private static BlockState bench(Trade trade) {
+	/**
+	 * FACED HERE, NOT WHERE IT IS PLACED.
+	 *
+	 * The 't' case used to turn this itself — bench(trade).setValue(FACING, ..)
+	 * — and a fletching table has no facing property at all. Not a wrong
+	 * value: the property does not exist on the block, so setValue throws, and
+	 * a shop that rolled FLETCHER took the server down mid-tick. Two shop plots
+	 * at one trade in four is a crash in seven towns out of sixteen.
+	 *
+	 * It threw where the block was PLACED, but the mistake was made where the
+	 * block was CHOSEN: the call site had one expression for four blocks and no
+	 * way to know that one of the four came back without a front. So the switch
+	 * that picks the block is now the thing that turns it, and the one trade
+	 * whose bench has no front simply does not get turned.
+	 *
+	 * Which is the general rule for this file. A branch that returns different
+	 * BLOCKS returns different PROPERTIES, and a caller cannot face what it
+	 * cannot identify — so anything chosen by a switch comes out of that switch
+	 * finished.
+	 */
+	private static BlockState bench(Trade trade, Direction facing) {
 		return switch (trade) {
-			case BAKER -> Blocks.SMOKER.defaultBlockState();
-			case WEAVER -> Blocks.LOOM.defaultBlockState();
-			case POTTER -> Blocks.SMOKER.defaultBlockState();
+			case BAKER -> Blocks.SMOKER.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
+			case WEAVER -> Blocks.LOOM.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
+			case POTTER -> Blocks.SMOKER.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
+			// A fletching table is identical on all four sides and has no
+			// facing to set. Placed as it comes.
 			case FLETCHER -> Blocks.FLETCHING_TABLE.defaultBlockState();
 		};
 	}
