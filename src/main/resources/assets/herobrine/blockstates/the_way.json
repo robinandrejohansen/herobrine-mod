@@ -1,5 +1,6 @@
 {
   "variants": {
-    "": { "model": "herobrine:block/the_way" }
+    "axis=x": { "model": "herobrine:block/the_way" },
+    "axis=z": { "model": "herobrine:block/the_way", "y": 90 }
   }
 }

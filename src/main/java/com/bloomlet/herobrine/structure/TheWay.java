@@ -225,8 +225,13 @@ public final class TheWay {
 		if (works) {
 			for (int dx = -HALF + 1; dx <= HALF - 1; dx++) {
 				for (int dy = 0; dy <= TALL; dy++) {
+					// ACROSS X, because this loop is the one that varies dx. Said
+					// out loud rather than left to the block's default — the
+					// default being right here is what hid the bug in seal().
 					level.setBlock(site.offset(dx, dy, 0),
-						ModBlocks.THE_WAY.defaultBlockState(), 2);
+						ModBlocks.THE_WAY.defaultBlockState().setValue(
+							com.bloomlet.herobrine.block.TheWayBlock.AXIS,
+							net.minecraft.core.Direction.Axis.X), 2);
 				}
 			}
 		}

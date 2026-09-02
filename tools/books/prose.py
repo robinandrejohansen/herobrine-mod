@@ -472,7 +472,7 @@ WHERE TO GO.
 
 Down.
 
-There is a stair under this hall and the sculk has taken it, and sculk does not grow on this side.
+There is a stair under this hall. The stone in it has gone black and glassy, and there is heat coming up out of it, and none of that belongs on this side.
 
 Which means the wall did not hold.
 

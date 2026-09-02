@@ -46,8 +46,59 @@ public class TheWayBlock extends Block {
 	public static final ResourceKey<Level> HIS_WORLD =
 		ResourceKey.create(Registries.DIMENSION, HerobrineMod.id("his_world"));
 
+	/**
+	 * WHICH WAY THE OPENING FACES, AND IT USED NOT TO HAVE ONE.
+	 *
+	 * This was a plain Block with a single model — a two-thick pane spanning x,
+	 * facing north and south, exactly vanilla's nether_portal_ns. Which is correct
+	 * for TheWay.build, because that lays its frame across x.
+	 *
+	 * Threshold.seal lays its frame across Z. Same block, same fixed model, and the
+	 * opening therefore stood at ninety degrees to the frame holding it: you walked
+	 * up to a doorway and the door was edge-on, a two-pixel line hanging in the
+	 * arch. Reported as "portal blocks are sideways", which is exactly what it was.
+	 *
+	 * Vanilla has had the answer since 1.0 and it is one property. axis=x keeps the
+	 * model, axis=z turns it ninety degrees in the blockstate file, and every
+	 * builder now says which way its own frame runs instead of hoping.
+	 */
+	public static final net.minecraft.world.level.block.state.properties.EnumProperty<
+			net.minecraft.core.Direction.Axis> AXIS =
+		net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_AXIS;
+
 	public TheWayBlock(Properties properties) {
 		super(properties);
+		this.registerDefaultState(
+			this.stateDefinition.any().setValue(AXIS, net.minecraft.core.Direction.Axis.X));
+	}
+
+	@Override
+	protected void createBlockStateDefinition(
+			net.minecraft.world.level.block.state.StateDefinition.Builder<
+				net.minecraft.world.level.block.Block,
+				net.minecraft.world.level.block.state.BlockState> builder) {
+		builder.add(AXIS);
+	}
+
+	/**
+	 * And it turns with the world, so a blueprint carrying one stays square.
+	 *
+	 * Blueprint.place rotates every state it writes through BlockState.rotate. A
+	 * block that does not implement this comes out of a quarter-turned building
+	 * still facing the way it did in the file — which is the same bug as above,
+	 * arriving by a different door.
+	 */
+	@Override
+	protected net.minecraft.world.level.block.state.BlockState rotate(
+			net.minecraft.world.level.block.state.BlockState state,
+			net.minecraft.world.level.block.Rotation rotation) {
+		return switch (rotation) {
+			case CLOCKWISE_90, COUNTERCLOCKWISE_90 -> state.setValue(AXIS,
+				state.getValue(AXIS) == net.minecraft.core.Direction.Axis.X
+					? net.minecraft.core.Direction.Axis.Z
+					: net.minecraft.core.Direction.Axis.X);
+			default -> state;
+		};
 	}
 
 	/**

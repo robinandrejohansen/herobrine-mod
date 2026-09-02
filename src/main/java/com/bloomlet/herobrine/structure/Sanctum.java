@@ -44,21 +44,56 @@ public final class Sanctum {
 	private static final int DAIS = 3;
 
 	public static BlockPos raise(ServerLevel level, BlockPos middle, RandomSource random) {
+		return raise(level, middle, random, false);
+	}
+
+	/**
+	 * THE SAME ROOM AT BOTH ENDS OF THE STORY, and `works` is the only difference.
+	 *
+	 * There are two doors in this mod and until now they had nothing in common but
+	 * a frame. The one under his house was this room — thirteen across, nine high,
+	 * six pillars, a dais three steps up — and the one at the end of the trail was
+	 * a thirteen-by-thirteen box of sculk with the frame flat against one wall.
+	 *
+	 * That is a wasted rhyme. A player who has stood in the dead one and then finds
+	 * the live one should recognise the room before they understand what is
+	 * different about it, and what is different should be exactly one thing: this
+	 * one is open.
+	 *
+	 * So it is one builder now. `works` chooses whether the opening is filled, and
+	 * it chooses what has grown in the room — pale moss on the dead one, which is
+	 * sixty years of nothing happening, and nether on the live one, because
+	 * something has been coming through it.
+	 */
+	public static BlockPos raise(ServerLevel level, BlockPos middle, RandomSource random,
+	                             boolean works) {
 		BlockPos floor = new BlockPos(middle.getX(),
 			Math.max(level.getMinY() + 6, middle.getY() - 1), middle.getZ());
 
 		hollow(level, floor, random);
 		pillars(level, floor, random);
 		dais(level, floor, random);
-		growth(level, floor, random);
+		growth(level, floor, random, works);
 
 		BlockPos gate = floor.above(DAIS + 1);
-		// REMAINS, NOT A DOOR. The room is the same and the frame is the same; the
-		// opening is empty. Everything about why is in TheWay.remains.
-		TheWay.remains(level, gate);
-		HerobrineMod.LOGGER.info("what is left of a door is under his house at [{}, {}, {}]",
-			gate.getX(), gate.getY(), gate.getZ());
+		if (works) {
+			TheWay.open(level, gate);
+			HerobrineMod.LOGGER.info("the door is open under the hall at [{}, {}, {}]",
+				gate.getX(), gate.getY(), gate.getZ());
+		} else {
+			// REMAINS, NOT A DOOR. The room is the same and the frame is the same;
+			// the opening is empty. Everything about why is in TheWay.remains.
+			TheWay.remains(level, gate);
+			HerobrineMod.LOGGER.info(
+				"what is left of a door is under his house at [{}, {}, {}]",
+				gate.getX(), gate.getY(), gate.getZ());
+		}
 		return gate;
+	}
+
+	/** Where a chest can stand and be seen from the stair. Three clear of the dais. */
+	public static BlockPos shelf(BlockPos gate) {
+		return gate.offset(0, -DAIS - 1, DAIS + 1);
 	}
 
 	/** The room itself, walls and vaulted-ish ceiling, all of it old. */
@@ -171,20 +206,25 @@ public final class Sanctum {
 	 * stuck on it — a head on a spike is a decoration, a head in the masonry is
 	 * something the masonry was built around.
 	 */
-	private static void growth(ServerLevel level, BlockPos floor, RandomSource random) {
+	private static void growth(ServerLevel level, BlockPos floor, RandomSource random,
+	                           boolean works) {
 		for (int dx = -HALF; dx <= HALF; dx++) {
 			for (int dz = -HALF; dz <= HALF; dz++) {
 				BlockPos on = floor.offset(dx, 0, dz);
 				if (level.getBlockState(on).isAir()
 					&& level.getBlockState(on.below()).isSolid()
 					&& random.nextInt(4) == 0) {
-					level.setBlock(on, Blocks.PALE_MOSS_CARPET.defaultBlockState(), 2);
+					level.setBlock(on, works
+						? Blocks.MAGMA_BLOCK.defaultBlockState()
+						: Blocks.PALE_MOSS_CARPET.defaultBlockState(), 2);
 				}
 				BlockPos under = floor.offset(dx, TALL - 1, dz);
 				if (level.getBlockState(under).isAir()
 					&& level.getBlockState(under.above()).isSolid()
 					&& random.nextInt(5) == 0) {
-					level.setBlock(under, Blocks.PALE_HANGING_MOSS.defaultBlockState(), 2);
+					level.setBlock(under, works
+						? Blocks.WEEPING_VINES.defaultBlockState()
+						: Blocks.PALE_HANGING_MOSS.defaultBlockState(), 2);
 				}
 			}
 		}

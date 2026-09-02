@@ -927,8 +927,13 @@ public final class Threshold {
 				// builds its own frame off its own HALF and TALL and would stand a
 				// second doorway inside this one. The frame is theirs; the opening
 				// is his.
+				// ACROSS Z, because this frame is the one that varies dz. This is
+				// the sideways portal: the block had no axis and its one model
+				// spanned x, so the opening stood edge-on inside its own arch.
 				level.setBlock(pos,
-					com.bloomlet.herobrine.block.ModBlocks.THE_WAY.defaultBlockState(), 2);
+					com.bloomlet.herobrine.block.ModBlocks.THE_WAY.defaultBlockState()
+						.setValue(com.bloomlet.herobrine.block.TheWayBlock.AXIS,
+							Direction.Axis.Z), 2);
 			}
 		}
 
@@ -1126,19 +1131,22 @@ public final class Threshold {
 	 * build — the densest stone-brick square in its southern half, which is its
 	 * castle — so the shaft opens in the castle floor and goes down.
 	 *
-	 * AND THE INFECTION IS THE POINT OF THE WALK. Sculk, because it is the one
+	 * AND THE CORRUPTION IS THE POINT OF THE WALK. Nether, because it is the one
 	 * vanilla block set that reads as something SPREADING rather than something
 	 * built or something decayed, and the whole claim of this place is that
 	 * whatever is behind the door has been coming through for a long time.
 	 *
 	 * It gets worse with depth and that ordering is the story: cracked masonry at
-	 * the top, then veins over the stone, then sculk instead of stone, and at the
-	 * bottom the sensors. Somebody walking down learns the rule in eight blocks and
-	 * then has thirty more of it.
+	 * the top, then blackstone and basalt and netherrack, and obsidian at the
+	 * bottom — which is the frame's own material, so the nearer you get the more
+	 * the walls look like the thing you are walking towards. Somebody climbing down
+	 * learns the rule in eight blocks and then has forty more of it.
 	 *
-	 * THE SHRIEKERS CANNOT SUMMON. can_summon is false, explicitly, because a
-	 * Warden in the last room of this mod would take the ending off Herobrine and
-	 * hand it to a vanilla boss.
+	 * THE SHRIEKERS AND SENSORS ARE GONE WITH THE SCULK. They were the reason
+	 * can_summon had to be forced false — a Warden in the last room of this mod
+	 * would take the ending off Herobrine and hand it to a vanilla boss — and with
+	 * the sculk gone there is nothing left to make that promise and then have to
+	 * break it.
 	 */
 	private static boolean standTheCity(ServerLevel level, BlockPos site, String plan,
 	                                    RandomSource random) {
@@ -1200,13 +1208,18 @@ public final class Threshold {
 	 * dropping, with a little chamber at every turn so you cannot see the next leg
 	 * from the last one.
 	 *
-	 * THE INFECTION IS PAINTED AFTERWARDS AND BY EXPOSURE, not while digging. bore
+	 * THE CORRUPTION IS PAINTED AFTERWARDS AND BY EXPOSURE, not while digging. bore
 	 * hands back where it ended and not the path it took — it curves, on purpose —
 	 * so there is no route to follow. What there is, is a box containing all of it,
 	 * and inside that box every solid face touching air is a wall of the cave
-	 * however it wandered. Sculk goes on those, thicker the deeper it is. Nothing
-	 * can be missed, because the test is "is this a surface" rather than "did I dig
-	 * here".
+	 * however it wandered. The cooking goes on those, thicker the deeper it is.
+	 * Nothing can be missed, because the test is "is this a surface" rather than
+	 * "did I dig here".
+	 *
+	 * IT IS NETHER AND NOT SCULK, and that was the wrong borrow to begin with.
+	 * Sculk is the Warden's and it means the deep dark, so forty blocks of it
+	 * promises a biome this mod has nothing to do with. What is at the bottom is a
+	 * hole into somewhere hot. See skin().
 	 */
 	private static void infected(ServerLevel level, BlockPos head, RandomSource random) {
 		BlockPos cellar = hatch(level, head, random);
@@ -1235,36 +1248,27 @@ public final class Threshold {
 		creep(level, lowX - 8, highX + 8, at.getY() - 4, cellar.getY(), lowZ - 8,
 			highZ + 8, random);
 
-		// ---- AND THE ROOM AT THE BOTTOM, which is all sculk.
-		BlockPos base = at.below(2);
-		for (int dx = -6; dx <= 6; dx++) {
-			for (int dz = -6; dz <= 6; dz++) {
-				for (int up = -1; up <= 7; up++) {
-					BlockPos spot = base.offset(dx, up, dz);
-					boolean shell = Math.abs(dx) == 6 || Math.abs(dz) == 6
-						|| up == -1 || up == 7;
-					level.setBlock(spot, shell
-						? Blocks.SCULK.defaultBlockState()
-						: Blocks.AIR.defaultBlockState(), 2);
-				}
-			}
-		}
-		for (int i = 0; i < 5; i++) {
-			BlockPos spot = base.offset(random.nextInt(9) - 4, 0, random.nextInt(9) - 4);
-			level.setBlock(spot, i == 0
-				? Blocks.SCULK_SHRIEKER.defaultBlockState()
-					// NOT SUMMONING. A Warden here would take the ending off him.
-					.setValue(net.minecraft.world.level.block.SculkShriekerBlock
-						.CAN_SUMMON, false)
-				: Blocks.SCULK_SENSOR.defaultBlockState(), 2);
-		}
-		seal(level, base.offset(6, 0, 0), random);
-		lastWord(level, base.offset(3, 0, 0), random);
+		// ---- AND THE ROOM AT THE BOTTOM IS THE ROOM UNDER HIS HOUSE.
+		//
+		// It was a thirteen-by-thirteen box of sculk with the frame flat against one
+		// wall, a shrieker and four sensors. Serviceable, and a wasted rhyme: the
+		// dead door under the first house already stands in a proper room — six
+		// pillars, a dais three steps up, skulls in the niches — and a player who
+		// has stood in that one should RECOGNISE this one before they work out what
+		// is different about it.
+		//
+		// One builder for both now, with a flag. See Sanctum.raise: same walls, same
+		// pillars, same dais, and the only differences are that this opening is
+		// filled and that what has grown in here is nether rather than pale moss,
+		// because something has been coming through it.
+		BlockPos gate = Sanctum.raise(level, at, random, true);
+		lastWord(level, Sanctum.shelf(gate), random);
+
 		HerobrineMod.LOGGER.info(
 			"an infected cave falls {} blocks from the hall at [{}, {}, {}] to the door"
-				+ " at [{}, {}, {}]", cellar.getY() - base.getY(),
+				+ " at [{}, {}, {}]", cellar.getY() - gate.getY(),
 			head.getX(), head.getY(), head.getZ(),
-			base.getX(), base.getY(), base.getZ());
+			gate.getX(), gate.getY(), gate.getZ());
 	}
 
 	/**
@@ -1272,7 +1276,7 @@ public final class Threshold {
 	 *
 	 * It is the last thing on the trail and it has to be the last thing you find,
 	 * so it is not in the hall with book nine — it is at the bottom of the shaft,
-	 * inside the sculk, within sight of the frame. The book says so itself: "I am
+	 * inside the room, within sight of the frame. The book says so itself: "I am
 	 * writing this at the bottom of a stair I helped wall up sixty years ago,
 	 * beside a hole in that wall that I did not make."
 	 *
@@ -1340,7 +1344,7 @@ public final class Threshold {
 	}
 
 	/**
-	 * Sculk on every wall of the cave, found by exposure rather than by route.
+	 * The cooking, on every wall of the cave, found by exposure rather than route.
 	 *
 	 * Staged, because the box is large — forty on a side is sixty-four thousand
 	 * columns and this runs on a tick that also has a village finishing on it.
@@ -1349,7 +1353,9 @@ public final class Threshold {
 	 * The gradient is the point. Nothing at the top, where it is still the
 	 * building's own foundation; total at the bottom, where the door is. Somebody
 	 * climbing down should be able to tell how far in they are by looking at the
-	 * wall, which is the only navigation a cave system gets.
+	 * wall, which is the only navigation a cave system gets. What the wall turns
+	 * INTO is skin()'s business — stone brick, then blackstone and basalt, then
+	 * obsidian.
 	 */
 	private static final int COLUMNS = 900;
 
@@ -1370,7 +1376,13 @@ public final class Threshold {
 					for (int y = y0; y <= y1; y++) {
 						BlockPos spot = new BlockPos(x, y, z);
 						BlockState was = level.getBlockState(spot);
-						if (!was.isSolid() || was.is(Blocks.SCULK)) {
+						// Obsidian is the deep end of skin(), so a second pass over
+						// the same wall must not keep rolling it. Anything already
+						// cooked is left alone.
+						if (!was.isSolid() || was.is(Blocks.OBSIDIAN)
+							|| was.is(Blocks.CRYING_OBSIDIAN)
+							|| was.is(Blocks.NETHERRACK)
+							|| was.is(Blocks.BLACKSTONE)) {
 							continue;
 						}
 						// A WALL IS A SOLID BLOCK NEXT TO AIR. Anything buried is
@@ -1387,15 +1399,23 @@ public final class Threshold {
 							continue;
 						}
 						double gone = (double) (y1 - y) / span;
-						if (random.nextDouble() < gone * gone * 0.85) {
-							level.setBlock(spot, Blocks.SCULK.defaultBlockState(), 2);
-						} else if (random.nextDouble() < gone * 0.06) {
-							// A CATALYST AND NOT A VEIN. sculk_vein is a multiface
-							// block: its default state has all six faces false, which
-							// is a state that is not attached to anything and pops off
-							// as an item on the first update. It would have looked
-							// like the sculk simply had not been placed.
-							level.setBlock(spot, Blocks.SCULK_CATALYST.defaultBlockState(), 2);
+						if (random.nextDouble() >= gone * gone * 0.85) {
+							continue;
+						}
+						level.setBlock(spot, skin(gone, random), 2);
+
+						// AND WEEPING VINES WHERE THE AIR IS UNDERNEATH IT.
+						//
+						// A ceiling, in other words. This pass already knows which
+						// face it found — that is the whole test — so hanging
+						// something off the downward ones is free, and it is the
+						// cheapest thing in the mod that makes a bored tunnel read
+						// as somewhere the nether has got into.
+						BlockPos under = spot.below();
+						if (level.getBlockState(under).isAir() && gone > 0.35
+							&& random.nextInt(4) == 0) {
+							level.setBlock(under,
+								Blocks.WEEPING_VINES.defaultBlockState(), 2);
 						}
 					}
 				}
@@ -1404,27 +1424,53 @@ public final class Threshold {
 	}
 
 	/**
-	 * The wall of the shaft at a given depth. Masonry at the top, sculk at the
+	 * The wall of the shaft at a given depth. Masonry at the top, obsidian at the
 	 * bottom, and the veins are what makes the change read as a spread rather than
 	 * as two different tunnels bolted together.
+	 */
+	/**
+	 * WHAT THE ROCK TURNS INTO ON THE WAY DOWN, AND IT IS NETHER, NOT SCULK.
+	 *
+	 * Sculk was the wrong borrow. It is the Warden's, it means the deep dark, and
+	 * everything a player already knows about it points at a biome this mod has
+	 * nothing to do with — you get to the bottom of a forty-block shaft expecting a
+	 * warden and find a door instead.
+	 *
+	 * What is at the bottom is a hole into somewhere hot. So the rock cooks: stone
+	 * brick at the top where it is still the building's own foundation, then
+	 * blackstone and basalt and netherrack, then obsidian and crying obsidian at the
+	 * bottom where the frame is. The gradient is the navigation — you can tell how
+	 * far in you are by the wall, which is the only direction a cave gives you.
+	 *
+	 * Obsidian last on purpose. It is the frame's own material, so the closer you
+	 * get the more the walls look like the thing you are walking towards.
 	 */
 	private static BlockState skin(double gone, RandomSource random) {
 		double roll = random.nextDouble();
 		if (gone < 0.3) {
-			return roll < 0.25
-				? Blocks.CRACKED_STONE_BRICKS.defaultBlockState()
-				: Blocks.STONE_BRICKS.defaultBlockState();
+			// Still under somebody's floor. Masonry, just beginning to go.
+			return roll < 0.2
+				? Blocks.BLACKSTONE.defaultBlockState()
+				: roll < 0.45
+					? Blocks.CRACKED_STONE_BRICKS.defaultBlockState()
+					: Blocks.STONE_BRICKS.defaultBlockState();
 		}
 		if (gone < 0.7) {
-			if (roll < gone) {
-				return Blocks.SCULK.defaultBlockState();
-			}
-			return roll < 0.8
-				? Blocks.COBBLESTONE.defaultBlockState()
-				: Blocks.MOSSY_COBBLESTONE.defaultBlockState();
+			return switch (random.nextInt(6)) {
+				case 0, 1 -> Blocks.NETHERRACK.defaultBlockState();
+				case 2, 3 -> Blocks.BLACKSTONE.defaultBlockState();
+				case 4 -> Blocks.BASALT.defaultBlockState();
+				default -> Blocks.COBBLED_DEEPSLATE.defaultBlockState();
+			};
 		}
-		return roll < gone
-			? Blocks.SCULK.defaultBlockState()
-			: Blocks.COBBLED_DEEPSLATE.defaultBlockState();
+		if (roll < gone * 0.55) {
+			return Blocks.OBSIDIAN.defaultBlockState();
+		}
+		return switch (random.nextInt(6)) {
+			case 0 -> Blocks.CRYING_OBSIDIAN.defaultBlockState();
+			case 1 -> Blocks.MAGMA_BLOCK.defaultBlockState();
+			case 2, 3 -> Blocks.NETHERRACK.defaultBlockState();
+			default -> Blocks.BLACKSTONE.defaultBlockState();
+		};
 	}
 }
