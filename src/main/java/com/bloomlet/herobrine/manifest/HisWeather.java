@@ -74,8 +74,14 @@ public final class HisWeather {
 	 * horizon is never quiet for long and rare enough that each one still
 	 * lights the trees rather than blurring into a strobe.
 	 */
-	private static final int STRIKE_CHANCE_IN = 4;
-	private static final int NEAR = 16;
+	// ONE IN THIRTY, TWENTY-EIGHT BLOCKS OUT. It was one in four at sixteen: a bolt
+	// every eight seconds within sight of the player, which is exactly the "weather,
+	// not a move" that arsenal() was just cured of — and in survival, where a bolt
+	// is a threat rather than a light show, it read as spam the moment it started.
+	// Distant and rare, this is a storm over a country; and none at all once the
+	// fight is on, because from the first blow lightning is HIS to throw.
+	private static final int STRIKE_CHANCE_IN = 30;
+	private static final int NEAR = 28;
 	private static final int FAR = 60;
 
 	/**
@@ -152,7 +158,7 @@ public final class HisWeather {
 		}
 		RandomSource random = his.getRandom();
 		for (ServerPlayer player : his.players()) {
-			if (random.nextInt(STRIKE_CHANCE_IN) == 0) {
+			if (random.nextInt(strikeChance(his, player)) == 0 && !Reckoning.bound(his)) {
 				strike(his, player, random);
 			}
 			if (random.nextInt(3) == 0) {
@@ -303,6 +309,31 @@ public final class HisWeather {
 	 * they are refused outright anywhere near the keep, and what they start is
 	 * on a clock from the moment it is lit.
 	 */
+	/**
+	 * THE STORM KNOWS HE IS COMING — and this is now the only place that says so.
+	 *
+	 * HisHost had its own version: a REAL bolt six to twenty-two blocks from every
+	 * survival player, rolled every second, at up to 95% once he was near. With him
+	 * circling the keep that was a crater-digging strike most seconds, and it is
+	 * what "lightning spam the moment I went survival" was — the hive tick skips
+	 * creative players, so creative never saw it. Two ambient lightning systems in
+	 * one dimension is one too many; that one is gone and its one good idea, that
+	 * the sky tightens as he closes, lives here: one in thirty with nobody around,
+	 * one in eight when he is within ninety blocks. Still distant, still mostly
+	 * visual, still nothing at all once the fight is on.
+	 */
+	private static final double HE_IS_NEAR = 90.0;
+	private static final int STRIKE_CHANCE_NEAR = 8;
+
+	private static int strikeChance(ServerLevel his, ServerPlayer player) {
+		com.bloomlet.herobrine.entity.HerobrineEntity him =
+			com.bloomlet.herobrine.entity.HerobrineEntity.oneIn(his);
+		if (him == null || him.distanceTo(player) > HE_IS_NEAR) {
+			return STRIKE_CHANCE_IN;
+		}
+		return STRIKE_CHANCE_NEAR;
+	}
+
 	private static void strike(ServerLevel his, ServerPlayer player, RandomSource random) {
 		double angle = random.nextDouble() * Math.PI * 2.0;
 		double range = NEAR + random.nextDouble() * (FAR - NEAR);

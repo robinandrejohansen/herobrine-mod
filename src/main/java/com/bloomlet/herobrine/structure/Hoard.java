@@ -108,7 +108,7 @@ public final class Hoard {
 				BlockPos at = floor.above();
 				boolean clear = true;
 				for (int h = 0; h < HEADROOM; h++) {
-					if (!his.getBlockState(at.above(h)).isAir()) {
+					if (!passable(his, at.above(h))) {
 						clear = false;
 						break;
 					}
@@ -142,7 +142,7 @@ public final class Hoard {
 				// floor and out of doorways, and gives the chest a facing.
 				for (Direction way : Direction.Plane.HORIZONTAL) {
 					if (solid(his, at.relative(way))
-						&& his.getBlockState(at.relative(way.getOpposite())).isAir()) {
+						&& passable(his, at.relative(way.getOpposite()))) {
 						found.add(at);
 						break;
 					}
@@ -214,7 +214,7 @@ public final class Hoard {
 			Direction faces = Direction.NORTH;
 			for (Direction way : Direction.Plane.HORIZONTAL) {
 				if (solid(his, at.relative(way))
-					&& his.getBlockState(at.relative(way.getOpposite())).isAir()) {
+					&& passable(his, at.relative(way.getOpposite()))) {
 					faces = way.getOpposite();   // opening away from the wall
 					break;
 				}
@@ -244,6 +244,14 @@ public final class Hoard {
 						|| !hold.isEmpty()) {
 						continue;
 					}
+					// CHESTS AND BARRELS ONLY. BaseContainerBlockEntity is also every
+					// furnace, hopper, dispenser and brewing stand in the build, and the
+					// first run put cobblestone in twenty-seven of them.
+					BlockState box = his.getBlockState(at);
+					if (!box.is(Blocks.CHEST) && !box.is(Blocks.TRAPPED_CHEST)
+						&& !box.is(Blocks.BARREL)) {
+						continue;
+					}
 					Loot.scatter(hold, random, Loot.Tier.KEEP);
 					filled++;
 				}
@@ -255,8 +263,19 @@ public final class Hoard {
 			taken.size(), filled, walled, found.size());
 	}
 
+	/** Collision, not rendering: stairs and slabs are floors, doors and gates open. See Duel.solid. */
 	private static boolean solid(ServerLevel his, BlockPos at) {
 		BlockState state = his.getBlockState(at);
-		return !state.isAir() && state.isSolidRender();
+		return state.blocksMotion() && !opens(state);
+	}
+
+	private static boolean passable(ServerLevel his, BlockPos at) {
+		BlockState state = his.getBlockState(at);
+		return !state.blocksMotion() || opens(state);
+	}
+
+	private static boolean opens(BlockState state) {
+		return state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock
+			|| state.getBlock() instanceof net.minecraft.world.level.block.FenceGateBlock;
 	}
 }

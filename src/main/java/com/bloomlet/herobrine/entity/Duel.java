@@ -796,6 +796,13 @@ final class Duel {
 		if (this.rooms != null) {
 			return this.rooms;
 		}
+		// NOT UNTIL IT IS STANDING. raise() schedules two seconds of placement and
+		// a scan inside that window sees a foundation — and would be cached as the
+		// castle for the whole fight. Return empty and uncached until the keep says
+		// its last course is down; the next tick asks again.
+		if (!Keep.standing(here)) {
+			return List.of();
+		}
 		List<Room> found = new ArrayList<>();
 		this.rooms = found;
 		BlockPos site = Keep.site(here);
@@ -828,7 +835,7 @@ final class Duel {
 						continue;
 					}
 					BlockPos at = floor.above();
-					if (!here.getBlockState(at).isAir() || !here.getBlockState(at.above()).isAir()) {
+					if (!clear(here, at) || !clear(here, at.above())) {
 						continue;
 					}
 					open.add(at);
@@ -919,9 +926,27 @@ final class Duel {
 		return found;
 	}
 
+	/**
+	 * SOLID IS WHAT FEET SAY, NOT WHAT THE RENDERER SAYS. isSolidRender is false for
+	 * stairs, slabs, fences and walls — which is every staircase in the building —
+	 * so with it the flood could not climb a single floor and 73% of the castle was
+	 * "unreachable". blocksMotion is the collision test. Doors and gates block
+	 * motion too but open when pushed, so they count as passable rather than wall,
+	 * or every room behind a shut door is sealed.
+	 */
 	private static boolean solid(ServerLevel here, BlockPos at) {
 		BlockState state = here.getBlockState(at);
-		return !state.isAir() && state.isSolidRender();
+		return state.blocksMotion() && !opens(state);
+	}
+
+	private static boolean clear(ServerLevel here, BlockPos at) {
+		BlockState state = here.getBlockState(at);
+		return !state.blocksMotion() || opens(state);
+	}
+
+	private static boolean opens(BlockState state) {
+		return state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock
+			|| state.getBlock() instanceof net.minecraft.world.level.block.FenceGateBlock;
 	}
 
 	/** One line, not more than one every five seconds. */

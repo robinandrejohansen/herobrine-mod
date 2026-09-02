@@ -449,8 +449,12 @@ public final class HerobrineCommand {
 
 		// Through the door, as far as the world is concerned: the landing is cut
 		// where the portal would have put them, and the city is anchored on it.
-		net.minecraft.core.BlockPos landing =
-			com.bloomlet.herobrine.structure.TheWay.landing(his, player);
+		// Only from the overworld. Run again from inside his world, landing() would
+		// cut a fresh chamber — and open a portal — wherever they happen to stand,
+		// which the first test did seventy blocks from the keep.
+		net.minecraft.core.BlockPos landing = player.level() == his
+			? player.blockPosition()
+			: com.bloomlet.herobrine.structure.TheWay.landing(his, player);
 		net.minecraft.core.BlockPos site =
 			com.bloomlet.herobrine.structure.Keep.summon(his, landing);
 

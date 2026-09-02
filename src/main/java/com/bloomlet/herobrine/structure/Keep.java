@@ -180,6 +180,24 @@ public final class Keep {
 	 * the most time looking at this dimension.
 	 */
 	/** Whether the castle is actually standing, as opposed to merely chosen. */
+	/**
+	 * WHEN THE LAST COURSE GOES DOWN. RAISED is set the tick raise() is CALLED, and
+	 * raise() only schedules: the blueprint arrives at two thousand blocks a tick,
+	 * so for the next two seconds the castle is a foundation with a sky over it.
+	 * The Duel read its rooms off the world in that window — 28 places to stand,
+	 * no walls — and cached them for the fight. This is the tick it may look.
+	 */
+	private static final AttachmentType<Long> STANDS_AT =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("keep_stands_at"), Codec.LONG);
+
+	public static boolean standing(ServerLevel his) {
+		if (!raised(his)) {
+			return false;
+		}
+		Long at = his.getAttached(STANDS_AT);
+		return at == null || his.getGameTime() >= at;
+	}
+
 	public static boolean raised(ServerLevel his) {
 		return Boolean.TRUE.equals(his.getAttached(RAISED));
 	}
@@ -784,6 +802,7 @@ public final class Keep {
 				// The corner is computed the same way stand() computes it, off the
 				// blueprint's own ground course, because the two must agree about
 				// where the box is.
+				his.setAttached(STANDS_AT, his.getGameTime() + done.ticks() + 2);
 				BlockPos where = Blueprint.corner(
 					new BlockPos(site.getX(), surface, site.getZ()), plan);
 				if (where != null) {
@@ -802,6 +821,7 @@ public final class Keep {
 		// building makes is that whoever put it up could build.
 		int floor = Ground.topOf(his, site.getX(), site.getZ()) + 1 + MOTTE;
 		BlockPos base = new BlockPos(site.getX(), floor, site.getZ());
+		his.setAttached(STANDS_AT, his.getGameTime() + 60L);   // the stages below end by ~30
 		MinecraftServer server = his.getServer();
 
 		stage(server, 0, () -> ground(his, base, random));

@@ -158,7 +158,6 @@ public final class HisHost {
 			if (player.isSpectator() || player.isCreative() || !player.isAlive()) {
 				continue;
 			}
-			closing(his, player);
 			theVisit(his, player);
 			for (Mob spotter : his.getEntitiesOfClass(Mob.class,
 					player.getBoundingBox().inflate(HIVE_SEARCH),
@@ -223,71 +222,6 @@ public final class HisHost {
 			HerobrineMod.LOGGER.info("somebody walked over to {} in his world",
 				player.getName().getString());
 		}
-	}
-
-	/** How far out he starts pulling the storm in after him. */
-	private static final double STORM_FEELS = 90.0;
-	/** And how close it has to be before every second is carrying a strike. */
-	private static final double STORM_ON_TOP = 18.0;
-	/** How far from the player the bolts land. Never on them. */
-	private static final double BOLT_NEAR = 6.0;
-	private static final double BOLT_FAR = 22.0;
-
-	/**
-	 * THE STORM KNOWS HE IS COMING BEFORE YOU DO.
-	 *
-	 * His world rains permanently and that rain is scenery — constant, and anything
-	 * constant stops being information within a minute. So the weather has never
-	 * once told a player anything, in a place whose entire mood is weather.
-	 *
-	 * This makes the sky the tell. Ninety blocks out the first bolt lands somewhere
-	 * off in the trees, maybe one every twenty seconds. At eighteen it is most
-	 * seconds and it is landing close enough to light the ground you are standing
-	 * on. Nothing has appeared, nothing has made a sound at you, and the horizon is
-	 * coming apart.
-	 *
-	 * AND IT IS REAL, which is the whole reason it works. Every one of these goes
-	 * through struck() like any other bolt over here, so what a player watches
-	 * approach is not an effect — it is craters and fire arriving in a line, and
-	 * the line has a direction, and the direction is him.
-	 *
-	 * They never land ON anybody. Six blocks is the closest, which is near enough
-	 * to be frightening and far enough that the warning is not also the damage.
-	 */
-	private static void closing(ServerLevel his,
-	                            net.minecraft.server.level.ServerPlayer player) {
-		com.bloomlet.herobrine.entity.HerobrineEntity him =
-			com.bloomlet.herobrine.entity.HerobrineEntity.oneIn(his);
-		if (him == null) {
-			return;
-		}
-		double away = him.distanceTo(player);
-		if (away > STORM_FEELS) {
-			return;
-		}
-		// Linear from nothing at ninety blocks to about one a second on top of you.
-		double near = (STORM_FEELS - away) / (STORM_FEELS - STORM_ON_TOP);
-		double chance = Math.min(1.0, Math.max(0.0, near)) * 0.9 + 0.05;
-		RandomSource random = his.getRandom();
-		if (random.nextDouble() > chance) {
-			return;
-		}
-
-		double angle = random.nextDouble() * Math.PI * 2.0;
-		double range = BOLT_NEAR + random.nextDouble() * (BOLT_FAR - BOLT_NEAR);
-		int x = (int) Math.round(player.getX() + Math.cos(angle) * range);
-		int z = (int) Math.round(player.getZ() + Math.sin(angle) * range);
-		int y = his.getHeight(
-			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
-			x, z);
-
-		net.minecraft.world.entity.LightningBolt bolt =
-			EntityTypes.LIGHTNING_BOLT.create(his, EntitySpawnReason.EVENT);
-		if (bolt == null) {
-			return;
-		}
-		bolt.snapTo(x + 0.5, y, z + 0.5, 0.0F, 0.0F);
-		his.addFreshEntity(bolt);
 	}
 
 	private static void call(ServerLevel his, Mob spotter,
