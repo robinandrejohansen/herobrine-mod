@@ -260,8 +260,27 @@ public class CompanionEntity extends PathfinderMob {
 		this.goalSelector.addGoal(2,
 			new net.minecraft.world.entity.ai.goal.MeleeAttackGoal(this, 1.15, true));
 		this.goalSelector.addGoal(3, new Follow(this));
-		this.goalSelector.addGoal(4, new LookAtPlayerGoal(this, Player.class, 8.0F));
-		this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
+		// ---- AND WHEN THERE IS NOTHING TO DO HE DOES NOT FREEZE.
+		//
+		// Follow stops inside four blocks and there was nothing under it, so a man
+		// who had caught up stood perfectly still until you moved again. Which is
+		// what a mob does and not what a person does — and this one has a name over
+		// his head, so the stillness reads as broken rather than as calm.
+		//
+		// The stroll can only ever take him about four blocks: past that Follow
+		// outranks it and reclaims the movement to bring him back. So it is not
+		// wandering, it is shifting about near you, which is the thing being asked
+		// for.
+		this.goalSelector.addGoal(4,
+			new net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal(
+				this, 0.6));
+		// SIX TENTHS, NOT VANILLA'S TWO HUNDREDTHS. LookAtPlayerGoal's default
+		// probability is 0.02 — it looks at you on one tick in fifty, which is
+		// right for a cow in a field and reads as ignoring you from somebody who
+		// is meant to be with you. Ten blocks, and most of the time.
+		this.goalSelector.addGoal(5,
+			new LookAtPlayerGoal(this, Player.class, 10.0F, 0.6F));
+		this.goalSelector.addGoal(6, new RandomLookAroundGoal(this));
 
 		// ---- AND WHAT HE GOES AFTER.
 		//
@@ -410,9 +429,35 @@ public class CompanionEntity extends PathfinderMob {
 		return false;
 	}
 
+	/**
+	 * A MAN'S VOICE, NOT A VILLAGER'S.
+	 *
+	 * He grunted like a villager, which was correct while he WAS one — the old
+	 * version was an ordinary villager in a red coat, drawn on the villager mesh,
+	 * and a villager noise was the whole point of the disguise.
+	 *
+	 * He is not one any more. He is on the humanoid mesh in enchanted plate with a
+	 * name over his head, and the hnnn is the single most identifying sound in the
+	 * game: it says trade menu, it says scenery, and it says it every time he takes
+	 * a hit for you. Steve's own hurt and death, so what you hear when something
+	 * lands on him is a person.
+	 *
+	 * NO AMBIENT. The Turned mutter constantly because that is their tell. He talks
+	 * — see Sayings — and something that both talks and idles would be talking over
+	 * itself.
+	 */
+	@Override
+	protected net.minecraft.sounds.SoundEvent getDeathSound() {
+		// He cannot die; damage is clamped above zero. This is here for the one
+		// path that could still reach it — /kill, the void before Company fishes
+		// him out — and a villager death rattle on that would be the last thing
+		// anybody heard of him.
+		return SoundEvents.PLAYER_DEATH;
+	}
+
 	@Override
 	protected net.minecraft.sounds.SoundEvent getHurtSound(DamageSource source) {
-		return SoundEvents.VILLAGER_HURT;
+		return SoundEvents.PLAYER_HURT;
 	}
 
 	// ---- FOLLOWING --------------------------------------------------------
@@ -562,6 +607,8 @@ public class CompanionEntity extends PathfinderMob {
 	private static final class Falter extends Goal {
 		private static final double FLEES = 12.0;
 		private static final int BITE_EVERY = 25;
+		/** Vanilla's own eating cadence: LivingEntity spawns its crumbs on every 4th. */
+		private static final int CRUMBS_EVERY = 4;
 		private static final float A_BITE = 1.5F;
 
 		private final CompanionEntity her;
@@ -618,6 +665,7 @@ public class CompanionEntity extends PathfinderMob {
 			if (threat != null) {
 				// Bread away, and the sword is already where it always is.
 				this.her.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
+				this.her.stopUsingItem();
 				this.her.getLookControl().setLookAt(threat, 30.0F, 30.0F);
 				if (this.her.getNavigation().isDone()) {
 					Vec3 out = DefaultRandomPos.getPosAway(this.her, 16, 7,
@@ -628,17 +676,76 @@ public class CompanionEntity extends PathfinderMob {
 				}
 				return;
 			}
-			// Nothing near. Sit down and eat.
+			// ---- NOTHING NEAR. SIT DOWN AND EAT, AND LOOK LIKE IT.
+			//
+			// This used to be a loaf appearing in his hand and one GENERIC_EAT every
+			// twenty-five ticks. Three things were missing and all three are what
+			// make eating READ as eating in vanilla: the arm does not come up, no
+			// crumbs come off it, and a single sample every second and a quarter is
+			// heard as a sound that keeps getting cut off rather than as somebody
+			// chewing.
+			//
+			// startUsingItem is what raises the arm. It is the same call a player's
+			// own eating goes through, so the pose, the timing and the item held to
+			// the mouth are vanilla's rather than a guess.
 			this.her.getNavigation().stop();
-			this.her.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.BREAD));
-			if (++this.chewing < BITE_EVERY) {
+			ItemStack loaf = this.her.getOffhandItem();
+			if (!loaf.is(Items.BREAD)) {
+				loaf = new ItemStack(Items.BREAD);
+				this.her.setItemInHand(InteractionHand.OFF_HAND, loaf);
+			}
+			if (!this.her.isUsingItem()) {
+				this.her.startUsingItem(InteractionHand.OFF_HAND);
+			}
+
+			this.chewing++;
+			// EVERY FOUR TICKS, WHICH IS VANILLA'S OWN RATE. LivingEntity fires its
+			// eating effects on (useTime - remaining) % 4 == 0, and matching it is
+			// the difference between a chew and a stutter.
+			if (this.chewing % CRUMBS_EVERY == 0 && this.her.level()
+					instanceof ServerLevel here) {
+				crumbs(here, loaf);
+				here.playSound(null, this.her.getX(), this.her.getY(), this.her.getZ(),
+					SoundEvents.GENERIC_EAT, this.her.getSoundSource(), 0.9F,
+					1.0F + (this.her.getRandom().nextFloat() - 0.5F) * 0.2F);
+			}
+			if (this.chewing < BITE_EVERY) {
 				return;
 			}
 			this.chewing = 0;
 			this.her.heal(A_BITE);
-			this.her.level().playSound(null, this.her.getX(), this.her.getY(),
-				this.her.getZ(), SoundEvents.GENERIC_EAT, this.her.getSoundSource(),
-				0.8F, 1.0F + (this.her.getRandom().nextFloat() - 0.5F) * 0.2F);
+			if (this.her.level() instanceof ServerLevel here) {
+				here.playSound(null, this.her.getX(), this.her.getY(), this.her.getZ(),
+					SoundEvents.PLAYER_BURP, this.her.getSoundSource(), 0.5F,
+					0.9F + this.her.getRandom().nextFloat() * 0.2F);
+			}
+		}
+
+		/**
+		 * The crumbs, thrown from his mouth in the direction he is facing.
+		 *
+		 * LivingEntity.spawnItemParticles does exactly this and is private, so it is
+		 * reproduced: a point just under the eyes, pushed forward out of the head so
+		 * the particles do not spawn inside it, and a small random shove so they
+		 * scatter instead of falling in a line.
+		 */
+		private void crumbs(ServerLevel here, ItemStack loaf) {
+			double yaw = -this.her.getYRot() * (Math.PI / 180.0);
+			double pitch = -this.her.getXRot() * (Math.PI / 180.0);
+			Vec3 out = new Vec3(
+				(this.her.getRandom().nextDouble() - 0.5) * 0.3,
+				-this.her.getRandom().nextDouble() * 0.6 - 0.3,
+				0.6)
+				.xRot((float) pitch).yRot((float) yaw);
+			Vec3 at = this.her.position()
+				.add(0.0, this.her.getEyeHeight() - 0.35, 0.0)
+				.add(out.scale(0.4));
+			here.sendParticles(
+				// The ITEM, not the stack. 26.2's constructor takes an Item or an
+				// ItemStackTemplate; the stack overload is gone.
+				new net.minecraft.core.particles.ItemParticleOption(
+					net.minecraft.core.particles.ParticleTypes.ITEM, loaf.getItem()),
+				at.x, at.y, at.z, 4, out.x * 0.2, out.y * 0.2 + 0.05, out.z * 0.2, 0.02);
 		}
 
 		private @org.jspecify.annotations.Nullable Mob nearestThreat() {
