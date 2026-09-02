@@ -80,6 +80,30 @@ public class GauntEntity extends PathfinderMob {
 
 	private int watchedFor;
 
+	/**
+	 * TEN SECONDS BEFORE IT MAY TOUCH ANYBODY, COUNTED FROM THE FIRST MEETING.
+	 *
+	 * The first thing this creature does to a player is the only thing it needs to
+	 * do, and that is be there. A hit inside the first few seconds spends the whole
+	 * encounter as arithmetic — how much did that take, what have I got left — and
+	 * everything the standing and the staring and the closing was for is gone,
+	 * traded for a number in the corner of the screen.
+	 *
+	 * So the first ten seconds cost nothing at all. It closes, it stares, the
+	 * screen dips, the heartbeat lands, the floor answers its feet — and it cannot
+	 * hurt you while any of that is happening. Whatever you decide in that window
+	 * you decide out of what it looks like, not out of what it did.
+	 *
+	 * IT STARTS ONCE AND IT PERSISTS. Not a cooldown and not per-player: the clock
+	 * belongs to the creature, runs once in its life, and is written to disk. A
+	 * field that reset on reload would hand out another free ten seconds for the
+	 * price of quitting to the title screen, which is the shape of every exploit
+	 * this mod has had.
+	 */
+	private static final int HOLDS_OFF = 200;
+
+	private int met;
+
 	public GauntEntity(EntityType<? extends PathfinderMob> type, Level level) {
 		super(type, level);
 		// Rare and solitary. One of these is an event; two is a queue.
@@ -99,11 +123,18 @@ public class GauntEntity extends PathfinderMob {
 			//
 			// Nine was a two-hit kill through iron, which makes the thing that never
 			// moves while you watch it into something you simply must not let touch
-			// you — and that is a stat, not a scare. Four is survivable, which is the
-			// point: the blow is not what you remember about it.
+			// you — and that is a stat, not a scare. Four was survivable. Two is
+			// nothing, and nothing is the number this wants.
 			//
-			// What you remember is the arc. See launch().
-			.add(Attributes.ATTACK_DAMAGE, 4.0)
+			// ONE HEART, AND NO FALL ON TOP OF IT. Four plus the landing came to
+			// about three hearts a swing, which is still a fight — you back off and
+			// count, and once you are counting you are playing a health bar. At one
+			// heart there is nothing to count. What happens to you is that you are
+			// suddenly eight blocks away facing the wrong direction, and the only
+			// thing it cost was the ground you were standing on.
+			//
+			// What you remember is the arc. See THROWN.
+			.add(Attributes.ATTACK_DAMAGE, 2.0)
 			.add(Attributes.ATTACK_KNOCKBACK, 1.2)
 			// A GOLEM'S PACE, WHICH IS THE SHAPE OF THE THING RATHER THAN A NUMBER.
 			//
@@ -243,8 +274,20 @@ public class GauntEntity extends PathfinderMob {
 		}
 		this.speak();
 		this.echo();
+		this.tread();
 
 		Player seen = this.watcher();
+		// THE CLOCK STARTS THE MOMENT IT IS IN THE ROOM WITH SOMEBODY.
+		//
+		// Either half will do to start it — being looked at, or having decided
+		// about somebody — and it has to be either, not just the first. Being seen
+		// alone would leave a hole for the one thing this creature is built to do:
+		// close on you while you are facing the other way. It would arrive having
+		// never been looked at, with a clock that had never started, and hold off
+		// forever.
+		if (this.met < HOLDS_OFF && (seen != null || this.getTarget() != null)) {
+			this.met++;
+		}
 		if (seen == null) {
 			this.watchedFor = 0;
 			return;
@@ -269,6 +312,7 @@ public class GauntEntity extends PathfinderMob {
 			// AND EVERY TIME THE SCREEN GOES, IT IS NEARER.
 			if (++this.pulsing >= PULSE) {
 				this.pulsing = 0;
+				this.beat();
 				this.step(seen);
 			}
 		} else {
@@ -337,6 +381,13 @@ public class GauntEntity extends PathfinderMob {
 				&& here.getBlockState(at.below()).isSolid()) {
 				this.snapTo(to.x, at.getY(), to.z, this.getYRot(), this.getXRot());
 				this.getNavigation().stop();
+				// tread() measures ground covered, and this covered none of it — the
+				// whole point is that it did not walk. Left alone, four and a half
+				// blocks of teleport would register as two strides and lay a pair of
+				// footsteps over a thing that is standing perfectly still.
+				this.lastX = this.getX();
+				this.lastZ = this.getZ();
+				this.strode = 0.0;
 				here.playSound(null, this.getX(), this.getY(), this.getZ(),
 					SoundEvents.WARDEN_STEP, this.getSoundSource(), 0.9F, DEEP);
 				return;
@@ -450,6 +501,13 @@ public class GauntEntity extends PathfinderMob {
 			this.echoesIn = ECHOES_MIN;
 			return;      // out under the sky it says nothing, as before
 		}
+		// ONE HEARTBEAT AT A TIME. beat() is on the same sound, once a second, from
+		// the moment the staring starts to cost — and two clocks on one sample, one
+		// of them irregular, is not two sounds, it is mud. The slow one yields.
+		if (this.watchedFor > STARE_COSTS) {
+			this.echoesIn = ECHOES_MIN;
+			return;
+		}
 		if (--this.echoesIn > 0) {
 			return;
 		}
@@ -463,6 +521,95 @@ public class GauntEntity extends PathfinderMob {
 			here.playSound(null, this.getX(), this.getY(), this.getZ(),
 				net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT,
 				this.getSoundSource(), ECHO_CARRIES * 0.45F, DEEP * 0.9F));
+	}
+
+	/**
+	 * THE DARK HAD NO SOUND IN IT, WHICH IS HALF OF WHAT DARKNESS IS FOR.
+	 *
+	 * Past STARE_COSTS the screen dips once a second and the thing is four and a
+	 * half blocks nearer each time — and all of that was silent. A dip with nothing
+	 * in it reads as a graphical fault. The player's own screen was the only thing
+	 * telling them anything was happening, and a screen that flickers with no sound
+	 * behind it is a bug, not a monster.
+	 *
+	 * So the beat lands ON the dip. Same clock, same tick, deliberately not
+	 * randomised: this is the one moment in the creature's whole behaviour that is
+	 * meant to feel mechanical, because something arriving on a schedule you can
+	 * hear is worse than something arriving at random.
+	 *
+	 * Louder than the underground call. playSound treats volume above 1 as range —
+	 * sixteen blocks per unit — so 1.6 carries about twenty-five, which is roughly
+	 * the distance this thing stares from. It should be in the room with you.
+	 */
+	private static final float PULSE_CARRIES = 1.6F;
+
+	private void beat() {
+		if (this.isSilent() || !(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, this.getSoundSource(),
+			PULSE_CARRIES, DEEP);
+	}
+
+	/** How far it goes between footfalls, in blocks. */
+	private static final double STRIDE = 2.4;
+	/** How late the room answers, and how much of it comes back. */
+	private static final int TREAD_ECHO = 6;
+	private static final float TREAD_BACK = 0.42F;
+	private static final float TREAD_CARRIES = 0.7F;
+
+	private double strode;
+	private double lastX = Double.NaN;
+	private double lastZ;
+
+	/**
+	 * IT WEIGHS THREE HUNDRED KILOS AND IT WALKED LIKE A CAT.
+	 *
+	 * The only footstep it ever had was on the teleport-step, so the one kind of
+	 * movement that made a noise was the kind that crosses ground without walking
+	 * over it. Ordinary walking — which is what it does for the entire approach,
+	 * every time nobody is looking at it — was silent. A thing that size closing on
+	 * you at a golem's pace should be audible before it is visible, and it was the
+	 * other way round.
+	 *
+	 * MEASURED IN DISTANCE, NOT TICKS. A step every N ticks desynchronises from the
+	 * actual walk the first time it is slowed, blocked, in water, or pathing round
+	 * a tree — and then it is a metronome playing over a creature that is standing
+	 * still. Every 2.4 blocks of ground actually covered cannot drift, because the
+	 * ground covered is the thing being measured.
+	 *
+	 * Its own two doubles rather than xOld/zOld, which are vanilla's and are
+	 * written at a point in the tick this method has no contract with. Four lines
+	 * to not depend on somebody else's ordering.
+	 *
+	 * AND THE ROCK ANSWERS. Six ticks later at four tenths the volume and a shade
+	 * flatter — the same trick echo() uses, and the reason both of them are in a
+	 * mod whose creature lives underground. Minecraft has no reverb; two plays of
+	 * one sound is the whole of it.
+	 */
+	private void tread() {
+		double wasX = this.lastX;
+		double wasZ = this.lastZ;
+		this.lastX = this.getX();
+		this.lastZ = this.getZ();
+		if (Double.isNaN(wasX) || this.isSilent() || !this.onGround()
+			|| !(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		double dx = this.getX() - wasX;
+		double dz = this.getZ() - wasZ;
+		this.strode += Math.sqrt(dx * dx + dz * dz);
+		if (this.strode < STRIDE) {
+			return;
+		}
+		this.strode = 0.0;
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.WARDEN_STEP, this.getSoundSource(), TREAD_CARRIES, DEEP);
+		com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), TREAD_ECHO, () ->
+			here.playSound(null, this.getX(), this.getY(), this.getZ(),
+				SoundEvents.WARDEN_STEP, this.getSoundSource(),
+				TREAD_CARRIES * TREAD_BACK, DEEP * 0.92F));
 	}
 
 	private void speak() {
@@ -513,11 +660,38 @@ public class GauntEntity extends PathfinderMob {
 	 * points we just took off the attack and leave the thing exactly as lethal as
 	 * it was, with an extra animation.
 	 *
-	 * 0.8 is about four and a half blocks: unmistakably thrown, a real moment of
-	 * being airborne and not in charge, and a landing that costs a point or two.
-	 * Four from the blow plus that is still well under the nine it used to hit for.
+	 * AND IT WAS NOT A FALL OF FOUR AND A HALF BLOCKS. IT WAS EIGHT.
+	 *
+	 * Because 0.8 was never the launch velocity. LivingEntity.knockback, which
+	 * super has already run by the time this lands, writes
+	 *
+	 *     y = min(0.4, y / 2 + strength)      -> 0.4 for anyone on the ground
+	 *
+	 * and this then ADDED to it. So the player left at 1.2, not 0.8. Simulating the
+	 * real tick loop — y += v; v = (v - 0.08) * 0.98 — rather than trusting the
+	 * closed form:
+	 *
+	 *     v = 0.8   ->  3.97 blocks  ->  1 point
+	 *     v = 1.2   ->  8.19 blocks  ->  6 points      <- what actually shipped
+	 *
+	 * Four from the blow and six from the landing is ten a swing: MORE than the
+	 * nine this whole change was made to get away from, arriving by a door nobody
+	 * was watching. The comment above was arithmetic done on the wrong number, and
+	 * it read as a careful argument for a year.
+	 *
+	 * SO THE Y IS SET, NOT ADDED. x and z still come from super — the horizontal
+	 * shove is vanilla's and it is right — but the height is written outright, so
+	 * the arc is this constant and nothing else, whatever anybody upstream put
+	 * there. Two systems adding into one field is the bug; one system owning it is
+	 * the fix.
+	 *
+	 * 0.64 -> 2.67 blocks: two and an eighth times a normal jump, a long wrong
+	 * second of not being in charge, and ceil(2.67 - 3) = 0 on the way down. The
+	 * largest launch that still lands free is 0.685; this sits under it on purpose,
+	 * so that being thrown onto ground a little lower than you left is still free
+	 * too.
 	 */
-	private static final double THROWN = 0.8;
+	private static final double THROWN = 0.64;
 
 	/**
 	 * It hits you off your feet rather than through your armour.
@@ -527,20 +701,39 @@ public class GauntEntity extends PathfinderMob {
 	 * hit. You do not die to a golem, you get put somewhere else, and the fright is
 	 * that you are no longer standing where you had planned to be standing.
 	 *
-	 * The knockback attribute handles the horizontal — this is only the lift, and
-	 * it has to be added AFTER super, because the damage call is what applies the
+	 * The knockback attribute handles the horizontal. This is only the lift, and it
+	 * has to happen AFTER super, because the damage call is what applies the
 	 * ordinary knockback and it writes delta movement rather than adding to it.
 	 */
 	@Override
 	public boolean doHurtTarget(ServerLevel level, net.minecraft.world.entity.Entity target) {
+		// BEFORE super, so nothing at all happens — no damage, no knockback, no
+		// sound. It reaches you, it swings, and the swing goes through you. See
+		// HOLDS_OFF: the first ten seconds of this creature are free.
+		if (this.met < HOLDS_OFF) {
+			return false;
+		}
 		if (!super.doHurtTarget(level, target)) {
 			return false;
 		}
-		target.setDeltaMovement(target.getDeltaMovement().add(0.0, THROWN, 0.0));
+		Vec3 shove = target.getDeltaMovement();
+		target.setDeltaMovement(shove.x, THROWN, shove.z);
 		target.hurtMarked = true;   // tells the server to send the player the shove
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
 			SoundEvents.IRON_GOLEM_ATTACK, this.getSoundSource(), 1.0F, DEEP);
 		return true;
+	}
+
+	@Override
+	public void addAdditionalSaveData(net.minecraft.world.level.storage.ValueOutput output) {
+		super.addAdditionalSaveData(output);
+		output.putInt("Met", this.met);
+	}
+
+	@Override
+	public void readAdditionalSaveData(net.minecraft.world.level.storage.ValueInput input) {
+		super.readAdditionalSaveData(input);
+		this.met = input.getIntOr("Met", 0);
 	}
 
 	@Override

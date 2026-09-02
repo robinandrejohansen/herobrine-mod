@@ -50,7 +50,24 @@ SCALE = 4
 
 # ---- MEASURED OFF assets/minecraft/textures/entity/villager/, not invented.
 SKIN = (190, 136, 108, 255)
-NOSE = (168, 118, 92, 255)
+# ONE TONE UNDER THE SKIN — UNDER THE DARK ONE, WHICH IS NOT THE SAME NUMBER.
+#
+# It was 168,118,92: a step under 190,136,108 and correct against a flat face.
+# This face is not flat. shaded() keeps the enderman's own edges by multiplying
+# every pixel by 0.86 or by 1.0 depending on what vanilla drew underneath, and
+# 0.86 of the skin is 163,116,92 — five points off the old nose in one channel
+# and none at all in the other two. So wherever the enderman sheet happened to be
+# dark, and on the front of the head that is fully half of it, the nose was the
+# same colour as its neighbours and was simply not there.
+#
+# Invisible for half its length mattered little on an eight-unit face where the
+# nose had two rows to itself. It matters now: the head is half again as tall,
+# most of the new length is BELOW the eyes, and the bridge is the only thing
+# drawn in it. A blank lower face is not a longer face, it is a bigger gap.
+#
+# 150,106,84 is a step under the DARK skin as well as two under the light, so it
+# reads the whole way down whichever of the two vanilla put beneath it.
+NOSE = (150, 106, 84, 255)
 ROBE = (113, 84, 77, 255)
 HEM = (66, 47, 41, 255)
 BROW = (51, 36, 17, 255)
@@ -71,11 +88,37 @@ HEAD_TOP = (8, 0, 16, 8)     # the crown, which becomes hood
 HEAD_BACK = (24, 8, 32, 16)  # and the back of it
 
 MOUTH_ROWS = (14, 15)
-EYE_ROWS = (10, 11)
-EYE_COLS = (8, 9, 10, 13, 14, 15)
+EYE_COLS = (8, 13)       # left texel of each socket
+EYE_WIDE = 3             # and how many texels wide it is
 BRIDGE = (11, 12)
-BROW_ROW = 9
+
+# ---- THE EYE IS DRAWN IN SUB-PIXELS, BECAUSE THE FACE IS EIGHT TEXELS AND THE
+#      HEAD IS NOW STRETCHED TO ONE AND A HALF OVER THEM.
+#
+# The face has to hold, top to bottom: forehead, eyes, the drop to the mouth, and
+# two rows of mouth that are a hole and cannot move. Eight rows for four things,
+# and the ask was MORE forehead and MORE face under the eye and the eye HIGHER —
+# which is three demands on a budget that does not grow. On whole texels they
+# cancel: every row the eye moves up is a row off the forehead.
+#
+# It does grow sideways, though. SCALE is 4, so the sheet is written at four
+# sub-pixels per texel and the eye can sit at a quarter of a row. Seven
+# sub-pixels tall instead of eight whole ones, starting half a texel higher:
+#
+#     forehead   texel 8    -> 9.5     1.50 rows   2.25 units at 1.5
+#     eye                   -> 11.25   1.75 rows   2.63
+#     the drop              -> 14      2.75 rows   4.13
+#     mouth                 -> 16      2.00 rows   3.00
+#
+# Against the eight-unit face it replaces, where all four were 2.00 flat. Longer
+# above, half again as long below, and the eye's centre has gone from three
+# eighths of the way down the face to a little under three tenths — up, and
+# smaller as a share of the face, while staying about the same size on screen.
+EYE_TOP_PX = 38          # sub-pixel row: texel 9.5
+EYE_TALL_PX = 7          # was a flat 8, two whole texels
+
 PUPIL_WIDE = 3
+PUPIL_TALL = 2
 
 # RED BEHIND THE BLACK, NOT GREEN.
 #
@@ -89,6 +132,7 @@ PUPIL_WIDE = 3
 # bright: a saturated red is a GLOWING eye, and glowing eyes are his.
 IRIS = (124, 26, 26, 255)
 IRIS_WIDE = 5
+IRIS_TALL = 4
 
 # AND THE PUPIL SITS LOW IN THE SOCKET.
 #
@@ -161,17 +205,66 @@ def block(big, bx, by, colour):
 				big[y][x] = colour
 
 
+def rect(big, x0, y0, x1, y1, colour):
+	"""A flat fill in SUB-PIXELS rather than texels.
+
+	block() paints a whole texel because everything on this sheet used to land on
+	one. The eye no longer does — it is seven sub-pixels tall and starts on a half
+	— so it needs a fill that can address the grid the file is actually written on.
+
+	Alpha 0 is left alone, same as block(). Rows 14 and 15 of the face are the
+	hole and nothing here may close them.
+	"""
+	for y in range(y0, y1):
+		for x in range(x0, x1):
+			if big[y][x][3] != 0:
+				big[y][x] = colour
+
+
 def preview(big):
-	key = {SKIN: '..', NOSE: 'nn', BROW: '##', WHITE: 'OO', PUPIL: '@@', ROBE: 'rr'}
-	print('\n    the face, x 8..15:\n')
-	for y in range(8, 16):
+	"""THE FACE AT SUB-PIXEL RESOLUTION, because that is where it is drawn now.
+
+	Sampling one pixel per texel — big[y * SCALE][x * SCALE] — was honest while
+	every feature landed on a texel boundary. It is not any more: it would read
+	texel 9 as bare skin and texel 10 as solid iris, showing a two-row eye that
+	does not exist and hiding the half-row it actually moved. A generator whose
+	preview cannot see the change it just made is worse than no preview.
+	"""
+	# NEAREST, NOT EXACT. shaded() multiplies every pixel it lays down by 0.86 to
+	# 1.0 to keep the enderman's own edges, so almost nothing on the sheet equals
+	# the constant it came from. An exact lookup printed '?' for most of the face.
+	# AND BOTH SHADINGS OF EACH, or it reports a feature that is not on the sheet.
+	# shaded() lays down 0.86 and 1.0 of every target, and a nearest match against
+	# the bare constants filed dark skin under whichever OTHER constant it landed
+	# closest to — which was the nose, and printed the entire forehead as one.
+	key = []
+	for colour, mark in [(SKIN, '.'), (NOSE, 'n'), (BROW, '#'), (WHITE, 'O'),
+	                     (PUPIL, '@'), (ROBE, 'r'), (IRIS, 'i'), (GULLET, 'x')]:
+		key.append((colour, mark))
+		key.append((tuple(int(c * 0.86) for c in colour[:3]), mark))
+
+	def glyph(p):
+		if p[3] == 0:
+			return ' '
+		return min(key, key=lambda k: sum((a - b) ** 2
+		                                  for a, b in zip(k[0][:3], p[:3])))[1]
+	print('\n    the face at 1/%d texel — rows are sub-pixels, texel marked left:\n'
+	      % SCALE)
+	for y in range(8 * SCALE, 16 * SCALE):
 		row = ''
-		for x in range(8, 16):
-			p = big[y * SCALE][x * SCALE]
-			row += '  ' if p[3] == 0 else key.get(p, '??')
-		print('      %2d  %s%s' % (y, row, '   <- open, you see through it'
-		                                   if y in MOUTH_ROWS else ''))
-	print('\n      .. skin   nn nose   ## brow   OO eye   @@ pupil   (blank) hole\n')
+		for x in range(8 * SCALE, 16 * SCALE):
+			row += glyph(big[y][x])
+		mark = '%5.2f' % (y / SCALE)
+		note = ''
+		if y == EYE_TOP_PX:
+			note = '  <- eye opens'
+		elif y == EYE_TOP_PX + EYE_TALL_PX - 1:
+			note = '  <- eye closes'
+		elif y == MOUTH_ROWS[0] * SCALE:
+			note = '  <- the hole starts; you see through it'
+		print('      %s  %s%s' % (mark, row, note))
+	print('\n      . skin  n nose  O white  i iris  @ pupil  r hood'
+	      '  (blank) hole\n')
 
 
 def main():
@@ -206,11 +299,14 @@ def main():
 	# forehead above two eyes that are open too wide, and the face stops looking
 	# angry and starts looking absent. Absent is worse.
 	#
-	# BROW and BROW_ROW are kept for the preview key and in case this is reversed.
+	# BROW is kept for the preview key and in case this is reversed. BROW_ROW went
+	# with EYE_ROWS: both named whole texel rows, nothing read either of them, and
+	# a row number sitting beside sub-pixel geometry only invites somebody to use
+	# it and land four sub-pixels off.
 
-	for x in EYE_COLS:
-		for y in EYE_ROWS:
-			block(big, x, y, WHITE)
+	for eye in EYE_COLS:
+		rect(big, eye * SCALE, EYE_TOP_PX,
+		     (eye + EYE_WIDE) * SCALE, EYE_TOP_PX + EYE_TALL_PX, WHITE)
 
 	# THE CRAZY VILLAGER'S EYE AFTER ALL, and this reverses a call made here.
 	#
@@ -225,30 +321,29 @@ def main():
 	# and the iris is sized to leave white on all four sides of it. An iris that
 	# reaches the edge of the socket reads as a coloured eye; one with white around
 	# it reads as an eye that is OPEN too wide.
-	for eye in (8, 13):
-		wide = 3 * SCALE
-		tall = 2 * SCALE
+	# WHITE ON ALL FOUR SIDES OF THE IRIS AND IRIS ON ALL FOUR SIDES OF THE PUPIL,
+	# which is the rule this file argued for when the ring went in and is the whole
+	# reason the eye needs a seventh sub-pixel. Six would fit the three layers and
+	# leave nothing under the iris; seven leaves two rows of white above it and one
+	# below — a heavy lid, and still an eye.
+	for eye in EYE_COLS:
+		wide = EYE_WIDE * SCALE
 		ix = eye * SCALE + (wide - IRIS_WIDE) // 2
-		iy = EYE_ROWS[0] * SCALE + (tall - IRIS_WIDE) // 2 + PUPIL_DROP
-		for y in range(iy, iy + IRIS_WIDE):
-			for x in range(ix, ix + IRIS_WIDE):
-				big[y][x] = IRIS
+		iy = EYE_TOP_PX + (EYE_TALL_PX - IRIS_TALL) // 2 + PUPIL_DROP
+		rect(big, ix, iy, ix + IRIS_WIDE, iy + IRIS_TALL, IRIS)
 
-	for eye in (8, 13):
-		wide = 3 * SCALE
-		tall = 2 * SCALE
-		x0 = eye * SCALE + (wide - PUPIL_WIDE) // 2
-		y0 = EYE_ROWS[0] * SCALE + (tall - PUPIL_WIDE) // 2 + PUPIL_DROP
-		for y in range(y0, y0 + PUPIL_WIDE):
-			for x in range(x0, x0 + PUPIL_WIDE):
-				big[y][x] = PUPIL
+		px = eye * SCALE + (wide - PUPIL_WIDE) // 2
+		py = iy + (IRIS_TALL - PUPIL_TALL) // 2
+		rect(big, px, py, px + PUPIL_WIDE, py + PUPIL_TALL, PUPIL)
 
 	# The nose, down the bridge and stopping at the lip. Painted rather than
 	# modelled — the enderman head has no nose cube — so it is one tone under the
 	# skin either side of it, which is what a plane turning away actually does.
-	for x in BRIDGE:
-		for y in (10, 11, 12, 13):
-			block(big, x, y, NOSE)
+	# From the eye line to the lip, in sub-pixels so it meets the eyes where they
+	# are now rather than where they used to be. On whole texels it started at row
+	# 10 and left a bright gap across the bridge once the eyes moved up half a row.
+	rect(big, BRIDGE[0] * SCALE, EYE_TOP_PX,
+	     (BRIDGE[-1] + 1) * SCALE, MOUTH_ROWS[0] * SCALE, NOSE)
 
 	path = os.path.join(OUT, 'gaunt.png')
 	pngio.write(path, width * SCALE, height * SCALE, big)

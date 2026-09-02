@@ -51,8 +51,50 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		HerobrineMod.id("textures/entity/gaunt/gaunt.png");
 
 	public GauntRenderer(EntityRendererProvider.Context context) {
-		super(context, new EndermanModel<>(context.bakeLayer(ModelLayers.ENDERMAN)), 0.5F);
-		reshape(this.getModel());
+		super(context, new Stretched(context.bakeLayer(ModelLayers.ENDERMAN)), 0.5F);
+	}
+
+	/**
+	 * THE RESHAPE HAS TO RUN EVERY FRAME, AND FOR ITS WHOLE LIFE IT RAN ONCE.
+	 *
+	 * It was in the constructor, which is where one-time setup belongs and is
+	 * exactly where this particular setup does nothing whatsoever:
+	 *
+	 *     Model.setupAnim  ->  resetPose()
+	 *       ->  every part:  ModelPart.loadPose(initialPose)
+	 *             ->  writes x, y, z, xRot, yRot, zRot, xScale, yScale, zScale
+	 *
+	 * PartPose CARRIES SCALE. resetPose does not merely put the rotations back, it
+	 * puts the scale back — and setupAnim runs once per frame before anything is
+	 * drawn. Every number reshape() assigned was overwritten before the first pixel
+	 * of the first frame.
+	 *
+	 * Which is why it kept reading as an enderman wearing villager paint whatever
+	 * the values below said: it WAS one. An eight-unit head, two-unit limbs, and
+	 * none of the proportions this file spends a page arguing for ever reached the
+	 * screen. "He looks cute with a small head" was a correct bug report about a
+	 * line of code that could not be seen to be wrong — the constructor is right,
+	 * the fields are right, the compiler is happy, and in the game you are looking
+	 * at a coherent creature. Just the other one.
+	 *
+	 * So it goes on AFTER super.setupAnim: last thing before the draw, with nothing
+	 * left to run that could undo it.
+	 *
+	 * WORTH KNOWING GENERALLY. Anything written onto a ModelPart from outside
+	 * setupAnim is written onto a surface that is wiped every frame. There is no
+	 * error, no warning, and no visible fault — only a model that quietly ignores
+	 * you.
+	 */
+	private static final class Stretched extends EndermanModel<EndermanRenderState> {
+		Stretched(net.minecraft.client.model.geom.ModelPart root) {
+			super(root);
+		}
+
+		@Override
+		public void setupAnim(EndermanRenderState state) {
+			super.setupAnim(state);
+			reshape(this);
+		}
 	}
 
 	@Override
@@ -88,15 +130,29 @@ public class GauntRenderer extends HumanoidMobRenderer<
 	 * cost an evening once already, on the shoulders and the arms. Scaling a baked
 	 * part stretches the SAME texels over more space: safe, and exactly the look.
 	 *
-	 * A quarter taller on the head, which is the villager's own ratio. Sixty per
-	 * cent thicker on the limbs — two units is a stick, and the thing is meant to
-	 * read as a man who has been drawn out rather than as a spider. The body only a
-	 * sixth, because the enderman torso is already wide and the silhouette should
-	 * stay narrow-shouldered.
+	 * HALF AGAIN ON THE HEAD, WHICH IS PAST A VILLAGER ON PURPOSE.
 	 *
-	 * The hat is the mouth. It is left alone — see the note above. Scaling it moves
-	 * the recess off the hole and the whole effect with it.
+	 * A villager's head is eight by ten and the first attempt at this matched it
+	 * exactly — 1.25 — on the reasoning that the creature is a villager underneath
+	 * and should wear a villager's proportion. That reasoning ignores what the head
+	 * is sitting ON. A villager is thirty-one units tall, so ten units of head is a
+	 * third of it; this thing is fifty, so the same ten units is a fifth, and a
+	 * fifth reads as a small head on a long body no matter whose ratio it came
+	 * from. Proportion is a fraction and only one of its terms was being copied.
+	 *
+	 * Twelve units, so: half again the enderman's, a fifth over a villager's, and
+	 * near enough a villager's FRACTION of this body. Eight wide and twelve tall is
+	 * also a long skull rather than a big one, which is the difference between the
+	 * thing being imposing and the thing being a bobblehead.
+	 *
+	 * Sixty per cent thicker on the limbs — two units is a stick, and it should
+	 * read as a man drawn out rather than as a spider. The body only a sixth,
+	 * because the enderman torso is already wide and the silhouette wants to stay
+	 * narrow-shouldered.
 	 */
+	/** Twelve units against the enderman's eight and the villager's ten. */
+	private static final float HEAD_TALL = 1.5F;
+
 	private static void reshape(EndermanModel<EndermanRenderState> model) {
 		// THE PUBLIC FIELDS, NOT root().getChild("head").
 		//
@@ -105,7 +161,22 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		// there — so a typo or a rename compiles perfectly and then crashes the
 		// client the first time one of these walks on screen. The fields are checked
 		// by the compiler and cannot be wrong.
-		model.head.yScale = 1.25F;
+		model.head.yScale = HEAD_TALL;
+
+		// AND THE MOUTH KEEPS ITS OWN DEPTH.
+		//
+		// `hat` is head.getChild("hat") — a CHILD — so the head's scale multiplies
+		// the hat's own translation as well as its cube. EndermanModel's angry pose
+		// lifts the skull five units (head.y -= 5) and holds the mouth back by the
+		// same five (hat.y += 5), which is how an enderman's face appears to open.
+		// Under a 1.5 head that five becomes seven and a half, and the recess slides
+		// down off the back of the hole it exists to sit behind.
+		//
+		// Pre-divided, so the five stays five whatever this scale is set to. There
+		// is slack either way — the hole is two texel rows at the bottom of the face
+		// and the hat cube is as tall as the head — but "there is slack" is how the
+		// bug above went unseen for a year.
+		model.hat.y /= HEAD_TALL;
 
 		model.body.xScale = 1.16F;
 		model.body.zScale = 1.16F;
