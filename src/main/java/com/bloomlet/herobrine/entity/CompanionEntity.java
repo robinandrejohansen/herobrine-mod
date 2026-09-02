@@ -422,6 +422,46 @@ public class CompanionEntity extends PathfinderMob {
 	 * is further than DAWDLES_WITHIN — so the goal that would notice he had arrived
 	 * is the one that stops running the moment he does.
 	 */
+	/**
+	 * HE SPRINT-JUMPS, BECAUSE THAT IS HOW A PLAYER RUNS.
+	 *
+	 * Nobody who has played this game for an hour sprints on the flat without
+	 * jumping. It is faster, and past that it is a habit — the rhythm of somebody
+	 * covering ground. A companion who runs beside you without it is running like
+	 * a mob, and you feel the difference before you can name it.
+	 *
+	 * So while he is sprinting and actually moving, on the ground and not in water
+	 * or mid-sandwich, he hops on a loose clock: every one to three seconds, never
+	 * evenly. The forward kick comes for free — LivingEntity.jumpFromGround adds it
+	 * to anything that isSprinting(), which is why the sprint flag is real and not
+	 * just a speed multiplier.
+	 *
+	 * And the flag comes off the moment he stops moving, or he would stand next to
+	 * you at the door emitting sprint particles like an idling engine.
+	 */
+	private static final int HOP_MIN = 24;
+	private static final int HOP_SPREAD = 36;
+	private int hopIn;
+
+	private void hop() {
+		if (!this.isSprinting()) {
+			return;
+		}
+		if (this.getNavigation().isDone()
+			|| this.getDeltaMovement().horizontalDistanceSqr() < 0.004) {
+			this.setSprinting(false);
+			return;
+		}
+		if (!this.onGround() || this.isInWater() || this.isUsingItem()) {
+			return;
+		}
+		if (--this.hopIn > 0) {
+			return;
+		}
+		this.hopIn = HOP_MIN + this.random.nextInt(HOP_SPREAD);
+		this.getJumpControl().jump();
+	}
+
 	private void theWalkIn() {
 		if (this.walkingIn <= 0) {
 			return;
@@ -457,6 +497,7 @@ public class CompanionEntity extends PathfinderMob {
 		super.tick();
 		if (!this.level().isClientSide()) {
 			this.theWalkIn();
+			this.hop();
 		}
 	}
 
@@ -601,6 +642,7 @@ public class CompanionEntity extends PathfinderMob {
 					.subtract(this.her.position()).normalize().scale(LEG);
 				net.minecraft.core.BlockPos leg = net.minecraft.core.BlockPos.containing(
 					this.her.position().add(toward));
+				this.her.setSprinting(true);
 				this.her.getNavigation().moveTo(leg.getX() + 0.5, leg.getY(),
 					leg.getZ() + 0.5, 1.15);
 				return;
@@ -609,6 +651,10 @@ public class CompanionEntity extends PathfinderMob {
 			// matter what the base attribute is, because they are also going in a
 			// straight line and she is going round things.
 			double pace = away > HURRIES_AFTER ? 1.4 : 1.0;
+			// SPRINTING, NOT JUST FASTER. He moved at 1.4x and looked like a villager
+			// on a treadmill. Sprinting is what a player does and it is what a player
+			// reads: the particles at his feet, and — see hop() — the jumps.
+			this.her.setSprinting(pace > 1.0);
 			this.her.getNavigation().moveTo(with, pace);
 		}
 
