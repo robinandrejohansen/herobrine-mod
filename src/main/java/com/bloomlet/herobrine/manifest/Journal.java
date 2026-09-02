@@ -204,23 +204,14 @@ public final class Journal {
 	 * writes a long one without thinking about it.
 	 */
 	private static List<Filterable<Component>> leaves(String text) {
+		// MEASURED, NOT COUNTED. This packed by character length over text whose
+		// line breaks were already put in by hand, and fifteen of the sixteen
+		// pages came out over the row limit — a hundred and forty rows of them
+		// were never drawn. FITS was a character budget and a character budget
+		// cannot see a blank line or a narrow letter. See Pages.reflow.
 		List<Filterable<Component>> out = new ArrayList<>();
-		StringBuilder leaf = new StringBuilder();
-		for (String para : text.split("\n\n")) {
-			for (String piece : para.length() <= FITS
-					? new String[] { para } : sentences(para)) {
-				if (leaf.length() > 0 && leaf.length() + piece.length() + 2 > FITS) {
-					out.add(Filterable.passThrough(Component.literal(leaf.toString())));
-					leaf.setLength(0);
-				}
-				if (leaf.length() > 0) {
-					leaf.append("\n\n");
-				}
-				leaf.append(piece);
-			}
-		}
-		if (leaf.length() > 0) {
-			out.add(Filterable.passThrough(Component.literal(leaf.toString())));
+		for (String leaf : com.bloomlet.herobrine.structure.Pages.reflow(text)) {
+			out.add(Filterable.passThrough(Component.literal(leaf)));
 		}
 		return out;
 	}

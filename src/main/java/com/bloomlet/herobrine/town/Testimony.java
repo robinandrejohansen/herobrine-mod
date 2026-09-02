@@ -485,8 +485,13 @@ public final class Testimony {
 
 	private static ItemStack book(Account account) {
 		List<Filterable<Component>> pages = new ArrayList<>();
+		// REFLOWED AND MEASURED. Every one of these twelve pages was over the
+		// fourteen-row limit — nineteen to thirty-one rows — because the line
+		// breaks were put in by hand in the source and the game re-wraps whatever
+		// is left over. Ninety-nine rows of it were never drawn. See Pages.reflow.
 		for (String page : account.pages()) {
-			for (String leaf : leaves(page.stripIndent().trim())) {
+			for (String leaf : com.bloomlet.herobrine.structure.Pages
+					.reflow(page.stripIndent())) {
 				pages.add(Filterable.passThrough(Component.literal(leaf)));
 			}
 		}

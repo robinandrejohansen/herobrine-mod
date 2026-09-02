@@ -322,8 +322,13 @@ public final class Remembering {
 
 	private static ItemStack note(String[] pages) {
 		List<Filterable<Component>> written = new ArrayList<>();
+		// Same measurement as everything else now. Two of these were over the
+		// limit and losing their last rows. See Pages.reflow.
 		for (int i = 1; i < pages.length; i++) {
-			written.add(Filterable.passThrough(Component.literal(pages[i].stripIndent())));
+			for (String leaf : com.bloomlet.herobrine.structure.Pages
+					.reflow(pages[i].stripIndent())) {
+				written.add(Filterable.passThrough(Component.literal(leaf)));
+			}
 		}
 		ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
 		book.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(

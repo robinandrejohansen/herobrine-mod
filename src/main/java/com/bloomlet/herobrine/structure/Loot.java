@@ -937,88 +937,137 @@ public final class Loot {
 	 * next to a stack of iron, and it gets about half a second to earn opening.
 	 * Every one of these is a question the reader now wants answered.
 	 */
-	private record Scrap(String title, String page) {}
+	/**
+	 * A NAMED DOCUMENT THAT CORROBORATES A NUMBERED BOOK.
+	 *
+	 * These were twelve anonymous notes in the domestic-observation style — a
+	 * stranger noticing that his brother did not put his hands under the water,
+	 * and nothing else. Individually well made and collectively nothing: not one
+	 * name from the ten books appeared in any of them, so a player who had read
+	 * Addexio's account of Ashfold found, in the next chest, an unsigned note by
+	 * nobody about no one.
+	 *
+	 * That is the exact failure HouseBooks' own header describes and then only
+	 * half fixed. Restraint nobody can assemble is not restraint; and a note that
+	 * belongs to no story cannot be assembled at all, however well the sentence
+	 * is turned.
+	 *
+	 * SO EVERY ONE OF THEM IS SIGNED NOW, by somebody the books name — Otto,
+	 * Marek, Bren, Pip, Joren, Wendel, Steve — and every one of them CONFIRMS one
+	 * beat of the numbered account from the other side. Addexio tells you Bren
+	 * shot the tall one twice and it kept walking; here is Bren's own note, in his
+	 * own words, three days earlier. The books stop being one man's word for it.
+	 *
+	 * The `book` field is the one it belongs to, and it is in the title so a
+	 * player who is collecting them knows what they have got.
+	 */
+	private record Scrap(String title, String hand, String page) {}
 
 	private static final Scrap[] SCRAPS = {
-		new Scrap("what the well is for",
-			"Do not drink from it after dark.\n\n"
-			+ "I know how that reads. I know what you will think of me.\n\n"
-			+ "Drink from the butt by the door, and if the butt is empty go thirsty "
-			+ "until morning, and I will not explain further because the explaining "
-			+ "is the part that makes people go and look."),
-		new Scrap("the shovel I lent out",
-			"Corwin took it on the Tuesday and said two days.\n\n"
-			+ "It is the good one with the ash handle. He has had it eleven weeks.\n\n"
-			+ "I have been down to the shaft twice to ask for it back and both times "
-			+ "I got to the third turn and came home, and I am forty-four years old "
-			+ "and I would like somebody to explain that to me."),
-		new Scrap("counting the sheep",
-			"Nineteen out, nineteen in. Every night of my life.\n\n"
-			+ "Twenty in, last night.\n\n"
-			+ "It stood at the back of the pen and it did not eat and the others "
-			+ "would not go near it. I put it out this morning. It went up the west "
-			+ "field, which is not where sheep go."),
-		new Scrap("for whoever has the room next",
-			"The stain on the boards under the window is not damp and it will not "
-			+ "come out. I have tried lye and I have tried sand.\n\n"
-			+ "Put the bed over it. That is what I did and it was two good years.\n\n"
-			+ "Do not put the bed facing the door."),
-		new Scrap("the smell in the low field",
-			"It comes up in the wet and it is not the drain, because I have had the "
-			+ "drain up.\n\n"
-			+ "It is sweet, which is the wrong word and the only one I have. You "
-			+ "smell it and you are hungry and then you are not.\n\n"
-			+ "The dog will not cross that corner now. She goes the long way round "
-			+ "and she is not a clever dog."),
-		new Scrap("a debt, settled",
-			"Two bushels to Haral for the roof. Paid.\n\n"
-			+ "One axe head to Marta. Paid.\n\n"
-			+ "Nine days of work to the house at the head of the valley. NOT paid, "
-			+ "and I am not going back for it, and if anybody reads this and thinks "
-			+ "me a coward they are welcome to go and collect it themselves."),
-		new Scrap("the shift I covered",
-			"Aldis asked me to take his watch on the wall and I said yes because he "
-			+ "has three under six.\n\n"
-			+ "Nothing happened. I want that on the record. Nothing happened, the "
-			+ "whole night, and I stood there the whole night, and at some point I "
-			+ "stopped being able to look at the treeline.\n\n"
-			+ "I will not be taking his watch again."),
-		new Scrap("what the children are singing",
-			"There is a rhyme going round the square and I do not know who taught "
-			+ "it to them.\n\n"
-			+ "It has the counting in it and then it has a bit at the end about a "
-			+ "man in the field who does not have a face on, and they think it is "
-			+ "very funny.\n\n"
-			+ "I have asked four of them. They all say they learned it off "
-			+ "somebody else."),
-		new Scrap("on the keeping of lamps",
-			"Agreed at the meeting: every house shows a light from dusk, and the "
-			+ "cost is shared.\n\n"
-			+ "Agreed also: nobody goes to see why another house has stopped "
-			+ "showing one. We go in the morning. We go in threes.\n\n"
-			+ "This was not agreed unanimously and I have recorded the objection."),
-		new Scrap("my brother's hands",
-			"He came up for water on the Sunday and I have not slept properly "
-			+ "since.\n\n"
-			+ "It was not the state of them. Anybody who cuts stone has hands like "
-			+ "that by forty.\n\n"
-			+ "It was that he did not put them under the water. He stood at the "
-			+ "trough and he looked at them, for a long time, the way you look at "
-			+ "something you have been given."),
-		new Scrap("do not dig past the seam",
-			"Below the pale band the stone comes away too easily and that is not a "
-			+ "gift.\n\n"
-			+ "Ask anybody who has been under it: it is warm, and it should not be, "
-			+ "and there is no fire in this valley deep enough to explain it.\n\n"
-			+ "The seam is the floor. Whatever anyone tells you the seam is the "
-			+ "floor."),
-		new Scrap("an inventory of the second house",
-			"Taken after, by me, with two others present, and countersigned.\n\n"
-			+ "Six bowls. Four spoons. A loom, strung. Two coats on the peg by the "
-			+ "door and a third coat folded on the chair.\n\n"
-			+ "Nothing missing. Nothing broken. I am asked to note that nothing was "
-			+ "missing and I have noted it and I would like the record to show that "
-			+ "I do not think it means what they think it means."),
+		// ---- 1-2. THE FARM
+		new Scrap("Otto, on the shutters", "Otto",
+			"Addexio came round with a bag of nails and would not say why.\n\n"
+			+ "He did my windows and then he did old Bren's, and then he sat on my "
+			+ "wall for a long time not talking.\n\n"
+			+ "I asked him straight out what he had seen in his wheat. He said "
+			+ "nothing, and then he said: keep the children in."),
+
+		new Scrap("Marek, before the town", "Marek",
+			"Four children and one horse. Addexio has taken the two youngest ahead "
+			+ "to Ashfold and is coming back for the others.\n\n"
+			+ "I am writing this while I wait because if I stop moving I will think "
+			+ "about it.\n\n"
+			+ "He says the walls there are good. I have seen the walls. They are "
+			+ "good."),
+
+		// ---- 3-4. THE TOWN
+		new Scrap("Bren, on the thing in the street", "Bren",
+			"I put two arrows in it from the smithy roof.\n\n"
+			+ "The first one went in under the arm and the second one went in the "
+			+ "neck, and I have shot deer for fifty years and I know what those two "
+			+ "shots do.\n\n"
+			+ "It turned its head and looked up at me. Then it went on walking.\n\n"
+			+ "Do not fight it in the open. Get above it or get behind a door."),
+
+		new Scrap("a warning, pinned to the well", "unsigned",
+			"THE ONES IN THE STREET ARE NOT THE PEOPLE.\n\n"
+			+ "Nine of them by my count. They have the names right.\n\n"
+			+ "Ask them something only the person would know. Ask them what their "
+			+ "husband is called. They smile and they do not answer.\n\n"
+			+ "Do not go anywhere on your own. It only tries this when you are "
+			+ "alone."),
+
+		new Scrap("the tally at the square", "unsigned",
+			"Kept because somebody has to keep it.\n\n"
+			+ "Through the door, by name, in the order they went: eleven on the "
+			+ "first night, nineteen on the second, eleven on the third.\n\n"
+			+ "Forty-one. None of them have come back out of it.\n\n"
+			+ "The air that comes off it is cold and it smells like a struck match."),
+
+		// ---- 5. THE TOWER
+		new Scrap("Pip, the night before", "Pip",
+			"Nobody believes me so I am writing it down and then it is written "
+			+ "down.\n\n"
+			+ "There is a hole in the rock by the spring that was not there "
+			+ "yesterday. There are steps in it and the steps are CUT. Somebody cut "
+			+ "them square.\n\n"
+			+ "There is a light at the bottom the colour of a bruise.\n\n"
+			+ "And I could hear somebody counting. I am going down in the morning "
+			+ "with Addexio and Otto and I would rather not."),
+
+		new Scrap("two of us came back", "unsigned",
+			"Four went down at first light. Addexio, Otto, Pip, and me.\n\n"
+			+ "I am not going to write what is down there. I will write the useful "
+			+ "part.\n\n"
+			+ "The steps are ours. Men from our own town cut them, and they have "
+			+ "been cutting them the whole nine years we spent on top of that tower "
+			+ "watching the sky."),
+
+		// ---- 6-7. THE GAOL
+		new Scrap("Joren, on his own ledger", "Joren",
+			"Two columns. In, and out.\n\n"
+			+ "I have counted them twice and the second column is shorter, and I am "
+			+ "the man who writes both of them.\n\n"
+			+ "I asked the man with the book where the difference goes. He said the "
+			+ "question was not useful.\n\n"
+			+ "COUNT THEM IN. COUNT THEM OUT. I painted that on the wall myself and "
+			+ "I meant it as a kindness."),
+
+		new Scrap("scratched inside cell four", "unsigned",
+			"Nine days with the lamp on.\n\n"
+			+ "I have said my wife's name every hour so that I would still have it "
+			+ "at the end, and I still have it.\n\n"
+			+ "So write it down: the lamp does not work. Whatever you are looking "
+			+ "for, it is not in here.\n\n"
+			+ "I was never one of them."),
+
+		new Scrap("Steve, one page of many", "Steve",
+			"Subject three continues to answer correctly. This is not evidence of "
+			+ "anything and I have told them so.\n\n"
+			+ "The answers do not matter. Watch the hands.\n\n"
+			+ "The ordinary ones have to be tested the same way or the numbers mean "
+			+ "nothing, and if that reads badly then it reads badly.\n\n"
+			+ "I need to know whether a man comes up out of that hole the same man. "
+			+ "I have a reason for needing to know."),
+
+		// ---- 8. THE CHURCH
+		new Scrap("Wendel, the question", "Wendel",
+			"They would not let me say it in the room so I am saying it here.\n\n"
+			+ "Before you let that man near you, ask Steve what he did to Herobrine "
+			+ "under the hill.\n\n"
+			+ "Not what happened to him. What Steve DID.\n\n"
+			+ "I am old and I am not brave and I am the only one of us who has "
+			+ "asked it out loud."),
+
+		// ---- 9. THE LAST HOUSE
+		new Scrap("on the sealing of the stair", "unsigned",
+			"Stone, then more stone, then earth, and warnings cut in three hands so "
+			+ "that nobody takes it for a cellar.\n\n"
+			+ "Sixty-one of us died in the hall above this. It took about as long as "
+			+ "it takes to boil a pot.\n\n"
+			+ "We could not kill him. This is the other thing.\n\n"
+			+ "We are going up to tell the valley it is finished. It is not "
+			+ "finished. People need to plant wheat."),
 	};
 
 	/**
@@ -1029,7 +1078,6 @@ public final class Loot {
 	 * its pages are hand-wrapped. Worth collapsing into one utility the next time
 	 * anybody is in all three files.
 	 */
-	private static final int LEAF = 250;
 
 	/**
 	 * THIRTY-TWO CHARACTERS, AND GOING OVER DISCONNECTS THE PLAYER.
@@ -1069,35 +1117,36 @@ public final class Loot {
 		return short_;
 	}
 
-	/** One of them, written, and across as many leaves as the writing needs. */
+	/**
+	 * One of them, written, across as many leaves as the writing needs.
+	 *
+	 * PAGINATED BY MEASUREMENT NOW, not by a character budget. LEAF was 250
+	 * characters, which is thirteen rows of ordinary prose and fifteen of anything
+	 * with narrow letters in it, and it could not see that every blank line
+	 * between paragraphs costs a row. One of these twelve was losing its last two
+	 * rows to that and there was no way to find it by reading the source, because
+	 * a fifteenth row is not an error, it is simply not drawn.
+	 *
+	 * Pages.bind measures in pixels and rows off the font's own advance table, and
+	 * splits where the writer already paused. See Pages.
+	 *
+	 * AND THE HAND IS ON THE COVER. The author field of a written book is where
+	 * vanilla puts "by so-and-so", and these were all signed with an em dash —
+	 * which is the one thing a note corroborating somebody's account must not be.
+	 */
 	private static ItemStack scrap(RandomSource random) {
 		Scrap what = SCRAPS[random.nextInt(SCRAPS.length)];
 		java.util.List<net.minecraft.server.network.Filterable<
 			net.minecraft.network.chat.Component>> leaves = new ArrayList<>();
-		StringBuilder leaf = new StringBuilder();
-		// Split where the writer already paused. Ten of these twelve run past one
-		// leaf, and truncation eats from the END — which on a note whose whole
-		// point is the last line would remove the only part that matters.
-		for (String para : what.page().split("\n\n")) {
-			if (leaf.length() > 0 && leaf.length() + para.length() + 2 > LEAF) {
-				leaves.add(net.minecraft.server.network.Filterable.passThrough(
-					net.minecraft.network.chat.Component.literal(leaf.toString())));
-				leaf.setLength(0);
-			}
-			if (leaf.length() > 0) {
-				leaf.append("\n\n");
-			}
-			leaf.append(para);
-		}
-		if (leaf.length() > 0) {
+		for (String leaf : Pages.bind(what.page())) {
 			leaves.add(net.minecraft.server.network.Filterable.passThrough(
-				net.minecraft.network.chat.Component.literal(leaf.toString())));
+				net.minecraft.network.chat.Component.literal(leaf)));
 		}
 		ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
 		book.set(DataComponents.WRITTEN_BOOK_CONTENT,
 			new net.minecraft.world.item.component.WrittenBookContent(
 				net.minecraft.server.network.Filterable.passThrough(title(what.title())),
-				"\u2014", 0, leaves, true));
+				what.hand(), 0, leaves, true));
 		return book;
 	}
 
