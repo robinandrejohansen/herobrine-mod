@@ -1346,7 +1346,15 @@ public final class Undercity {
 			}
 		}
 		if (feet == null) {
-			HerobrineMod.LOGGER.warn("nowhere in this undercity for her to stand");
+			HerobrineMod.LOGGER.warn("nowhere in this undercity for addexio to stand");
+			return;
+		}
+		// UNLESS HE HAS ALREADY COME, and by the time anybody is down here he
+		// almost always has: he walks in at the first house now, which is the one
+		// before this. This is the fallback for a world where the undercity was
+		// reached first — by command, or by somebody who dug down — and without
+		// the check that world would have two of him.
+		if (com.bloomlet.herobrine.manifest.Company.hasCome(level)) {
 			return;
 		}
 		com.bloomlet.herobrine.entity.CompanionEntity addexio =
@@ -1359,7 +1367,8 @@ public final class Undercity {
 			random.nextFloat() * 360.0F, 0.0F);
 		addexio.setPersistenceRequired();
 		level.addFreshEntity(addexio);
-		HerobrineMod.LOGGER.info("she is waiting at [{}, {}, {}]",
+		com.bloomlet.herobrine.manifest.Company.came(level);
+		HerobrineMod.LOGGER.info("addexio is waiting at [{}, {}, {}]",
 			feet.getX(), feet.getY(), feet.getZ());
 	}
 

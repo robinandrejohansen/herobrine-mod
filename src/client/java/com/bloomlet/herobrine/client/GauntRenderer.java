@@ -6,7 +6,6 @@ import com.bloomlet.herobrine.entity.GauntEntity;
 import net.minecraft.client.model.monster.enderman.EndermanModel;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
-import net.minecraft.client.renderer.entity.state.EndermanRenderState;
 import net.minecraft.resources.Identifier;
 
 /**
@@ -44,7 +43,7 @@ import net.minecraft.resources.Identifier;
  * model driven from an unfilled state animates as a scarecrow.
  */
 public class GauntRenderer extends HumanoidMobRenderer<
-		GauntEntity, EndermanRenderState, EndermanModel<EndermanRenderState>> {
+		GauntEntity, GauntRenderState, EndermanModel<GauntRenderState>> {
 
 	private static final Identifier TEXTURE =
 		HerobrineMod.id("textures/entity/gaunt/gaunt.png");
@@ -171,22 +170,24 @@ public class GauntRenderer extends HumanoidMobRenderer<
 	 * error, no warning, and no visible fault — only a model that quietly ignores
 	 * you.
 	 */
-	private static final class Stretched extends EndermanModel<EndermanRenderState> {
+	private static final class Stretched extends EndermanModel<GauntRenderState> {
 		Stretched(net.minecraft.client.model.geom.ModelPart root) {
 			super(root);
 		}
 
 		@Override
-		public void setupAnim(EndermanRenderState state) {
+		public void setupAnim(GauntRenderState state) {
 			super.setupAnim(state);
 			reshape(this);
 			slam(this, state.attackTime);
+			tilt(this, state.staring);
+			swell(this, state.voice);
 		}
 	}
 
 	@Override
-	public EndermanRenderState createRenderState() {
-		return new EndermanRenderState();
+	public GauntRenderState createRenderState() {
+		return new GauntRenderState();
 	}
 
 	/**
@@ -250,7 +251,7 @@ public class GauntRenderer extends HumanoidMobRenderer<
 	 *
 	 * DRIVEN OFF attackTime, WHICH IS THE ONE THE STATE ACTUALLY HAS.
 	 * IronGolemRenderState carries attackTicksRemaining counting 10 down to 0;
-	 * EndermanRenderState carries attackTime from ArmedEntityRenderState, which
+	 * GauntRenderState carries attackTime from ArmedEntityRenderState, which
 	 * runs 0 up to 1 across the same swing. So the clock is turned back round —
 	 * (1 - attackTime) * 10 — rather than a second animation being invented for it.
 	 *
@@ -258,7 +259,7 @@ public class GauntRenderer extends HumanoidMobRenderer<
 	 * writes rotations: the two do not fight, but setupAnim resets both every frame
 	 * and whichever runs last is the one that survives.
 	 */
-	private static void slam(EndermanModel<EndermanRenderState> model, float attackTime) {
+	private static void slam(EndermanModel<GauntRenderState> model, float attackTime) {
 		if (attackTime <= 0.0F) {
 			return;         // not swinging: the enderman's own angry pose stands
 		}
@@ -304,8 +305,75 @@ public class GauntRenderer extends HumanoidMobRenderer<
 	private static final float HEAD_TALL = 2.6F;
 	private static final float LIMB_THICK = 2.0F;
 	private static final float LIMB_SHORT = 0.6F;
+	/**
+	 * AND THE TORSO IS LONG, WHICH COSTS NO HEIGHT AT ALL.
+	 *
+	 * The body box hangs DOWNWARD from the shoulders — pose y -14, box 0 to 12 —
+	 * so stretching it does not raise the head, it lowers the hem. Half again
+	 * takes the torso from twelve units to eighteen and covers the hips from -5
+	 * to +4, which is a robe over the top of the legs and is exactly what a
+	 * villager's body does.
+	 *
+	 * The total stays 46.8 units, 2.92 blocks, still inside the enderman box it
+	 * borrows. Long body, long head, same footprint.
+	 *
+	 * ARMS A LITTLE LONGER TO MATCH. 0.65 puts the hands two units past the knee
+	 * — the length that reads as reaching rather than as broken.
+	 */
+	private static final float BODY_LONG = 1.5F;
+	private static final float ARM_LONG = 0.65F;
 
-	private static void reshape(EndermanModel<EndermanRenderState> model) {
+	/**
+	 * THE HEAD GOES OVER WHEN IT LOOKS BACK AT YOU.
+	 *
+	 * This creature's one rule is that it freezes while watched and closes while
+	 * not, and the only sign of which state it was in was that it had stopped
+	 * moving — which is indistinguishable from a mob that has finished pathing. So
+	 * the tell had to be read off ground it had covered while you were not looking,
+	 * which is not a tell, it is homework.
+	 *
+	 * A roll on the head is the cheapest legible one there is. Twelve degrees is
+	 * too much to be a look-at and not enough to look like a fault, and NOTHING in
+	 * vanilla rolls its head — so the moment it goes over you know it is not
+	 * pathfinding any more, it is attending to you.
+	 */
+	private static final float TILT = (float) Math.toRadians(12.0);
+
+	private static void tilt(EndermanModel<GauntRenderState> model, boolean staring) {
+		model.head.zRot = staring ? TILT : 0.0F;
+	}
+
+	/**
+	 * AND THE HEAD SWELLS ON THE SOUND, WHICH IS WHAT OPENS THE MOUTH.
+	 *
+	 * The mouth is a hole in the front of the head with the `hat` cube half a unit
+	 * behind it, and hat is a CHILD of head — so scaling the head scales the hole,
+	 * the recess and the gap between them together. One line moves the whole
+	 * apparatus and nothing comes apart, which is the dividend of having built the
+	 * mouth out of geometry instead of paint.
+	 *
+	 * Twelve per cent at the peak, on the same tick the sound is played, decaying
+	 * over twelve ticks. Small on purpose: this is a creature that works because it
+	 * does not move, and a head that visibly inflates is a cartoon. What it should
+	 * look like is the sound having a body.
+	 *
+	 * MULTIPLIED INTO reshape's SCALES RATHER THAN SET. Assigning yScale here would
+	 * throw away HEAD_TALL every time it spoke and snap the long face back to a cube
+	 * for twelve ticks.
+	 */
+	private static final float SWELL = 0.12F;
+
+	private static void swell(EndermanModel<GauntRenderState> model, float voice) {
+		if (voice <= 0.0F) {
+			return;
+		}
+		float by = 1.0F + SWELL * voice;
+		model.head.xScale *= by;
+		model.head.yScale *= by;
+		model.head.zScale *= by;
+	}
+
+	private static void reshape(EndermanModel<GauntRenderState> model) {
 		// THE PUBLIC FIELDS, NOT root().getChild("head").
 		//
 		// HumanoidModel hands these out directly as public final ModelParts, and
@@ -331,6 +399,7 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		model.hat.y /= HEAD_TALL;
 
 		model.body.xScale = 1.16F;
+		model.body.yScale = BODY_LONG;
 		model.body.zScale = 1.5F;
 
 		for (net.minecraft.client.model.geom.ModelPart limb : new
@@ -340,17 +409,21 @@ public class GauntRenderer extends HumanoidMobRenderer<
 			limb.zScale = LIMB_THICK;
 			limb.yScale = LIMB_SHORT;
 		}
+		model.rightArm.yScale = ARM_LONG;
+		model.leftArm.yScale = ARM_LONG;
 	}
 
 	@Override
-	public void extractRenderState(GauntEntity entity, EndermanRenderState state,
+	public void extractRenderState(GauntEntity entity, GauntRenderState state,
 	                               float partialTick) {
 		super.extractRenderState(entity, state, partialTick);
 		state.isCreepy = entity.getTarget() != null;
+		state.staring = entity.staring();
+		state.voice = entity.voice();
 	}
 
 	@Override
-	public Identifier getTextureLocation(EndermanRenderState state) {
+	public Identifier getTextureLocation(GauntRenderState state) {
 		return TEXTURE;
 	}
 }

@@ -51,7 +51,135 @@ public final class Company {
 	private static final java.util.Map<java.util.UUID, Long> WAITING =
 		new java.util.HashMap<>();
 
+	/**
+	 * EVERYTHING HOSTILE LEARNS ABOUT HIM AS IT LOADS.
+	 *
+	 * A zombie hunts players, villagers, wandering traders, baby turtles and iron
+	 * golems, because those five are named in Zombie.registerGoals. There is no
+	 * hook for a sixth, so the goal is added from outside as each mob arrives —
+	 * see MobTargetsAccessor for why an accessor rather than an injection.
+	 *
+	 * PRIORITY 3, BEHIND WHATEVER IT ALREADY WANTED. Vanilla's own targets are
+	 * registered at 1 and 2, so a zombie standing between Addexio and a player
+	 * still goes for the player. He is not a decoy that switches everything off
+	 * you; he is one more thing in the field worth attacking, and the difference
+	 * matters the first time you are glad he is there.
+	 *
+	 * MONSTER ONLY. A cow that hunted him would be funny once. Feral already owns
+	 * the question of when ordinary animals turn, and it turns them on the PLAYER
+	 * — leaving that alone means his presence never changes what the animals do.
+	 */
+	private static void hunted(net.minecraft.world.entity.Entity entity,
+	                           net.minecraft.server.level.ServerLevel level) {
+		if (!(entity instanceof net.minecraft.world.entity.monster.Monster mob)) {
+			return;
+		}
+		((com.bloomlet.herobrine.mixin.MobTargetsAccessor) mob).herobrine$targets()
+			.addGoal(3, new net.minecraft.world.entity.ai.goal.target
+				.NearestAttackableTargetGoal<>(mob, CompanionEntity.class, true));
+	}
+
+	/**
+	 * WHETHER HE HAS EVER TURNED UP, and it has to be persisted rather than
+	 * counted.
+	 *
+	 * The obvious check is "is there a CompanionEntity in the world", and it is
+	 * wrong in the one case that matters: the entity index only holds LOADED
+	 * entities, so the moment a player walks four hundred blocks from wherever he
+	 * was left, the answer comes back no and a second one is made. That is the
+	 * exact bug Whereabouts hit with Herobrine over the keep — "there were 23 of
+	 * him" — and the fix is the same. Absence of evidence is not evidence.
+	 */
+	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean>
+		HAS_COME = net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
+			.createPersistent(HerobrineMod.id("addexio_has_come"),
+				com.mojang.serialization.Codec.BOOL);
+
+	/** Says he has turned up, whichever of the two places did it. */
+	public static void came(ServerLevel level) {
+		level.getServer().overworld().setAttached(HAS_COME, true);
+	}
+
+	public static boolean hasCome(ServerLevel level) {
+		return Boolean.TRUE.equals(
+			level.getServer().overworld().getAttached(HAS_COME));
+	}
+
+	/** How far out he first appears, and how far he must be able to see. */
+	private static final int COMES_FROM_MIN = 56;
+	private static final int COMES_FROM_MAX = 84;
+	private static final int TRIES = 24;
+
+	/**
+	 * HE WALKS IN OUT OF THE DISTANCE, AT THE FIRST HOUSE.
+	 *
+	 * He used to be standing in the undercity waiting to be found, which is under
+	 * the town — the SECOND place on the trail — and it meant the companion the mod
+	 * holds a four-minute vigil over arrived a third of the way through the story
+	 * and only if you went down the crypt stair.
+	 *
+	 * So he comes to you instead, and he comes at the first house, which is the
+	 * building his own first book is sitting in. You read a man's account of
+	 * watching something stand in his wheat, you put the book down, and there is
+	 * somebody on the ridge sixty blocks off walking towards you.
+	 *
+	 * FAR ENOUGH TO BE A SILHOUETTE AND NEAR ENOUGH TO ARRIVE. Fifty-six to
+	 * eighty-four: past anything you would call the yard, inside the distance a
+	 * name tag renders, and about fifteen seconds of walking at his pace. Follow
+	 * brings him the rest of the way and he does the last part himself, which is
+	 * the whole of the effect — nothing is spawned next to you.
+	 *
+	 * ON GROUND HE CAN WALK OFF, checked rather than hoped: dry, solid under him,
+	 * two clear blocks over him, and not in a wall. Twenty-four tries, and if none
+	 * of them works he simply does not come this time and the next person to walk
+	 * up to the house gets another twenty-four.
+	 */
+	public static void arrives(ServerLevel level, Player near) {
+		if (hasCome(level)) {
+			return;
+		}
+		for (int attempt = 0; attempt < TRIES; attempt++) {
+			double angle = level.getRandom().nextDouble() * Math.PI * 2.0;
+			double out = COMES_FROM_MIN
+				+ level.getRandom().nextDouble() * (COMES_FROM_MAX - COMES_FROM_MIN);
+			int x = (int) Math.round(near.getX() + Math.cos(angle) * out);
+			int z = (int) Math.round(near.getZ() + Math.sin(angle) * out);
+			if (!level.hasChunkAt(new BlockPos(x, 0, z))) {
+				continue;
+			}
+			int y = com.bloomlet.herobrine.structure.Ground.topOf(level, x, z);
+			BlockPos feet = new BlockPos(x, y + 1, z);
+			if (!level.getFluidState(feet).isEmpty()
+				|| !level.getBlockState(feet).isAir()
+				|| !level.getBlockState(feet.above()).isAir()
+				|| !level.getBlockState(feet.below()).isSolid()) {
+				continue;
+			}
+			CompanionEntity him = com.bloomlet.herobrine.entity.ModEntities.COMPANION
+				.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+			if (him == null) {
+				return;
+			}
+			him.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5,
+				(float) Math.toDegrees(Math.atan2(near.getZ() - feet.getZ(),
+					near.getX() - feet.getX())) - 90.0F, 0.0F);
+			him.setPersistenceRequired();
+			him.setTarget(null);
+			level.addFreshEntity(him);
+			came(level);
+			HerobrineMod.LOGGER.info(
+				"addexio is coming in from [{}, {}, {}], {} blocks off {}",
+				feet.getX(), feet.getY(), feet.getZ(), (int) out,
+				near.getName().getString());
+			return;
+		}
+		HerobrineMod.LOGGER.info(
+			"nowhere for addexio to walk in from yet — he will try again");
+	}
+
 	public static void listen() {
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD
+			.register(Company::hunted);
 		ServerTickEvents.END_SERVER_TICK.register(Company::tick);
 
 		// SHE STAYS WHERE YOU FELL.

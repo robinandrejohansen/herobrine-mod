@@ -114,9 +114,84 @@ public class CompanionEntity extends PathfinderMob {
 		this.setCustomNameVisible(true);
 	}
 
+	/**
+	 * WHAT HE IS WEARING, AND HE IS NOT CARRYING IT FOR YOU.
+	 *
+	 * Diamond, enchanted, all four pieces and a sword. It reads as absurd for two
+	 * seconds and then reads as the only sensible thing about him: he is the last
+	 * survivor of a valley that lost four hundred people, he has been at this for
+	 * sixty years, and the one thing sixty years of failing at something teaches
+	 * you is what to wear.
+	 *
+	 * IT IS ALSO WHAT MAKES HIM USEFUL RATHER THAN A LIABILITY. He cannot die —
+	 * damage is clamped above zero — so without armour he would spend every fight
+	 * at two hearts running away, which is a companion who is always broken. In
+	 * plate he wins most of what he starts, and the flee is what happens when he
+	 * meets something that is actually a problem.
+	 *
+	 * NOTHING DROPS. Set to zero explicitly rather than left to chance: a full set
+	 * of enchanted diamond is the best loot in the mod by a distance, and a
+	 * companion who cannot die but can be farmed for his boots is a bug with a
+	 * story attached.
+	 */
+	private void kit(net.minecraft.util.RandomSource random) {
+		java.util.Map<net.minecraft.world.entity.EquipmentSlot, net.minecraft.world.item.Item>
+			gear = new java.util.EnumMap<>(net.minecraft.world.entity.EquipmentSlot.class);
+		gear.put(net.minecraft.world.entity.EquipmentSlot.HEAD,
+			net.minecraft.world.item.Items.DIAMOND_HELMET);
+		gear.put(net.minecraft.world.entity.EquipmentSlot.CHEST,
+			net.minecraft.world.item.Items.DIAMOND_CHESTPLATE);
+		gear.put(net.minecraft.world.entity.EquipmentSlot.LEGS,
+			net.minecraft.world.item.Items.DIAMOND_LEGGINGS);
+		gear.put(net.minecraft.world.entity.EquipmentSlot.FEET,
+			net.minecraft.world.item.Items.DIAMOND_BOOTS);
+		gear.put(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
+			net.minecraft.world.item.Items.DIAMOND_SWORD);
+		for (var slot : gear.entrySet()) {
+			net.minecraft.world.item.ItemStack stack =
+				new net.minecraft.world.item.ItemStack(slot.getValue());
+			com.bloomlet.herobrine.manifest.HisHost.enchant(stack, random,
+				this.level().registryAccess(), 20);
+			this.setItemSlot(slot.getKey(), stack);
+			this.setDropChance(slot.getKey(), 0.0F);
+		}
+	}
+
+	/**
+	 * The kit goes on at spawn, once, on the server.
+	 *
+	 * Not in the constructor: that runs on the client too, and enchanting needs a
+	 * RegistryAccess the client copy has no business being asked for. finalizeSpawn
+	 * is the hook vanilla itself uses to dress a mob, and it fires exactly once per
+	 * creature however it was created — structure, command or event.
+	 */
+	@Override
+	public net.minecraft.world.entity.SpawnGroupData finalizeSpawn(
+			net.minecraft.world.level.ServerLevelAccessor level,
+			net.minecraft.world.DifficultyInstance difficulty,
+			net.minecraft.world.entity.EntitySpawnReason reason,
+			net.minecraft.world.entity.@org.jspecify.annotations.Nullable SpawnGroupData data) {
+		this.kit(level.getRandom());
+		return super.finalizeSpawn(level, difficulty, reason, data);
+	}
+
 	public static AttributeSupplier.Builder createAttributes() {
 		return Mob.createMobAttributes()
 			.add(Attributes.MAX_HEALTH, LIVES)
+			// HE SWINGS NOW, SO HE NEEDS THIS OR HE CRASHES THE SERVER.
+			//
+			// Mob.createMobAttributes does not include attack damage, and
+			// Mob.doHurtTarget reads it with nothing guarding it — which is exactly
+			// how the mimic took the server down the first time one of them ever
+			// landed a hit. He had no attack goal until now, so he was never at
+			// risk; adding one without this line would have re-created that bug on
+			// purpose.
+			//
+			// Two, and the diamond sword adds its own seven on top through the
+			// item's attribute modifiers. Base low on purpose: unarmed he is a man
+			// with sixty years of failing behind him, and what makes him dangerous
+			// is the kit.
+			.add(Attributes.ATTACK_DAMAGE, 2.0)
 			// A WOLF'S PACE AND A BIT. A tamed wolf at 0.3 keeps up with a
 			// sprinting player and this has to as well, with the catch-up modifier
 			// in Follow doing the rest. Too much and she runs ahead, which reads as
@@ -134,9 +209,36 @@ public class CompanionEntity extends PathfinderMob {
 		// companion and becomes a frightened person, and that inversion is the
 		// whole effect — you notice her leaving.
 		this.goalSelector.addGoal(1, new Falter(this));
-		this.goalSelector.addGoal(2, new Follow(this));
-		this.goalSelector.addGoal(3, new LookAtPlayerGoal(this, Player.class, 8.0F));
-		this.goalSelector.addGoal(4, new RandomLookAroundGoal(this));
+		// HUNTING COMES BEFORE FOLLOWING AND AFTER FALTERING, and that order is the
+		// whole of his behaviour.
+		//
+		// Falter is first, so a man on two hearts runs whatever is in front of him.
+		// Then the fight, so anything hostile within reach gets dealt with before
+		// he thinks about where you are. Follow last, so catching up is what he
+		// does when there is nothing else — which is what a person walking with you
+		// through a bad country actually looks like.
+		this.goalSelector.addGoal(2,
+			new net.minecraft.world.entity.ai.goal.MeleeAttackGoal(this, 1.15, true));
+		this.goalSelector.addGoal(3, new Follow(this));
+		this.goalSelector.addGoal(4, new LookAtPlayerGoal(this, Player.class, 8.0F));
+		this.goalSelector.addGoal(5, new RandomLookAroundGoal(this));
+
+		// ---- AND WHAT HE GOES AFTER.
+		//
+		// The nearest hostile thing, and he picks it himself rather than
+		// waiting to be hit — HurtByTargetGoal alone would make him a
+		// bodyguard who only ever reacts, and a man who has been doing this
+		// for sixty years does not wait to be bitten.
+		//
+		// Monster rather than Mob, so he never picks a fight with a cow, a
+		// villager, or the player's own wolf. He also cannot target the player:
+		// Monster excludes them by type, which is a stronger guarantee than a
+		// predicate somebody can widen later.
+		this.targetSelector.addGoal(1,
+			new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this));
+		this.targetSelector.addGoal(2,
+			new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(
+				this, net.minecraft.world.entity.monster.Monster.class, true));
 	}
 
 	// ---- WHO SHE IS WITH ---------------------------------------------------

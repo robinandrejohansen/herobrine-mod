@@ -81,6 +81,57 @@ public class GauntEntity extends PathfinderMob {
 	private int watchedFor;
 
 	/**
+	 * TWO THINGS THE CLIENT HAS TO KNOW, AND IT CANNOT WORK EITHER OUT ITSELF.
+	 *
+	 * Everything this creature does is decided on the server — who is watching it,
+	 * when it speaks — and both of those now change how it is DRAWN. The renderer
+	 * runs on the client off a render state copied out of a client-side entity, and
+	 * a plain field on the server object is not in it.
+	 *
+	 * So the two are synched. Cheap: a boolean and a byte, sent only when they
+	 * change, on a creature there is one of.
+	 *
+	 * STARING is "it has turned round and is looking back at somebody", which is
+	 * exactly watchedFor > 0 and is the moment the head goes over — see
+	 * GauntRenderer.tilt.
+	 *
+	 * VOICE counts down from whatever made the last noise. The client reads it as a
+	 * fraction and swells the head on it, so the mouth opens ON the sound rather
+	 * than near it.
+	 */
+	private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> STARING =
+		net.minecraft.network.syncher.SynchedEntityData.defineId(GauntEntity.class,
+			net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
+	private static final net.minecraft.network.syncher.EntityDataAccessor<Byte> VOICE =
+		net.minecraft.network.syncher.SynchedEntityData.defineId(GauntEntity.class,
+			net.minecraft.network.syncher.EntityDataSerializers.BYTE);
+
+	/** How long the head stays swollen after a noise. Twelve ticks, and it falls. */
+	private static final int VOICE_TICKS = 12;
+
+	@Override
+	protected void defineSynchedData(
+			net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+		super.defineSynchedData(builder);
+		builder.define(STARING, false);
+		builder.define(VOICE, (byte) 0);
+	}
+
+	/** Called wherever it makes a noise, so the mouth is on the same tick as the sound. */
+	private void spoke() {
+		this.entityData.set(VOICE, (byte) VOICE_TICKS);
+	}
+
+	public boolean staring() {
+		return this.entityData.get(STARING);
+	}
+
+	/** 1 the tick it speaks, falling to 0. What the head swells on. */
+	public float voice() {
+		return this.entityData.get(VOICE) / (float) VOICE_TICKS;
+	}
+
+	/**
 	 * TEN SECONDS BEFORE IT MAY TOUCH ANYBODY, COUNTED FROM THE FIRST MEETING.
 	 *
 	 * The first thing this creature does to a player is the only thing it needs to
@@ -337,7 +388,13 @@ public class GauntEntity extends PathfinderMob {
 		this.tread();
 		this.unbolt();
 
+		byte left = this.entityData.get(VOICE);
+		if (left > 0) {
+			this.entityData.set(VOICE, (byte) (left - 1));
+		}
+
 		Player seen = this.watcher();
+		this.entityData.set(STARING, seen != null);
 		// THE CLOCK STARTS THE MOMENT IT IS IN THE ROOM WITH SOMEBODY.
 		//
 		// Either half will do to start it — being looked at, or having decided
@@ -573,6 +630,7 @@ public class GauntEntity extends PathfinderMob {
 			return;
 		}
 		this.echoesIn = ECHOES_MIN + this.random.nextInt(ECHOES_SPREAD);
+		this.spoke();
 		here.playSound(null, this.getX(), this.getY(), this.getZ(),
 			net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, this.getSoundSource(),
 			ECHO_CARRIES, DEEP);
@@ -608,6 +666,7 @@ public class GauntEntity extends PathfinderMob {
 		if (this.isSilent() || !(this.level() instanceof ServerLevel here)) {
 			return;
 		}
+		this.spoke();
 		here.playSound(null, this.getX(), this.getY(), this.getZ(),
 			net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, this.getSoundSource(),
 			PULSE_CARRIES, DEEP);
@@ -682,6 +741,7 @@ public class GauntEntity extends PathfinderMob {
 			return;
 		}
 		this.speaksIn = SPEAKS_MIN + this.random.nextInt(SPEAKS_SPREAD);
+		this.spoke();
 		this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
 			SoundEvents.ENDERMAN_SCREAM, this.getSoundSource(), 1.1F,
 			DEEP + this.random.nextFloat() * 0.05F);

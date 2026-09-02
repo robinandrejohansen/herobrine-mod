@@ -1213,6 +1213,16 @@ public final class Dwellings {
 			// AND THE STORY MOVES, because somebody found one of his places. This
 			// is the only call site that advances a phase anywhere in the mod.
 			Wrath.discovered(level.getServer());
+			// AND AT THE FIRST HOUSE, SOMEBODY COMES OVER THE RIDGE.
+			//
+			// Addexio wrote the book that is in this building. He used to be
+			// standing in the undercity under the TOWN waiting to be found, which
+			// put the companion a third of the way through the story and only for
+			// players who went down a crypt stair. Here he arrives at the moment
+			// you finish reading his first account of the place you are standing in.
+			if (place == Place.HOMESTEAD) {
+				com.bloomlet.herobrine.manifest.Company.arrives(level, player);
+			}
 			// AND HE IS NOT STANDING THERE WHEN YOU ARRIVE. NOT ANY MORE.
 			//
 			// This put him at the building the moment somebody walked up to it, which
