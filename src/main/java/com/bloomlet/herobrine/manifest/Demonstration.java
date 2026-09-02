@@ -117,8 +117,18 @@ public final class Demonstration {
 		ServerTickEvents.END_SERVER_TICK.register(Demonstration::onTick);
 	}
 
+	/**
+	 * Every tenth tick. A scripted one-off does not need 20Hz.
+	 *
+	 * It returns early on four conditions so the cost is normally nothing — but
+	 * once somebody is standing in the End and the show has not run, it asks the
+	 * level for every living ender dragon EVERY TICK for as long as they are there.
+	 * The beats it drives are seconds long.
+	 */
+	private static final int WATCHES_EVERY = 10;
+
 	private static void onTick(MinecraftServer server) {
-		if (!Config.get().enabled) {
+		if (server.getTickCount() % WATCHES_EVERY != 0 || !Config.get().enabled) {
 			return;
 		}
 		ServerLevel end = server.getLevel(Level.END);
@@ -416,10 +426,34 @@ public final class Demonstration {
 	 *
 	 * On the ground rather than falling, so it is still there tomorrow.
 	 */
+	/** Rows of the snowfall per tick. See the note in snow(). */
+	private static final int SNOW_ROWS = 12;
+
+	/**
+	 * STAGED, because it is thirteen thousand columns.
+	 *
+	 * A hundred and twenty-nine across, culled to a circle, and every column that
+	 * survives costs a heightmap lookup and two block reads before it decides
+	 * anything. That is around forty thousand operations, and it was all in one
+	 * tick — a visible couple of hundred milliseconds, immediately after the one
+	 * scripted set piece in the mod, which is the worst possible moment for a
+	 * hitch.
+	 *
+	 * It is a one-off, so this is not about throughput. It is about the stutter
+	 * landing on the beat the player is supposed to be looking at.
+	 */
 	private static void snow(ServerLevel end) {
+		for (int from = -64; from <= 64; from += SNOW_ROWS) {
+			final int start = from;
+			com.bloomlet.herobrine.manifest.Cadence.in(end.getServer(),
+					(from + 64) / SNOW_ROWS, () -> snowRows(end, start));
+		}
+	}
+
+	private static void snowRows(ServerLevel end, int fromX) {
 		BlockPos middle = new BlockPos(0, 64, 0);   // the End's island is always the origin
 		int laid = 0;
-		for (int dx = -64; dx <= 64; dx++) {
+		for (int dx = fromX; dx <= Math.min(64, fromX + SNOW_ROWS - 1); dx++) {
 			for (int dz = -64; dz <= 64; dz++) {
 				if (dx * dx + dz * dz > 64 * 64) {
 					continue;

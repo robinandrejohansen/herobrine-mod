@@ -78,7 +78,22 @@ public final class Breach {
 		ServerTickEvents.END_SERVER_TICK.register(Breach::onTick);
 	}
 
+	/**
+	 * Every third tick, and SIEGE-only, so this is free until the endgame.
+	 *
+	 * Which is exactly when it matters: at SIEGE it walks every player, scans a box
+	 * for zombies and allocates two HashSets per level per tick. Twenty times a
+	 * second of garbage, in the phase that already has a horde in it.
+	 *
+	 * Three rather than four, because this drives door-chewing and a player can
+	 * feel the difference between a door coming apart at 7Hz and at 5Hz.
+	 */
+	private static final int CHEWS_EVERY = 3;
+
 	private static void onTick(MinecraftServer server) {
+		if (server.getTickCount() % CHEWS_EVERY != 0) {
+			return;
+		}
 		if (!Wrath.phase(server).atLeast(Phase.SIEGE)) {
 			if (!chewing.isEmpty()) {
 				chewing.clear();

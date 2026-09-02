@@ -124,14 +124,42 @@ public final class Feral {
 			mob.getType().toShortString(), isFeral(mob), mob.isSilent());
 	}
 
+	/**
+	 * How often this looks. EVERY TICK WAS THE MOST EXPENSIVE THING IN THE MOD.
+	 *
+	 * It ran twenty times a second and, for every player, asked the level for every
+	 * Mob in a forty-four block cube — eighty-five thousand blocks — then called
+	 * hasLineOfSight on each. hasLineOfSight is a RAY TRACE. Thirty mobs near a
+	 * player is six hundred ray traces a second, sixty is twelve hundred, and this
+	 * mod has a phase whose entire point is a lot of mobs near a player.
+	 *
+	 * Every fourth tick is five looks a second, which is far finer than anything it
+	 * drives: hunt() sets a target and watch() turns a head. Neither is perceptible
+	 * at 20Hz and neither is missed at 5Hz.
+	 */
+	private static final int LOOKS_EVERY = 4;
+
 	private static void onTick(MinecraftServer server) {
+		if (server.getTickCount() % LOOKS_EVERY != 0) {
+			return;
+		}
 		float sweep = (float)(Math.sin(server.overworld().getGameTime() / 24.0) * 55.0);
+		double reach = NOTICE * NOTICE;
 
 		for (ServerLevel level : server.getAllLevels()) {
 			for (ServerPlayer player : level.players()) {
 				AABB around = player.getBoundingBox().inflate(NOTICE);
 				for (Mob mob : level.getEntitiesOfClass(Mob.class, around)) {
 					if (!isFeral(mob)) {
+						continue;
+					}
+					// THE CORNERS OF THE CUBE, THROWN AWAY BEFORE THE RAY TRACE.
+					//
+					// getEntitiesOfClass takes a BOX and the range is a RADIUS, so
+					// nearly half of what it hands back is further off than NOTICE
+					// and was being ray traced anyway. A squared distance is three
+					// multiplies; the trace it replaces walks blocks.
+					if (mob.distanceToSqr(player) > reach) {
 						continue;
 					}
 					// Line of sight is the switch, and it is the right one
