@@ -297,11 +297,7 @@ public final class SecondHouse {
 		level.setBlock(chestAt, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH), 2);
 		if (level.getBlockEntity(chestAt) instanceof ChestBlockEntity chest) {
-			ItemStack book = HouseBooks.buried();
-			if (book != null) {
-				chest.setItem(0, book);
-			}
-			chest.setItem(1, HouseBooks.theTowerAfter());
+			chest.setItem(0, HouseBooks.five());
 			chest.setItem(2, new ItemStack(Items.TORCH, 12));
 			Loot.scatter(chest, random, Loot.Tier.LARDER);
 		}
@@ -387,7 +383,7 @@ public final class SecondHouse {
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
 		if (level.getBlockEntity(desk.above())
 				instanceof net.minecraft.world.level.block.entity.LecternBlockEntity read) {
-			read.setBook(HouseBooks.buried());
+			read.setBook(HouseBooks.five());
 		}
 		BlockPos glass = new BlockPos(base.getX() + 2, room + 1, base.getZ());
 		level.setBlock(glass, Blocks.CHEST.defaultBlockState()

@@ -3,65 +3,58 @@ package com.bloomlet.herobrine.client;
 import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.entity.CompanionEntity;
 
+import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelLayers;
-import net.minecraft.client.model.npc.VillagerModel;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.client.renderer.entity.layers.CrossedArmsItemLayer;
-import net.minecraft.client.renderer.entity.state.VillagerRenderState;
+import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
+import net.minecraft.client.renderer.entity.state.HumanoidRenderState;
 import net.minecraft.resources.Identifier;
 
 /**
- * Vera, drawn as an ordinary villager in a red coat.
+ * Addexio, and he is the only human-shaped thing on your side of the world.
  *
- * The same trick TurnedRenderer explains at length: borrow vanilla's villager
- * MODEL and none of its renderer, because the vanilla one composites three
- * textures at draw time off VillagerData the entity does not have. VillagerModel
- * itself never looks at that data, so a plain MobRenderer over a
- * VillagerRenderState draws a perfectly ordinary villager off one flat sheet.
+ * HE WAS A VILLAGER AND HE WAS CALLED VERA. That version leaned the other way:
+ * an ordinary villager in a red coat, on the argument that a companion should be
+ * utterly unremarkable up close so that the day something wore her face there was
+ * nothing to spot. Red was picked because it was the one hue nothing else in the
+ * mod used, and the head was left exactly vanilla, deliberately.
  *
- * AND NOTHING IS DONE TO HER FACE. The Turned gets a swollen nose and a black
- * pupil; the Gaunt gets three blocks of height. She gets neither. Her head is
- * the vanilla villager head, pixel for pixel, and the only thing changed
- * anywhere on the sheet is the colour of her cloth — see tools/gen_vera.py.
+ * It worked and it cost him a face. A villager head is a nose the size of a fist
+ * and no expression, and something you are meant to care about — something whose
+ * death this mod holds a four-minute vigil over — cannot be a trade menu with
+ * legs. It also cost him arms: the villager mesh has one joined `arms` part with
+ * no wrist to hang anything off, which is why the old renderer carried his bread
+ * across his chest through CrossedArmsItemLayer. There was nowhere else to put it.
  *
- * That is the design and not laziness. She has to be unmistakable at distance
- * and completely ordinary up close, so that on the day something wears her face
- * there is nothing to spot and behaviour is all you have.
+ * SO HE IS DRAWN ON THE HUMANOID MESH NOW, off ModelLayers.ZOMBIE, which is the
+ * same borrow HerobrineRenderer makes and for the same reason: it is the 1.8
+ * player sheet with four-wide arms, so an ordinary skin fits it with nothing
+ * remapped. Separate arms, a pale tunic, a strap across the chest and boots — the
+ * SILHOUETTE identifies him before any colour does, which is what has to work at
+ * distance and in the dark. Everything else in the mod is a robe.
  *
- * CrossedArmsItemLayer is the bread. The villager mesh has one joined `arms`
- * part and no wrist to hang anything off, so a held item is carried across the
- * chest — which happens to be exactly right for a woman who has broken off from
- * a fight and is standing behind a rock eating.
+ * HumanoidMobRenderer rather than MobRenderer, because HumanoidModel.setupAnim
+ * reads a dozen fields off HumanoidRenderState — attack swing, crouch, sprint,
+ * held items — and MobRenderer fills none of them. It also gives him a hand to
+ * hold the bread in, which is where a man eating would hold it.
  */
-public class CompanionRenderer
-		extends MobRenderer<CompanionEntity, VillagerRenderState, VillagerModel> {
+public class CompanionRenderer extends HumanoidMobRenderer<
+		CompanionEntity, HumanoidRenderState, HumanoidModel<HumanoidRenderState>> {
 
 	private static final Identifier TEXTURE =
-		HerobrineMod.id("textures/entity/vera/vera.png");
-
-	private final net.minecraft.client.renderer.item.ItemModelResolver items;
+		HerobrineMod.id("textures/entity/addexio/addexio.png");
 
 	public CompanionRenderer(EntityRendererProvider.Context context) {
-		super(context, new VillagerModel(context.bakeLayer(ModelLayers.VILLAGER)), 0.5F);
-		this.items = context.getItemModelResolver();
-		this.addLayer(new CrossedArmsItemLayer<>(this));
+		super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5F);
 	}
 
 	@Override
-	public VillagerRenderState createRenderState() {
-		return new VillagerRenderState();
+	public HumanoidRenderState createRenderState() {
+		return new HumanoidRenderState();
 	}
 
 	@Override
-	public void extractRenderState(CompanionEntity entity, VillagerRenderState state,
-	                               float partialTick) {
-		super.extractRenderState(entity, state, partialTick);
-		VillagerRenderState.extractHoldingEntityRenderState(entity, state, this.items);
-	}
-
-	@Override
-	public Identifier getTextureLocation(VillagerRenderState state) {
+	public Identifier getTextureLocation(HumanoidRenderState state) {
 		return TEXTURE;
 	}
 }

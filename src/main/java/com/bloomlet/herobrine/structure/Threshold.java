@@ -303,7 +303,7 @@ public final class Threshold {
 	 *
 	 * IT IS STILL NOT A HOUSE. Making it one would break what the place is — the
 	 * cells are the point and they are underneath. What goes up here is the WORK,
-	 * and the story has already specified it exactly. HouseBooks.theThresholdAfter:
+	 * and the story has already specified it exactly. HouseBooks.nine():
 	 * "It took nineteen of us to put him through and eleven came back up." "Eight
 	 * people stood in a line and let him come."
 	 *
@@ -1259,11 +1259,41 @@ public final class Threshold {
 				: Blocks.SCULK_SENSOR.defaultBlockState(), 2);
 		}
 		seal(level, base.offset(6, 0, 0), random);
+		lastWord(level, base.offset(3, 0, 0), random);
 		HerobrineMod.LOGGER.info(
 			"an infected cave falls {} blocks from the hall at [{}, {}, {}] to the door"
 				+ " at [{}, {}, {}]", cellar.getY() - base.getY(),
 			head.getX(), head.getY(), head.getZ(),
 			base.getX(), base.getY(), base.getZ());
+	}
+
+	/**
+	 * BOOK TEN, THREE BLOCKS IN FRONT OF THE DOOR.
+	 *
+	 * It is the last thing on the trail and it has to be the last thing you find,
+	 * so it is not in the hall with book nine — it is at the bottom of the shaft,
+	 * inside the sculk, within sight of the frame. The book says so itself: "I am
+	 * writing this at the bottom of a stair I helped wall up sixty years ago,
+	 * beside a hole in that wall that I did not make."
+	 *
+	 * Three blocks in, because seal() builds the frame against the east wall at
+	 * +6 and the chamber is clear from -5 to +5. Far enough to be read before you
+	 * step through and near enough that you cannot reach the frame without
+	 * passing it.
+	 *
+	 * NO LOOT IN IT. Every other chest on the trail is also a reward and this one
+	 * is not, on purpose: there is nothing left to equip for. What is in it is an
+	 * eighty-one year old man telling you where he is.
+	 */
+	private static void lastWord(ServerLevel level, BlockPos at, RandomSource random) {
+		level.setBlock(at, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
+		if (level.getBlockEntity(at)
+				instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+			chest.setItem(0, HouseBooks.ten());
+			HerobrineMod.LOGGER.info("the last word is at [{}, {}, {}]",
+				at.getX(), at.getY(), at.getZ());
+		}
 	}
 
 	/**

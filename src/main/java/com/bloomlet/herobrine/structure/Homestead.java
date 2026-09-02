@@ -395,21 +395,20 @@ public final class Homestead {
 			case 'D' -> door(level, pos, layer);
 			case 'B' -> bed(level, pos);
 			case 'C' -> chest(level, pos, null, random);
-			case '1' -> chest(level, pos, HouseBooks.child(), random);
-			// THE SMALL ROOM, AND ONLY THIS ONE.
+			case '1' -> chest(level, pos, null, random);
+			// BOOK ONE GOES IN THE CHEST WITH THE MAP, AND THE BOOK SAYS SO.
 			//
-			// chest() is the helper every container in the house goes through, so
-			// putting the aftermath book in there gave five copies of it. It belongs
-			// in one place and this is the place: the room with no window is where
-			// the boy asked to sleep, and it is where they were found.
-			case '2' -> {
-				chest(level, pos, HouseBooks.farRoom(), random);
-				if (level.getBlockEntity(pos) instanceof ChestBlockEntity found) {
-					found.setItem(1, HouseBooks.theHomesteadAfter());
-				}
-			}
-			case '3' -> chest(level, pos, HouseBooks.ledger(), random);
-			case '4' -> chest(level, pos, HouseBooks.tally(), random);
+			// "There is a map in this chest. I drew it." — HouseBooks.one(), page
+			// one. leaveTheWay has always put the map in the same container as the
+			// book; this is the first time a book has depended on it, so the two
+			// cannot be separated any more without making the text wrong.
+			//
+			// chest() is the helper every container in the house goes through, so it
+			// takes null for the other four. Five copies of the introduction is not
+			// generosity, it is noise.
+			case '2' -> chest(level, pos, HouseBooks.one(), random);
+			case '3' -> chest(level, pos, null, random);
+			case '4' -> chest(level, pos, null, random);
 			case 'c' -> set(level, pos, Blocks.CRAFTING_TABLE.defaultBlockState());
 			case 'F' -> set(level, pos, Blocks.FURNACE.defaultBlockState());
 			case 'A' -> set(level, pos, Blocks.BARREL.defaultBlockState());
@@ -550,7 +549,12 @@ public final class Homestead {
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
 			.setValue(BlockStateProperties.HAS_BOOK, true));
 		if (level.getBlockEntity(pos) instanceof LecternBlockEntity lectern) {
-			lectern.setBook(HouseBooks.household());
+			// AND A SECOND COPY OF BOOK ONE, OPEN, ON A STAND, IN THE MAIN ROOM.
+			//
+			// Deliberate duplication and the only one on the trail. Ten numbered
+			// books are worth nothing to somebody who never found number one, and a
+			// chest is missable in a way an open lectern is not.
+			lectern.setBook(HouseBooks.one());
 		}
 	}
 

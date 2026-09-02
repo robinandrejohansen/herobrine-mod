@@ -59,11 +59,21 @@ import net.minecraft.world.phys.Vec3;
  * cannot be trusted across a ravine at eight blocks a second, and a companion
  * who is reliably lost is worse than no companion.
  *
- * SHE IS RED BECAUSE NOTHING ELSE IS. tools/gen_vera.py has the reasoning: every
- * other humanoid in this mod is villager-brown, ashen grey, or Steve's cyan, and
- * a player who cannot tell her from a Turned across a clearing will kill her.
- * Her face, on the other hand, is a completely ordinary villager's — so that the
- * day a mimic wears it, behaviour is all you have.
+ * THE SILHOUETTE IS WHAT IDENTIFIES HIM, NOT THE COLOUR. tools/gen_addexio.py
+ * has the reasoning: every other humanoid in this mod wears a ROBE — villager
+ * brown, the Turned's ashen grey, the Gaunt's three blocks of it — and a player
+ * who cannot tell him from a Turned across a clearing will kill him. He is the
+ * only human-shaped thing on your side of the world: separate arms, a pale
+ * tunic, a strap across the chest, boots.
+ *
+ * HE WAS A VILLAGER IN A RED COAT AND HE WAS CALLED VERA. That version identified
+ * by hue instead — red because nothing else in the mod was — and left the head
+ * exactly vanilla so that the day a mimic wore her face there was nothing to
+ * spot. It worked and it cost him a face: a villager head is a nose the size of
+ * a fist and no expression, and a companion this mod holds a four-minute vigil
+ * over cannot be a trade menu with legs. A name does that work better than a
+ * disguise ever did — a plate reading Addexio over the wrong thing is colder
+ * than an unnamed villager standing where one should not be.
  */
 public class CompanionEntity extends PathfinderMob {
 	/** A person's health, and a person's armour. She is not a boss. */
@@ -95,7 +105,7 @@ public class CompanionEntity extends PathfinderMob {
 	public CompanionEntity(EntityType<? extends CompanionEntity> type, Level level) {
 		super(type, level);
 		this.setPersistenceRequired();
-		this.setCustomName(Component.literal("Vera"));
+		this.setCustomName(Component.literal("Addexio"));
 		// ALWAYS ON, and it is the single most important line in the file.
 		//
 		// The mod is full of humanoids that want to kill you and one that does

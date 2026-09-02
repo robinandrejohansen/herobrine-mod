@@ -208,7 +208,7 @@ public final class TheDig {
 	 *
 	 * West before east at each rank, and that is what makes the shut one the
 	 * NINTH. It is not arranged — CELLS_PER_SIDE - 2 falls on rank five, west
-	 * side, which is index eight, which is cell nine. theGaolAfter() has called
+	 * side, which is index eight, which is cell nine. HouseBooks.seven() has called
 	 * it cell nine since it was written, and it turns out to be telling the truth.
 	 */
 	private static java.util.List<Cell> cells(BlockPos start) {
@@ -431,20 +431,17 @@ public final class TheDig {
 		level.setBlock(chestAt, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
 		if (level.getBlockEntity(chestAt) instanceof ChestBlockEntity chest) {
-			ItemStack book = HouseBooks.theDig();
-			if (book != null) {
-				chest.setItem(0, book);
-			}
-			chest.setItem(1, HouseBooks.theGaolAfter());
-			// THE THING YOU CAME DOWN HERE FOR.
+			chest.setItem(0, HouseBooks.six());
+			chest.setItem(1, HouseBooks.seven());
+			// THE THING YOU CAME DOWN HERE FOR IS INSIDE BOOK SIX NOW.
 			//
-			// The other two books tell you what happened. This one tells you what to
-			// DO, and it is the only place in the mod that does: four tells for the
-			// mimic, read off MimicEntity.TheFriend in the order that goal runs
-			// them. The gaol sits on Phase.MIMIC, so it arrives exactly when it
-			// becomes useful and long before it becomes urgent.
-			chest.setItem(2, HouseBooks.theProtocol());
-			chest.setItem(3, new ItemStack(Items.IRON_INGOT, 6));
+			// It used to be a third book, theProtocol, and it was the only place in
+			// the mod that told you what to DO rather than what happened. That was
+			// worth keeping and a separate volume was not: it is the HOW TO TELL
+			// section of book 6, in the building that was built to answer exactly
+			// that question and answered it the worst possible way. Every tell is
+			// still read off MimicEntity.TheFriend in the order that goal runs them.
+			chest.setItem(2, new ItemStack(Items.IRON_INGOT, 6));
 			// LARDER was a dead farmer's pantry, at the bottom of sixteen blocks of
 			// stair and thirty-four of hall. A chest speaks one language and that
 			// one was saying "you should not have come down".
@@ -489,7 +486,7 @@ public final class TheDig {
 	 * people — which is a harder thing to look at than fourteen different rooms.
 	 *
 	 * They are in the order cells() numbers them, which puts INDEX EIGHT in the
-	 * shut cell: the ninth. The one theGaolAfter() says went quiet on a Tuesday
+	 * shut cell: the ninth. The one HouseBooks.seven() says he was put in on a Tuesday
 	 * and had blood on the ceiling. What is standing in there now is standing in
 	 * front of a man's handwriting saying he was still himself.
 	 */

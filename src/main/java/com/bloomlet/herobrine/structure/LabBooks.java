@@ -13,7 +13,7 @@ import net.minecraft.world.item.component.WrittenBookContent;
 /**
  * STEVE'S OWN NOTEBOOK, FROM THE TIME.
  *
- * HouseBooks.theThresholdAfter is Steve confessing years afterwards, with the
+ * HouseBooks.seven is Addexio naming him years afterwards, with the
  * headings gone and the worst sentence written on purpose. These are the notes
  * he was actually keeping WHILE HE DID IT, and the gap between the two registers
  * is the horror of the room: the retrospective one says "I made them out of my
@@ -35,7 +35,7 @@ import net.minecraft.world.item.component.WrittenBookContent;
  *   pale thing in the forest is a neighbour of Steve's with a name.
  *
  *   Wendel. Subject three, the cleric who would not stop talking, is the same
- *   Wendel who writes HouseBooks.theShrine at the church years later and tells
+ *   Wendel, whom HouseBooks.eight quotes at the church years later, telling
  *   the player to ask Steve what he did to Herobrine. He is the only subject who
  *   stayed. Steve does not say why and did not ask.
  */
@@ -52,7 +52,7 @@ public final class LabBooks {
 	 * were a disappointment.
 	 *
 	 * Subject three is Wendel, cleric. Wendel is also the author of
-	 * HouseBooks.theShrine, four sites and some years later — the man who tells you
+	 * HouseBooks.eight, four sites and some years later — the man who tells you
 	 * to ask Steve what he did to Herobrine before you let him near you. He knows
 	 * because he was in one of these cells.
 	 */

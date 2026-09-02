@@ -95,7 +95,7 @@ public final class ModEntities {
 	);
 
 	/**
-	 * Vera, and she is the only CREATURE in this registry.
+	 * Addexio, the only CREATURE in this registry.
 	 *
 	 * MobCategory.CREATURE rather than MONSTER, and that is not cosmetic: the
 	 * category drives despawn rules, spawn caps and what counts as a hostile for a

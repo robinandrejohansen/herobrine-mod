@@ -134,7 +134,7 @@ public final class Sayings {
 			+ "§7: " + line));
 		here.playSound(null, her.getX(), her.getY(), her.getZ(),
 			SoundEvents.VILLAGER_AMBIENT, her.getSoundSource(), 0.5F, 1.2F);
-		HerobrineMod.LOGGER.info("vera to {}: \"{}\"", heard.getName().getString(), line);
+		HerobrineMod.LOGGER.info("addexio to {}: \"{}\"", heard.getName().getString(), line);
 	}
 
 	/**

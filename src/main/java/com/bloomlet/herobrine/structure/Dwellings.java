@@ -617,13 +617,14 @@ public final class Dwellings {
 			return;
 		}
 
-		// The elder brother's account, in the same box as the map home. It is the
-		// only book in the mod written by somebody who WON, and it is the bleakest
-		// thing in it — see HouseBooks.theThresholdAfter.
+		// BOOK NINE, in the same box as the map home. The one fight Addexio is not
+		// ashamed of, and it lasts a sentence: he reaches Herobrine, swings,
+		// connects, and wakes against the far wall with a hand that never works
+		// again. Book ten is at the bottom of the stair — see Threshold.infected.
 		for (int slot = 0; slot < box.getContainerSize(); slot++) {
 			if (box.getItem(slot).isEmpty()) {
 				box.setItem(slot, com.bloomlet.herobrine.structure.HouseBooks
-					.theThresholdAfter());
+					.nine());
 				break;
 			}
 		}

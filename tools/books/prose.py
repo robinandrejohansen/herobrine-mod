@@ -1,590 +1,551 @@
 # -*- coding: utf-8 -*-
-"""Every book in the mod. Prose in, paginated Java out."""
+"""Every book in the mod. Prose in, paginated Java out.
 
+TEN BOOKS, NUMBERED, IN ORDER, ONE VOICE.
+
+The old set was twenty-two books in ten hands. Alma's house book, Toby's book,
+Joren's protocol, Kadmus on the watch, and Steve's six documents laid over the
+top of them. Every one of them was good and the whole was unreadable: a player
+finds these one at a time, hours apart, between two other things, and asking
+them to assemble a plot out of ten strangers' diaries is asking for something
+nobody does.
+
+So it is one man now and the books are numbered 1 to 10. He is called Addexio,
+he lived in the first house, and he is the companion you can still find alive
+under the town — which is the whole reason the numbering matters. Book 10 is
+addressed to you and ends by telling you where he is.
+
+HE IS A HERO WHO FAILED. Not a chronicler and not a victim. He was there for all
+of it, he had a weapon every time, and the story he is telling is the story of
+what he did not do. That is what makes ten books in one voice worth reading
+instead of exhausting: the arc is his, and it goes downward.
+
+WHAT EACH ONE HAS TO DO. Three jobs, every time, or it is scenery:
+
+  MAKE THIS PLACE MATTER   what happened in the room you are standing in
+  POINT AT THE NEXT ONE    by name, with a reason to walk there
+  MOVE THE STORY ON        so the order is not decoration
+
+EASY WORDS AND SHORT LINES. A book page is about nineteen characters wide and
+fourteen rows tall, so a long word costs a line and a subordinate clause costs a
+page. It is also read on a screen by somebody who is being hunted. Short
+sentences, plain words, one idea a paragraph.
+
+PAGINATION IS NOT OPTIONAL. Overflow is SILENT — a row past fourteen is simply
+not drawn, and seven pages of the first set were clipped for months without
+anybody noticing. bind() does the layout and gen_books.py asserts every page.
+Titles are capped at 32 characters because a longer one throws an
+EncoderException and disconnects the player.
+"""
+
+ADDEXIO = "Addexio"
+# Steve still writes his own lab set, below. He is a character in Addexio's
+# account now rather than its narrator — see book 7.
 STEVE = "Steve"
 
-# ══════════════════════════════════════════════ SITE ONE — THE FARM
-d1 = ("one: the farm", STEVE, """
-SITE ONE. THE FARM.
+one = ("1. the farm", ADDEXIO, """
+1. THE FARM.
 
-My name is Steve. I am leaving six of these, one at each place, so that whoever comes after me knows what happened and does not do what I did.
+My name is Addexio. I lived here.
 
-Read them in order. There is a map in this chest. I drew it myself.
+I am leaving ten of these. One at every place it happened. Read them in order and you will know what I know.
 
-WHAT HE IS.
+There is a map in this chest. I drew it. It shows the next place.
 
-His name is Herobrine.
+I grew wheat in the north field for eleven years. I had a wife. We had no children, and I was glad of that later.
 
-Four years ago he was my friend. We came here together when there was nothing but trees. He dug the well. I raised these walls. We ate at that table every night for four years and I called him brother.
+WHO WAS HERE BEFORE ME.
 
-Then we went under the hill behind the north field, looking for iron, and we found a door.
+A man called Steve farmed this valley first. He had a friend. The two of them went under the hill behind my north field looking for iron, and they found a door down there.
 
-He put his hand on it. I did not.
+Steve did not touch it.
 
-He has not been a man since.
+His friend did.
 
-WHO LIVED HERE.
+His friend is called Herobrine. Write the name down. Everyone here learned to say "him" instead, and saying "him" is how a thing grows.
 
-Alma. Nils, her husband. Toby, their son, nine years old.
+WHAT I SAW FIRST.
 
-They took this farm four years after I left it. Nobody in the town would tell them why it stood empty.
+Small things. My torches went out in a line, one after another, from the barn to the house.
 
-WHAT HE DID.
+A door I had shut standing open. Not swinging. Open, and still.
 
-He stood in the north field for forty days and let them watch him. He came no closer for a month.
+Boot prints in the wet field going one way only. Out, and never back.
 
-Then he came nine paces a night.
-
-They packed to leave. He took them the night before they went.
-
-A man called Marek went in for the animals a week later and I went in behind him.
-
-Nils was against the door of the small room with both arms broken backward at the elbow, still holding it shut.
-
-Alma was under the bed. There was not enough of her left to carry out.
-
-The walls were wet to the height of my chest.
-
-Toby was not in that house. Toby has never been found.
-
-WHAT I GOT WRONG.
-
-I left my ledger on the kitchen shelf.
-
-I should have burned this farm the day I walked away from it. They read my handwriting and thought a man had been happy here.
+I told myself it was foxes. I told my wife it was foxes. She stopped asking after a while, and that was worse.
 
 WHERE TO GO.
 
-East. Two days walk. A walled town with a gate that still shuts.
+Under my outbuilding there is a passage. I dug it myself. The next book is in a crate at the end of it.
 
-The rest of them ran there. He followed them there.
-
-My second book is in the church.
+Go down there first. It says why I dug it.
 """)
 
-ledger = ("Steve's old ledger", STEVE, """
-Four ewes. Two lambs. Eleven hens.
+two = ("2. what I saw", ADDEXIO, """
+2. WHAT I SAW.
 
-Fence on the north cut wants mending. Herobrine says he will do it and he will not, and I will do it, and this is how it has always been.
+I dug this passage to hide my wife in.
 
-Four years in this house and I have never once been lonely.
+That is the truth and it took me a year to write it down.
 
-Something has been standing in the north cut. The ground is bare in a circle and nothing will grow there.
+Eleven feet down and thirty long, at night, in the spring, so that nobody would ask. I told the neighbours it was for roots.
 
-I mended the fence. It was open again by morning.
+WHAT MADE ME DIG.
 
-Not broken. OPENED.
+I was walking the fence line at dusk.
 
-Whatever is out there has hands.
+There was a man standing in my wheat, forty paces off. Grey shirt. Arms down. Facing me.
 
-I am going to write the rest of this plainly because I do not think I will be back to explain it.
+I raised my hand to him.
 
-We went under the hill in the spring. We found a door that nobody built.
+He did not move. I counted to a hundred and he did not move, and he did not breathe, and the wheat did not move around him either.
 
-He touched it. I did not.
+Then I looked at his face. There was nothing in it. Just white, where eyes go.
 
-He came up wrong. He knows things he was never told. He calls me by my mother's name and my mother has been dead eleven years.
+I ran. I am not ashamed of the running.
 
-I am leaving tonight. I am leaving the animals and the tools and this book and I am not coming back.
+WHAT I DID NEXT.
 
-If you are reading this in my kitchen: get out of my house.
-""")
+I went to my neighbours. Otto, and Marek, and old Bren who could not walk far.
 
-household = ("Alma's house book", "Alma", """
-We took this farm in the autumn. It stood empty four years and nobody in the town would say why.
+I helped them board their windows. I carried Marek's children to the town myself, two at a time, because he had four and one horse.
 
-There is a ledger in the kitchen in another man's hand. Steve, he signs it. I have read it twice and I wish I had read it once.
+And I told all of them it would pass.
 
-Bread twice in the week. Wool from the four ewes at midsummer.
-
-Nils mends the north fence on Sundays. Toby fetches the water before dark.
-
-Toby is nine. He always forgets the water.
-
-Tonight he did not forget. He ran the whole way back and he was white to the lips.
-
-He says there is a man standing at the treeline. He says the man does not move.
-
-Nils went out with the lamp and found nobody at all.
-
-But the grass is dead in a ring where Toby says he stands, and nothing has grown there since.
-""")
-
-child = ("Toby's book", "Toby, nine years old", """
-There is a man in our field.
-
-He is very tall and he stands very straight.
-
-His eyes are white all the way through. Like two lamps with nobody behind them.
-
-We play the game where you do not blink. I always win.
-
-He never wins and he does not mind.
-
-I told mother about him and she went white and shut the door and would not open it again until father came in.
-
-She says do not look at him.
-
-But if I do not look at him then nobody is looking at him.
-
-He was nine paces closer this morning.
-
-Nobody moved him.
-""")
-
-tally = ("how close he is now", "Nils", """
-Days the man has stood in the north field:
-
-IIII IIII IIII IIII
-IIII IIII IIII IIII
-
-I have stopped counting days. There is no use in it.
-
-I have started counting the paces from our door to where he stands.
-
-Forty.
-
-Thirty-one.
-
-Nine.
-""")
-
-farRoom = ("the room with no window", "Alma", """
-We have put Toby in the small room because it has no window.
-
-He asked for it himself.
-
-A boy of nine asked to sleep in a room with no window.
-
-He is asleep now. He talks while he sleeps and it is not his voice.
-
-It is a man's voice. It is slow. It is using my son's mouth to say my name over and over.
-
-Nils has sat outside that door all night with the axe across his knees.
-
-In the morning we go to the town. All four of us and the dog and nothing else.
-
-There is a walled town two days east and it still has a gate that shuts.
-
-If you are reading this in my kitchen, then we did not stay.
-""")
-
-brother = ("about Otto", "Nils", """
-My brother Otto went under the hill in the spring, looking for the iron that Steve wrote about in his ledger.
-
-Something came back out in the autumn.
-
-It has Otto's face. It has Otto's hands. It has the same chip out of his front tooth.
-
-It knows things about this house that it was never told.
-
-It called me by our mother's name. Otto never once called me that.
-
-I have put it in the cellar under the kitchen and I have barred the door and I am not going to open it.
-
-It does not knock.
-
-It waits.
-
-God forgive me, I can hear it breathing through the floor while we eat.
-""")
-
-# ══════════════════════════════════════════════ SITE TWO — THE TOWN
-d2 = ("two: the town", STEVE, """
-SITE TWO. THE TOWN.
-
-You are standing in the square. Read this here.
-
-WHO LIVED HERE.
-
-Four hundred people behind a wall eleven feet high, with a forge, a market and a gate that shut every night at dusk.
-
-They believed the wall was the point. It was not. He has never once used a gate.
-
-WHAT HE DID.
-
-Herobrine walked in through the west lane in the middle of the afternoon. Not fast. Nobody stopped him. Nobody could say afterwards what they had seen.
-
-Eleven were dead by dark.
-
-He did not leave them where he killed them. He carried them.
-
-He walked the whole town and put one in every doorway he passed, sitting up, facing in, so that whoever opened that door in the morning would be the one to find them.
-
-A girl of six opened the fourth door.
-
-The well ran red for two days and they drank from it anyway, because there was nothing else.
-
-WHAT I GOT WRONG.
-
-I came here three weeks before it happened and I told them he was dead.
-
-I told four hundred people a lie because I could not stand to say the true thing out loud, and eleven of them died with their doors shut and their shutters barred and no reason on earth to be afraid.
-
-That is on me. Not on the wall.
+I was wrong. I have been wrong about nearly every single thing in these ten books. Read them anyway. Being wrong in order is still a map.
 
 WHERE TO GO.
 
-DOWN THE WELL.
+On the eleventh day a rider came down the valley road with blood on his coat and could not finish a sentence.
 
-Go over the side and keep climbing. It is further than you think and the water does not last. Bring a light.
+Ashfold. The walled town, north of here. It had already started there.
 
-They dug the cellars out and joined them together and the rest of the town is living down there in the dark.
-
-They are still alive. Some of them.
-
-My third book is with the watch, in the tower they built after this. Northeast of here. You will see it a long way off.
+The map from the farmhouse points at it. Go.
 """)
 
-theTown = ("we went under", "the town of Ashfold", """
-There were four hundred of us behind this wall and we thought that was enough.
+three = ("3. the town", ADDEXIO, """
+3. THE TOWN.
 
-He came in through the west lane at three in the afternoon on a market day.
+Ashfold had four hundred people and a wall, and the wall is why nobody was afraid.
 
-Eleven by dark.
+I got here on the twelfth day. Not the first day. The twelfth. I want that written down.
 
-We found them in the doorways. Not in the square. In the DOORWAYS, one to a house, put there on purpose so that we would each find our own.
+WHAT WAS ALREADY WRONG.
 
-So we went under the town.
+The animals. Every dog in the town was facing the same way and not one of them was barking.
 
-We dug the cellars out and joined them and we live down there now, in the dark, like something he put there himself.
+The bell in the church rang once, at nothing. I climbed up to see who had pulled it. There was nobody in the tower.
 
-It is better than up here.
+And the people in the street were talking about ordinary things, and it took me an hour to work out why that felt so bad.
 
-The way down is the well in the square.
+They were all saying the same ordinary things.
 
-Go over the side and keep going. It is further than you think and the water does not last. Bring a light.
+THE ONES WEARING FACES.
 
-If we are still alive we are at the bottom of it.
+A woman I knew called my name from a doorway.
 
-Knock twice. Never three times. Three is how he knocks.
-""")
+She had my name right and her mouth was wrong. It moved a moment after the sound came out.
 
-# ══════════════════════════════════════════════ SITE THREE — THE TOWER
-d3 = ("three: the tower", STEVE, """
-SITE THREE. THE TOWER.
+I said her husband's name back to her. She smiled and did not answer. She did not know it.
 
-WHO LIVED HERE.
+There were nine of them in the town by then. Nine people who were not those people any more. You could stand a foot away and still not be sure.
 
-Three men of the town watch. Kadmus, Old Bren, and a boy called Pip who was seventeen and volunteered.
+THE TALL ONE.
 
-They built eighty feet of stone with a clear line to the wood on every side, and they kept one man awake on the deck at all times.
+Then something came down the main street that was not pretending to be anybody.
 
-The idea was to see Herobrine coming.
+Three of us watched it from the smithy roof. It had the shape of a villager and it was as tall as the doorframes, and its mouth was open, and it stayed open.
 
-WHAT HE DID.
+It did not run. It walked. It did not stop walking, and everything in front of it moved aside or stopped being able to.
 
-Night forty. Nothing. Night forty-one. Nothing.
-
-Night forty-two, Pip did not come down at dawn.
-
-The stair was still barred. It was barred from the INSIDE, and they had to take the bar off themselves to get up to him.
-
-His lamp was still burning and it had not been knocked over.
-
-There was blood on the deck and on the inside of the parapet and on the UNDERSIDE of the parapet, which is a place a man cannot bleed onto unless he is being held above it.
-
-They did not find all of Pip. They found enough to know.
-
-WHAT I GOT WRONG.
-
-I helped them site this tower. I stood in that field and pointed at this hill.
-
-I knew he does not walk toward a place. I knew it four years ago on the day he came up out of that hole.
-
-I let three men spend a summer building a thing to watch an empty treeline because I did not want to tell them that watching is not the problem.
-
-Pip was seventeen.
+Bren shot it twice. It turned its head, looked at him, and kept walking.
 
 WHERE TO GO.
 
-Kadmus and Bren went to the gaol on the ridge. Southeast, and further than it looks.
+The next book is in this same chest.
 
-They had worked out what to do with the ones who come back wrong, and they were right, and it did not save them either.
+I wrote it four years later in a cellar and I could not finish it in one sitting. Read it anyway.
 
-There is a stable below this tower with horses in it. Take one. You will want the speed.
-
-My fourth book is at the bottom of the gaol, past the cells, in the warder's room. It is a long way down and there is something living in the ninth cell.
+You need to know what he actually came here for.
 """)
 
-buried = ("the watch", "Kadmus of the watch", """
-We built this to see him coming.
+four = ("4. what he did here", ADDEXIO, """
+4. WHAT HE DID HERE.
 
-Eighty feet of it, and a clear line to the wood on every side.
+I have started this book nine times.
 
-Three of us. Myself, Old Bren, and the boy Pip. One awake at all times.
+WHAT HE CAME FOR.
 
-Night forty. Nothing.
+He did not come to kill the town. Killing the town was tidying up afterwards.
 
-Night forty-one. Nothing.
+He came for the ones who would fit through the door.
 
-Night forty-two, Pip did not come down at dawn.
+THE DOOR.
 
-His lamp was still burning. The stair was still barred.
+On the third night there was a door standing in the square with nothing around it.
 
-From the inside.
+Not a doorway. A frame of black stone, and inside it a purple light that moved like water standing on its end.
 
-I am not going to write what was on the underside of the parapet. Bren saw it and Bren has not spoken since.
+They walked people through it. The nine wearing faces took them by the arms, and the tall one came behind, and the people went, because the things holding them had their sisters' faces on.
 
-You do not watch for him.
+Forty-one people went through. I counted the ones who never came out and forty-one is the number.
 
-He was up here before we were.
+I do not know where it goes. The air that came out of it was cold and smelled like a struck match. Nobody has ever come back through it.
 
-Bren and I are going to the gaol on the ridge, southeast. They have worked out what to do with the ones who come back wrong.
+WHAT HE DID TO THE REST.
 
-Take a horse from the paddock. Do not walk it.
-""")
+The rest he did himself, in the open, in the middle of the day, so that we would watch.
 
-# ══════════════════════════════════════════════ SITE FOUR — THE GAOL
-d4 = ("four: the gaol", STEVE, """
-SITE FOUR. THE GAOL.
+He started with the ones who could not run.
 
-WHAT THIS PLACE WAS.
+Marek's four children were in the church with the cleric and eleven women. He came in through the roof. He did not use a sword. There was almost no noise and it took him less than a minute.
 
-Fourteen cells cut in a week, sixteen feet under a stone gatehouse, and it was not built for thieves.
+I was thirty feet away, behind a cart, with an iron sword in my hand.
 
-It was built for the ones who walk into that wood and walk back out of it.
+I did not move.
 
-WHO LIVED HERE.
+That is the sentence. I have written nine versions of this book to get around it. I had a weapon, I was close enough, and I stayed behind the cart.
 
-A warder named Joren, and whoever the ridge sent him.
+When he came out he looked straight at me. He knew exactly where I was.
 
-Fourteen people who came home to their families looking exactly right.
+He let me live. I have thought about why for sixty years. I think somebody had to tell it.
 
-WHAT HE DID.
+AND THEN HE WAS GONE.
 
-Nothing, for a month. That is the worst part of this place. It worked for a month.
+Two hundred and six dead. Forty-one through the door. He walked out of the north gate at dawn and the valley did not see him again for nine years.
 
-They stop eating first. Then they stop sleeping. Then they stand at the bars all night with their faces pressed between them, not blinking, saying your children's names.
-
-Cell nine went quiet on a Tuesday.
-
-The door was still locked and the bars were still whole. There was a great deal of blood and it was on the CEILING, in a spiral, and the man was gone.
-
-Nothing came out of cell nine. Something LEFT.
-
-Iron holds the ones he has touched. Iron does not hold Herobrine.
-
-Cell nine. I have written that number down before, in another room, about another man, and Joren picked it by accident out of fourteen.
-
-I have not been able to stop thinking about that.
-
-WHAT I GOT WRONG.
-
-Joren wrote to me and asked how to tell them apart.
-
-I answered him. I gave him four things to watch for and every one of them was correct, and I knew they were correct because I HAD ALREADY DONE THIS, years before, in a room under a hill, to people who had no idea why they were there.
-
-I did not tell him that part. He died thinking I was clever.
-
-His protocol is in this chest. Read it. It will keep you alive. It cost more than you know.
+Some of what we buried we could not tell apart, so we buried it together and put up one stone.
 
 WHERE TO GO.
 
-The church. West of the ridge, on high ground. You will see the steeple.
+Nine years is a long time to feel safe and we used it badly.
 
-It is the last thing anybody in this country built on purpose.
+We built a tower north of here to watch for him. It is still standing. The next book is at the top of it.
 
-Do not go into the ninth cell.
+Watching was not the problem.
 """)
 
-theDig = ("count them out", "Joren, warder", """
-Fourteen cells. We cut them in a week and we cut them badly.
+five = ("5. the tower", ADDEXIO, """
+5. THE TOWER.
 
-Not for thieves.
+We built this to watch the horizon.
 
-For the ones who walk into that wood and walk back out of it.
+Three of us put it up in one summer. Otto, a lad called Pip who was seventeen, and me. Ninety feet of stone, a room at the top, and a bell.
 
-They look right. They talk right.
+Somebody stood in it every night for nine years. I took the winter watches. I do not sleep well anyway.
 
-Then they say a thing that only a dead man could know, and you put them behind iron and you do not open it again.
+WHAT WAS WRONG WITH IT.
 
-Count them in. Count them out.
+Everything. It is a good tower and it is the most stupid thing I have ever helped build.
 
-I wrote to Steve and asked him how a man is supposed to tell.
+We watched the horizon because we thought he would come from somewhere.
 
-He wrote back the same week with four things to watch for. I have copied them out and left them in my room at the bottom of the hall.
+He does not come from somewhere. He is already where you are, and the reason you cannot see him is not distance.
 
-He knew them straight away. I did not think about that at the time. I have thought about it since.
+WHAT PIP FOUND.
 
-Cell nine has been quiet a month now.
+In the ninth summer Pip went down to the spring below the tower to clear the pipe.
 
-The straw in it is still warm.
+He came back up the ladder shaking so hard he could not hold the rungs.
 
-What is left of us has gone to the church, west of the ridge, on the high ground.
+He said there was a hole in the rock that had not been there yesterday, with steps going down it, cut square.
 
-Go there. It is the last thing anybody built on purpose.
-""")
+He said there was a light at the bottom the colour of a bruise.
 
-# ══════════════════════════════════════════════ SITE FIVE — THE CHURCH
-d5 = ("five: the church", STEVE, """
-SITE FIVE. THE CHURCH.
+He said he could hear somebody counting.
 
-WHO WAS HERE.
+We did not believe him. Write that down too.
 
-Everybody who was still alive. Forty of them, in one room, with the doors barred and every candle they had left burning.
+Four of us went down the next morning to prove there was nothing.
 
-A cleric called Wendel, who would not stop talking, and who I knew, and who I will come back to in the last book.
-
-WHAT HE DID.
-
-They thought light was the answer.
-
-Light is how he finds the room.
-
-Herobrine did not break the door. He was already inside and he had been for some time, standing among them at the back in the dark, and when the first candle burned out they found out exactly how long.
-
-Nine of them died at the wall. Four in the trees.
-
-One got out through the graves behind the altar and wrote it down, and that is the only reason you are reading any of this.
-
-DO NOT GATHER. Do not put your faith in numbers. Numbers only tell him how long it is going to take.
-
-WHAT I GOT WRONG.
-
-I could have come. I was four days away and I knew what night it was and I did not come.
-
-I have written down that I was afraid. That is true and it is not the reason.
-
-The reason is in the last book and I have been putting it off for five of these.
+Two of us came back up.
 
 WHERE TO GO.
 
-Under. There is a stair behind this building that goes down to what is left of the town.
+Here is the part nobody is ready for, and it is worse than the other way round.
 
-They stopped praying and they started digging, and they found the seam, and they were right about it.
+What was under this tower was not his.
 
-There is a way under this world and he has been using it the whole time.
+It was ours. Men from the town cut those steps, and they had been cutting them the whole nine years we spent up here looking at the sky.
 
-Take everything they left you. Every scrap. You are going to need all of it.
+The map points at it. It is a prison. Fourteen cells, iron on every door, and a desk at the end with a ledger on it.
 
-My last book is at the bottom, past the lab.
-
-I am sorry about the lab.
+Read the ledger. Then read the book beside it.
 """)
 
-theShrine = ("the last of us", "Wendel, cleric", """
-Everyone still alive is in this room. Forty of us.
+six = ("6. the prison", ADDEXIO, """
+6. THE PRISON.
 
-We prayed for a month.
+Fourteen cells cut into rock. Iron on every door. A desk at the far end with a lamp.
 
-Nothing came. Nothing left.
+The men who dug this were not monsters. That goes at the top, because it is the only part that is actually frightening.
 
-So we have stopped praying and we have started digging.
+WHAT IT WAS FOR.
 
-There is a way under this world and he has been using it the whole time.
+Some people came back.
 
-We have found the seam. We are going to open it and we are going to put him through it.
+Not through the door in the square. From smaller things. A night lost in the woods. A shaft that went too deep. A face at a window. They would be gone a day or a week, and then they would walk home.
 
-If you are reading this, then we did it.
+And they would be almost right.
 
-The stair behind this building goes down to what is left of the town.
+They knew their own names. They knew their children. They would sit at their own table and eat with their own hands, and then one evening they would say a sentence that only a dead man could know.
 
-Take everything they left you. You are going to need all of it.
+So the town built somewhere to put them.
 
-And if a man comes down that stair and tells you he is Steve, ask him what he did to Herobrine before you let him near you.
+HOW IT WORKED.
+
+You brought them in and you counted them in. It is painted on the wall by the gate. COUNT THEM IN. COUNT THEM OUT.
+
+The warder was a fair man called Joren and he kept a careful ledger, and that ledger is the worst object in this valley.
+
+It has two columns. In, and out.
+
+The out column is shorter. The missing names are not marked dead.
+
+HOW TO TELL, AFTER ALL THAT.
+
+They did work it out in the end. Not from the cutting. From watching. Learn this properly, because you will need it and I will not be there.
+
+It comes to you. A person waits to be spoken to. It closes the last six paces itself.
+
+It copies you. Crouch, and it crouches. Do it twice and you will see the delay.
+
+It goes through your things. Chests, barrels, anything with a lid. It never takes anything.
+
+It changes its coat. Look away for a minute and the colour is not the same.
+
+And it only ever does any of this when you are on your own. Stay in sight of somebody else and it will stand there being ordinary for as long as you like.
+
+WHERE TO GO.
+
+There is a second book in this chest and it is not mine.
+
+It is what one man said out loud, in a room with me and two others, over about four hours, after we got him out of cell nine.
+
+I wrote it down as he said it. I did not tidy it.
+
+If you would rather not, close the chest. It does not change what you have to do.
 """)
 
-# ══════════════════════════════════════════════ SITE SIX — THE SEAM
-d6 = ("six: what I did", STEVE, """
-SITE SIX.
+seven = ("7. the one who came back", ADDEXIO, """
+7. THE ONE WHO CAME BACK.
 
-I am not going to use the headings for this one.
+Taken down as spoken. Cell nine. Eleven weeks inside.
 
-Herobrine was my friend. We built the farm at site one together and I have never had a better four years.
+I have not tidied his words. Where he stopped, I have left the gap.
 
-We found the door under the hill and he touched it and I did not, and he came up out of that hole knowing my mother's name.
+"They put me in on a Tuesday. Joren wrote my name in the book. He said sorry. He did say sorry."
 
-He was gone that same day. I knew it that same day.
+"The first week was only questions. What is your wife called. What did you eat. Say the alphabet backwards. Easy things. I got every one of them right."
 
-I did not tell anybody for two years.
+"Then a man came who was not from the town."
 
-I brought people down here instead.
+"He had a book and he asked the same questions and he did not listen to the answers. He was watching my hands. He said the answers do not matter. Only the hands."
 
-A fletcher. Two farmers. A cleric called Wendel who would not stop talking. Eight more after them. I told them it was work.
+"They took the door off cell four and put a lamp in and left it burning nine days, and the man in there never slept, and on the ninth day he was still not wrong. So they wrote down that the lamp does not work."
 
-I put them in cells and I watched what the door did to them, one at a time, for eleven months, because I wanted to know whether it could tell the difference between him and a man.
+"They tried cold. They tried keeping us awake. Then they tried cutting, to see if we healed the way a man heals."
 
-It can.
+"I healed the way a man heals. So they cut deeper, because the shallow ones only proved the shallow ones."
 
-I wrote in my notes that I was doing it to get him back.
+"There was a woman in six. I will not give her name. Her daughter is still alive."
 
-That is a lie and this is the only page where I put it plainly: I did it because I wanted to know whether I COULD HAVE. Whether it could have been me who touched it. Whether there was anything in me that would have come up out of that hole the same way.
+"They opened her arm from the elbow down and held it open with pins and asked her to name her mother, and she did, all the way through, and she was right every time."
 
-There was. That is what I found out. That is all I found out.
+"She was still right when she died."
 
-Nineteen of us put him through the door in the end. Eleven came back up.
+"Here is what you have to understand. She was not one of them. Nobody in this hole was one of them."
 
-We did not fight him. Nobody fights him. We made a hole and we made ourselves the reason he walked toward it.
+"We were the ordinary ones. That is the point of us. You cannot tell them apart, so you have to do it to the ordinary ones as well, or the numbers mean nothing."
 
-Eight people stood in a line and let him come so that the ninth could be behind him when he did.
+"He wrote that in his book. He said it just like that. The numbers mean nothing."
 
-I gave that order. I would give it again.
+"Eleven of us went in. I came out."
 
-Then we sealed it and I went to Ashfold and told four hundred people he was dead.
+WHO THE MAN WITH THE BOOK WAS.
 
-HE IS NOT DEAD.
+He was Steve.
 
-He is only somewhere else, and it is somewhere I can describe, because I built the room around the door myself.
+The same Steve who farmed my valley before me. The same Steve who went under the hill and did not touch the door.
 
-If you are reading this at the bottom of that stair then you have already decided to go through and get him, and there is nothing I can write that will stop you.
+Herobrine's friend.
 
-So: he is stronger there. He does not have to pretend there. And everything you find in his chests on the other side was taken off somebody who went before you.
+He was not trying to save anybody. He was trying to find out whether he himself would have come up out of that hole the same way.
 
-I am not going with you. I have not been able to go near that door in six years.
+He found out that he would.
 
-My name is Steve and I am the reason for all of it.
+WHERE TO GO.
+
+We closed the prison. We hanged nobody. I think about that.
+
+Then in the eleventh year two boys found where he lives.
+
+The church is south of here. Everyone who was left went there first, and there is a book on the altar.
 """)
 
-# ══════════════════════════════════════════════ the protocol (kept, re-voiced)
-protocol = ("Joren's protocol", "Joren, warder", """
-Steve sent me four things to watch for. I have copied them out plainly.
+eight = ("8. where he lives", ADDEXIO, """
+8. WHERE HE LIVES.
 
-A man walks out of the wood and he is your brother. His face. His coat. He knows what your brother knows.
+He does not live in a house.
 
-There is no test of memory that works. We tried seventeen. All seventeen passed.
+Two boys following a dog found it in the eleventh year. A frame of black stone standing in a hollow, with the same purple light standing up inside it like water.
 
-So stop asking what he KNOWS. Watch what he DOES.
+The same door as the one in the square at Ashfold. He had one out here the whole time.
 
-ONE. He comes close and stops at six paces. Not nearer, not yet.
+WHAT THIS CHURCH WAS FOR.
 
-TWO. He crouches at you. On, off, on, off, far longer than any greeting takes. A man does that once.
+Everything left of us came here first.
 
-THREE. He goes through your chests while you are stood there watching him.
+Not to pray, although we did that too. To decide. Two hundred people in one room, deciding whether to walk into a door.
 
-FOUR. He puts your things ON. Your mail. Your helm. One piece at a time.
+The cleric here was called Wendel. He was old, he was not brave, and he was the only one of us who said the true thing out loud.
 
-Then he strikes. Three times, no more. He is not trying to kill you. He is trying to see.
+He said: before you let that man near you, ask Steve what he did to Herobrine under the hill.
 
-Then he runs, at twice what a man can run, and by then you are only watching him go.
+We told him it was not the time.
 
-DO NOT WAIT FOR THE FOURTH. Leave at the second.
+So he wrote it down instead, which is why you can still read it.
 
-The crouching is the one part of him he did not copy off somebody else.
+He was dead inside the month. Steve was four days' ride away, knew which night it was, and did not come.
 
-And he only does this to a man on his own. Two of you inside shouting distance and he will not come at all.
+WHAT IS THROUGH IT.
 
-So do not be alone down here. That is the whole of it.
+I went through. Nine of us went and four came back. I am one of the four and I will not write down most of it.
+
+I will write down this much, because you will need it.
+
+It is not a cave. Somebody built it.
+
+There is a castle over there with lights in the windows, and a road going up to it, and the road is paved, and the paving is laid in a pattern.
+
+He did not find a hole and crawl into it. He went somewhere and built a house.
+
+WHERE TO GO.
+
+Follow the map west. There is a small village at the end of it with a hall in the middle and a flag on the hall.
+
+That is where it stopped. That is where I nearly stopped with it.
+""")
+
+nine = ("9. the last house", ADDEXIO, """
+9. THE LAST HOUSE.
+
+Sixty people lived in this village.
+
+We came here in the twelfth year with everything we had left, because we had finally worked out how to make him come to us.
+
+You make him come by taking his door.
+
+HOW IT WENT.
+
+We drove him out of Ashfold first. Two hundred of us with iron and fire, in the streets where we had buried our own families, and it worked, and I have never been so certain of anything in my life.
+
+Then out of the fields. Then along the valley road for two days, losing four and five and six of us a night, and every one of them was somebody I had eaten with.
+
+Then here. To the hall with the flag on it, because his last door was underneath it.
+
+WHAT HAPPENED IN THE HALL.
+
+He was waiting in the hall.
+
+He had let us drive him. Twelve days of us thinking we were pushing, and he had been walking backwards to the one place where all of us would be standing in one room.
+
+I got to him. That is the only thing in ten books I am not ashamed of. I got close enough to swing, and I swung, and I hit him, and it was like hitting a doorframe.
+
+Then I was against the far wall with a great deal of my own blood on the boards and my left hand would not work.
+
+It has never worked properly since.
+
+Sixty-one of us died in this village. In one room. In about the time it takes to boil a pot.
+
+WHAT WE DID INSTEAD.
+
+We could not kill him, so we did the only other thing we could think of.
+
+We went down the stair under the hall and we walled his door up. Stone, then more stone, then earth. We cut warnings into it in three different hands so that nobody would ever mistake it for a cellar.
+
+Then we came up and told the valley it was finished.
+
+That was a lie. All of us knew it was a lie. We told it because people needed to plant wheat.
+
+WHERE TO GO.
+
+Down.
+
+There is a stair under this hall and the sculk has taken it, and sculk does not grow on this side.
+
+Which means the wall did not hold.
+
+The last book is at the bottom, next to the door.
+""")
+
+ten = ("10. he has been seen", ADDEXIO, """
+10. HE HAS BEEN SEEN.
+
+I am eighty-one years old and I am writing this at the bottom of a stair I helped wall up sixty years ago, beside a hole in that wall that I did not make.
+
+WHAT HAS HAPPENED.
+
+He has been seen.
+
+Twice this spring in the valley. Once at the old farm where these books start. A man walking his fence line at dusk saw somebody standing in the wheat, not breathing.
+
+It is beginning again in the same order it came in the first time. Small things first. Torches out in a line. A door open and still. Prints going one way.
+
+You have been reading these in that order because that is the order it happens in.
+
+WHAT I GOT WRONG.
+
+All of it. Let me be useful and be exact.
+
+I did not believe Pip. Believe the one who comes up the ladder shaking.
+
+We watched the horizon. He is not on the horizon.
+
+We built a prison and let a man with a book into it, and in eleven weeks we did worse to ourselves than he did to Ashfold in three days. We did it because we were frightened and it felt like doing something.
+
+I stayed behind the cart.
+
+And when we could not kill him we hid him, and told everyone it was over, and left it for a stranger to find sixty years later.
+
+That is you.
+
+WHAT YOU HAVE TO DO.
+
+Not what we did.
+
+Do not wall it up. Go through it.
+
+He built a house over there with lights in the windows. A thing that builds a house can be found in it. A thing that can be found can be finished.
+
+Take iron, and take more than you think you need. Do not go alone.
+
+And do not trust a face because it knows your name. Ask it something only a friend would know, and watch the hands.
+
+WHERE I AM.
+
+I am still alive. That surprises me more than anything else in these ten books.
+
+I am under the town, with the last of Ashfold, in the dark where he does not look.
+
+Come down and find me. I will help you as far as I can still walk.
+
+My name is Addexio. I failed at this for sixty years.
+
+Finish it.
 """)
 
 HOUSEBOOKS = [
-    ("household", household),
-    ("child", child),
-    ("ledger", ledger),
-    ("tally", tally),
-    ("farRoom", farRoom),
-    ("brother", brother),
-    ("theTown", theTown),
-    ("buried", buried),
-    ("theDig", theDig),
-    ("theShrine", theShrine),
-    ("theHomesteadAfter", d1),
-    ("theTownAfter", d2),
-    ("theTowerAfter", d3),
-    ("theProtocol", protocol),
-    ("theGaolAfter", d4),
-    ("theChurchAfter", d5),
-    ("theThresholdAfter", d6),
+    ("one", one),
+    ("two", two),
+    ("three", three),
+    ("four", four),
+    ("five", five),
+    ("six", six),
+    ("seven", seven),
+    ("eight", eight),
+    ("nine", nine),
+    ("ten", ten),
 ]
 
 # ══════════════════════════════════════════════ STEVE'S LAB, AT THE TIME

@@ -1314,12 +1314,13 @@ public final class Undercity {
 	}
 
 	/**
-	 * VERA, AND SHE IS NOT ONE OF THE NINE.
+	 * ADDEXIO, AND HE IS NOT ONE OF THE NINE.
 	 *
 	 * Placed at the middle of the chamber rather than scattered with the rest,
-	 * because the nine are scenery and she is a thing the player has to FIND. A
-	 * red coat among nine brown ones at the centre of the room, with her name over
-	 * her head, is discoverable without a marker, a quest arrow or a line of text.
+	 * because the nine are scenery and he is a thing the player has to FIND. The
+	 * one human-shaped figure among nine robed ones at the centre of the room,
+	 * with his name over his head, is discoverable without a marker, a quest arrow
+	 * or a line of text.
 	 *
 	 * Down here specifically, and not up in the square, and that is the whole
 	 * reason she is worth meeting: everybody who is still alive from Ashfold is at
@@ -1348,16 +1349,16 @@ public final class Undercity {
 			HerobrineMod.LOGGER.warn("nowhere in this undercity for her to stand");
 			return;
 		}
-		com.bloomlet.herobrine.entity.CompanionEntity vera =
+		com.bloomlet.herobrine.entity.CompanionEntity addexio =
 			com.bloomlet.herobrine.entity.ModEntities.COMPANION.create(
 				level, EntitySpawnReason.STRUCTURE);
-		if (vera == null) {
+		if (addexio == null) {
 			return;
 		}
-		vera.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5,
+		addexio.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5,
 			random.nextFloat() * 360.0F, 0.0F);
-		vera.setPersistenceRequired();
-		level.addFreshEntity(vera);
+		addexio.setPersistenceRequired();
+		level.addFreshEntity(addexio);
 		HerobrineMod.LOGGER.info("she is waiting at [{}, {}, {}]",
 			feet.getX(), feet.getY(), feet.getZ());
 	}

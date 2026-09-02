@@ -5,40 +5,40 @@ from bind import bind
 from prose import HOUSEBOOKS
 
 DOC = {
- "household": "Alma. She is the one who decides they are leaving, and she is the first name in the mod.",
- "child": "Toby, nine. The only book here written by somebody who is not frightened of him yet.",
- "ledger": "STEVE'S OWN LEDGER, LEFT ON THE KITCHEN SHELF, and it is the introduction the\n\t * mod did not have.\n\t *\n\t * Two hands in one house: a man who was happy here four years, and the family\n\t * who moved in after and found his handwriting. It names Herobrine on the first\n\t * page, says plainly that they were friends, and says what happened under the\n\t * hill. Everything else in all six chapters is downstream of this book.",
- "tally": "Nils, counting. The only book that is mostly a number.",
- "farRoom": "Alma again, four nights later. The point where the family stops being a family\n\t * with a problem and becomes a family that is leaving.",
- "brother": "Nils, in the cellar under his own kitchen. The wearing-a-face idea, planted at\n\t * the first house so that the gaol at site four is a confirmation and not a\n\t * surprise.",
- "theTown": "Ashfold, in its own hand. Written from the bottom of the well they now live in.",
- "buried": "Kadmus of the watch. Three men, and the one who does not come down is the boy.",
- "theDig": "Joren the warder — and the book that first makes Steve suspicious.\n\t *\n\t * Joren wrote to Steve asking how to tell them apart and got a correct answer\n\t * back inside a week. He notes that he did not think about that at the time.\n\t * A player who is paying attention gets the whole of site six two houses early,\n\t * and a player who is not loses nothing.",
- "theShrine": "Wendel the cleric, and the last line is the mod's best warning.\n\t *\n\t * He tells you to ask Steve what he did to Herobrine before letting him near\n\t * you — written by a man who does not know he is already dead, in a building\n\t * Steve was four days away from and chose not to reach.",
- "theHomesteadAfter": "SITE ONE OF STEVE'S SIX, and the shape every one of them keeps.\n\t *\n\t * WHAT HE IS / WHO LIVED HERE / WHAT HE DID / WHAT I GOT WRONG / WHERE TO GO.\n\t * Same five headings, same order, six times. Learn the form once and you know\n\t * where to look in all of them, which is the entire point — the old books were\n\t * six unrelated diaries and a player had to assemble the plot from the gaps.\n\t *\n\t * It also explains the map chain. \"There is a map in this chest. I drew it\n\t * myself.\" leaveTheWay has always put the map in the same container as the book;\n\t * this is the first time the fiction accounts for why.",
- "theTownAfter": "SITE TWO. Where the lying starts.\n\t *\n\t * Steve came to Ashfold three weeks before it happened and told four hundred\n\t * people Herobrine was dead. Eleven of them died with their shutters barred and\n\t * no reason on earth to be afraid. He says it is on him and not on the wall.",
- "theTowerAfter": "SITE THREE. Where it stops being a lie of omission.\n\t *\n\t * He helped them site this tower knowing that watching is not the problem, and\n\t * let three men spend a summer on it rather than say so. Pip was seventeen.",
- "theProtocol": "HOW TO TELL HIM FROM A PERSON, which is the one thing this building knows that\n\t * nothing else in the mod tells you.\n\t *\n\t * Every tell is real, read off MimicEntity.TheFriend in the order that goal\n\t * runs them: COMES_TO 6, the crouch toggle on GREET_EVERY, ransack,\n\t * DRESSES_EVERY, STRIKES 3, then BOLTS at twice a sprint. The last page is the\n\t * counter — the goal will not start unless a player is SEPARATED — so \"do not\n\t * be alone down here\" is a mechanic stated plainly rather than atmosphere.\n\t *\n\t * In Joren's hand, copied from a letter. Site four says who wrote the letter\n\t * and how he knew the answer, and that is the worse half of it.",
- "theGaolAfter": "SITE FOUR. Where he admits he has done this before.\n\t *\n\t * The protocol in the same chest is correct because Steve had already run it,\n\t * years earlier, on people who had no idea why they were in a cell. He did not\n\t * mention that in his reply. Joren died thinking he was clever.",
- "theChurchAfter": "SITE FIVE. Where he runs out of excuses one book early.\n\t *\n\t * He was four days away, he knew which night it was, and he did not come. He\n\t * writes down that he was afraid, says that is true and is not the reason, and\n\t * admits he has been putting the reason off for five of these.",
- "theThresholdAfter": "SITE SIX, AND THE HEADINGS ARE GONE.\n\t *\n\t * The form has been degrading for two books and here it stops pretending. No\n\t * WHO LIVED HERE, no WHERE TO GO until the end, just a man writing the thing\n\t * he has avoided writing five times.\n\t *\n\t * He did not experiment on eleven people to save his friend. He did it to find\n\t * out whether he himself would have come up out of that hole the same way, and\n\t * the answer was yes. Then he used eight people as bait, gave the order, sealed\n\t * the door and told a walled town it was over.\n\t *\n\t * HE IS NOT DEAD used to be clipped off the end of a page. It is on its own\n\t * page now.",
+ "one": "1. THE FARM. Who he is, who Herobrine is, and the first small wrong things —\n\t * torches out in a line, a door open and still, prints going one way. Ends by\n\t * sending you down the passage under the outbuilding, which is where book 2 is.",
+ "two": "2. WHAT I SAW. The thing standing in his wheat that does not breathe, and the\n\t * only chapter where he does something right: he boards his neighbours' windows\n\t * and carries Marek's children to the town. Then the rider arrives.",
+ "three": "3. THE TOWN. Ashfold on the twelfth day — every dog facing one way, nine people\n\t * wearing other people's faces, and the tall one walking down the main street\n\t * with its mouth open. Bren shoots it twice and it keeps walking.",
+ "four": "4. WHAT HE DID HERE. The worst book in the mod and the one the rest hangs off.\n\t *\n\t * The door in the square, forty-one people walked through it, and then the\n\t * church roof and Marek's four children. Addexio was thirty feet away with an\n\t * iron sword and stayed behind the cart. He says so in one sentence and does\n\t * not soften it, which is the whole character in one line.",
+ "five": "5. THE TOWER. Nine years of watching the wrong direction. Pip comes up the\n\t * ladder shaking, nobody believes him, four go down and two come back — and\n\t * what is under the tower turns out to be ours, not his.",
+ "six": "6. THE PRISON. What the gaol was for, and Joren's ledger with two columns where\n\t * the out column is shorter.\n\t *\n\t * Also the only place in the mod that tells you how to beat the mimic, and\n\t * every tell is real: it closes the last paces itself, copies your crouch,\n\t * ransacks containers without taking anything, changes its coat, and only ever\n\t * does any of it while you are alone.",
+ "seven": "7. THE ONE WHO CAME BACK. A survivor's account, transcribed and untidied.\n\t *\n\t * Eleven weeks in cell nine, and the men doing it were the town's own. The\n\t * point is stated by the man it was done to: the ordinary ones had to be cut\n\t * too, or the numbers mean nothing. The man with the book was Steve, and he\n\t * was only ever testing himself.",
+ "eight": "8. WHERE HE LIVES. Two boys and a dog find the second door. The church is where\n\t * two hundred people decided whether to walk into it, and where Wendel wrote\n\t * down the question nobody would let him ask out loud. Four of nine came back,\n\t * and what they saw was a paved road and lit windows: he built a house.",
+ "nine": "9. THE LAST HOUSE. The one fight Addexio is not ashamed of, and it lasts a\n\t * sentence. He reaches Herobrine, swings, connects, and wakes against the far\n\t * wall with a hand that never works again. Sixty-one dead in one room. They\n\t * wall the door up and tell the valley it is over.",
+ "ten": "10. HE HAS BEEN SEEN. Written last spring, at the bottom of the stair, next to\n\t * the hole in his own wall.\n\t *\n\t * The list of what he got wrong is the mod's own advice in order, and the last\n\t * page is why the numbering exists at all: he is still alive, he is under the\n\t * town with the last of Ashfold, and he tells you to come and find him. That\n\t * is the companion in Undercity.people — the man who wrote all ten.",
 }
 
 def block(pages):
     out = []
     for p in pages:
-        lines = p.split("\n")
+        # EVERY DOUBLE QUOTE ESCAPED, and it does not show up until somebody
+        # writes dialogue. A page is emitted with the closing delimiter hard
+        # against the last character, so a page ENDING in a quote makes four in
+        # a row and javac reads a closed block followed by an unclosed string.
+        # Book 7 is a transcript and every paragraph in it ends with a quote:
+        # seven pages broke at once. In a text block \" is exactly a quote, so
+        # escaping all of them is free and cannot be got wrong later.
+        lines = p.replace('"', '\\"').split("\n")
         body = "\n".join(("\t\t\t" + l) if l else "" for l in lines)
         out.append('\t\t\t"""\n' + body + '"""')
     return ",\n\n".join(out)
 
 SECTIONS = [
- (1, "THE FARM", ["ledger","household","child","tally","farRoom","brother","theHomesteadAfter"]),
- (2, "THE TOWN", ["theTown","theTownAfter"]),
- (3, "THE TOWER", ["buried","theTowerAfter"]),
- (4, "THE GAOL", ["theDig","theProtocol","theGaolAfter"]),
- (5, "THE CHURCH", ["theShrine","theChurchAfter"]),
- (6, "THE SEAM", ["theThresholdAfter"]),
+ (1, "THE FARM", ["one","two"]),
+ (2, "THE TOWN", ["three","four"]),
+ (3, "THE TOWER", ["five"]),
+ (4, "THE GAOL", ["six","seven"]),
+ (5, "THE CHURCH", ["eight"]),
+ (6, "THE LAST HOUSE", ["nine","ten"]),
 ]
 BY = dict(HOUSEBOOKS)
 
@@ -50,50 +50,57 @@ for n, label, names in SECTIONS:
         pages = bind(prose)
         for p in pages:
             assert p.count("\n") + 1 <= 14, (name, p)
-            assert '"""' not in p and "\\" not in p, name
+            assert '\\' not in p, name      # escaping is block()'s job
         parts.append('\t/**\n\t * %s\n\t */\n\tpublic static ItemStack %s() {\n\t\treturn book("%s", "%s",\n%s);\n\t}\n'
                      % (DOC[name], name, title, author, block(pages)))
 
 HEAD = '''/**
- * THE STORY, AND WHO IS TELLING IT.
+ * THE STORY. TEN BOOKS, NUMBERED, ONE VOICE, IN ORDER.
  *
- * Two kinds of book, and the difference is the whole design.
+ * GENERATED. Do not edit this file — write tools/books/prose.py and run
+ * tools/books/gen_books.py. Pagination is the reason: a page is about 114 pixels
+ * wide and fourteen rows tall and overflow is SILENT, so a hand-edited paragraph
+ * loses its last line and nobody finds out for months. Seven pages of the first
+ * set were clipped exactly that way.
  *
- * STEVE'S SIX. One at each site, left on purpose, for whoever comes after him.
- * Same five headings every time — what he is, who lived here, what he did, what
- * I got wrong, where to go. A single voice a player learns to read once, that
- * knows more than it is saying, and that is pointing at the next building and
- * explaining why. These are theHomesteadAfter through theThresholdAfter.
+ * WHO IS TELLING IT. Addexio. He lived in the first house, he was at every one
+ * of these places while it happened, and he is the companion you can still find
+ * alive under the town — see Undercity.people. Book 10 is addressed to you and
+ * ends by telling you where he is, which is the whole reason the books are
+ * numbered rather than scattered.
  *
- * AND WHAT THE DEAD WROTE. Alma's house book, Toby's book, Joren's protocol,
- * Kadmus on the watch. The primary sources Steve is writing up, in the hands of
- * the people it happened to, found in the rooms they were written in.
+ * HE IS A HERO WHO FAILED. He had a weapon every time. Book 4 is the one the
+ * rest hangs off: he was thirty feet from a church with four children in it,
+ * holding an iron sword, and he stayed behind a cart. He writes it in one
+ * sentence and does not soften it. The arc after that goes downward — a tower
+ * watching the wrong direction, a prison his own town built, a fight he lost,
+ * and a wall he helped put up over a door instead of going through it.
  *
- * WHY IT WAS REBUILT. Feedback after the first full playthrough, and it was
- * blunt: too hard, no introduction, nothing you could picture, and — worst of it
- * — HEROBRINE IS NEVER NAMED. Not once in twenty-two books. He was "he", "him",
- * "HIM", for the whole mod. Steve did not exist at all. Everybody was an initial:
- * M., R., J., and an em dash.
+ * WHAT REPLACED WHAT. There were twenty-two books in ten hands: Alma's house
+ * book, Toby's, Joren's protocol, Kadmus on the watch, and Steve's six documents
+ * laid over the top. Every one was good and the whole was unreadable — a player
+ * finds these one at a time, hours apart, between two other things, and
+ * assembling a plot out of ten strangers' diaries is a thing nobody does.
  *
- * The old rule was NOTHING SUPERNATURAL IS EVER DESCRIBED — every entry a
- * domestic observation, the horror left for the reader to assemble. It reads
- * beautifully and it fails the job. A player finds these one at a time, hours
- * apart, between two other things; restraint nobody assembles is not restraint,
- * it is a story that did not get told.
+ * Steve is still in it. He is a character in Addexio's account now instead of
+ * its narrator, and book 7 is where he arrives: the man with the book who came
+ * to the prison and was only ever testing himself.
  *
- * So: names. Alma, Nils, Toby, Otto, Marek, Kadmus, Bren, Pip, Joren, Wendel.
- * An introduction, on page one of Steve's old ledger, which says who Herobrine
- * was and what he touched. Plain words, short lines, and the worst thing said
- * out loud rather than implied.
+ * WHAT EVERY BOOK HAS TO DO, or it is scenery:
  *
- * PAGINATION IS NOT OPTIONAL HERE. A page renders about 114 pixels wide and
- * fourteen rows tall, and overflow is SILENT — seven pages of the old set were
- * losing their last lines, including the page that says HE IS NOT DEAD. Every
- * page below was laid out against the real glyph widths before it was written
- * in. If you edit one by hand, count the rows.
+ *   MAKE THIS PLACE MATTER   what happened in the room you are standing in
+ *   POINT AT THE NEXT ONE    by name, with a reason to walk there
+ *   MOVE THE STORY ON        so that the order is not decoration
  *
- * The one thing kept from the old rule is the contrast: these people use capital
- * letters and full stops right up to the moment they stop writing. He does not.
+ * Book 1 is in the farmhouse chest WITH THE MAP, because page one says "There is
+ * a map in this chest" — the two cannot be separated any more without making the
+ * text wrong. Book 6 carries the mimic tells that used to be theProtocol, in the
+ * building that was dug to answer that exact question and answered it the worst
+ * possible way.
+ *
+ * EASY WORDS AND SHORT LINES. Nineteen characters to a line means a long word
+ * costs a line and a subordinate clause costs a page, and it is read on a screen
+ * by somebody who is being hunted.
  */'''
 
 src = open("src/main/java/com/bloomlet/herobrine/structure/HouseBooks.java").read()
@@ -109,7 +116,7 @@ print("wrote HouseBooks.java  (%d books)" % len(BY))
 # ══════════════════════════════════════════════ LabBooks
 from prose import LABBOOKS
 LDOC = {
- "intake": "THE REGISTER, and it is deliberately the driest thing in the mod.\n\t *\n\t * A numbered list of neighbours by their trade does something no description\n\t * could: it shows the exact moment they stopped being people and became\n\t * entries, and it does it in the FORMAT rather than in the words. The worst\n\t * line in it is a man noticing he has started writing \"no change\" as though it\n\t * were a disappointment.\n\t *\n\t * Subject three is Wendel, cleric. Wendel is also the author of\n\t * HouseBooks.theShrine, four sites and some years later — the man who tells you\n\t * to ask Steve what he did to Herobrine before you let him near you. He knows\n\t * because he was in one of these cells.",
+ "intake": "THE REGISTER, and it is deliberately the driest thing in the mod.\n\t *\n\t * A numbered list of neighbours by their trade does something no description\n\t * could: it shows the exact moment they stopped being people and became\n\t * entries, and it does it in the FORMAT rather than in the words. The worst\n\t * line in it is a man noticing he has started writing \"no change\" as though it\n\t * were a disappointment.\n\t *\n\t * Subject three is Wendel, cleric. Wendel is also the author of\n\t * HouseBooks.eight, four sites and some years later — the man who tells you\n\t * to ask Steve what he did to Herobrine before you let him near you. He knows\n\t * because he was in one of these cells.",
  "theDoor": "WHAT THE THING IN THE NEXT ROOM ACTUALLY IS, measured in a farm ledger's\n\t * vocabulary because that is the only vocabulary he has.\n\t *\n\t * No ritual, no incantation, no glowing anything. A man notes that it opens for\n\t * one person and not for him, builds a room around it to test that, and records\n\t * the result in one word. \"It can.\"",
  "subjectNine": "SUBJECT NINE IS WHERE THE GAUNTS COME FROM.\n\t *\n\t * Taller than he was, does not eat, does not sleep, does not blink, waits at\n\t * the bars for somebody to be curious — that is GauntEntity, described from the\n\t * outside by the man who made it. It is not a monster the mod happens to have;\n\t * it is a person from the mill road called Corin.\n\t *\n\t * The last line is the one that matters: he has written that sentence before,\n\t * years ago, about his brother.",
  "lastDay": "AND SEVEN OF THEM WALKED OUT.\n\t *\n\t * The bars are out, not in. This is the book that puts every tall silent thing\n\t * in the forest into the story by name — Aldous, Hesk, Mila, Bo, Ren, Sera and\n\t * a smith's boy of fifteen — and hands the player the sentence the whole mod\n\t * needed: they are mine, I made them out of my neighbours, and they are still\n\t * out there waiting for somebody to be curious.\n\t *\n\t * Wendel is the only one who stayed. He does not say why and he did not ask.",
@@ -126,7 +133,7 @@ for name, (title, author, prose) in LABBOOKS:
 LHEAD = '''/**
  * STEVE'S OWN NOTEBOOK, FROM THE TIME.
  *
- * HouseBooks.theThresholdAfter is Steve confessing years afterwards, with the
+ * HouseBooks.seven is Addexio naming him years afterwards, with the
  * headings gone and the worst sentence written on purpose. These are the notes
  * he was actually keeping WHILE HE DID IT, and the gap between the two registers
  * is the horror of the room: the retrospective one says "I made them out of my
@@ -148,7 +155,7 @@ LHEAD = '''/**
  *   pale thing in the forest is a neighbour of Steve's with a name.
  *
  *   Wendel. Subject three, the cleric who would not stop talking, is the same
- *   Wendel who writes HouseBooks.theShrine at the church years later and tells
+ *   Wendel, whom HouseBooks.eight quotes at the church years later, telling
  *   the player to ask Steve what he did to Herobrine. He is the only subject who
  *   stayed. Steve does not say why and did not ask.
  */'''

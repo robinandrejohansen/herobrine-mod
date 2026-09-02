@@ -257,7 +257,7 @@ public class GauntEntity extends PathfinderMob {
 		this.goalSelector.addGoal(2, new Close(this));
 		// AND IT LOOKS FOR HER TOO, which is what makes her mortal enough to matter.
 		//
-		// This asked for Player.class, and so does everything else in the mod. Vera
+		// This asked for Player.class, and so does everything else in the mod. Addexio
 		// is not a player — so the entire flee-and-eat half of CompanionEntity was
 		// dead code: real health, a real threshold, a loaf of bread, and nothing in
 		// the world able to take one point off her.
