@@ -461,12 +461,32 @@ public final class Dwellings {
 	 */
 	private static net.minecraft.world.level.block.entity.@org.jspecify.annotations.Nullable
 			BlockEntity inTheLibrary(ServerLevel over, BlockPos square) {
+		// THE MAPMAKER'S, NOT THE LIBRARY.
+		//
+		// The library is the room a player already walks to, for the accounts. So
+		// the map arrived there as a seventh item in a room they had come to READ,
+		// and the one object in the settlement that changes what they do next was
+		// the least noticeable thing in it.
+		//
+		// It has its own building now — the only two-storey thing in the chamber,
+		// so from anywhere in an eighty-one block room there is exactly one roof
+		// standing above the others. See Undercity.mapHouse.
+		BlockPos desk = com.bloomlet.herobrine.town.Undercity.mapHouseAt(square);
+		over.getChunk(desk.getX() >> 4, desk.getZ() >> 4);
+		net.minecraft.world.level.block.entity.BlockEntity found =
+			nearestHolder(over, desk);
+		if (found != null) {
+			return found;
+		}
+		// And the library is the fallback rather than the target, because on an old
+		// save the mapmaker's does not exist and the shelf does.
 		BlockPos shelf = com.bloomlet.herobrine.town.Undercity.libraryAt(square);
 		over.getChunk(shelf.getX() >> 4, shelf.getZ() >> 4);
-		net.minecraft.world.level.block.entity.BlockEntity found =
-			nearestHolder(over, shelf);
+		found = nearestHolder(over, shelf);
 		if (found != null) {
-			return found;      // their own store, which is exactly the right shelf
+			HerobrineMod.LOGGER.info(
+				"no mapmaker's in this undercity — the way is on the library shelf");
+			return found;
 		}
 		HerobrineMod.LOGGER.info("no undercity under this town — the map stays up top");
 		return atTheWell(over, square);

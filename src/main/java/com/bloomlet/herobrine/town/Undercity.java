@@ -92,14 +92,46 @@ public final class Undercity {
 	 * map, and the library is the only room down here that means anything: it is
 	 * where the survivors keep what they have written.
 	 */
+	/**
+	 * ONE FORMULA, AND THERE WERE TWO.
+	 *
+	 * This returned a hardcoded (-13, -13) while dig() had been changed to place
+	 * the library off SPAN — so at SPAN 40 the two disagreed by four blocks on both
+	 * axes. It happened to keep working because nearestHolder searches twenty-four
+	 * blocks and found the barrel anyway, which is the worst kind of working: the
+	 * bug is real, it is invisible, and it is only a matter of how far somebody
+	 * moves something next.
+	 *
+	 * The comment in Township about the undercity being dug from the church's own
+	 * crypt stair says exactly this — "the alternative is two systems agreeing on a
+	 * coordinate, which is how nearly every bug in this repo started".
+	 */
+	private static final int SET_BACK = SPAN * 2 / 3 / 2 + 4;
+
+	public static BlockPos floorOf(BlockPos square) {
+		return new BlockPos(square.getX(), square.getY() - DEPTH, square.getZ());
+	}
+
 	public static BlockPos libraryAt(BlockPos square) {
-		return new BlockPos(square.getX(), square.getY() - DEPTH, square.getZ())
-			.offset(-13, 0, -13);
+		return floorOf(square).offset(-SET_BACK, 0, -SET_BACK);
+	}
+
+	/**
+	 * The mapmaker's, on the far side of the well from the library.
+	 *
+	 * Opposite it on purpose: the two rooms in this place that are not somebody's
+	 * kitchen should not be next door to each other, and a player who has found one
+	 * has crossed the whole chamber to find the other.
+	 */
+	public static BlockPos mapHouseAt(BlockPos square) {
+		return floorOf(square).offset(SET_BACK - 4, 0, SET_BACK - 4);
 	}
 
 	public static void dig(ServerLevel level, BlockPos square, BlockPos crypt,
 	                       RandomSource random) {
-		BlockPos floor = new BlockPos(square.getX(), square.getY() - DEPTH, square.getZ());
+		// floorOf, not a second copy of the same arithmetic. libraryAt already
+		// drifted four blocks from dig() by being written twice.
+		BlockPos floor = floorOf(square);
 
 		chamber(level, floor, random);
 		pillars(level, floor, random);
@@ -145,9 +177,9 @@ public final class Undercity {
 		// OFF SPAN, NOT (-13, -13). At SPAN 21 that was two thirds of the way to
 		// the rim; at 40 it would have been a third, which puts the one landmark
 		// in the place almost on top of the well.
-		int inner = SPAN * 2 / 3;
-		BlockPos libraryAt = floor.offset(-inner / 2 - 4, 0, -inner / 2 - 4);
+		BlockPos libraryAt = floor.offset(-SET_BACK, 0, -SET_BACK);
 		library(level, libraryAt, random);
+		mapHouse(level, floor.offset(SET_BACK - 4, 0, SET_BACK - 4), random);
 		for (int i = 0; i < HOUSES; i++) {
 			// AND ONE OF THE FIVE WAS BUILT THROUGH THE LIBRARY.
 			//
@@ -177,7 +209,20 @@ public final class Undercity {
 				double bearing = angle + nudge * 0.22;
 				int hx = floor.getX() + (int)Math.round(Math.cos(bearing) * reach);
 				int hz = floor.getZ() + (int)Math.round(Math.sin(bearing) * reach);
-				if (!overlaps(hx, hz, 7, 6, libraryAt.getX(), libraryAt.getZ(), 11, 9)) {
+				// AND CLEAR OF THE MAPMAKER'S TOO, not only the library.
+				//
+				// This tested one building because there was one. The mapmaker's
+				// stands at SET_BACK - 4 on both axes, which is about eighteen
+				// blocks out, and the OUTER house ring is at SPAN * 0.62 — nearly
+				// twenty-five. So the ring runs straight through its footprint, and
+				// the houses are raised after it: a cottage driven through the one
+				// building in the settlement that has the map in it.
+				//
+				// Same fix the library got, and the comment above says why the
+				// bearing is the free variable rather than the radius.
+				BlockPos maps = mapHouseAt(square);
+				if (!overlaps(hx, hz, 7, 6, libraryAt.getX(), libraryAt.getZ(), 11, 9)
+					&& !overlaps(hx, hz, 7, 6, maps.getX(), maps.getZ(), 9, 7)) {
 					site = new BlockPos(hx, floor.getY(), hz);
 				}
 			}
@@ -919,56 +964,295 @@ public final class Undercity {
 	 *         house, so a player who works out that it is always the barrel by
 	 *         the door has worked out nothing.
 	 */
-	private static BlockPos[] dwelling(ServerLevel level, BlockPos at, RandomSource random) {
-		int w = 7;
-		int d = 6;
-		int h = 4;
+	/**
+	 * THE MAPMAKER'S, AND IT IS THE ONE BUILDING DOWN HERE WITH AN UPSTAIRS.
+	 *
+	 * The map to the next place used to sit in the library, on a shelf among six
+	 * books — which is a reasonable place for it and a bad place to FIND it. The
+	 * library is the room a player already goes to for the accounts, so the map
+	 * arrived as a seventh item in a room they had come to read, and the one object
+	 * in the settlement that changes what they do next was the least noticeable
+	 * thing in it.
+	 *
+	 * So it gets a building. Nine by seven, two storeys, and it is the only thing
+	 * in the chamber taller than a cottage — which does the whole job on its own:
+	 * from anywhere in an eighty-one block room there is exactly one roof standing
+	 * above the others, and a player walks to it without being told to.
+	 *
+	 * Opposite the library across the well, so the two rooms that are not somebody's
+	 * kitchen are not next door to each other.
+	 *
+	 * WHAT IS IN IT SAYS WHOSE IT IS. A cartography table, a lectern, paper and ink
+	 * on the desk, and a bed upstairs by a window that looks out over the chamber —
+	 * somebody sat up here drawing the country they could not go out into. The
+	 * chest is downstairs by the table, where the work was done.
+	 *
+	 * @return the chest, for Dwellings to leave the way in
+	 */
+	private static BlockPos mapHouse(ServerLevel level, BlockPos at, RandomSource random) {
+		int w = 9;
+		int d = 7;
+		int lower = 4;
+		int upper = 8;
+		BlockState plank = Blocks.SPRUCE_PLANKS.defaultBlockState();
+		BlockState post = Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
+			.setValue(BlockStateProperties.AXIS, Direction.Axis.Y);
 
 		for (int dx = 0; dx < w; dx++) {
 			for (int dz = 0; dz < d; dz++) {
-				for (int dy = 0; dy <= h; dy++) {
+				for (int dy = 0; dy <= upper; dy++) {
 					BlockPos pos = at.offset(dx, dy, dz);
-					boolean wall = dx == 0 || dx == w - 1 || dz == 0 || dz == d - 1;
-					if (dy == h) {
-						level.setBlock(pos, Blocks.DEEPSLATE_TILE_SLAB.defaultBlockState()
-							.setValue(BlockStateProperties.SLAB_TYPE, SlabType.BOTTOM), 2);
-					} else if (wall && dy > 0) {
-						level.setBlock(pos, random.nextInt(4) == 0
-							? Blocks.MOSSY_STONE_BRICKS.defaultBlockState()
-							: Blocks.STONE_BRICKS.defaultBlockState(), 2);
-					} else if (dy == 0) {
-						level.setBlock(pos, Blocks.POLISHED_ANDESITE.defaultBlockState(), 2);
+					boolean edge = dx == 0 || dx == w - 1;
+					boolean end = dz == 0 || dz == d - 1;
+					boolean wall = edge || end;
+					if (dy == 0) {
+						level.setBlock(pos, wall
+							? Blocks.COBBLESTONE.defaultBlockState() : plank, 2);
+					} else if (dy == lower) {
+						// The floor between the storeys, left open at one corner
+						// for the ladder.
+						boolean hole = dx == w - 2 && dz == 1;
+						level.setBlock(pos, hole
+							? Blocks.CAVE_AIR.defaultBlockState()
+							: (wall ? plank : Blocks.SPRUCE_SLAB.defaultBlockState()
+								.setValue(BlockStateProperties.SLAB_TYPE, SlabType.TOP)), 2);
+					} else if (dy == upper) {
+						level.setBlock(pos, Blocks.CAVE_AIR.defaultBlockState(), 2);
+					} else if (wall) {
+						level.setBlock(pos, (edge && end) ? post : plank, 2);
 					} else {
 						level.setBlock(pos, Blocks.CAVE_AIR.defaultBlockState(), 2);
 					}
 				}
 			}
 		}
-		for (int dy = 1; dy <= 2; dy++) {
-			level.setBlock(at.offset(w / 2, dy, d - 1), Blocks.CAVE_AIR.defaultBlockState(), 2);
+		// The pitch, over the upper storey.
+		for (int course = 0; course < 3; course++) {
+			int y = upper + course;
+			for (int dz = -1 + course; dz < d + 1 - course; dz++) {
+				for (int side = 0; side < 2; side++) {
+					int dx = side == 0 ? -1 + course : w - course;
+					level.setBlock(at.offset(dx, y, dz),
+						Blocks.SPRUCE_STAIRS.defaultBlockState()
+							.setValue(BlockStateProperties.HORIZONTAL_FACING,
+								side == 0 ? Direction.WEST : Direction.EAST), 2);
+				}
+			}
+			for (int dx = course; dx < w - course; dx++) {
+				for (int dz : new int[] { -1 + course, d - course }) {
+					level.setBlock(at.offset(dx, y, dz), plank, 2);
+				}
+			}
 		}
-		level.setBlock(at.offset(1, 1, 1), Blocks.CRAFTING_TABLE.defaultBlockState(), 2);
-		level.setBlock(at.offset(2, 1, d - 2), Blocks.BOOKSHELF.defaultBlockState(), 2);
-		level.setBlock(at.offset(w / 2, 3, d / 2), Blocks.LANTERN.defaultBlockState()
-			.setValue(BlockStateProperties.HANGING, true), 2);
-		// A trapdoor over each window hole, shut, which is the town's own idiom.
-		level.setBlock(at.offset(0, 2, d / 2), Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
-			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST)
-			.setValue(BlockStateProperties.HALF, Half.BOTTOM), 2);
 
-		// TWO BARRELS, and the second one is the point of having two.
-		//
-		// One container per house that always holds a book is a chest with a
-		// different model on it — the player learns after the second house that
-		// every barrel down here is a lore drop, and the searching stops being
-		// searching. With two per house and only one filled, most of what they
-		// open is somebody's flour, and that is what makes finding an account
-		// feel like finding something rather than collecting it.
-		//
-		// A barrel stands upright with no facing to get wrong, which is also
-		// exactly how a household one would sit.
-		BlockPos byTheDoor = at.offset(w - 2, 1, 1);
-		BlockPos inTheCorner = at.offset(w - 2, 1, d - 2);
+		// The ladder up.
+		for (int dy = 1; dy <= lower; dy++) {
+			level.setBlock(at.offset(w - 2, dy, 1), Blocks.LADDER.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
+		}
+		// The door.
+		BlockPos door = at.offset(w / 2, 1, d - 1);
+		BlockState leaf = Blocks.SPRUCE_DOOR.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
+		level.setBlock(door, leaf.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
+			net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER), 2);
+		level.setBlock(door.above(), leaf.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
+			net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 2);
+
+		// Windows on both storeys, because two rows of them is what says two floors
+		// from the outside.
+		for (int dz : new int[] { 2, d - 3 }) {
+			for (int dy : new int[] { 2, lower + 2 }) {
+				level.setBlock(at.offset(0, dy, dz), Blocks.GLASS_PANE.defaultBlockState(), 2);
+				level.setBlock(at.offset(w - 1, dy, dz), Blocks.GLASS_PANE.defaultBlockState(), 2);
+			}
+		}
+
+		// ---- THE WORK, downstairs.
+		level.setBlock(at.offset(2, 1, 1), Blocks.CARTOGRAPHY_TABLE.defaultBlockState(), 2);
+		level.setBlock(at.offset(3, 1, 1), Blocks.LECTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
+		level.setBlock(at.offset(4, 1, 1), Blocks.SPRUCE_SLAB.defaultBlockState()
+			.setValue(BlockStateProperties.SLAB_TYPE, SlabType.TOP), 2);
+		level.setBlock(at.offset(w / 2, lower - 1, d / 2), Blocks.LANTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HANGING, true), 2);
+
+		// ---- AND UPSTAIRS, where he slept.
+		BlockPos foot = at.offset(2, lower + 1, d - 3);
+		BlockState bed = Blocks.BED.pick(net.minecraft.world.item.DyeColor.BLUE)
+			.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
+		level.setBlock(foot, bed.setValue(BlockStateProperties.BED_PART,
+			net.minecraft.world.level.block.state.properties.BedPart.FOOT), 2);
+		level.setBlock(foot.north(), bed.setValue(BlockStateProperties.BED_PART,
+			net.minecraft.world.level.block.state.properties.BedPart.HEAD), 2);
+		level.setBlock(at.offset(w - 3, lower + 1, d - 3),
+			Blocks.BOOKSHELF.defaultBlockState(), 2);
+		level.setBlock(at.offset(w / 2, upper - 1, d / 2), Blocks.LANTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HANGING, true), 2);
+
+		// ---- THE CHEST, LAST, beside the table where the work was done.
+		BlockPos crate = at.offset(1, 1, 1);
+		level.setBlock(crate, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
+		if (level.getBlockEntity(crate)
+				instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+			chest.setItem(0, new net.minecraft.world.item.ItemStack(
+				net.minecraft.world.item.Items.PAPER, 6 + random.nextInt(10)));
+			chest.setItem(1, new net.minecraft.world.item.ItemStack(
+				net.minecraft.world.item.Items.INK_SAC, 1 + random.nextInt(3)));
+			com.bloomlet.herobrine.structure.Loot.scatter(chest, random,
+				com.bloomlet.herobrine.structure.Loot.Tier.TOWN_TRADE);
+		}
+		HerobrineMod.LOGGER.info("the mapmaker's house stands at [{}, {}, {}]",
+			at.getX(), at.getY(), at.getZ());
+		return crate;
+	}
+
+	/**
+	 * A HOUSE PEOPLE LIVE IN, AND IT WAS A STONE BOX WITH A FLAT LID.
+	 *
+	 * Stone brick walls, a polished andesite floor, a roof made of deepslate slabs
+	 * laid flat, one trapdoor for a window and no bed in it. Which is the same
+	 * material and the same silhouette as the cavern it stands in, so five of them
+	 * read as five compartments of the cave rather than five houses — and that is
+	 * most of why the place was reported as looking like a generic grotto.
+	 *
+	 * WOOD, BECAUSE THE CAVE IS STONE. The one thing these people brought down
+	 * with them is timber; a spruce house in a stone room is the only way the
+	 * building reads as something somebody CARRIED IN. Log posts at the corners,
+	 * planks between, and the frame is what says built rather than carved.
+	 *
+	 * AND A ROOF WITH A PITCH ON IT. Three courses of stairs meeting at a ridge.
+	 * A flat lid is a ceiling; a pitch is a roof, and the difference is visible
+	 * from across the chamber, which is where these are seen from.
+	 *
+	 * A BED EACH, and that is not decoration. people() places eighteen villagers
+	 * and a villager with no bed never claims a home, never sleeps and never has
+	 * anywhere to be — so the whole settlement stands about in the street all
+	 * night. Eleven beds is eleven of them indoors.
+	 *
+	 * Windows are glass with a shutter beside them, because a pane on its own in a
+	 * plank wall reads as a hole somebody forgot to fill.
+	 */
+	private static BlockPos[] dwelling(ServerLevel level, BlockPos at, RandomSource random) {
+		int w = 7;
+		int d = 6;
+		int h = 4;
+		BlockState plank = Blocks.SPRUCE_PLANKS.defaultBlockState();
+		BlockState post = Blocks.SPRUCE_LOG.defaultBlockState()
+			.setValue(BlockStateProperties.AXIS, Direction.Axis.Y);
+
+		for (int dx = 0; dx < w; dx++) {
+			for (int dz = 0; dz < d; dz++) {
+				for (int dy = 0; dy <= h; dy++) {
+					BlockPos pos = at.offset(dx, dy, dz);
+					boolean edge = dx == 0 || dx == w - 1;
+					boolean end = dz == 0 || dz == d - 1;
+					boolean wall = edge || end;
+					if (dy == 0) {
+						// A boarded floor, with a stone sill under the walls so the
+						// timber is not standing in the mud.
+						level.setBlock(pos, wall
+							? Blocks.COBBLESTONE.defaultBlockState()
+							: Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
+					} else if (dy == h) {
+						level.setBlock(pos, Blocks.CAVE_AIR.defaultBlockState(), 2);
+					} else if (wall) {
+						// Corner posts, and the beam under the eaves.
+						level.setBlock(pos, (edge && end) || dy == h - 1
+							? post : plank, 2);
+					} else {
+						level.setBlock(pos, Blocks.CAVE_AIR.defaultBlockState(), 2);
+					}
+				}
+			}
+		}
+
+		// ---- THE ROOF. Three courses of stairs to a ridge along the long axis.
+		for (int course = 0; course < 3; course++) {
+			int inset = course;
+			int y = h + course;
+			for (int dz = -1 + inset; dz < d + 1 - inset; dz++) {
+				for (int side = 0; side < 2; side++) {
+					int dx = side == 0 ? -1 + inset : w - inset;
+					if (dx < 0 || dx >= w + 1) {
+						continue;
+					}
+					level.setBlock(at.offset(dx, y, dz),
+						Blocks.SPRUCE_STAIRS.defaultBlockState()
+							.setValue(BlockStateProperties.HORIZONTAL_FACING,
+								side == 0 ? Direction.WEST : Direction.EAST), 2);
+				}
+			}
+			// Close the gable ends behind the slope.
+			for (int dx = inset; dx < w - inset; dx++) {
+				for (int dz : new int[] { -1 + inset, d - inset }) {
+					level.setBlock(at.offset(dx, y, dz), plank, 2);
+				}
+			}
+		}
+		for (int dz = 1; dz < d - 1; dz++) {
+			level.setBlock(at.offset(w / 2, h + 2, dz),
+				Blocks.SPRUCE_SLAB.defaultBlockState()
+					.setValue(BlockStateProperties.SLAB_TYPE, SlabType.BOTTOM), 2);
+		}
+
+		// ---- THE DOOR, in the long wall.
+		BlockPos door = at.offset(w / 2, 1, d - 1);
+		BlockState leaf = Blocks.SPRUCE_DOOR.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH)
+			.setValue(BlockStateProperties.OPEN, random.nextInt(3) == 0);
+		level.setBlock(door, leaf.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
+			net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER), 2);
+		level.setBlock(door.above(), leaf.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF,
+			net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 2);
+
+		// ---- WINDOWS. A pane, and a shutter beside it so it reads as a window.
+		for (int[] cut : new int[][] { { 0, 2 }, { w - 1, 3 }, { 2, 0 } }) {
+			int dx = cut[0];
+			int dz = cut[1];
+			boolean onX = dx == 0 || dx == w - 1;
+			BlockPos pane = at.offset(dx, 2, dz);
+			level.setBlock(pane, Blocks.GLASS_PANE.defaultBlockState(), 2);
+			BlockPos beside = onX ? pane.south() : pane.east();
+			if (level.getBlockState(beside).is(Blocks.SPRUCE_PLANKS)) {
+				level.setBlock(beside, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
+					.setValue(BlockStateProperties.HORIZONTAL_FACING,
+						onX ? Direction.WEST : Direction.NORTH)
+					.setValue(BlockStateProperties.OPEN, true)
+					.setValue(BlockStateProperties.HALF, Half.TOP), 2);
+			}
+		}
+
+		// ---- AND A BED, WHICH THERE WAS NOT ONE OF.
+		BlockPos foot = at.offset(1, 1, d - 2);
+		BlockState bed = Blocks.BED
+			.pick(random.nextBoolean() ? net.minecraft.world.item.DyeColor.WHITE
+				: net.minecraft.world.item.DyeColor.BROWN)
+			.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
+		level.setBlock(foot, bed.setValue(BlockStateProperties.BED_PART,
+			net.minecraft.world.level.block.state.properties.BedPart.FOOT), 2);
+		level.setBlock(foot.north(), bed.setValue(BlockStateProperties.BED_PART,
+			net.minecraft.world.level.block.state.properties.BedPart.HEAD), 2);
+
+		// ---- AND SOMEBODY'S THINGS.
+		level.setBlock(at.offset(w - 2, 1, 1), Blocks.CRAFTING_TABLE.defaultBlockState(), 2);
+		level.setBlock(at.offset(w - 3, 1, 1), Blocks.SPRUCE_SLAB.defaultBlockState()
+			.setValue(BlockStateProperties.SLAB_TYPE, SlabType.TOP), 2);
+		level.setBlock(at.offset(w - 3, 2, 1), Blocks.FLOWER_POT.defaultBlockState(), 2);
+		level.setBlock(at.offset(2, 1, 1),
+			Blocks.CARPET.pick(net.minecraft.world.item.DyeColor.RED)
+				.defaultBlockState(), 2);
+		level.setBlock(at.offset(3, 1, 1),
+			Blocks.CARPET.pick(net.minecraft.world.item.DyeColor.RED)
+				.defaultBlockState(), 2);
+		level.setBlock(at.offset(w / 2, h - 1, d / 2), Blocks.LANTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HANGING, true), 2);
+
+		BlockPos byTheDoor = at.offset(w - 2, 1, d - 2);
+		BlockPos inTheCorner = at.offset(1, 1, 1);
 		level.setBlock(byTheDoor, Blocks.BARREL.defaultBlockState(), 2);
 		level.setBlock(inTheCorner, Blocks.BARREL.defaultBlockState(), 2);
 		return random.nextBoolean()
