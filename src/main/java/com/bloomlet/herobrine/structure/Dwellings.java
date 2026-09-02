@@ -123,6 +123,22 @@ public final class Dwellings {
 	 */
 	private static final int ABANDONED_MARGIN = 620;
 
+	/**
+	 * How many checks in a row a place must be deserted before it is moved.
+	 *
+	 * Ninety, at forty ticks a check, is three unbroken minutes. Long enough that
+	 * flight cannot trip it — the counter resets on the first check anybody is back
+	 * inside the line, and somebody crossing it at twenty blocks a second is back
+	 * inside it within seconds. Short enough that a group who really has moved on
+	 * is not left waiting on a building they will never see.
+	 *
+	 * Not persisted. A reload starts the count again, which errs toward patience.
+	 */
+	private static final int PATIENCE = 90;
+
+	private static final java.util.Map<Place, Integer> deserted =
+		new java.util.EnumMap<>(Place.class);
+
 	private static int tickCounter;
 
 	/**
@@ -939,17 +955,48 @@ public final class Dwellings {
 			// dead behind it because nothing after it is allowed to exist yet.
 			//
 			// So if everybody is a long way off, it is forgotten and chosen
-			// again. Fourteen hundred is far enough that nobody walking toward
-			// it can trip this by accident; at that distance they are not
-			// coming, and the story is waiting on somebody who does not know
-			// it is waiting.
-			if (nearest > place.far + ABANDONED_MARGIN) {
+			// again. Twelve hundred odd is far enough that nobody WALKING toward it
+			// can trip this by accident.
+			//
+			// AND WALKING WAS THE WHOLE ASSUMPTION, WHICH IS WHERE IT BROKE.
+			//
+			// It moved on a single distant sample: one check, one instant over the
+			// line, and the town was gone and re-rolled somewhere else. At four
+			// blocks a second that is safe. Nobody plays at four blocks a second —
+			// an elytra is twenty-odd, creative flight more, and a tester crosses
+			// the line and comes back inside it several times a minute.
+			//
+			// Measured off the report that produced this: the town was sited five
+			// hundred blocks out and moved fifty-five seconds later, which needs
+			// seven hundred and twenty-five blocks of travel — thirteen blocks a
+			// second. The rule did exactly what it says and the answer was still
+			// wrong, because "far away right now" is not "not coming".
+			//
+			// So it has to be far away AND STAY far away. Three minutes of it,
+			// unbroken, and the counter resets the moment anybody comes back inside
+			// the line — which is what a player heading for it does, and what
+			// somebody who has genuinely moved on never does.
+			int limit = place.far + ABANDONED_MARGIN;
+			if (nearest > limit) {
+				int gone = deserted.merge(place, 1, Integer::sum);
+				if (gone < PATIENCE) {
+					return;     // too far to build, not yet far enough for long enough
+				}
+				deserted.remove(place);
 				overworld.setAttached(place.site, null);
-				HerobrineMod.LOGGER.info("{} was never found at [{}, {}] — moving it",
+				// THE DISTANCE IS IN THE MESSAGE NOW. It said "was never found at
+				// [x, z] — moving it" and left out the one number the decision was
+				// made on, so the only way to know why it fired was to work the
+				// arithmetic back from the player's position by hand.
+				HerobrineMod.LOGGER.info(
+					"{} was never found at [{}, {}] — nobody within {} blocks"
+						+ " (limit {}) for {} seconds, moving it",
 					place.name().toLowerCase(java.util.Locale.ROOT),
-					site.getX(), site.getZ());
+					site.getX(), site.getZ(), Math.round(nearest), limit,
+					PATIENCE * CHECK_INTERVAL / 20);
 				return;
 			}
+			deserted.remove(place);
 
 			if (nearest <= RAISE_RANGE && build(overworld, place, site)) {
 				overworld.setAttached(place.up, true);
