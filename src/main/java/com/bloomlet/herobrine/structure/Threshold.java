@@ -40,10 +40,21 @@ import net.minecraft.world.phys.Vec3;
  * something, which means there was something to keep, which means he was not
  * alone down here — and one of the cells has its bars pushed outward.
  *
- * At the end, the seal. It does nothing. It cannot be opened, mined, or used,
- * and that is deliberate: the reward for finding the bottom of this is not a
- * dimension, it is the certainty that there is one and that it is shut. The
- * dimension is never visited (LORE.md); it only leaks.
+ * AND AT THE END, THE DOOR. The live one — the only live one in a playthrough.
+ *
+ * This said the opposite for a long time: "it does nothing, it cannot be opened,
+ * mined or used, the reward is the certainty that there is one and that it is
+ * shut." That was written when the dimension was never visited. It is now the
+ * whole ending, and the working doorway was under the FIRST house — which a
+ * playthrough log settled in three lines. Homestead up at 11:08:01, the way open
+ * at 11:08:02, somebody standing in his world at 11:08:18. Seventeen seconds into
+ * a fresh save, at RUMOUR.
+ *
+ * So the doors swapped. What is under the homestead is a frame with a draught
+ * through it (TheWay.remains) and this is the one that goes somewhere. It is what
+ * the whole chain has been for: five buildings, three thousand blocks, four walls
+ * somebody built across this corridor, and then the thing they were built to keep
+ * shut, standing open.
  */
 public final class Threshold {
 	private Threshold() {}
@@ -844,6 +855,20 @@ public final class Threshold {
 	 * certainty that there is one, and that somebody sealed it, and that the
 	 * seal is cracked.
 	 */
+	/**
+	 * ACROSS Z, FACING WEST, because that is the way in.
+	 *
+	 * This was built across X with its chains and its sign on the +z face, so the
+	 * frame's front pointed at solid rock and the player arrived at its EDGE.
+	 * raise() reaches this room on a bore heading of (1.0, -0.3, 0.15) — almost
+	 * due east — so everybody who ever gets here comes from the WEST.
+	 *
+	 * Turned ninety degrees, the whole approach is one line: four walls somebody
+	 * built across the corridor at 28, 22, 16 and 10 blocks out, then the last
+	 * wall they threw up against the frame itself, then the hole in it, then the
+	 * door. You walk through five attempts to stop you and arrive facing the thing
+	 * they were all for.
+	 */
 	private static void seal(ServerLevel level, BlockPos centre, RandomSource random) {
 		BlockPos base = Digging.groundUnder(level, centre);
 		if (base == null) {
@@ -851,36 +876,57 @@ public final class Threshold {
 		}
 		BlockPos foot = base.above();
 
-		for (int dx = -3; dx <= 3; dx++) {
+		// ---- THE FRAME. Theirs, obsidian, and the opening is his.
+		for (int dz = -3; dz <= 3; dz++) {
 			for (int y = 0; y <= 6; y++) {
-				boolean edge = dx == -3 || dx == 3 || y == 0 || y == 6;
-				BlockPos pos = foot.offset(dx, y, 0);
+				boolean edge = dz == -3 || dz == 3 || y == 0 || y == 6;
+				BlockPos pos = foot.offset(0, y, dz);
 				if (edge) {
 					level.setBlock(pos, random.nextInt(5) == 0
 						? Blocks.CRYING_OBSIDIAN.defaultBlockState()
 						: Blocks.OBSIDIAN.defaultBlockState(), 2);
 					continue;
 				}
-				// The fill. Newer than the frame, and coming apart.
-				level.setBlock(pos, random.nextInt(3) == 0
+				// AND THE WAY ITSELF, in the frame they built to hold it.
+				//
+				// Placed directly rather than through TheWay.open, because that
+				// builds its own frame off its own HALF and TALL and would stand a
+				// second doorway inside this one. The frame is theirs; the opening
+				// is his.
+				level.setBlock(pos,
+					com.bloomlet.herobrine.block.ModBlocks.THE_WAY.defaultBlockState(), 2);
+			}
+		}
+
+		// ---- THE FILL THEY PUT IN IT, one block west and broken through.
+		//
+		// It used to be IN the opening, which is exactly why the opening did
+		// nothing. A block clear of the frame it becomes their WALL rather than
+		// their plug — and you see the door through the hole in it.
+		for (int dz = -3; dz <= 3; dz++) {
+			for (int y = 0; y <= 6; y++) {
+				if (Math.abs(dz) <= 1 && y <= 3) {
+					continue;      // the hole. two wide, four tall, forced.
+				}
+				level.setBlock(foot.offset(-1, y, dz), random.nextInt(3) == 0
 					? Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState()
 					: Blocks.DEEPSLATE_BRICKS.defaultBlockState(), 2);
 			}
 		}
-		for (int dx = -2; dx <= 2; dx += 2) {
-			level.setBlock(foot.offset(dx, 5, 1), Blocks.IRON_CHAIN.defaultBlockState(), 2);
-			level.setBlock(foot.offset(dx, 4, 1), Blocks.IRON_CHAIN.defaultBlockState(), 2);
+		for (int dz = -2; dz <= 2; dz += 2) {
+			level.setBlock(foot.offset(-2, 5, dz), Blocks.IRON_CHAIN.defaultBlockState(), 2);
+			level.setBlock(foot.offset(-2, 4, dz), Blocks.IRON_CHAIN.defaultBlockState(), 2);
 		}
-		for (int dx = -4; dx <= 4; dx++) {
+		for (int dz = -4; dz <= 4; dz++) {
 			if (random.nextInt(3) == 0) {
-				BlockPos stain = foot.offset(dx, 0, 1 + random.nextInt(3));
+				BlockPos stain = foot.offset(-2 - random.nextInt(3), 0, dz);
 				if (level.getBlockState(stain).isAir()
 					&& level.getBlockState(stain.below()).isSolid()) {
 					level.setBlock(stain, Blocks.REDSTONE_WIRE.defaultBlockState(), 2);
 				}
 			}
 		}
-		sign(level, foot.offset(0, 1, 2), "we put it back", "it did not hold");
+		sign(level, foot.offset(-2, 1, 2), "we put it back", "it did not hold");
 		theAttempts(level, foot, random);
 	}
 

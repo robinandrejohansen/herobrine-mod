@@ -53,8 +53,10 @@ public final class Sanctum {
 		growth(level, floor, random);
 
 		BlockPos gate = floor.above(DAIS + 1);
-		TheWay.open(level, gate);
-		HerobrineMod.LOGGER.info("the way is under his house at [{}, {}, {}]",
+		// REMAINS, NOT A DOOR. The room is the same and the frame is the same; the
+		// opening is empty. Everything about why is in TheWay.remains.
+		TheWay.remains(level, gate);
+		HerobrineMod.LOGGER.info("what is left of a door is under his house at [{}, {}, {}]",
 			gate.getX(), gate.getY(), gate.getZ());
 		return gate;
 	}

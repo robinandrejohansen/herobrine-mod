@@ -78,7 +78,46 @@ public final class TheWay {
 	 * nether-flavoured stone in the game and it was holding up the frame, the step
 	 * and the whole landing chamber.
 	 */
+	/**
+	 * A DOORWAY THAT WORKS, which is now the exception rather than the rule.
+	 *
+	 * There are three of these in a playthrough and only one of them should let
+	 * anybody through:
+	 *
+	 *   under the homestead   DEAD. The first thing anybody dug, forced open from
+	 *                         the far side and then gone out. See remains().
+	 *   at the threshold      the live one. It is what the whole chain is for.
+	 *   the tower, at the end Spire.join, after he is driven off.
+	 *
+	 * It used to be the homestead's that worked, and a playthrough log settled the
+	 * argument: the homestead went up at 11:08:01, the way opened at 11:08:02, and
+	 * somebody was standing in his world at 11:08:18. SEVENTEEN SECONDS into a
+	 * fresh save, at RUMOUR, before a single thing had happened — and everything in
+	 * that dimension is the ending.
+	 */
 	public static void open(ServerLevel level, BlockPos site) {
+		build(level, site, true);
+	}
+
+	/**
+	 * The same doorway with nothing in it.
+	 *
+	 * Not a different structure — the same masonry, the same batter, the same
+	 * rubble on the floor, and an empty opening. Which is the honest picture: this
+	 * is the door Steve's ledger says they found under the hill, and the books say
+	 * what happened to it. Somebody sealed it, something came out anyway, and what
+	 * is left is a frame with a draught through it.
+	 *
+	 * It is also the thing that teaches the player what they are looking for. By
+	 * the time they reach the live one at the bottom of the threshold they have
+	 * already stood in front of one of these, twenty hours earlier, and know
+	 * exactly what it is.
+	 */
+	public static void remains(ServerLevel level, BlockPos site) {
+		build(level, site, false);
+	}
+
+	private static void build(ServerLevel level, BlockPos site, boolean works) {
 		net.minecraft.util.RandomSource random = level.getRandom();
 
 		// THE THRESHOLD. A gate standing on the floor is a doorway; a gate standing
@@ -179,11 +218,16 @@ public final class TheWay {
 			}
 		}
 
-		// AND THE WAY ITSELF, last, so nothing overwrites it.
-		for (int dx = -HALF + 1; dx <= HALF - 1; dx++) {
-			for (int dy = 0; dy <= TALL; dy++) {
-				level.setBlock(site.offset(dx, dy, 0),
-					ModBlocks.THE_WAY.defaultBlockState(), 2);
+		// AND THE WAY ITSELF, last, so nothing overwrites it — IF IT WORKS.
+		//
+		// A dead doorway is the same masonry with nothing in the opening, so the
+		// two are one builder and one flag rather than two files that will drift.
+		if (works) {
+			for (int dx = -HALF + 1; dx <= HALF - 1; dx++) {
+				for (int dy = 0; dy <= TALL; dy++) {
+					level.setBlock(site.offset(dx, dy, 0),
+						ModBlocks.THE_WAY.defaultBlockState(), 2);
+				}
 			}
 		}
 
@@ -201,9 +245,12 @@ public final class TheWay {
 
 		battered(level, site, random);
 
-		level.playSound(null, site, com.bloomlet.herobrine.sound.ModSounds.THE_WAY,
-			net.minecraft.sounds.SoundSource.HOSTILE, 4.0F, 0.5F);
-		HerobrineMod.LOGGER.info("the way is open at [{}, {}, {}]",
+		if (works) {
+			level.playSound(null, site, com.bloomlet.herobrine.sound.ModSounds.THE_WAY,
+				net.minecraft.sounds.SoundSource.HOSTILE, 4.0F, 0.5F);
+		}
+		HerobrineMod.LOGGER.info("the way {} at [{}, {}, {}]",
+			works ? "is open" : "is DEAD — frame only",
 			site.getX(), site.getY(), site.getZ());
 	}
 
