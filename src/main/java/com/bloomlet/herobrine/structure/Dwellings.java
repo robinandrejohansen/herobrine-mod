@@ -121,23 +121,7 @@ public final class Dwellings {
 	 * band, it means the same thing at every distance — "further away than
 	 * anybody who was coming would be".
 	 */
-	private static final int ABANDONED_MARGIN = 620;
 
-	/**
-	 * How many checks in a row a place must be deserted before it is moved.
-	 *
-	 * Ninety, at forty ticks a check, is three unbroken minutes. Long enough that
-	 * flight cannot trip it — the counter resets on the first check anybody is back
-	 * inside the line, and somebody crossing it at twenty blocks a second is back
-	 * inside it within seconds. Short enough that a group who really has moved on
-	 * is not left waiting on a building they will never see.
-	 *
-	 * Not persisted. A reload starts the count again, which errs toward patience.
-	 */
-	private static final int PATIENCE = 90;
-
-	private static final java.util.Map<Place, Integer> deserted =
-		new java.util.EnumMap<>(Place.class);
 
 	private static int tickCounter;
 
@@ -861,26 +845,26 @@ public final class Dwellings {
 				// instead: the town sites four seconds into a new world, before
 				// anybody has seen the first building, and the sequence stops being
 				// a sequence. Find the house, and the town appears.
-				// AND IT NEVER STALLS FOREVER. A place that was built and then
-				// walked away from would otherwise hold the entire sequence shut
-				// with nobody left to open it. If everybody has gone a long way
-				// off, the story goes on without them — the building stays exactly
-				// where it is, to be found whenever they come back.
-				double away = Double.MAX_VALUE;
-				if (where != null) {
-					for (ServerPlayer player : overworld.players()) {
-						away = Math.min(away, Math.sqrt(
-							BlockPos.of(where).distSqr(player.blockPosition())));
-					}
-				}
-				if (away > place.far + ABANDONED_MARGIN) {
-					overworld.setAttached(place.met, true);
-					Wrath.discovered(server);
-					HerobrineMod.LOGGER.info("{} was built and never visited — moving on",
-						place.name().toLowerCase(java.util.Locale.ROOT));
-					continue;
-				}
-				return;     // standing, unfound, and somebody is still near enough
+				// AND IT WAITS. IT DOES NOT GO ON WITHOUT THEM.
+				//
+				// This used to advance the story if everybody had gone far enough
+				// from a building that was standing but unvisited — the reasoning
+				// being that a place walked away from would otherwise hold the whole
+				// sequence shut. It does hold it shut, and that turns out to be the
+				// correct behaviour rather than a deadlock.
+				//
+				// Because it contradicted the rule twenty lines above it. Advancing
+				// on `up` rather than on `met` is the exact failure that paragraph
+				// describes — a group three buildings deep having read none of them
+				// — and this was the same failure gated on distance instead of on
+				// nothing. Fly far enough from a town you never walked into and the
+				// chapter was spent for you.
+				//
+				// There is no deadlock to protect against. The building is standing,
+				// the map to it is in the one before it, and /herobrine locate
+				// prints the whole trail with a bearing. The sequence is not stuck;
+				// it is waiting, which is what a trail does.
+				return;     // standing and unfound: nothing happens until somebody comes
 			}
 			// FIND ONE, THE NEXT ONE APPEARS. THAT IS THE WHOLE RULE NOW.
 			//
@@ -947,56 +931,30 @@ public final class Dwellings {
 					site.distSqr(player.blockPosition())));
 			}
 
-			// IT FOLLOWS THEM IF THEY NEVER CAME.
+			// A SITE IS CHOSEN ONCE AND NEVER MOVED. NOT FOR ANY DISTANCE.
 			//
-			// A place chosen near where the group was an hour ago is no use to
-			// a group that has since moved five hundred blocks and built
-			// somewhere else — it sits there, unfound, and the sequence stops
-			// dead behind it because nothing after it is allowed to exist yet.
+			// There was a rule here that forgot the site and picked again when
+			// everybody had gone a long way off — "it follows them if they never
+			// came" — on the reasoning that ground chosen near where the group used
+			// to be is no use to a group that has moved on.
 			//
-			// So if everybody is a long way off, it is forgotten and chosen
-			// again. Twelve hundred odd is far enough that nobody WALKING toward it
-			// can trip this by accident.
+			// IT CANNOT MOVE, BECAUSE THE MAP IS WRITTEN ONCE. Siting a place is
+			// what puts the map to it in the building before it and what lays the
+			// markers along the road to it. Both of those record a coordinate at
+			// the moment of siting. Move the site afterwards and every one of them
+			// is pointing at empty ground — the road furniture leads somewhere
+			// there is nothing, and the sequence's one navigational aid is a lie.
+			// That is a far worse failure than a building being a long walk away.
 			//
-			// AND WALKING WAS THE WHOLE ASSUMPTION, WHICH IS WHERE IT BROKE.
+			// It also never converged. Each move re-rolled a fresh spot the same
+			// 340-620 out from wherever the players now were, so somebody looking
+			// for the town had it move away from them for as long as they kept
+			// looking. Reported as "no town", which is exactly what it was.
 			//
-			// It moved on a single distant sample: one check, one instant over the
-			// line, and the town was gone and re-rolled somewhere else. At four
-			// blocks a second that is safe. Nobody plays at four blocks a second —
-			// an elytra is twenty-odd, creative flight more, and a tester crosses
-			// the line and comes back inside it several times a minute.
-			//
-			// Measured off the report that produced this: the town was sited five
-			// hundred blocks out and moved fifty-five seconds later, which needs
-			// seven hundred and twenty-five blocks of travel — thirteen blocks a
-			// second. The rule did exactly what it says and the answer was still
-			// wrong, because "far away right now" is not "not coming".
-			//
-			// So it has to be far away AND STAY far away. Three minutes of it,
-			// unbroken, and the counter resets the moment anybody comes back inside
-			// the line — which is what a player heading for it does, and what
-			// somebody who has genuinely moved on never does.
-			int limit = place.far + ABANDONED_MARGIN;
-			if (nearest > limit) {
-				int gone = deserted.merge(place, 1, Integer::sum);
-				if (gone < PATIENCE) {
-					return;     // too far to build, not yet far enough for long enough
-				}
-				deserted.remove(place);
-				overworld.setAttached(place.site, null);
-				// THE DISTANCE IS IN THE MESSAGE NOW. It said "was never found at
-				// [x, z] — moving it" and left out the one number the decision was
-				// made on, so the only way to know why it fired was to work the
-				// arithmetic back from the player's position by hand.
-				HerobrineMod.LOGGER.info(
-					"{} was never found at [{}, {}] — nobody within {} blocks"
-						+ " (limit {}) for {} seconds, moving it",
-					place.name().toLowerCase(java.util.Locale.ROOT),
-					site.getX(), site.getZ(), Math.round(nearest), limit,
-					PATIENCE * CHECK_INTERVAL / 20);
-				return;
-			}
-			deserted.remove(place);
+			// PATIENCE was an attempt to fix this by requiring the absence to last
+			// three minutes. That made it rarer, not right: a site that moves at all
+			// invalidates a map that was written once, and rare wrong is worse than
+			// often wrong because nobody can reproduce it.
 
 			if (nearest <= RAISE_RANGE && build(overworld, place, site)) {
 				overworld.setAttached(place.up, true);
