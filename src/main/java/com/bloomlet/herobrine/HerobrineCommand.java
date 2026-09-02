@@ -492,17 +492,6 @@ public final class HerobrineCommand {
 		// for several releases and still printed next to it, which is how a
 		// playtest ended up reading "phase WATCHER" four times during RUMOUR.
 		String line = "phase " + phase.name()
-			// Without this the new pacing floor is indistinguishable from a bug:
-			// a house is late, nobody can see why, and the honest conclusion from
-			// inside the game is that the mod is broken.
-			// The second thing the church waits on, and without a line for it
-			// the symptom is identical to the pacing floor: a building that is
-			// due and does not arrive, for no reason anybody can see.
-			+ (phase == Phase.HUNTER
-				? "  |  hunt " + (com.bloomlet.herobrine.manifest.TheHunt.survived(server)
-					? "survived" : "STILL OWED")
-				: "")
-			+ "  |  blows landed " + com.bloomlet.herobrine.manifest.TheHunt.wounds(server)
 			+ "  |  next place: walk into it (/herobrine locate)"
 			+ "  |  heat " + com.bloomlet.herobrine.wrath.Heat.of(player) + "/100"
 			+ "  |  next in " + (seconds < 0 ? "unscheduled" : seconds + "s")

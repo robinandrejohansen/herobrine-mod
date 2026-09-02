@@ -80,73 +80,9 @@ import net.minecraft.world.phys.Vec3;
  * place.
  */
 public final class TheHunt {
+
 	private TheHunt() {}
 
-	// ---- THE GATE ---------------------------------------------------------
-	/**
-	 * A hunt has been got through, and the church may be sited.
-	 *
-	 * On the overworld rather than per-player, because the building is one
-	 * building and a server does not want six of them waiting on six people.
-	 * One hunt survived by anybody opens the chapter for everybody, which is
-	 * the same rule discovery already runs on.
-	 */
-	private static final AttachmentType<Boolean> SURVIVED =
-		AttachmentRegistry.createPersistent(HerobrineMod.id("hunt_survived"), Codec.BOOL);
-
-	/** Every blow anybody has landed on him, across every hunt. For status. */
-	private static final AttachmentType<Integer> WOUNDS =
-		AttachmentRegistry.createPersistent(HerobrineMod.id("hunt_wounds"), Codec.INT);
-
-	public static boolean survived(MinecraftServer server) {
-		return Boolean.TRUE.equals(server.overworld().getAttached(SURVIVED));
-	}
-
-	public static int wounds(MinecraftServer server) {
-		return server.overworld().getAttachedOrElse(WOUNDS, 0);
-	}
-
-	/**
-	 * IT IS OVER, AND IT COUNTED.
-	 *
-	 * Called from the one place a hunt can end — the entity discarding itself —
-	 * so every way out of it lands here: three blows and he breaks off, a
-	 * hundred seconds endured, outrun across a field, or lost down a hole. All
-	 * four are surviving it. The mod does not get to have an opinion about
-	 * which was the brave one.
-	 *
-	 * AND BEING KILLED BY IT COUNTS. That is a deliberate answer to a real
-	 * question rather than an oversight, and it is worth being explicit about
-	 * because the method is called "endured" and dying is not enduring anything.
-	 * A hunt that killed somebody unquestionably HAPPENED — and the alternative
-	 * is that the chapter refuses to advance for exactly the players who are
-	 * having the hardest time with it, which is the worst possible group to
-	 * stall. Death already lowers wrath on its own; it should not also cost them
-	 * the story.
-	 *
-	 * The single exception is a hunt nobody ever laid eyes on, which happens
-	 * when he is placed and the player logs out in the first seconds. Counting
-	 * that would open the next chapter for something that did not happen to
-	 * anybody.
-	 */
-	public static void endured(ServerLevel level, boolean witnessed) {
-		MinecraftServer server = level.getServer();
-		if (server == null || !witnessed || survived(server)) {
-			return;
-		}
-		// AND IT HAS TO BE A HUNTER HUNT.
-		//
-		// "He comes home" starts one from MIMIC — so without this the tower's
-		// arrival, two chapters early and entirely unavoidable, would satisfy
-		// the gate for every player in every world before HUNTER had begun. A
-		// gate that an earlier compulsory event always opens is not a gate; it
-		// is a line of code that reads like one.
-		if (!Wrath.phase(server).atLeast(Phase.HUNTER)) {
-			return;
-		}
-		server.overworld().setAttached(SURVIVED, true);
-		HerobrineMod.LOGGER.info("a hunt has been through — the church can be sited");
-	}
 
 	// ---- AND THE SKY GOES WITH HIM -----------------------------------------
 	/**
@@ -222,12 +158,6 @@ public final class TheHunt {
 		});
 	}
 
-	public static void wounded(ServerLevel level) {
-		MinecraftServer server = level.getServer();
-		if (server != null) {
-			server.overworld().setAttached(WOUNDS, wounds(server) + 1);
-		}
-	}
 
 	/**
 	 * AND IT HAS TO HAPPEN.
@@ -251,8 +181,6 @@ public final class TheHunt {
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(TheHunt::onTick);
-		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH
-			.register(TheHunt::onDeath);
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DAMAGE
 			.register(TheHunt::spares);
 	}
@@ -331,48 +259,6 @@ public final class TheHunt {
 			|| source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION);
 	}
 
-	/**
-	 * SOMEBODY DIED IN FRONT OF HIM, AND HE GOES AND PICKS IT UP.
-	 *
-	 * AFTER_DEATH rather than the blow, because the blow is only one of the ways he
-	 * manages it and the others are half the fun: the four seconds of burning, the
-	 * roof coming down, being thrown off a ledge, a bolt on the way past. All of
-	 * those are him, none of them go through closeOn, and a hook that only knew
-	 * about the sword would have him ignore the pile in every case but one.
-	 *
-	 * Also, and less obviously: AFTER_DEATH fires once. Watching a health bar hit
-	 * zero from the tick loop fires on every tick until the player respawns.
-	 */
-	private static void onDeath(net.minecraft.world.entity.LivingEntity dead,
-	                            net.minecraft.world.damagesource.DamageSource how) {
-		if (!(dead instanceof ServerPlayer gone)
-			|| !(dead.level() instanceof ServerLevel where)) {
-			return;
-		}
-		// ONLY IF HE IS ACTUALLY HERE. Dying of a cactus on the other side of the
-		// world is not his business, and a hunt that has already ended is not either
-		// — the whole point is that the death is a beat IN something.
-		BlockPos fell = gone.blockPosition();
-		for (com.bloomlet.herobrine.entity.HerobrineEntity him
-				: where.getEntitiesOfClass(
-					com.bloomlet.herobrine.entity.HerobrineEntity.class,
-					new net.minecraft.world.phys.AABB(fell).inflate(CLAIMS_WITHIN))) {
-			if (!him.isHunting()) {
-				continue;
-			}
-			him.claim(gone.getUUID(), fell);
-			return;
-		}
-	}
-
-	/**
-	 * How near he has to have been for the death to be his.
-	 *
-	 * Generous, and it should be: WATCH_RANGE is ninety-six and the last thing he
-	 * did may well have been to throw them thirty blocks. Narrower than that and
-	 * the deaths he is proudest of are the ones he does not notice.
-	 */
-	private static final double CLAIMS_WITHIN = 128.0;
 
 	private static void onTick(MinecraftServer server) {
 		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
@@ -431,25 +317,6 @@ public final class TheHunt {
 		return outcome;
 	}
 
-	/**
-	 * THE MOMENT IT ACTUALLY STARTS, and the sky goes with it.
-	 *
-	 * @param spotted true if they held his eye and brought it on themselves, false
-	 *                if the minute simply ran out. He knows the difference and it is
-	 *                the only thing he says about it.
-	 */
-	public static void begins(ServerLevel level, ServerPlayer player, boolean spotted) {
-		if (Hearth.home(player)) {
-			arrives(level, player);
-		} else {
-			awayFromHome(level, player);
-		}
-		String[] pool = spotted ? SEEN_ME : NEVER_LOOKED;
-		player.sendSystemMessage(Component.literal(
-			"§8§o" + pool[level.getRandom().nextInt(pool.length)]));
-		HerobrineMod.LOGGER.info("the hunt begins on {} ({})",
-			player.getName().getString(), spotted ? "he was seen" : "never spotted");
-	}
 
 	/** They looked. He is not going to pretend that did not happen. */
 	private static final String[] SEEN_ME = {
@@ -576,26 +443,6 @@ public final class TheHunt {
 	private static final AttachmentType<Long> OWED =
 		AttachmentRegistry.createPersistent(HerobrineMod.id("hunt_owed"), Codec.LONG);
 
-	private static void awayFromHome(ServerLevel level, ServerPlayer player) {
-		BlockPos hearth = Hearth.of(player);
-		if (hearth == null) {
-			return;
-		}
-		player.sendSystemMessage(Component.literal("§8your house is on fire"));
-		Skies.turn(level);
-		thunder(level, player.blockPosition(), 2);
-
-		if (level.isLoaded(hearth)) {
-			burnTheHouse(level, hearth);
-			return;
-		}
-		// PERSISTENT, not a map in memory. A debt he forgets over a restart is
-		// a sentence he said that turned out not to be true, and there is no
-		// version of this mod that survives being caught doing that once.
-		player.setAttached(OWED, hearth.asLong());
-		HerobrineMod.LOGGER.info("{}'s house is owed a fire at [{}, {}]",
-			player.getName().getString(), hearth.getX(), hearth.getZ());
-	}
 
 	/** Pay what was promised, the moment the ground is loaded again. */
 	public static void settleUp(ServerLevel level, ServerPlayer player) {
@@ -690,51 +537,6 @@ public final class TheHunt {
 		return true;
 	}
 
-	// ---- THE LADDER --------------------------------------------------------
-	/**
-	 * One rung, and it climbs until something actually happens.
-	 *
-	 * "Glass first, if there is any" is the requirement, and the loop is how it
-	 * is met: a base with no windows in it does not spend the first thirty
-	 * seconds of the hunt on a rung that has nothing to do. It falls through to
-	 * the torches, and if those are all lanterns it falls through to the trees.
-	 * The order is preserved and the pacing is not held hostage to it.
-	 *
-	 * @param step which rung to try first
-	 * @return the rung to try NEXT, which is one past whichever one landed
-	 */
-	public static int wreck(ServerLevel level, ServerPlayer quarry,
-	                        net.minecraft.world.entity.LivingEntity him, int step) {
-		if (!Config.get().huntWrecks) {
-			return step + 1;
-		}
-		// The house if they have one and are in it, and the ground under their
-		// feet if they do not. The fallback is not a degraded version — it is
-		// what the hunt did before any of this existed, and out in a field with
-		// no glass and no torches it simply starts at the treeline.
-		BlockPos hearth = Hearth.of(quarry);
-		BlockPos house = hearth != null && Hearth.home(quarry)
-			? hearth : quarry.blockPosition();
-
-		for (int rung = Math.max(0, step); rung < step + 4; rung++) {
-			boolean did = switch (rung % 4) {
-				case 0 -> glass(level, house);
-				case 1 -> torches(level, house);
-				case 2 -> treeline(level, house, quarry.blockPosition());
-				default -> theGround(level, quarry, him);
-			};
-			if (did) {
-				thunder(level, quarry.blockPosition(), 1);
-				return rung + 1;
-			}
-		}
-		// Nothing on the whole ladder had anything to do — a bare hillside with
-		// no glass, no lights, no wood and nowhere to put a hole. Thunder is
-		// what covers it, because the one thing that must never happen is a beat
-		// of the hunt in which nothing at all reaches the player.
-		thunder(level, quarry.blockPosition(), 2);
-		return step + 1;
-	}
 
 	// ---- 1. THE GLASS ------------------------------------------------------
 	/**
@@ -936,117 +738,6 @@ public final class TheHunt {
 		return clearOfPeopleBy(level, at, TREE_NEAR);
 	}
 
-	// ---- 4. THE GROUND -----------------------------------------------------
-	/**
-	 * Fireballs into the yard, and holes where they land.
-	 *
-	 * The last rung because it is the only one that does not heal. Fire goes
-	 * out, glass goes back, torches were dropped at their feet — a crater is
-	 * still a crater next week, and it is the thing they will point at when they
-	 * tell somebody about this.
-	 *
-	 * IT IS THROWN RATHER THAN SIMPLY HAPPENING. The fireball leaves his hand,
-	 * crosses the yard, and the hole appears when it arrives, so the player is
-	 * given a second and a half in which they can see where it is going. That
-	 * matters more than the damage does: something you watched land is something
-	 * that happened in the world, and something that simply appears is a mod
-	 * doing a thing to you.
-	 *
-	 * NOTHING BUILT IS EVER TAKEN. The dish only eats ground — dirt, grass,
-	 * stone, sand — and it refuses outright if there is anything crafted within
-	 * four blocks. Which does mean a base paved wall to wall gets no craters at
-	 * all, and that is the correct failure: he would rather do nothing than take
-	 * somebody's floor.
-	 */
-	private static final int CRATER_NEAR = 5;
-	private static final int CRATER_FAR = 13;
-
-	private static boolean theGround(ServerLevel level, ServerPlayer quarry,
-	                                 net.minecraft.world.entity.LivingEntity him) {
-		RandomSource random = level.getRandom();
-		for (int attempt = 0; attempt < 30; attempt++) {
-			double angle = random.nextDouble() * Math.PI * 2.0;
-			double range = CRATER_NEAR + random.nextDouble() * (CRATER_FAR - CRATER_NEAR);
-			int x = quarry.blockPosition().getX() + (int)Math.round(Math.cos(angle) * range);
-			int z = quarry.blockPosition().getZ() + (int)Math.round(Math.sin(angle) * range);
-			BlockPos column = new BlockPos(x, level.getSeaLevel(), z);
-			if (!level.isLoaded(column)) {
-				continue;
-			}
-			int y = level.getHeight(
-				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
-			final BlockPos target = new BlockPos(x, y - 1, z);
-			// AND IT HAS TO BE THE GROUND THEY ARE ON. The crater is sited from
-			// the surface heightmap, so for a player eighty blocks down a mine
-			// it would open a hole in a hillside they will never see, take a
-			// rung of the ladder to do it, and reach nobody. Underground the
-			// hunt has other things to be doing.
-			if (Math.abs(y - quarry.blockPosition().getY()) > 8) {
-				continue;
-			}
-			if (!level.getFluidState(target).isEmpty() || !diggable(level, target)) {
-				continue;
-			}
-			// Never under their feet. The hole is a thing they watch arrive, not
-			// a thing that opens beneath them — the mod does not kill anybody by
-			// deleting the block they are standing on.
-			if (quarry.blockPosition().closerThan(target, 3.5)) {
-				continue;
-			}
-
-			Vec3 from = him.getEyePosition();
-			Vec3 to = new Vec3(target.getX() + 0.5, target.getY() + 0.5, target.getZ() + 0.5);
-			Vec3 along = to.subtract(from);
-
-			net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball ball =
-				new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(
-					level, him, along.normalize());
-			ball.snapTo(from.x, from.y, from.z, 0.0F, 0.0F);
-			ball.shoot(along.x, along.y, along.z, 1.2F, 1.0F);
-			level.addFreshEntity(ball);
-			level.playSound(null, him.blockPosition(), SoundEvents.BLAZE_SHOOT,
-				SoundSource.HOSTILE, 2.2F, 0.5F);
-
-			int flight = (int)(along.length() / 1.1) + 2;
-			com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), flight,
-				() -> crater(level, target));
-			HerobrineMod.LOGGER.info("hunt: something is coming down at [{}, {}]", x, z);
-			return true;
-		}
-		return false;
-	}
-
-	/** A shallow dish, two across and two deep, and the rim is left ragged. */
-	private static void crater(ServerLevel level, BlockPos middle) {
-		if (!level.isLoaded(middle)) {
-			return;
-		}
-		RandomSource random = level.getRandom();
-		for (BlockPos pos : BlockPos.betweenClosed(
-				middle.offset(-2, -2, -2), middle.offset(2, 1, 2))) {
-			double away = Math.sqrt(pos.distSqr(middle));
-			if (away > 2.2 || random.nextInt(6) == 0) {
-				continue;      // ragged, so it does not read as a stamped shape
-			}
-			if (!diggable(level, pos)) {
-				continue;
-			}
-			// No drops, unless it was holding something. See carve.
-			carve(level, pos);
-		}
-		// The floor of it burnt, which is what says a thing landed here rather
-		// than somebody having dug.
-		for (BlockPos pos : BlockPos.betweenClosed(
-				middle.offset(-2, -3, -2), middle.offset(2, -2, 2))) {
-			if (level.getBlockState(pos).isSolid() && random.nextInt(3) == 0) {
-				level.setBlock(pos, Blocks.COARSE_DIRT.defaultBlockState(), 3);
-			}
-		}
-		level.playSound(null, middle, SoundEvents.GENERIC_EXPLODE.value(),
-			SoundSource.HOSTILE, 3.0F, 0.6F);
-		level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
-			middle.getX() + 0.5, middle.getY() + 0.5, middle.getZ() + 0.5, 40, 1.4, 0.8, 1.4, 0.05);
-	}
 
 	/** Ground, and only ground. Anything crafted is somebody's and is refused. */
 	/**
@@ -1236,8 +927,6 @@ public final class TheHunt {
 		}
 	}
 
-	/** Below this they can simply walk to you and none of this applies. */
-	private static final int OUT_OF_REACH = 3;
 
 	// ---- AND THE SKY PICKS A SPOT ------------------------------------------
 	/**
@@ -1632,37 +1321,6 @@ public final class TheHunt {
 		return true;
 	}
 
-	/**
-	 * ONE BOLT, CLOSE TO A SPOT, AND IT CANNOT BURN ANYTHING.
-	 *
-	 * The watch's own punctuation — see HerobrineEntity.watch. Distinct from
-	 * {@link #thunder} because that scatters bolts twenty-six to sixty-six
-	 * blocks out to fill a horizon, and this wants the opposite: right here,
-	 * sometimes exactly here, so that a figure standing in the rain at thirty
-	 * blocks is lit from behind and there is nothing left to wonder about.
-	 *
-	 * Visual only with no argument about it. Real fire belongs to the treeline
-	 * rung, which has two distance checks and a cap of three behind it; this
-	 * fires next to somebody every few seconds and could not carry those.
-	 *
-	 * @param onTheSpot true to land it on the position itself rather than near
-	 */
-	public static void overhead(ServerLevel level, BlockPos at, boolean onTheSpot) {
-		RandomSource random = level.getRandom();
-		int x = at.getX();
-		int z = at.getZ();
-		if (!onTheSpot) {
-			double angle = random.nextDouble() * Math.PI * 2.0;
-			double range = 6.0 + random.nextDouble() * 16.0;
-			x += (int)Math.round(Math.cos(angle) * range);
-			z += (int)Math.round(Math.sin(angle) * range);
-		}
-		if (!level.isLoaded(new BlockPos(x, level.getSeaLevel(), z))) {
-			return;
-		}
-		strike(level, new BlockPos(x, level.getHeight(
-			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z), z), false);
-	}
 
 	/**
 	 * A BOLT ON SOMETHING SPECIFIC, WHICH HE HAD NO WAY TO ASK FOR.
@@ -1779,112 +1437,6 @@ public final class TheHunt {
 		}
 	}
 
-	// ---- #9: WHAT HE DOES TO THE GROUND WHILE HE IS STANDING STILL ---------
-	/**
-	 * THE PLACE GOES WRONG AROUND YOU WHILE HE WATCHES.
-	 *
-	 * The pause is the best beat in the event and it was also the emptiest: a
-	 * motionless figure at thirty blocks, ten things converging, and a landscape
-	 * that stayed exactly as pretty as it was before he arrived. He is supposed to
-	 * be the reason the world looks like this.
-	 *
-	 * SO IT SPREADS RATHER THAN EXPLODING. Nothing here is an attack and nothing
-	 * here can hurt anybody — it is the grass dying, the bark going, the flowers
-	 * turning to sticks. The player is fighting the horde and notices, four seconds
-	 * later, that the field they are fighting in has changed colour.
-	 *
-	 * THE PALE GARDEN PALETTE, because the game already owns a haunted wood and it
-	 * would be perverse to invent a worse one. Pale moss for grass, pale hanging
-	 * moss under the leaves, dead bush where anything was flowering, bark stripped
-	 * off the trunks. A player who has seen a pale garden reads it instantly; one
-	 * who has not simply sees the colour drain out of the ground.
-	 *
-	 * DELIBERATELY NOT MOVEMENT AND NOT A TARGET. It changes no state he acts on —
-	 * he stands exactly as still, stares exactly as long, sends exactly the same
-	 * wave — so it cannot conflict with the watch, with the horde, or with the
-	 * moment he decides to come back in. It is only ever blocks.
-	 */
-	private static final int BLIGHT_NEAR = 4;
-	private static final int BLIGHT_FAR = 16;
-	private static final int BLIGHT_TRIES = 14;
-
-	public static void blight(ServerLevel level, ServerPlayer quarry) {
-		if (!Config.get().huntWrecks
-			|| !level.getGameRules().get(
-				net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
-			return;
-		}
-		RandomSource random = level.getRandom();
-		int touched = 0;
-		for (int attempt = 0; attempt < BLIGHT_TRIES; attempt++) {
-			double angle = random.nextDouble() * Math.PI * 2.0;
-			double range = BLIGHT_NEAR + random.nextDouble() * (BLIGHT_FAR - BLIGHT_NEAR);
-			int x = quarry.blockPosition().getX() + (int)Math.round(Math.cos(angle) * range);
-			int z = quarry.blockPosition().getZ() + (int)Math.round(Math.sin(angle) * range);
-			if (!level.isLoaded(new BlockPos(x, level.getSeaLevel(), z))) {
-				continue;
-			}
-			int y = level.getHeight(
-				net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
-			for (int dy = 0; dy <= 6 && touched < 3; dy++) {
-				if (wither(level, new BlockPos(x, y - dy, z))) {
-					touched++;
-				}
-			}
-			if (touched >= 3) {
-				return;
-			}
-		}
-	}
-
-	/**
-	 * One block, turned to whatever the dead version of itself is.
-	 *
-	 * The build veto came off this one too, and it is the least destructive place
-	 * it ever sat: nothing here is removed, it is only made older. What it buys is
-	 * that somebody's oak house goes grey around them, which is a much better
-	 * sentence than a hillside going grey next to it.
-	 */
-	private static boolean wither(ServerLevel level, BlockPos at) {
-		net.minecraft.world.level.block.state.BlockState was = level.getBlockState(at);
-		net.minecraft.world.level.block.Block block = was.getBlock();
-		if (block == Blocks.GRASS_BLOCK || block == Blocks.MOSS_BLOCK) {
-			level.setBlock(at, Blocks.PALE_MOSS_BLOCK.defaultBlockState(), 3);
-			return true;
-		}
-		if (block == Blocks.SHORT_GRASS || block == Blocks.TALL_GRASS
-			|| block == Blocks.FERN || block == Blocks.LARGE_FERN
-			|| was.is(net.minecraft.tags.BlockTags.FLOWERS)) {
-			level.setBlock(at, Blocks.DEAD_BUSH.defaultBlockState(), 3);
-			return true;
-		}
-		if (was.is(net.minecraft.tags.BlockTags.LEAVES)) {
-			// Left standing, with the moss hanging out of the underside of it.
-			BlockPos under = at.below();
-			if (level.getBlockState(under).isAir()) {
-				level.setBlock(under, Blocks.PALE_HANGING_MOSS.defaultBlockState(), 3);
-				return true;
-			}
-			return false;
-		}
-		if (block == Blocks.OAK_LOG) {
-			level.setBlock(at, Blocks.STRIPPED_OAK_LOG.defaultBlockState()
-				.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS,
-					was.getValue(
-						net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS)),
-				3);
-			return true;
-		}
-		if (block == Blocks.BIRCH_LOG) {
-			level.setBlock(at, Blocks.STRIPPED_BIRCH_LOG.defaultBlockState()
-				.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS,
-					was.getValue(
-						net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS)),
-				3);
-			return true;
-		}
-		return false;
-	}
 
 	// ---- WHAT HE SAYS WHEN HE IS HURT --------------------------------------
 	/**
@@ -2103,27 +1655,6 @@ public final class TheHunt {
 		"there you are",
 	};
 
-	/**
-	 * He is standing behind them, and now they know.
-	 *
-	 * Called at the moment of arrival rather than before it, so that the two
-	 * seconds between reading it and being hit are two seconds of the player
-	 * doing something about it — which is the only kind of warning worth giving.
-	 */
-	public static void found(ServerLevel level, ServerPlayer quarry) {
-		String line = FOUND[level.getRandom().nextInt(FOUND.length)]
-			.replace("%s", quarry.getName().getString());
-		// ONLY THEM. This is the opposite case from taunt, and deliberately so:
-		// a taunt is a public humiliation and works better with an audience,
-		// while "look behind you" read by five people is five people turning
-		// round and four of them seeing nothing. Whispered to the one person it
-		// is true about.
-		quarry.sendSystemMessage(Component.literal("§8§o" + line));
-		com.bloomlet.herobrine.sound.ModSounds.roll(level, quarry.blockPosition(),
-			com.bloomlet.herobrine.sound.ModSounds.BREATH, 1.6F, 0.72F);
-		HerobrineMod.LOGGER.info("hunt: arrived behind {} — \"{}\"",
-			quarry.getName().getString(), line);
-	}
 
 	private static final String[][] SAID = {
 		// The first blow. He is not threatening yet, he is correcting them.
@@ -2150,35 +1681,4 @@ public final class TheHunt {
 		},
 	};
 
-	public static void taunt(ServerLevel level, ServerPlayer striker, int blow) {
-		String[] pool = SAID[Math.max(0, Math.min(SAID.length - 1, blow - 1))];
-		String line = pool[level.getRandom().nextInt(pool.length)]
-			.replace("%s", striker.getName().getString());
-		// EVERYBODY PRESENT HEARS IT, and the name in it belongs to one of them.
-		// On a server that is the whole trick: five people watch him single
-		// somebody out, and the person he named has to keep playing next to
-		// them.
-		//
-		// Present, though — not the whole player list. Somebody farming two
-		// thousand blocks away reading a threat aimed at a fight they are not in
-		// gets the spectacle with none of the fear, which is how a line that
-		// should land once a campaign becomes chat noise.
-		for (ServerPlayer here : level.players()) {
-			if (here.blockPosition().closerThan(striker.blockPosition(), 256.0)) {
-				here.sendSystemMessage(Component.literal("§8§o" + line));
-			}
-		}
-		// SILENT. THIS IS THE THIRD TIME IT HAS BEEN ASKED FOR.
-		//
-		// The line used to roll ANGER off the hills behind the player, which is the
-		// sound that kept getting reported as "the enderman echo when he is hurt".
-		// It was never the hit sound — that was removed two builds ago — it was the
-		// TAUNT announcing itself, and a threat that arrives with its own fanfare is
-		// a threat somebody wrote rather than something that happened.
-		//
-		// The words are the whole event. They land in chat, in his own register,
-		// with nothing telling the player to look at them.
-		HerobrineMod.LOGGER.info("hunt: blow {} from {} — \"{}\"",
-			blow, striker.getName().getString(), line);
-	}
 }
