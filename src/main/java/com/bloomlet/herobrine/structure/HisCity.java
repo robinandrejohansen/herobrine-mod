@@ -44,11 +44,66 @@ public final class HisCity {
 
 	/** How far the town reaches past the castle wall. */
 	static final int REACH = 58;
-	/** And how far back from the curtain the first houses stand. */
-	private static final int CLEAR_OF_CASTLE = 8;
+	/**
+	 * How far out the first ring of houses stands, and how far apart the rings are.
+	 *
+	 * EIGHT AND THIRTEEN GAVE RINGS AT 8, 21, 34 AND 47 — and the first two ran
+	 * straight over the market. Skipping those plots was the first fix and it was
+	 * the wrong one: nineteen of sixty went, which is half the city, and the ask was
+	 * explicitly for a space in the middle WITHOUT losing the houses round it.
+	 *
+	 * Twenty-one and twelve gives 21, 33, 45 and 57. Four rings, fifteen plots
+	 * each, SIXTY PLOTS — the same sixty — and the innermost clears the square's
+	 * corner at 18.4 with two and a half blocks to spare. The city did not get
+	 * smaller, it got a hole in the middle.
+	 */
+	private static final int CLEAR_OF_CASTLE = 21;
+	private static final int RING_STEP = 12;
 
 	/** Four ways in and out, matching the castle's own gate on the south. */
 	private static final int STREET_HALF = 2;
+
+	/**
+	 * THE SQUARE, AND IT IS RESERVED BEFORE ANYTHING IS BUILT ON IT.
+	 *
+	 * There has been a square in here all along — nineteen across, four stalls and
+	 * a well — and the plot rings started eight blocks from the middle and ran
+	 * outward every thirteen. So the ring at eight and the ring at twenty-one both
+	 * put houses ON it. Whichever ran last won, which is a market with a cottage
+	 * standing in the middle of it.
+	 *
+	 * Asked for a space in the middle WITHOUT losing the houses round it, and that
+	 * is the distinction: the fix is not a smaller square or a wider first ring, it
+	 * is the plot loop knowing the square is there. A plot inside KEPT_CLEAR is
+	 * skipped and the next one on the ring still gets built, so the city loses a
+	 * couple of houses out of sixty rather than a whole ring.
+	 *
+	 * Twenty-seven across rather than nineteen. Oakhold's market is about a quarter
+	 * of its walled area; this is a tenth, which is as far as it goes before the
+	 * plots have nowhere left.
+	 */
+	private static final int SQUARE_HALF = 13;
+
+	/**
+	 * Nothing is built inside this. The square's corner is SQUARE_HALF * sqrt(2)
+	 * out — 18.4 — so nineteen is the smallest number that covers the whole of it.
+	 */
+	private static final int KEPT_CLEAR = 19;
+
+	/**
+	 * AND A QUADRANT LEFT TO THE FOREST.
+	 *
+	 * Oakhold gives a whole corner of the inside of its wall to a wood and a
+	 * cemetery, and that is most of why it reads as a place rather than as a base:
+	 * a city that is buildings to the wall on every side is a compound.
+	 *
+	 * Free here, and better than free. house() already refuses a plot the dark
+	 * forest will not allow, so LEAVING a sector means not calling it — the trees
+	 * that are standing there are the ones the world generator put there, which is
+	 * the one kind of green no builder can fake.
+	 */
+	private static final double GROVE_FROM = 3.6;
+	private static final double GROVE_TO = 5.1;
 
 	/**
 	 * Raise it around the castle.
@@ -68,18 +123,39 @@ public final class HisCity {
 		// The plots, laid on a rough grid and then filtered by what the forest
 		// will allow. One a tick.
 		int tick = 8;
-		for (int ring = CLEAR_OF_CASTLE; ring < REACH; ring += 13) {
+		int skipped = 0;
+		int wooded = 0;
+		for (int ring = CLEAR_OF_CASTLE; ring < REACH; ring += RING_STEP) {
 			for (double turn = 0; turn < Math.PI * 2.0; turn += 0.42) {
 				int hx = ground.getX() + (int)Math.round(Math.cos(turn) * (castle + ring));
 				int hz = ground.getZ() + (int)Math.round(Math.sin(turn) * (castle + ring));
+				// A BACKSTOP, NOT THE MECHANISM. CLEAR_OF_CASTLE is what keeps the
+				// rings off the market; this only catches a plot that has been
+				// nudged in by a future change to the spacing, and it is RADIAL
+				// rather than square-on because a box test against a circular ring
+				// fails on the diagonals — at radius 20 a plot at 45 degrees sits
+				// at (14, 14) and a Chebyshev test throws it away.
+				if (Math.hypot(hx - ground.getX(), hz - ground.getZ()) < KEPT_CLEAR) {
+					skipped++;
+					continue;
+				}
+				// And out of the wood. Not cleared and not replanted — simply not
+				// built on, so what stands there is whatever the generator grew.
+				if (turn >= GROVE_FROM && turn <= GROVE_TO) {
+					wooded++;
+					continue;
+				}
 				final BlockPos plot = new BlockPos(hx, 0, hz);
 				final long seed = random.nextLong();
 				Cadence.in(server, tick++, () -> house(his, plot, seed));
 			}
 		}
 		Cadence.in(server, tick + 2, () -> rampart(his, ground, castle, random));
-		HerobrineMod.LOGGER.info("his city is going up around [{}, {}]",
-			ground.getX(), ground.getZ());
+		Cadence.in(server, tick + 4, () -> boneyard(his, ground, random));
+		HerobrineMod.LOGGER.info(
+			"his city is going up around [{}, {}] — {} plots off the square,"
+				+ " {} left to the wood",
+			ground.getX(), ground.getZ(), skipped, wooded);
 	}
 
 	/**
@@ -116,11 +192,60 @@ public final class HisCity {
 	}
 
 	/** The market, at the foot of the castle steps. Stalls, no stallholders. */
+	/**
+	 * THE CEMETERY, IN THE WOOD NOBODY BUILT ON.
+	 *
+	 * The other half of Oakhold's green corner. A sector was left standing at
+	 * GROVE_FROM..GROVE_TO and this is what is in it — which matters, because an
+	 * empty quadrant inside a wall is not a park, it is a plot the generator
+	 * failed on. Twenty graves under the trees says somebody chose to leave this
+	 * ground alone, and says why.
+	 *
+	 * Under the canopy rather than in a clearing. A cemetery you find by walking
+	 * into it is worth four of one you can see across the square.
+	 */
+	private static void boneyard(ServerLevel his, BlockPos ground,
+	                             RandomSource random) {
+		double mid = (GROVE_FROM + GROVE_TO) / 2.0;
+		int laid = 0;
+		for (int i = 0; i < 20; i++) {
+			double turn = mid + (random.nextDouble() - 0.5) * (GROVE_TO - GROVE_FROM);
+			double out = 16 + random.nextDouble() * (REACH - 22);
+			int x = ground.getX() + (int) Math.round(Math.cos(turn) * out);
+			int z = ground.getZ() + (int) Math.round(Math.sin(turn) * out);
+			if (!his.isLoaded(new BlockPos(x, ground.getY(), z))
+				|| !Ground.dry(his, x, z)) {
+				continue;
+			}
+			int y = Ground.topOf(his, x, z);
+			// A mound and a marker. Podzol reads as turned earth under a dark
+			// forest canopy where dirt just reads as dirt.
+			for (int dz = 0; dz <= 1; dz++) {
+				put(his, new BlockPos(x, y, z + dz), Blocks.PODZOL.defaultBlockState());
+			}
+			BlockPos head = new BlockPos(x, y + 1, z - 1);
+			if (his.getBlockState(head).isAir()) {
+				put(his, head, random.nextInt(4) == 0
+					? Blocks.COBBLESTONE_WALL.defaultBlockState()
+					: Blocks.STONE_BRICK_WALL.defaultBlockState());
+			}
+			laid++;
+		}
+		HerobrineMod.LOGGER.info("{} graves under the trees inside his wall", laid);
+	}
+
 	private static void square(ServerLevel his, BlockPos ground, int castle,
 	                           RandomSource random) {
-		BlockPos middle = ground.offset(0, 0, castle + 14);
-		for (int dx = -9; dx <= 9; dx++) {
-			for (int dz = -9; dz <= 9; dz++) {
+		// THE MIDDLE, and it used to be fourteen blocks off it.
+		//
+		// ground.offset(0, 0, castle + 14) was right when there was a castle here
+		// to stand in front of. Keep calls this with castle = 0 now — the castle is
+		// its own place, two hundred blocks out — so the offset was just putting the
+		// market fourteen blocks north of the crossroads for no reason, which is
+		// also what put it under the plot rings.
+		BlockPos middle = ground;
+		for (int dx = -SQUARE_HALF; dx <= SQUARE_HALF; dx++) {
+			for (int dz = -SQUARE_HALF; dz <= SQUARE_HALF; dz++) {
 				int x = middle.getX() + dx;
 				int z = middle.getZ() + dz;
 				if (!his.isLoaded(new BlockPos(x, ground.getY(), z))
