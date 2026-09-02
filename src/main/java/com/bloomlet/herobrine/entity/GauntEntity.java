@@ -104,6 +104,66 @@ public class GauntEntity extends PathfinderMob {
 
 	private int met;
 
+	/**
+	 * THE CELL DOOR, IF THIS IS THE ONE IN THE GAOL.
+	 *
+	 * Null for every other one of these. TheDig hands it the position of the iron
+	 * door that is holding it, at the moment it is put in the room, because that is
+	 * the only point at which anybody knows which of fourteen doors it is.
+	 */
+	private @org.jspecify.annotations.Nullable BlockPos cell;
+
+	/** How close somebody has to get before the bolt goes over on its own. */
+	private static final int LETS_ITSELF_OUT = 7;
+
+	public void keptBehind(BlockPos door) {
+		this.cell = door;
+	}
+
+	/**
+	 * AND THE DOOR OPENS BY ITSELF.
+	 *
+	 * A shut iron door and a lever four blocks away is a decision, and it was the
+	 * right one to offer — but it is a decision made from OUTSIDE, in a corridor,
+	 * about a room. Nothing about it happens to you. You throw a switch and then
+	 * you look.
+	 *
+	 * This is the other version of the same moment and it costs nothing: walk up to
+	 * the one shut cell in a hall of thirteen open ones, and the bolt goes over on
+	 * its own. The lever still works, and anybody who finds it first still gets to
+	 * choose. What this removes is the case where nobody ever pulls it and the
+	 * building's one occupant is never met at all.
+	 *
+	 * ONCE, AND THEN NEVER AGAIN. The reference is dropped the moment it fires, so
+	 * a player who shuts the door behind them has shut it — the door does not fight
+	 * them for it, and a door that reopens every time you close it is a joke rather
+	 * than a fright.
+	 *
+	 * DoorBlock.setOpen rather than two setBlock calls. An iron door is two block
+	 * states that have to agree, and it also wants the sound: the vanilla method
+	 * does both halves and plays the latch, which is the part you actually hear
+	 * happen behind you.
+	 */
+	private void unbolt() {
+		if (this.cell == null || !(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		Player near = here.getNearestPlayer(this.cell.getX() + 0.5,
+			this.cell.getY() + 0.5, this.cell.getZ() + 0.5, LETS_ITSELF_OUT, false);
+		if (near == null) {
+			return;
+		}
+		net.minecraft.world.level.block.state.BlockState was =
+			here.getBlockState(this.cell);
+		if (was.getBlock() instanceof net.minecraft.world.level.block.DoorBlock door
+			&& !door.isOpen(was)) {
+			door.setOpen(this, here, was, this.cell, true);
+			HerobrineMod.LOGGER.info("the cell door at [{}, {}, {}] opened on its own",
+				this.cell.getX(), this.cell.getY(), this.cell.getZ());
+		}
+		this.cell = null;
+	}
+
 	public GauntEntity(EntityType<? extends PathfinderMob> type, Level level) {
 		super(type, level);
 		// Rare and solitary. One of these is an event; two is a queue.
@@ -275,6 +335,7 @@ public class GauntEntity extends PathfinderMob {
 		this.speak();
 		this.echo();
 		this.tread();
+		this.unbolt();
 
 		Player seen = this.watcher();
 		// THE CLOCK STARTS THE MOMENT IT IS IN THE ROOM WITH SOMEBODY.
@@ -728,12 +789,19 @@ public class GauntEntity extends PathfinderMob {
 	public void addAdditionalSaveData(net.minecraft.world.level.storage.ValueOutput output) {
 		super.addAdditionalSaveData(output);
 		output.putInt("Met", this.met);
+		// The cell has to survive a reload or the one in the gaol loses its door
+		// and goes back to waiting on the lever for good.
+		if (this.cell != null) {
+			output.putLong("Cell", this.cell.asLong());
+		}
 	}
 
 	@Override
 	public void readAdditionalSaveData(net.minecraft.world.level.storage.ValueInput input) {
 		super.readAdditionalSaveData(input);
 		this.met = input.getIntOr("Met", 0);
+		long door = input.getLongOr("Cell", 0L);
+		this.cell = door == 0L ? null : BlockPos.of(door);
 	}
 
 	@Override

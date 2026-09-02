@@ -3,7 +3,6 @@ package com.bloomlet.herobrine.client;
 import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.entity.GauntEntity;
 
-import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.monster.enderman.EndermanModel;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
@@ -51,7 +50,94 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		HerobrineMod.id("textures/entity/gaunt/gaunt.png");
 
 	public GauntRenderer(EntityRendererProvider.Context context) {
-		super(context, new Stretched(context.bakeLayer(ModelLayers.ENDERMAN)), 0.5F);
+		super(context, new Stretched(mesh().bakeRoot()), 0.5F);
+		this.addLayer(new GauntEyesLayer<>(this));
+	}
+
+	/**
+	 * THE ENDERMAN'S MESH, TRANSCRIBED, PLUS A NOSE.
+	 *
+	 * A villager's nose is the one feature that says which of them this used to be,
+	 * and it cannot be painted. The face is a flat plane; a nose drawn on it is a
+	 * darker rectangle on a flat plane, and the mod has already learned that lesson
+	 * once about the mouth. It has to be a cube standing off the front of the head.
+	 *
+	 * WHICH MEANS OWNING THE MESH, because there is nowhere to hang a seventh cube
+	 * otherwise. ModelPart's children map is private and final, so a baked part
+	 * cannot be added to; and this Fabric API has no EntityModelLayerRegistry, so a
+	 * new layer cannot be registered for the game to bake. What is left is public
+	 * and simple: build the MeshDefinition here and bake it with
+	 * LayerDefinition.bakeRoot(), which needs no registration at all.
+	 *
+	 * EVERY NUMBER BELOW IS VANILLA'S, read out of EndermanModel.createBodyLayer's
+	 * own bytecode rather than remembered — head 8x8x8 at (0,-13,0), the hat the
+	 * same box deformed by -0.5, the body 8x12x4 at (0,-14,0), and four limbs of
+	 * 2x30x2 which are the proportions this creature exists for. A wrong number
+	 * here is not subtle: the thing arrives visibly broken, which is the one mercy
+	 * of transcribing geometry.
+	 *
+	 * The nose is 2x2x2 at (-1,-6,-5): two texels wide, centred, standing one texel
+	 * clear of the face. It lands between the eyes and above the mouth by
+	 * construction — the eyes occupy face texels 8-10 and 13-15 and the nose
+	 * occupies 11-12, so they cannot collide however the head is scaled.
+	 *
+	 * Its net goes at texOffs(32,0), which is the only free ground on the sheet:
+	 * the head has x 0-32 y 0-16, the hat x 0-32 y 16-32, the body x 32-56 y 16-32
+	 * and the limbs x 56-64. That leaves x 32-56, y 0-16 untouched by vanilla.
+	 */
+	private static net.minecraft.client.model.geom.builders.LayerDefinition mesh() {
+		net.minecraft.client.model.geom.builders.MeshDefinition mesh =
+			net.minecraft.client.model.HumanoidModel.createMesh(
+				net.minecraft.client.model.geom.builders.CubeDeformation.NONE, -14.0F);
+		net.minecraft.client.model.geom.builders.PartDefinition root = mesh.getRoot();
+
+		net.minecraft.client.model.geom.builders.PartDefinition head =
+			root.addOrReplaceChild("head",
+				net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+					.texOffs(0, 0).addBox(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F),
+				net.minecraft.client.model.geom.PartPose.offset(0.0F, -13.0F, 0.0F));
+
+		// The mouth's back wall. Negative deformation, so it is SMALLER than the
+		// head and sits half a unit inside it — that recess is the whole reason
+		// this creature is built on an enderman. See gen_gaunt.py.
+		head.addOrReplaceChild("hat",
+			net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+				.texOffs(0, 16).addBox(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F,
+					new net.minecraft.client.model.geom.builders.CubeDeformation(-0.5F)),
+			net.minecraft.client.model.geom.PartPose.ZERO);
+
+		// AND THE NOSE, which is the only thing here vanilla does not have.
+		head.addOrReplaceChild("nose",
+			net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+				.texOffs(32, 0).addBox(-1.0F, -6.0F, -5.0F, 2.0F, 2.0F, 2.0F),
+			net.minecraft.client.model.geom.PartPose.ZERO);
+
+		root.addOrReplaceChild("body",
+			net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+				.texOffs(32, 16).addBox(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F),
+			net.minecraft.client.model.geom.PartPose.offset(0.0F, -14.0F, 0.0F));
+
+		root.addOrReplaceChild("right_arm",
+			net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+				.texOffs(56, 0).addBox(-1.0F, -2.0F, -1.0F, 2.0F, 30.0F, 2.0F),
+			net.minecraft.client.model.geom.PartPose.offset(-5.0F, -12.0F, 0.0F));
+		root.addOrReplaceChild("left_arm",
+			net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+				.texOffs(56, 0).mirror()
+				.addBox(-1.0F, -2.0F, -1.0F, 2.0F, 30.0F, 2.0F),
+			net.minecraft.client.model.geom.PartPose.offset(5.0F, -12.0F, 0.0F));
+		root.addOrReplaceChild("right_leg",
+			net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+				.texOffs(56, 0).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 30.0F, 2.0F),
+			net.minecraft.client.model.geom.PartPose.offset(-2.0F, -5.0F, 0.0F));
+		root.addOrReplaceChild("left_leg",
+			net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+				.texOffs(56, 0).mirror()
+				.addBox(-1.0F, 0.0F, -1.0F, 2.0F, 30.0F, 2.0F),
+			net.minecraft.client.model.geom.PartPose.offset(2.0F, -5.0F, 0.0F));
+
+		return net.minecraft.client.model.geom.builders.LayerDefinition
+			.create(mesh, 64, 32);
 	}
 
 	/**
@@ -94,6 +180,7 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		public void setupAnim(EndermanRenderState state) {
 			super.setupAnim(state);
 			reshape(this);
+			slam(this, state.attackTime);
 		}
 	}
 
@@ -150,6 +237,47 @@ public class GauntRenderer extends HumanoidMobRenderer<
 	 * because the enderman torso is already wide and the silhouette wants to stay
 	 * narrow-shouldered.
 	 */
+	/**
+	 * IT SWINGS LIKE AN IRON GOLEM, WHICH MEANS BOTH ARMS AT ONCE.
+	 *
+	 * The enderman model has no attack animation. HumanoidModel has one and it is
+	 * the wrong one: a single arm scything across the body, which is a person
+	 * hitting something. This creature is three blocks of it and the whole of what
+	 * it does to you is pick you up and put you somewhere else, so the swing has to
+	 * be the golem's — both arms up over the head together, then down.
+	 *
+	 * Vanilla's own numbers, out of IronGolemModel.setupAnim:
+	 *
+	 *     xRot = -2.0 + 1.5 * triangleWave(t, 10)
+	 *
+	 * with t counting down from ten. triangleWave runs -1 to 1 across the period,
+	 * so the arms travel from -0.5 radians to -3.5 and back: raised, then hurled
+	 * forward past vertical. Both arms take the same value, which is the entire
+	 * reason it reads as a golem rather than as a man.
+	 *
+	 * DRIVEN OFF attackTime, WHICH IS THE ONE THE STATE ACTUALLY HAS.
+	 * IronGolemRenderState carries attackTicksRemaining counting 10 down to 0;
+	 * EndermanRenderState carries attackTime from ArmedEntityRenderState, which
+	 * runs 0 up to 1 across the same swing. So the clock is turned back round —
+	 * (1 - attackTime) * 10 — rather than a second animation being invented for it.
+	 *
+	 * Last of all, after reshape, because the limbs are scaled there and this
+	 * writes rotations: the two do not fight, but setupAnim resets both every frame
+	 * and whichever runs last is the one that survives.
+	 */
+	private static void slam(EndermanModel<EndermanRenderState> model, float attackTime) {
+		if (attackTime <= 0.0F) {
+			return;         // not swinging: the enderman's own angry pose stands
+		}
+		float swing = -2.0F + 1.5F * net.minecraft.util.Mth.triangleWave(
+			(1.0F - attackTime) * 10.0F, 10.0F);
+		model.rightArm.xRot = swing;
+		model.leftArm.xRot = swing;
+		// And square on. A golem does not twist to hit you.
+		model.rightArm.zRot = 0.0F;
+		model.leftArm.zRot = 0.0F;
+	}
+
 	/** Twelve units against the enderman's eight and the villager's ten. */
 	private static final float HEAD_TALL = 1.5F;
 

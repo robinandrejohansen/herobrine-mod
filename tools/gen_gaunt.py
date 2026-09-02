@@ -76,7 +76,6 @@ BROW = (51, 36, 17, 255)
 # throat.
 GULLET = (30, 18, 16, 255)
 WHITE = (238, 238, 236, 255)
-PUPIL = (18, 16, 18, 255)
 
 # ---- WHERE EVERYTHING IS ON THE ENDERMAN SHEET, derived from its own boxes.
 #      head   texOffs(0,0)   8x8x8   -> x  0..32, y  0..16
@@ -87,10 +86,19 @@ FACE = (8, 8, 16, 16)        # the front face of the head cube
 HEAD_TOP = (8, 0, 16, 8)     # the crown, which becomes hood
 HEAD_BACK = (24, 8, 32, 16)  # and the back of it
 
-MOUTH_ROWS = (14, 15)
+# A LONG MOUTH: FOUR ROWS OF THE EIGHT, NOT TWO.
+#
+# Two rows was a slot. The face this is being pointed at has a mouth taking most
+# of the lower half of a very long head — so it runs from texel 12 to the jaw,
+# which at a 1.5 head is six units of open mouth on a twelve unit face.
+#
+# Rows 14 and 15 come with alpha 0 already; vanilla put the enderman's own mouth
+# there. 12 and 13 are opaque skin on the source sheet and have to be CUT — see
+# the hole() call in main(). Forgetting that is a mouth two rows long with skin
+# painted over the other two.
+MOUTH_ROWS = (12, 13, 14, 15)
 EYE_COLS = (8, 13)       # left texel of each socket
 EYE_WIDE = 3             # and how many texels wide it is
-BRIDGE = (11, 12)
 
 # ---- THE EYE IS DRAWN IN SUB-PIXELS, BECAUSE THE FACE IS EIGHT TEXELS AND THE
 #      HEAD IS NOW STRETCHED TO ONE AND A HALF OVER THEM.
@@ -114,11 +122,14 @@ BRIDGE = (11, 12)
 # above, half again as long below, and the eye's centre has gone from three
 # eighths of the way down the face to a little under three tenths — up, and
 # smaller as a share of the face, while staying about the same size on screen.
-EYE_TOP_PX = 38          # sub-pixel row: texel 9.5
-EYE_TALL_PX = 7          # was a flat 8, two whole texels
-
-PUPIL_WIDE = 3
-PUPIL_TALL = 2
+# ON WHOLE TEXELS AGAIN, because the mouth took the room the half-row bought.
+#
+# The sub-pixel eye existed to win back forehead and cheek on an eight-row face
+# where the mouth was two rows. The mouth is four rows now, so there is no cheek
+# left to win and the eye simply sits on texels 9 and 10 with the forehead above
+# it and the nose below.
+EYE_TOP_PX = 9 * SCALE
+EYE_TALL_PX = 2 * SCALE
 
 # RED BEHIND THE BLACK, NOT GREEN.
 #
@@ -130,23 +141,25 @@ PUPIL_TALL = 2
 # A dark red reads as blood behind the pupil rather than as an iris at all, and it
 # is the one hue that appears nowhere else on this creature. Muted rather than
 # bright: a saturated red is a GLOWING eye, and glowing eyes are his.
-IRIS = (124, 26, 26, 255)
-IRIS_WIDE = 5
-IRIS_TALL = 4
+# WHITE EYES IN A DARK SOCKET, AND THE IRIS IS GONE.
+#
+# It was white, a dark red ring and a black pupil — three layers, argued for at
+# length on the grounds that the Turned's eyes are the unsettling thing in this
+# mod and the tall one should have them. That was the wrong reference. The tall
+# one is not one of them any more, and the face being reached for has two flat
+# white rectangles in it and nothing else.
+#
+# A pupil is also what makes an eye read as LOOKING somewhere. Taking it out is
+# what makes this face read as looking at nothing, from a head that is
+# nevertheless turned squarely at you.
+#
+# THE SOCKET IS THE PART THAT MAKES IT WORK. White on villager skin is barely a
+# value step — 238 against 190 — so a white rectangle painted straight onto the
+# face is a pale smudge. A one-pixel near-black rim gives it an edge, and the
+# reference has exactly that. It is also why the glow sheet is worth having: see
+# eyes() below.
+SOCKET = (22, 16, 18, 255)
 
-# AND THE PUPIL SITS LOW IN THE SOCKET.
-#
-# Centred, there was as much white under the pupil as over it, which is a level
-# gaze. Dropped two pixels there is a band of white above and almost none below —
-# the eye of something looking UP at you from under its own brow. The brow is
-# gone now, so the eye has to do that on its own.
-#
-# ONE, NOT TWO. Two put the iris flush against the bottom of the socket, which
-# breaks the rule this file argued for when the ring went in: white on all four
-# sides, or it stops reading as an eye and starts reading as a coloured square.
-# One is three rows of white above and one below — asymmetric enough to be a
-# heavy lid, and still an eye.
-PUPIL_DROP = 1
 
 
 def client_jar():
@@ -239,7 +252,7 @@ def preview(big):
 	# closest to — which was the nose, and printed the entire forehead as one.
 	key = []
 	for colour, mark in [(SKIN, '.'), (NOSE, 'n'), (BROW, '#'), (WHITE, 'O'),
-	                     (PUPIL, '@'), (ROBE, 'r'), (IRIS, 'i'), (GULLET, 'x')]:
+	                     (SOCKET, 'o'), (ROBE, 'r'), (GULLET, 'x')]:
 		key.append((colour, mark))
 		key.append((tuple(int(c * 0.86) for c in colour[:3]), mark))
 
@@ -263,8 +276,7 @@ def preview(big):
 		elif y == MOUTH_ROWS[0] * SCALE:
 			note = '  <- the hole starts; you see through it'
 		print('      %s  %s%s' % (mark, row, note))
-	print('\n      . skin  n nose  O white  i iris  @ pupil  r hood'
-	      '  (blank) hole\n')
+	print('\n      . skin  n nose  O white  o socket  r hood  (blank) hole\n')
 
 
 def main():
@@ -305,52 +317,73 @@ def main():
 	# it and land four sub-pixels off.
 
 	for eye in EYE_COLS:
-		rect(big, eye * SCALE, EYE_TOP_PX,
-		     (eye + EYE_WIDE) * SCALE, EYE_TOP_PX + EYE_TALL_PX, WHITE)
+		x0 = eye * SCALE
+		x1 = (eye + EYE_WIDE) * SCALE
+		rect(big, x0, EYE_TOP_PX, x1, EYE_TOP_PX + EYE_TALL_PX, SOCKET)
+		rect(big, x0 + 1, EYE_TOP_PX + 1, x1 - 1, EYE_TOP_PX + EYE_TALL_PX - 1, WHITE)
 
-	# THE CRAZY VILLAGER'S EYE AFTER ALL, and this reverses a call made here.
+	# ---- THE NOSE'S NET, AND THE PAINTED ONE IS GONE.
 	#
-	# It was a sheep's — white with a dot in it — on the argument that a villager
-	# eye is three values in a space that barely holds one, and that at range the
-	# green only muddies the white. That argument is not wrong, and it is not what
-	# was asked for: the Turned's eyes are the thing people find unsettling in this
-	# mod, and the tall one should have them.
+	# There is a cube now — 2x2x2 standing one texel clear of the face, built in
+	# GauntRenderer.mesh() at texOffs(32,0), which is the only ground vanilla left
+	# free on this sheet. So the stripe that used to be painted down the bridge has
+	# been deleted rather than kept: the cube stands in front of exactly where it
+	# was, and two noses one behind the other is worse than either.
 	#
-	# So the middle value goes back in. White field, IRIS ring, black pupil in the
-	# centre of it — the same three layers gen_turned.py builds, at the same green,
-	# and the iris is sized to leave white on all four sides of it. An iris that
-	# reaches the edge of the socket reads as a coloured eye; one with white around
-	# it reads as an eye that is OPEN too wide.
-	# WHITE ON ALL FOUR SIDES OF THE IRIS AND IRIS ON ALL FOUR SIDES OF THE PUPIL,
-	# which is the rule this file argued for when the ring went in and is the whole
-	# reason the eye needs a seventh sub-pixel. Six would fit the three layers and
-	# leave nothing under the iris; seven leaves two rows of white above it and one
-	# below — a heavy lid, and still an eye.
-	for eye in EYE_COLS:
-		wide = EYE_WIDE * SCALE
-		ix = eye * SCALE + (wide - IRIS_WIDE) // 2
-		iy = EYE_TOP_PX + (EYE_TALL_PX - IRIS_TALL) // 2 + PUPIL_DROP
-		rect(big, ix, iy, ix + IRIS_WIDE, iy + IRIS_TALL, IRIS)
+	# FLAT, ON PURPOSE. Its whole net gets one colour, all eight by four texels of
+	# it, and no attempt is made to shade the front face lighter than the sides.
+	# Real geometry is lit per face by the game — that is the entire reason for
+	# making it geometry — so shading painted into it would fight the lighting that
+	# is already there. This is also why the exact face order in a cube's net does
+	# not need to be known: every face of it is the same colour.
+	rect(big, 32 * SCALE, 0, 40 * SCALE, 4 * SCALE, NOSE)
 
-		px = eye * SCALE + (wide - PUPIL_WIDE) // 2
-		py = iy + (IRIS_TALL - PUPIL_TALL) // 2
-		rect(big, px, py, px + PUPIL_WIDE, py + PUPIL_TALL, PUPIL)
-
-	# The nose, down the bridge and stopping at the lip. Painted rather than
-	# modelled — the enderman head has no nose cube — so it is one tone under the
-	# skin either side of it, which is what a plane turning away actually does.
-	# From the eye line to the lip, in sub-pixels so it meets the eyes where they
-	# are now rather than where they used to be. On whole texels it started at row
-	# 10 and left a bright gap across the bridge once the eyes moved up half a row.
-	rect(big, BRIDGE[0] * SCALE, EYE_TOP_PX,
-	     (BRIDGE[-1] + 1) * SCALE, MOUTH_ROWS[0] * SCALE, NOSE)
+	# ---- CUT THE MOUTH OPEN.
+	#
+	# Vanilla gave rows 14 and 15 of the face alpha 0 and nothing else. The other
+	# two rows of this mouth are ordinary opaque skin on the source sheet, and
+	# every loop above has just painted over them — so the hole is made HERE,
+	# last, after the face is finished.
+	#
+	# Only the front of the head. The same rows on the sides and the back are the
+	# skull and the hood, and punching those out puts a window through the head.
+	for row in MOUTH_ROWS:
+		for y in range(row * SCALE, (row + 1) * SCALE):
+			for x in range(8 * SCALE, 16 * SCALE):
+				big[y][x] = (0, 0, 0, 0)
 
 	path = os.path.join(OUT, 'gaunt.png')
 	pngio.write(path, width * SCALE, height * SCALE, big)
 	print('%-22s %dx%d' % ('gaunt/gaunt', width * SCALE, height * SCALE))
+	cells = len(MOUTH_ROWS) * 8
 	holes = sum(1 for y in MOUTH_ROWS for x in range(8, 16)
 	            if big[y * SCALE][x * SCALE][3] == 0)
-	print('%-22s %d of 16 cells still open' % ('the mouth', holes))
+	print('%-22s %d of %d cells open, %d rows deep'
+	      % ('the mouth', holes, cells, len(MOUTH_ROWS)))
+	# ---- THE GLOW SHEET.
+	#
+	# EyesLayer submits the whole model again with RenderTypes.eyes(), which draws
+	# at full brightness and ignores world lighting. So this sheet is the same
+	# canvas, transparent everywhere, with the two white rectangles copied onto it
+	# — and those pixels then hold their brightness in a pitch black cell, which is
+	# where this creature is standing.
+	#
+	# The SOCKET rim is deliberately left out of it. A glowing black rim is a hole
+	# punched in the light; the rim's job is on the base sheet, where it is lit
+	# normally and gives the white something to sit against.
+	glow = [[(0, 0, 0, 0)] * (width * SCALE) for _ in range(height * SCALE)]
+	for eye in EYE_COLS:
+		x0 = eye * SCALE
+		x1 = (eye + EYE_WIDE) * SCALE
+		for y in range(EYE_TOP_PX + 1, EYE_TOP_PX + EYE_TALL_PX - 1):
+			for x in range(x0 + 1, x1 - 1):
+				glow[y][x] = WHITE
+	eyes_path = os.path.join(OUT, 'gaunt_eyes.png')
+	pngio.write(eyes_path, width * SCALE, height * SCALE, glow)
+	lit = sum(1 for r in glow for c in r if c[3] != 0)
+	print('%-22s %dx%d, %d lit pixels' % ('gaunt/gaunt_eyes', width * SCALE,
+	                                      height * SCALE, lit))
+
 	if '--preview' in sys.argv:
 		preview(big)
 

@@ -325,11 +325,23 @@ public final class TheDig {
 			Blocks.CARPET.pick(net.minecraft.world.item.DyeColor.BROWN)
 				.defaultBlockState(), 2);
 		level.setBlock(in.relative(across, 1), Blocks.CAULDRON.defaultBlockState(), 2);
-		for (int i = 0; i < 4; i++) {
-			BlockPos web = mouth.relative(into, 1 + random.nextInt(4))
-				.relative(across, random.nextInt(3) - 1).above(random.nextInt(3));
-			if (level.getBlockState(web).isAir() && random.nextBoolean()) {
-				level.setBlock(web, Blocks.COBWEB.defaultBlockState(), 2);
+		// COBWEBS IN THE THIRTEEN EMPTY ONES AND NOT IN THE FOURTEENTH.
+		//
+		// Not a look. A cobweb is a movement block: a mob standing in one is held
+		// almost still, and the whole point of the locked cell is that the thing
+		// inside it comes OUT. Four webs thrown at random into a five block room
+		// had a good chance of landing on the one square it stands on, and then the
+		// door opens and nothing walks through it.
+		//
+		// It is also better fiction the other way round. Thirteen rooms nothing has
+		// disturbed in a decade, and one with the webs broken.
+		if (!shut) {
+			for (int i = 0; i < 4; i++) {
+				BlockPos web = mouth.relative(into, 1 + random.nextInt(4))
+					.relative(across, random.nextInt(3) - 1).above(random.nextInt(3));
+				if (level.getBlockState(web).isAir() && random.nextBoolean()) {
+					level.setBlock(web, Blocks.COBWEB.defaultBlockState(), 2);
+				}
 			}
 		}
 
@@ -360,6 +372,16 @@ public final class TheDig {
 		BlockPos stand = mouth.relative(into, 3);
 		kept.snapTo(stand.getX() + 0.5, stand.getY(), stand.getZ() + 0.5, 0.0F, 0.0F);
 		kept.setPersistenceRequired();
+		// AND IT IS TOLD WHERE ITS OWN DOOR IS.
+		//
+		// The lever on the corridor wall still works and is still the honest way in.
+		// This is the other one: walk up to the only shut cell in the building and
+		// the bolt goes over on its own. Which needs the creature to know which of
+		// the fourteen doors is holding it, and the only moment anybody knows that
+		// is right here, while it is being put in the room.
+		if (kept instanceof com.bloomlet.herobrine.entity.GauntEntity tall) {
+			tall.keptBehind(mouth);
+		}
 		level.addFreshEntity(kept);
 	}
 
