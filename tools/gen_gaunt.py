@@ -177,8 +177,15 @@ def main():
 	# Rows 14 and 15 are never touched by anything below. They are the hole, they
 	# are the reason this is built on an enderman at all, and every loop here stops
 	# at 13 on purpose.
-	for x in range(8, 16):
-		block(big, x, BROW_ROW, BROW)
+	# NO BROW. Tried it and it is better without.
+	#
+	# A villager's dark band across the forehead is what reads as a hood, and on a
+	# face this size it also reads as an EXPRESSION — a line over the eyes is a
+	# frown whether one was intended or not. Taking it out leaves an unbroken
+	# forehead above two eyes that are open too wide, and the face stops looking
+	# angry and starts looking absent. Absent is worse.
+	#
+	# BROW and BROW_ROW are kept for the preview key and in case this is reversed.
 
 	for x in EYE_COLS:
 		for y in EYE_ROWS:

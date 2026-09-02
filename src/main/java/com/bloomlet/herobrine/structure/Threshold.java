@@ -881,6 +881,122 @@ public final class Threshold {
 			}
 		}
 		sign(level, foot.offset(0, 1, 2), "we put it back", "it did not hold");
+		theAttempts(level, foot, random);
+	}
+
+	/**
+	 * FOUR LOTS OF PEOPLE TRIED TO SHUT THIS, and you walk back through all of it.
+	 *
+	 * The seal itself was already right: an obsidian frame with the fill coming
+	 * apart in it, chains, stains, and one sign that says "we put it back / it did
+	 * not hold". What it had no sense of was TIME. One wall reads as one decision.
+	 *
+	 * So there are four, receding up the corridor you just came down, and the
+	 * player meets them in reverse order — the last and most desperate attempt
+	 * first, the earliest and most confident one last, twenty blocks back. Each one
+	 * is a different material and a different hand:
+	 *
+	 *     4 blocks out   iron bars, chains, candles — somebody praying at it
+	 *    10 blocks out   a wall of cobble, thrown up fast, already broken through
+	 *    16 blocks out   a proper deepslate wall with a door in it. they meant to
+	 *                    come back
+	 *    22 blocks out   the first one. neat, mortared, and a sign that reads like
+	 *                    a work order rather than a warning
+	 *
+	 * Read in the order you meet them the confidence runs BACKWARDS, which is the
+	 * whole story of the place in four walls and no book: it started as a job and
+	 * ended as a prayer.
+	 *
+	 * The walls are deliberately broken in the middle. A sealed corridor with no
+	 * way through is a dead end, and this is the route to the last room in the mod
+	 * — the player has to be able to walk it. What they are walking through is a
+	 * hole somebody else made.
+	 */
+	private static void theAttempts(ServerLevel level, BlockPos foot,
+	                                RandomSource random) {
+		// BACK ALONG THE BORE, WHICH IS -X, AND NOT +Z.
+		//
+		// Placed in +z first, because seal() builds its frame across x and hangs
+		// its chains at z+1, so +z looks like the front of it. It is not the way in.
+		// raise() reaches this room with Digging.bore on a heading of (1.0, -0.3,
+		// 0.15) — almost due east — so the player arrives from the WEST, and the
+		// end chamber is a seven-radius hollow around this point.
+		//
+		// Walls at z 4 through 22 would have started inside that hollow and then
+		// run out into solid rock, which is four invisible walls and a feature
+		// nobody would ever have found. Ten blocks out is clear of the chamber.
+		attempt(level, foot.offset(-10, 0, 0), random, 0);
+		attempt(level, foot.offset(-16, 0, 0), random, 1);
+		attempt(level, foot.offset(-22, 0, 0), random, 2);
+		attempt(level, foot.offset(-28, 0, 0), random, 3);
+	}
+
+	private static final String[][] SAID = {
+		{ "it is not a door", "stop calling it", "a door" },
+		{ "IT COMES BACK", "do not open", "do not open" },
+		{ "sealed 3rd time", "if this fails", "go up and run" },
+		{ "shaft 4 sealed", "by order of", "the survey" },
+	};
+
+	private static void attempt(ServerLevel level, BlockPos at,
+	                            RandomSource random, int age) {
+		// Across the corridor, so the wall spans z while the corridor runs x.
+		for (int dz = -4; dz <= 4; dz++) {
+			for (int up = 0; up <= 5; up++) {
+				BlockPos pos = at.offset(0, up, dz);
+				if (!level.getBlockState(pos).isAir()
+					&& !level.getBlockState(pos).isSolid()) {
+					continue;
+				}
+				// THE HOLE SOMEBODY ELSE MADE. Two wide and three tall, off centre,
+				// so it reads as forced rather than as a doorway that was designed.
+				boolean through = dz >= -1 && dz <= 1 && up <= 2;
+				if (through) {
+					level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+					continue;
+				}
+				BlockState block = switch (age) {
+					case 0 -> random.nextInt(3) == 0
+						? Blocks.IRON_BARS.defaultBlockState()
+						: Blocks.COBBLED_DEEPSLATE.defaultBlockState();
+					case 1 -> random.nextInt(4) == 0
+						? Blocks.MOSSY_COBBLESTONE.defaultBlockState()
+						: Blocks.COBBLESTONE.defaultBlockState();
+					case 2 -> random.nextInt(4) == 0
+						? Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState()
+						: Blocks.DEEPSLATE_BRICKS.defaultBlockState();
+					default -> random.nextInt(6) == 0
+						? Blocks.CHISELED_DEEPSLATE.defaultBlockState()
+						: Blocks.POLISHED_DEEPSLATE.defaultBlockState();
+				};
+				level.setBlock(pos, block, 2);
+			}
+		}
+		// The rubble of getting through it, on the floor either side.
+		for (int dx = -1; dx <= 1; dx += 2) {
+			for (int dz = -2; dz <= 2; dz++) {
+				BlockPos pos = at.offset(dx, 0, dz);
+				if (level.getBlockState(pos).isAir()
+					&& level.getBlockState(pos.below()).isSolid()
+					&& random.nextInt(2) == 0) {
+					level.setBlock(pos, Blocks.COBBLED_DEEPSLATE_SLAB.defaultBlockState(), 2);
+				}
+			}
+		}
+		// AND THE LAST ONE HAD CANDLES. Somebody stopped building and started
+		// asking, and that is the only thing in this corridor that is not masonry.
+		if (age == 0) {
+			for (int dz : new int[] { -2, 2 }) {
+				BlockPos pos = at.offset(1, 0, dz);
+				if (level.getBlockState(pos).isAir()
+					&& level.getBlockState(pos.below()).isSolid()) {
+					level.setBlock(pos, Blocks.CANDLE.defaultBlockState()
+						.setValue(BlockStateProperties.CANDLES, 3)
+						.setValue(BlockStateProperties.LIT, true), 2);
+				}
+			}
+		}
+		sign(level, at.offset(1, 1, 2), SAID[age]);
 	}
 
 	private static BlockState brick(RandomSource random) {

@@ -199,6 +199,8 @@ public final class TheWay {
 			}
 		}
 
+		battered(level, site, random);
+
 		level.playSound(null, site, com.bloomlet.herobrine.sound.ModSounds.THE_WAY,
 			net.minecraft.sounds.SoundSource.HOSTILE, 4.0F, 0.5F);
 		HerobrineMod.LOGGER.info("the way is open at [{}, {}, {}]",
@@ -315,5 +317,87 @@ public final class TheWay {
 	/** Which way the frame faces, for anything that needs to stand clear of it. */
 	public static Direction across() {
 		return Direction.EAST;
+	}
+
+	/**
+	 * IT HAS BEEN FORCED, AND THE FRAME SHOWS IT.
+	 *
+	 * This stood finished: a clean lintel, a cornice, four soul lanterns and vines
+	 * up the face. Which is the wrong claim. Every book in the mod says the same
+	 * thing about this doorway — nineteen people put him through one and eleven
+	 * came back, they sealed it, and it did not hold. A doorway in that story is
+	 * not a doorway anybody maintained. It is one somebody shut and something
+	 * opened again from the other side.
+	 *
+	 * NOTHING HERE TOUCHES THE_WAY, and that is the whole constraint. The portal
+	 * surface is placed last precisely so nothing overwrites it, so this only ever
+	 * looks at blocks that are already SOLID and are not the way itself. Knocking
+	 * a hole in the portal would not read as damage, it would read as a portal
+	 * with a hole in it, and it would break the only route into his world.
+	 *
+	 * Three kinds of damage and they are different on purpose. The lintel loses
+	 * blocks from the TOP, which is what falls first. The piers lose them from the
+	 * OUTSIDE, because that is the face a crowd would have got at. And the rubble
+	 * goes on the floor in front, because the blocks that came out of a doorway
+	 * are still lying there — a broken frame with a clean floor under it is a
+	 * texture, not an event.
+	 */
+	private static void battered(ServerLevel level, BlockPos site,
+	                             net.minecraft.util.RandomSource random) {
+		// The lintel and the cornice above it, coming down.
+		for (int dx = -HALF - 1; dx <= HALF + 1; dx++) {
+			for (int dz = -DEPTH - 1; dz <= DEPTH + 1; dz++) {
+				for (int up = TALL + 1; up <= TALL + 3; up++) {
+					if (random.nextInt(4) != 0) {
+						continue;
+					}
+					BlockPos at = site.offset(dx, up, dz);
+					if (!level.getBlockState(at).isSolid()
+						|| level.getBlockState(at).is(ModBlocks.THE_WAY)) {
+						continue;
+					}
+					level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+				}
+			}
+		}
+		// The piers, from the outside in. Cracked where it has not gone yet.
+		for (int side = -1; side <= 1; side += 2) {
+			for (int up = 0; up <= TALL; up++) {
+				for (int out = HALF; out <= HALF + 1; out++) {
+					BlockPos at = site.offset(side * out, up, 0);
+					BlockState was = level.getBlockState(at);
+					if (!was.isSolid() || was.is(ModBlocks.THE_WAY)) {
+						continue;
+					}
+					int roll = random.nextInt(6);
+					if (roll == 0) {
+						level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+					} else if (roll < 3) {
+						level.setBlock(at,
+							Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState(), 2);
+					}
+				}
+			}
+		}
+		// And what came out of it, on the floor where it fell.
+		int put = 0;
+		for (int dx = -HALF - 2; dx <= HALF + 2; dx++) {
+			for (int dz = -DEPTH - 3; dz <= DEPTH + 3; dz++) {
+				if (Math.abs(dz) <= DEPTH || random.nextInt(3) != 0) {
+					continue;   // not in the opening, and not everywhere
+				}
+				BlockPos at = site.offset(dx, 0, dz);
+				if (!level.getBlockState(at).isAir()
+					|| !level.getBlockState(at.below()).isSolid()) {
+					continue;
+				}
+				level.setBlock(at, random.nextInt(3) == 0
+					? Blocks.DEEPSLATE_TILE_SLAB.defaultBlockState()
+					: Blocks.COBBLED_DEEPSLATE.defaultBlockState(), 2);
+				put++;
+			}
+		}
+		HerobrineMod.LOGGER.info("the way was forced — {} blocks of it on the floor",
+			put);
 	}
 }
