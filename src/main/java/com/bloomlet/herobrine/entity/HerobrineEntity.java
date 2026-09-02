@@ -2389,6 +2389,33 @@ public class HerobrineEntity extends PathfinderMob {
 	/** How high he works from, and how often a bolt comes down. */
 	private static final double BOLT_FROM = 9.0;
 	private static final int BOLT_EVERY = 40;
+	/**
+	 * LIGHTNING IS A MOVE. IT WAS WEATHER.
+	 *
+	 * There are four things in this mod that put a bolt in the ground, and only
+	 * one of them was ever a decision:
+	 *
+	 *     arsenal()      one roll in three, every 26-45 ticks   <- the move
+	 *     skyBoltIn      every 40 ticks, no roll                <- was weather
+	 *     boltIn         every 60-100 ticks, no roll            <- was weather
+	 *     answerIn       every 40 ticks, at a MOB               <- fine, not at you
+	 *
+	 * The arsenal one is right and stays exactly as it is: it is rolled against
+	 * fire and arrows, so a bolt means the dice came up lightning, the same way a
+	 * fireball means they came up fire. That is what a move is.
+	 *
+	 * The two on timers were not moves at all. They fired on a clock whatever he
+	 * was doing, and in his own world he takes to the air on a ONE-IN-TWO roll, so
+	 * the 40-tick one was running for most of the fight. A bolt every two seconds
+	 * plus the arsenal's own is not an attack you learn to read — it is a storm
+	 * happening near you, and the individual bolt stops meaning anything.
+	 *
+	 * So the sky bolt slows to somewhere between six and ten seconds. Rare enough
+	 * that it lands as HIM doing something, which is what the animation and the
+	 * ground-mark were built to say.
+	 */
+	private static final int SKY_BOLT_MIN = 130;
+	private static final int SKY_BOLT_SPREAD = 70;
 	private int skyBoltIn;
 	/**
 	 * AND HE CIRCLES IT RATHER THAN SITTING ON TOP OF IT.
@@ -5791,6 +5818,60 @@ public class HerobrineEntity extends PathfinderMob {
 	 * is what being hit by something heavy looks like. The same shove during his
 	 * OWN window would be eaten in four ticks.
 	 */
+	/**
+	 * HE SOUNDS LIKE A MAN, PLAYED WRONG.
+	 *
+	 * He had no sound overrides at all, which means PathfinderMob's default: the
+	 * GENERIC_HURT grunt every unremarkable mob in the game makes. The one thing he
+	 * is supposed to be is a player who is not a player, and he was answering a
+	 * sword with the same noise as a bat.
+	 *
+	 * So it is Steve's own set — the hurt and the death a player makes — DROPPED A
+	 * FIFTH. Pitch is the whole trick and it is the right trick: a pitched-down
+	 * player sound is recognisably the sound you make, arriving from something that
+	 * is not you, and that reads as wrong in a way an invented growl cannot. An
+	 * original sound would just be another monster.
+	 *
+	 * 0.55 is deliberate. Around 0.8 he is a large man; below about 0.4 the sample
+	 * turns to mud and stops being identifiable as Steve, which throws away the
+	 * only thing being borrowed.
+	 *
+	 * AND THERE IS SOMETHING UNDER IT. Pitch alone is a big Steve. The soul
+	 * escaping, laid beneath the grunt at half speed, is what makes it cursed
+	 * rather than merely deep — two sounds at once, one of them human and one of
+	 * them not, from a single hit.
+	 */
+	private static final float CURSED_PITCH = 0.55F;
+
+	@Override
+	protected net.minecraft.sounds.SoundEvent getHurtSound(DamageSource source) {
+		return SoundEvents.PLAYER_HURT;
+	}
+
+	@Override
+	protected net.minecraft.sounds.SoundEvent getDeathSound() {
+		return SoundEvents.PLAYER_DEATH;
+	}
+
+	@Override
+	public float getVoicePitch() {
+		return CURSED_PITCH;
+	}
+
+	@Override
+	protected float getSoundVolume() {
+		return 1.1F;
+	}
+
+	@Override
+	protected void playHurtSound(DamageSource source) {
+		super.playHurtSound(source);           // Steve, a fifth down
+		if (this.level() instanceof ServerLevel here) {
+			here.playSound(null, this.getX(), this.getY(), this.getZ(),
+				SoundEvents.SOUL_ESCAPE.value(), this.getSoundSource(), 0.7F, 0.5F);
+		}
+	}
+
 	private static final double SHOVE_LEAST = 0.09;
 	private static final double SHOVE_MOST = 0.40;
 	private static final float SHOVE_FULL_AT = 11.0F;
@@ -6343,7 +6424,7 @@ public class HerobrineEntity extends PathfinderMob {
 			// further down this method, and sharing it meant two decrements a tick
 			// and two different cadences fighting over one counter.
 			if (--this.skyBoltIn <= 0) {
-				this.skyBoltIn = BOLT_EVERY;
+				this.skyBoltIn = SKY_BOLT_MIN + this.random.nextInt(SKY_BOLT_SPREAD);
 				this.swipe();
 				com.bloomlet.herobrine.manifest.TheHunt.callDown(storm, under,
 					this.markPos(under));
@@ -6365,7 +6446,19 @@ public class HerobrineEntity extends PathfinderMob {
 			this.blightIn = BLIGHT_MIN + this.random.nextInt(BLIGHT_SPREAD);
 			com.bloomlet.herobrine.manifest.TheHunt.blight(ground, withering);
 		}
-		if (--this.boltIn <= 0 && this.level() instanceof ServerLevel sky) {
+		// AND THE STORM STOPS THROWING ITS OWN ONCE THE FIGHT IS ON.
+		//
+		// These are the pre-fight bolts, and before a blow is struck they are doing
+		// real work: they light him, they say the weather belongs to him, and they
+		// come down around the PLAYER rather than on him. That is atmosphere and it
+		// should stay atmosphere.
+		//
+		// The moment he is being fought, arsenal() owns lightning. Leaving this
+		// running underneath it is what made every bolt ambiguous — you could not
+		// tell the one he aimed from the one the sky was doing anyway, so the
+		// telegraph and the ground-mark were wasted on half of them.
+		if (this.hits <= 0 && --this.boltIn <= 0
+			&& this.level() instanceof ServerLevel sky) {
 			this.boltIn = WATCH_BOLT_MIN + this.random.nextInt(WATCH_BOLT_SPREAD);
 			// One in three lands on him. The rest come down around the player,
 			// which keeps the storm about THEM rather than turning into a

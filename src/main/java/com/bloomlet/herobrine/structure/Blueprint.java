@@ -193,6 +193,38 @@ public final class Blueprint {
 	 * causeway and the curtain got. A building measured off a hill, dropped on a
 	 * slope, otherwise has daylight under half of it.
 	 */
+	/**
+	 * WHERE THE BOX ACTUALLY STARTS, given the point it was centred on.
+	 *
+	 * stand() works this out and then throws it away — it returns sizes and a tick
+	 * count, not a position — so anything that wants to read the finished building
+	 * back off the world had no way to know where it is. Hoard does: it stocks the
+	 * castle by scanning the box.
+	 *
+	 * Deliberately the same three lines as stand(), and they must stay the same. If
+	 * the centring or the ground offset ever changes in one and not the other, the
+	 * scan silently looks at the wrong quarter of a million blocks and finds
+	 * nothing, with no error anywhere.
+	 */
+	public static @org.jspecify.annotations.Nullable BlockPos corner(
+			BlockPos centre, String name) {
+		return corner(centre, name, Rotation.NONE);
+	}
+
+	public static @org.jspecify.annotations.Nullable BlockPos corner(
+			BlockPos centre, String name, Rotation rot) {
+		JsonObject root = read(name);
+		if (root == null) {
+			return null;
+		}
+		JsonObject size = root.getAsJsonObject("size");
+		int sx = quarter(rot) ? size.get("z").getAsInt() : size.get("x").getAsInt();
+		int sz = quarter(rot) ? size.get("x").getAsInt() : size.get("z").getAsInt();
+		int ground = root.has("ground") ? root.get("ground").getAsInt() : 0;
+		return new BlockPos(centre.getX() - sx / 2, centre.getY() - ground,
+			centre.getZ() - sz / 2);
+	}
+
 	public static @org.jspecify.annotations.Nullable Placed stand(
 			ServerLevel level, BlockPos centre, String name) {
 		return stand(level, centre, name, Rotation.NONE);

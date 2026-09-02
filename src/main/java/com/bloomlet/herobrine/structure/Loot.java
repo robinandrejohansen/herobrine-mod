@@ -122,6 +122,27 @@ public final class Loot {
 		 * the shaft behind the warder's room.
 		 */
 		GAOL,
+		/**
+		 * HIS CASTLE, AND IT IS A SUPPLY DUMP RATHER THAN A HOARD.
+		 *
+		 * The blueprint has three chests in seventy-three thousand blocks and
+		 * nothing filled them, so the last building in the mod — the one at the end
+		 * of the longest walk in it — was completely empty.
+		 *
+		 * But what it wants is not more treasure. By the time anybody stands in
+		 * here they have looted a farm, a town, a tower, a gaol and a church, and
+		 * another chest of diamonds changes nothing. What they are short of is what
+		 * a long fight actually consumes: FOOD, and BLOCKS TO STAND ON.
+		 *
+		 * So it is a garrison's stores. Cobblestone by the stack, because the
+		 * honest answer to a man who flies is to build, and arriving at the boss
+		 * with nothing to pillar with is the most common way this fight is lost.
+		 * Food heavy enough to eat through three acts. And rarely — one entry in
+		 * about forty — the enchanted apple, which is the only thing in this pool
+		 * that changes the fight rather than supplying it, and the only place in
+		 * the whole mod one appears.
+		 */
+		KEEP,
 	}
 
 	private record Entry(Item item, int min, int max, int weight, boolean worn) {}
@@ -537,6 +558,46 @@ public final class Loot {
 		barrel.setChanged();
 	}
 
+	/**
+	 * A garrison's stores: what gets used up, not what gets admired.
+	 *
+	 * Weighted so that roughly half of every chest is material and food, which is
+	 * the point of it. The enchanted apple sits at weight 1 against a pool total
+	 * near 150 — call it one slot in a hundred and fifty, and with four chests'
+	 * worth of slots in a run, a player finds one some of the time and never
+	 * counts on it. That is the correct frequency for the only one in the mod.
+	 */
+	private static final Entry[] KEEP_POOL = {
+		// ---- SOMETHING TO STAND ON. The reason this pool exists.
+		new Entry(Items.COBBLESTONE, 24, 64, 14, false),
+		new Entry(Items.STONE_BRICKS, 12, 32, 7, false),
+		new Entry(Items.OAK_PLANKS, 16, 48, 7, false),
+		new Entry(Items.DIRT, 16, 48, 5, false),
+		new Entry(Items.SCAFFOLDING, 8, 24, 4, false),
+		// ---- SOMETHING TO EAT, and it is the good food.
+		new Entry(Items.COOKED_BEEF, 6, 14, 12, false),
+		new Entry(Items.BREAD, 8, 16, 10, false),
+		new Entry(Items.GOLDEN_CARROT, 4, 12, 9, false),
+		new Entry(Items.COOKED_PORKCHOP, 5, 12, 8, false),
+		new Entry(Items.BAKED_POTATO, 6, 14, 6, false),
+		new Entry(Items.HONEY_BOTTLE, 1, 4, 4, false),
+		new Entry(Items.GOLDEN_APPLE, 1, 3, 4, false),
+		// The only one in the mod.
+		new Entry(Items.ENCHANTED_GOLDEN_APPLE, 1, 1, 1, false),
+		// ---- SOMETHING TO FIGHT WITH, topping up rather than replacing.
+		new Entry(Items.ARROW, 12, 32, 8, false),
+		new Entry(Items.IRON_INGOT, 4, 12, 6, false),
+		new Entry(Items.GOLD_INGOT, 3, 9, 4, false),
+		new Entry(Items.EXPERIENCE_BOTTLE, 3, 8, 4, false),
+		new Entry(Items.OBSIDIAN, 2, 8, 4, false),
+		new Entry(Items.DIAMOND, 1, 3, 3, false),
+		new Entry(Items.SHIELD, 1, 1, 3, true),
+		new Entry(Items.ENCHANTED_BOOK, 1, 1, 3, false),
+		// ---- AND LIGHT, because the place is his and it is dark.
+		new Entry(Items.TORCH, 16, 32, 9, false),
+		new Entry(Items.LANTERN, 1, 4, 4, false),
+	};
+
 	private static Entry[] poolFor(Tier tier) {
 		return switch (tier) {
 			case HOMESTEAD -> HOMESTEAD_POOL;
@@ -549,6 +610,7 @@ public final class Loot {
 			case HIS_CITY -> CITY_POOL;
 			case TOWER -> TOWER_POOL;
 			case GAOL -> GAOL_POOL;
+			case KEEP -> KEEP_POOL;
 		};
 	}
 
@@ -577,11 +639,26 @@ public final class Loot {
 			return;
 		}
 
+		// A dead farm is not a going concern; everything else is. Used below for
+		// the enchanted-work chance, which belongs where such work would BE.
 		boolean town = tier != Tier.HOMESTEAD && tier != Tier.LARDER;
-		// A trading town's chests are fuller than a dead farm's. Four to eight
+		// How much is in one chest.
+		//
+		// A trading town's chests are fuller than a dead farm's: four to eight
 		// rather than two to five, which is the difference between rummaging and
 		// finding something.
-		int stacks = town ? 4 + random.nextInt(5) : 2 + random.nextInt(4);
+		//
+		// AND THE CASTLE IS LEANER THAN EITHER, on purpose. There are eighteen
+		// chests in there rather than one or two, so the run is what pays and the
+		// individual chest should not — eight stacks times eighteen chests is a
+		// shop, and it would undo the whole fight's supply pressure in one room.
+		// Three to five means every chest is worth opening and none of them is the
+		// end of the problem.
+		int stacks = switch (tier) {
+			case KEEP -> 3 + random.nextInt(3);
+			case HOMESTEAD, LARDER -> 2 + random.nextInt(4);
+			default -> 4 + random.nextInt(5);
+		};
 		for (int i = 0; i < stacks && !free.isEmpty(); i++) {
 			int slot = free.remove(random.nextInt(free.size()));
 			chest.setItem(slot, roll(pool, random, access));

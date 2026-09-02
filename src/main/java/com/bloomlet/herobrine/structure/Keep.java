@@ -713,6 +713,27 @@ public final class Keep {
 					"the castle at [{}, {}, {}] is the blueprint \"{}\" — {} blocks,"
 						+ " {}x{}x{}", site.getX(), surface, site.getZ(), plan,
 					done.blocks(), done.sizeX(), done.sizeY(), done.sizeZ());
+				// AND THEN SOMETHING IN IT.
+				//
+				// This early return is why the castle was empty: every furnishing
+				// stage below belongs to the built-in castle, and the blueprint
+				// skipped all of them. Three chests in seventy-three thousand
+				// blocks, none of them filled, at the end of the longest walk in
+				// the mod.
+				//
+				// Queued behind the placement rather than run now — done.ticks() is
+				// when the last course goes down, and reading the world before then
+				// finds a building that is not there yet. See Hoard.
+				//
+				// The corner is computed the same way stand() computes it, off the
+				// blueprint's own ground course, because the two must agree about
+				// where the box is.
+				BlockPos where = Blueprint.corner(
+					new BlockPos(site.getX(), surface, site.getZ()), plan);
+				if (where != null) {
+					Hoard.stock(his, where, done.sizeX(), done.sizeY(), done.sizeZ(),
+						done.ticks() + 5);
+				}
 				return;
 			}
 			HerobrineMod.LOGGER.warn(
