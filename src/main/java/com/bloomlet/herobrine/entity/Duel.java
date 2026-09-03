@@ -116,6 +116,13 @@ final class Duel {
 	private int breachIn;
 	private int feintIn;
 	private int madeRoomIn;
+	// ---- the salvo: added beside the fight, changing none of it
+	private static final double KEPT_PAST = 8.0;      // blocks
+	private static final int KEPT_FOR = 120;          // six seconds held out there
+	private static final int SALVO_REST = 600;        // half a minute between
+	private int keptOff;
+	private int barrageIn = 200;                      // never in the first ten seconds
+	private int holdFor;
 	private int growlIn = 40;
 	private int heartIn = 200;
 	private int idleHeartIn = 260;
@@ -197,6 +204,9 @@ final class Duel {
 		if (this.breachIn > 0) {
 			this.breachIn--;
 		}
+		if (this.barrageIn > 0) {
+			this.barrageIn--;
+		}
 
 		ServerPlayer target = this.pick(watchers);
 		if (target == null) {
@@ -207,6 +217,14 @@ final class Duel {
 		// THE PAUSE. He is up there on fire and the bolts are coming down round
 		// him; the only thing he does is look at you.
 		if (this.him.isAscending()) {
+			return;
+		}
+		// THE SALVO HOLDS HIM. Telegraph and shots come off the scheduler; for their
+		// length he stands, faces you, and does nothing else.
+		if (this.holdFor > 0) {
+			this.holdFor--;
+			this.him.getNavigation().stop();
+			this.him.face(target);
 			return;
 		}
 		if (this.him.inTheAir()) {
@@ -624,9 +642,36 @@ final class Duel {
 	 * That is what makes act three feel different from act one with a bigger
 	 * model — the window to hit him gets shorter.
 	 */
+	/**
+	 * KEPT AT A DISTANCE, AND HE ANSWERS.
+	 *
+	 * Nothing in the fight changes for this. It is a clock that runs while you hold
+	 * him past eight blocks with him looking at you — kiting, a ledge he does not
+	 * fit under, a doorway you will not come through — and after six seconds of it,
+	 * once per half-minute at most, he stops, roars, and fires a salvo of small
+	 * fire (see HerobrineEntity.salvo). Come in close and the clock resets: the
+	 * move exists to make distance a choice with a price, not to replace anything.
+	 */
+	private boolean keptAway(ServerLevel here, ServerPlayer target, double d) {
+		if (d <= KEPT_PAST) {
+			this.keptOff = 0;
+			return false;
+		}
+		this.keptOff++;
+		if (this.keptOff < KEPT_FOR || this.barrageIn > 0 || !this.him.hasLineOfSight(target)) {
+			return false;
+		}
+		this.keptOff = 0;
+		this.barrageIn = SALVO_REST;
+		this.holdFor = this.him.salvo(here, target);
+		this.say(here, "kept at a distance — the salvo");
+		return true;
+	}
+
 	private void close(ServerLevel here, ServerPlayer target) {
 		this.him.getNavigation().stop();
 		this.him.face(target);
+		this.keptOff = 0;
 
 		// IN A HOLE. See HerobrineEntity.breachCover — the one-block window exploit.
 		if (this.breachIn <= 0 && this.him.breachCover(target)) {
@@ -688,6 +733,9 @@ final class Duel {
 	 * difference between a boss and a zombie with more health.
 	 */
 	private void mid(ServerLevel here, ServerPlayer target, double d) {
+		if (this.keptAway(here, target, d)) {
+			return;
+		}
 		if (--this.decideIn <= 0) {
 			this.decideIn = DECIDE_MIN + this.him.getRandom().nextInt(DECIDE_SPREAD);
 			int roll = this.him.getRandom().nextInt(100);
@@ -755,6 +803,9 @@ final class Duel {
 	private void far(ServerLevel here, ServerPlayer target, double d) {
 		this.him.getNavigation().stop();
 		this.him.face(target);
+		if (this.keptAway(here, target, d)) {
+			return;
+		}
 		this.cast(here, target);
 		if (this.blinkIn <= 0) {
 			if (this.appear(here, target, 6.0, 9.0, true)

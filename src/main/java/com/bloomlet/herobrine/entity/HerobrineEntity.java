@@ -6583,6 +6583,51 @@ public class HerobrineEntity extends PathfinderMob {
 		return true;
 	}
 
+	private static final int[] SALVO_SHOTS = { 6, 8, 10 };
+	private static final int SALVO_TELEGRAPH = 20;
+	private static final int SALVO_EVERY = 3;
+
+	/**
+	 * THE SALVO. A second of telegraph — the dragon's growl, the arm, a ring of
+	 * flame at his feet — then six to ten small fireballs three ticks apart, each
+	 * aimed at where you are when it leaves, with a little spread. Blaze fire, not
+	 * ghast fire: it burns and it hurts, it does not take the castle with it. Stand
+	 * still and most of it lands; run sideways and most of it does not.
+	 *
+	 * @return how many ticks the whole thing takes, for the Duel to hold him.
+	 */
+	int salvo(ServerLevel here, ServerPlayer target) {
+		int shots = SALVO_SHOTS[Math.min(SALVO_SHOTS.length - 1, this.act() - 1)];
+		this.getNavigation().stop();
+		this.swipe();
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.ENDER_DRAGON_GROWL, this.getSoundSource(), 2.2F, 0.7F);
+		here.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
+			this.getX(), this.getY() + 0.2, this.getZ(), 40, 1.2, 0.1, 1.2, 0.02);
+		for (int i = 0; i < shots; i++) {
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), SALVO_TELEGRAPH + i * SALVO_EVERY, () -> {
+				if (!this.isAlive() || this.isDying() || !target.isAlive() || target.level() != here) {
+					return;
+				}
+				Vec3 from = this.getEyePosition();
+				Vec3 to = target.position().add(0.0, 0.9, 0.0).subtract(from);
+				net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball fire =
+					new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(
+						here, this, to.normalize());
+				fire.snapTo(from.x, from.y, from.z, this.getYRot(), this.getXRot());
+				fire.shoot(to.x, to.y, to.z, 1.7F, 4.0F);
+				here.addFreshEntity(fire);
+				this.swipe();
+				here.playSound(null, this.getX(), this.getY(), this.getZ(),
+					SoundEvents.BLAZE_SHOOT, this.getSoundSource(), 1.3F,
+					1.0F + this.random.nextFloat() * 0.3F);
+			});
+		}
+		HerobrineMod.LOGGER.info("duel: the salvo — {} shots at {} from {} blocks",
+			shots, target.getName().getString(), (int) this.distanceTo(target));
+		return SALVO_TELEGRAPH + shots * SALVO_EVERY + 8;
+	}
+
 	boolean breach(ServerPlayer target) {
 		if (!(this.level() instanceof ServerLevel here) || !Config.get().breakIn
 			|| !here.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)
