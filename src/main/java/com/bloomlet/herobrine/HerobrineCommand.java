@@ -167,7 +167,8 @@ public final class HerobrineCommand {
 								false);
 							return 1;
 						})))
-				.then(Commands.literal("boss").executes(ctx -> boss(ctx)))
+				.then(Commands.literal("boss").executes(ctx -> boss(ctx, false))
+					.then(Commands.literal("fresh").executes(ctx -> boss(ctx, true))))
 				.then(Commands.literal("castle").executes(ctx -> {
 					ServerPlayer player = ctx.getSource().getPlayerOrException();
 					ServerLevel level = (ServerLevel) player.level();
@@ -434,7 +435,7 @@ public final class HerobrineCommand {
 	 * Seventy, not at the gate: a test that skips the approach is not a test of
 	 * the approach, and the approach is half of what was just built.
 	 */
-	private static int boss(CommandContext<CommandSourceStack> ctx)
+	private static int boss(CommandContext<CommandSourceStack> ctx, boolean fresh)
 			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
 		net.minecraft.server.MinecraftServer server = ctx.getSource().getServer();
@@ -445,7 +446,17 @@ public final class HerobrineCommand {
 		}
 		com.bloomlet.herobrine.wrath.Wrath.jumpTo(server, com.bloomlet.herobrine.wrath.Phase.SIEGE);
 		com.bloomlet.herobrine.wrath.Wrath.restore(server);
-		com.bloomlet.herobrine.manifest.Reckoning.clear(his);
+		// A FIGHT IN PROGRESS IS RESUMED, NOT RESET. The first playtest died at act
+		// two, ran the command to get back, and met a fresh act one — and read that as
+		// him forgetting. He does not forget; the command did. `fresh` wipes it.
+		boolean resumes = !fresh && com.bloomlet.herobrine.manifest.Reckoning.bound(his);
+		if (!resumes) {
+			com.bloomlet.herobrine.manifest.Reckoning.clear(his);
+		} else {
+			final int blows = com.bloomlet.herobrine.manifest.Reckoning.hits(his);
+			ctx.getSource().sendSuccess(() -> Component.literal(
+				"the fight resumes — " + blows + " blows in. /herobrine boss fresh starts over."), false);
+		}
 
 		// Through the door, as far as the world is concerned: the landing is cut
 		// where the portal would have put them, and the city is anchored on it.

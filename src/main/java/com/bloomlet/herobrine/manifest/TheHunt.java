@@ -183,6 +183,18 @@ public final class TheHunt {
 		ServerTickEvents.END_SERVER_TICK.register(TheHunt::onTick);
 		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DAMAGE
 			.register(TheHunt::spares);
+		// A fighter dies in his world: the act is the checkpoint. See playerFell.
+		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH
+			.register((dead, how) -> {
+				if (dead instanceof ServerPlayer gone && dead.level() instanceof ServerLevel where
+					&& where.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+					com.bloomlet.herobrine.entity.HerobrineEntity him =
+						com.bloomlet.herobrine.entity.HerobrineEntity.oneIn(where);
+					if (him != null) {
+						him.playerFell(gone);
+					}
+				}
+			});
 	}
 
 	/**

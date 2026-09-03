@@ -604,18 +604,31 @@ public final class HisHost {
 	 * "he blows the place up" true for a stone wall two blocks thick, which vanilla
 	 * explosions of any size only scratch. Fires only for a ball marked BREACH.
 	 */
-	public static void punch(ServerLevel here, BlockPos impact, double radius) {
+	public static int punch(ServerLevel here, BlockPos impact, double radius) {
 		int r = (int) Math.ceil(radius);
 		int taken = 0;
 		for (BlockPos pos : BlockPos.betweenClosed(impact.offset(-r, -r, -r), impact.offset(r, r, r))) {
-			if (Math.sqrt(pos.distSqr(impact)) > radius || !diggable(here, pos)) {
+			if (Math.sqrt(pos.distSqr(impact)) > radius || !breachable(here, pos)) {
 				continue;
 			}
 			here.destroyBlock(pos, false);
 			taken++;
 		}
-		HerobrineMod.LOGGER.info("duel: the wall at [{}, {}, {}] — {} blocks gone",
-			impact.getX(), impact.getY(), impact.getZ(), taken);
+		return taken;
+	}
+
+	/**
+	 * WHAT A BREACH MAY TAKE OUT — which is not what a crater may. diggable() is
+	 * the crater's rule: natural ground only, nothing anybody built, because the
+	 * crater is scenery. The breach is the opposite of scenery: its whole point is
+	 * the stone-brick wall he cannot see through and the cobble you stacked in the
+	 * doorway. Anything that can be broken, is; bedrock, chests and the way stay.
+	 */
+	private static boolean breachable(ServerLevel here, BlockPos at) {
+		net.minecraft.world.level.block.state.BlockState state = here.getBlockState(at);
+		return !state.isAir() && state.getDestroySpeed(here, at) >= 0
+			&& here.getBlockEntity(at) == null
+			&& !(state.getBlock() instanceof com.bloomlet.herobrine.block.TheWayBlock);
 	}
 
 	public static void dent(ServerLevel here, BlockPos impact, int wide) {

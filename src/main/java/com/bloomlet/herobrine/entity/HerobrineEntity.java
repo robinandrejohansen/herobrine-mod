@@ -5948,6 +5948,43 @@ public class HerobrineEntity extends PathfinderMob {
 	}
 
 	/**
+	 * THE ACT IS THE CHECKPOINT.
+	 *
+	 * The count lives on the level, so a player who dies and walks back finds him
+	 * exactly where they left him — which makes dying free, and a fight in which
+	 * dying is free is a fight nobody is in. Healing him fully would be the other
+	 * mistake: a hundred blows against a man already at act two is a wall, not a
+	 * boss. So when the last fighter falls he recovers to the START of the act he
+	 * is in: act two stands at thirty-three again, still 1.4 times the size, still
+	 * as fast. You lose the act, not the fight. If anybody else is still on their
+	 * feet in his world, nothing happens — the fight simply goes on without you.
+	 */
+	public void playerFell(ServerPlayer gone) {
+		if (!this.bound || !(this.level() instanceof ServerLevel his) || !this.hisGround()) {
+			return;
+		}
+		for (ServerPlayer other : his.players()) {
+			if (other != gone && other.isAlive() && !other.isSpectator()
+				&& other.distanceTo(this) < WATCH_RANGE) {
+				HerobrineMod.LOGGER.info("duel: {} fell — {} is still standing, the fight goes on",
+					gone.getName().getString(), other.getName().getString());
+				return;
+			}
+		}
+		int start = (this.act() - 1) * Math.max(1, this.blowsNeeded() / 3);
+		if (this.hits <= start) {
+			return;
+		}
+		int was = this.hits;
+		this.hits = start;
+		this.setHealth(Math.max(1.0F, this.blowsNeeded() - this.hits));
+		com.bloomlet.herobrine.manifest.Reckoning.record(his, this.hits, this.bound, this.partyPeak);
+		this.anger(his);
+		HerobrineMod.LOGGER.info("duel: {} fell alone — he recovers from {} to {} blows, the start of act {}",
+			gone.getName().getString(), was, start, this.act());
+	}
+
+	/**
 	 * THE END, THE WAY THE DRAGON ENDS.
 	 *
 	 * He used to fall over. Seventy — now a hundred — blows, and the last one made

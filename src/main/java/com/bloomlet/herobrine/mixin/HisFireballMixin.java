@@ -63,10 +63,14 @@ public abstract class HisFireballMixin {
 			// one he AIMED at, not only the block the ball happened to reach. A ball
 			// that hits the player, or stops a block short, still opens the wall.
 			Long aimed = ball.getAttached(com.bloomlet.herobrine.entity.HerobrineEntity.BREACH_AT);
+			int gone = HisHost.punch(here, at, 1.2);
 			if (aimed != null) {
-				HisHost.punch(here, net.minecraft.core.BlockPos.of(aimed), 1.6);
+				gone += HisHost.punch(here, net.minecraft.core.BlockPos.of(aimed), 1.6);
 			}
-			HisHost.punch(here, at, 1.2);
+			if (gone > 0) {
+				com.bloomlet.herobrine.HerobrineMod.LOGGER.info("duel: the wall at [{}, {}, {}] — {} blocks gone",
+					at.getX(), at.getY(), at.getZ(), gone);
+			}
 		}
 		HisHost.dent(here, at);
 	}

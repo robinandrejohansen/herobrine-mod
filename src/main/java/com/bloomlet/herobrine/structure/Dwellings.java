@@ -1247,6 +1247,7 @@ public final class Dwellings {
 			// AND THE STORY MOVES, because somebody found one of his places. This
 			// is the only call site that advances a phase anywhere in the mod.
 			Wrath.discovered(level.getServer());
+			com.bloomlet.herobrine.manifest.Company.placeFound(level, place.name());
 			// AND AT THE FIRST HOUSE, SOMEBODY COMES OVER THE RIDGE.
 			//
 			// Addexio wrote the book that is in this building. He used to be

@@ -343,9 +343,12 @@ public final class Whereabouts {
 		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
 			map, house, "+",
 			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
+		// FROM A FRIEND. It used to be named with one of HIS lines — "I would not" —
+		// which nobody could read as anything, least of all as an invitation. It is
+		// Addexio's map: he sent for you, and the intro says so.
 		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
 			net.minecraft.network.chat.Component.literal(
-				SAID[over.getRandom().nextInt(SAID.length)]));
+				"from a fellow friend — " + house.getX() + ", " + house.getZ()));
 		if (!first.getInventory().add(map)) {
 			first.drop(map, false);
 		}
@@ -715,6 +718,14 @@ public final class Whereabouts {
 
 	private static void weather(MinecraftServer server, ServerLevel over, BlockPos house) {
 		if (!Config.get().weather) {
+			return;
+		}
+		// NOT AT THE FIRST HOUSE. The farm is where you meet Addexio and read book
+		// one, and a storm parked over it from the first visit told the whole story
+		// before it started. The sky turns when the town has been found.
+		if (!com.bloomlet.herobrine.wrath.Wrath.phase(server)
+				.atLeast(com.bloomlet.herobrine.wrath.Phase.TRESPASSER)) {
+			stormed = false;
 			return;
 		}
 		BlockPos tower = com.bloomlet.herobrine.structure.Spire.site(over);

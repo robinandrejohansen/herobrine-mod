@@ -296,6 +296,37 @@ public final class Company {
 	 * state worth carrying in a save file, and the failure mode of getting it
 	 * wrong is a companion frozen in a field for ever with no way to explain why.
 	 */
+	/**
+	 * A PLACE HAS BEEN FOUND, and he was there when it happened to somebody else.
+	 * Called from Dwellings the tick a player arrives at a new site; whoever has him
+	 * with them, within earshot, hears the story of that place — a couple of seconds
+	 * after the ground has finished moving, and once.
+	 */
+	public static void placeFound(ServerLevel level, String place) {
+		String[] story = switch (place) {
+			case "TOWN" -> com.bloomlet.herobrine.entity.Sayings.FOUND_TOWN;
+			case "TOWER" -> com.bloomlet.herobrine.entity.Sayings.FOUND_TOWER;
+			case "GAOL" -> com.bloomlet.herobrine.entity.Sayings.FOUND_GAOL;
+			case "CHURCH" -> com.bloomlet.herobrine.entity.Sayings.FOUND_CHURCH;
+			case "THRESHOLD" -> com.bloomlet.herobrine.entity.Sayings.FOUND_THRESHOLD;
+			default -> null;
+		};
+		if (story == null) {
+			return;
+		}
+		for (ServerPlayer with : level.players()) {
+			for (CompanionEntity her : hers(level, with)) {
+				if (her.distanceTo(with) > 32.0) {
+					continue;
+				}
+				com.bloomlet.herobrine.entity.Sayings.tell(level, her, with, story, 60);
+				HerobrineMod.LOGGER.info("addexio tells {} about the {}", with.getName().getString(),
+					place.toLowerCase());
+				break;
+			}
+		}
+	}
+
 	private static boolean settled(ServerLevel here, CompanionEntity her, Player with) {
 		Long since = WAITING.get(her.getUUID());
 		if (since == null) {
