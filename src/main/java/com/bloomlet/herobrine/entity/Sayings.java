@@ -86,6 +86,10 @@ public final class Sayings {
 		"This is his. Everything here is his.",
 		"Whatever's in the chests here came off somebody who came first.",
 		"I've heard about this place. Nobody who described it came back.",
+		"Don't drink the water here. I don't know what it is, but it isn't water.",
+		"The houses have beds. Nobody has slept in them. Nobody could.",
+		"He can hear us. Not the words. The footsteps.",
+		"Stay where I can see you. Please.",
 	};
 
 	public static final String[] YOU_DIED = {
@@ -160,6 +164,23 @@ public final class Sayings {
 	 */
 	public static Component his(String line) {
 		return Component.literal("§fHerobrine§7: §8§o" + line);
+	}
+
+	/** What he says the first time he stands on the other side of the way. Once per world. */
+	public static final String[] CROSSED = {
+		"So this is where he goes. I always wondered. I wish I still did.",
+		"This is where they lost him — and where the ones who came back stopped being who they were. I read their faces. I never read the books they left.",
+		"There is a city ahead. Do not go into the houses. And the castle past it is his, and he is in it, and he knows we are here.",
+		"I am not leaving this time. Whatever it costs. Walk.",
+	};
+
+	/** A line from a pool, but no oftener than `quiet` ticks since he last spoke. */
+	public static void toldOfRarely(ServerLevel here, CompanionEntity her, Player to, String[] pool,
+	                                long quiet) {
+		if (here.getGameTime() - her.lastSpoke < quiet) {
+			return;
+		}
+		say(here, her, to, pool);
 	}
 
 	/** What he says when Herobrine puts him down. Once. */

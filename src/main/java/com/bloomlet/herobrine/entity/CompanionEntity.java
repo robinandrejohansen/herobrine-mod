@@ -77,7 +77,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class CompanionEntity extends PathfinderMob {
 	/** A person's health, and a person's armour. She is not a boss. */
-	private static final double LIVES = 24.0;
+	private static final double LIVES = 40.0;   // twenty hearts: he fell in seconds at twelve
 
 	/**
 	 * The floor. Damage is clamped so it can never carry her below this.
@@ -757,14 +757,27 @@ public class CompanionEntity extends PathfinderMob {
 		for (CompanionEntity her : from.getEntitiesOfClass(CompanionEntity.class,
 				player.getBoundingBox().inflate(30.0, 16.0, 30.0),
 				h -> h.isAlive() && !h.isFallen() && h.companion() == player)) {
-			her.teleport(new net.minecraft.world.level.portal.TeleportTransition(to,
-				at.add(1.5, 0.0, 1.5), net.minecraft.world.phys.Vec3.ZERO, her.getYRot(), 0.0F,
-				net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+			net.minecraft.world.entity.Entity moved = her.teleport(
+				new net.minecraft.world.level.portal.TeleportTransition(to,
+					at.add(1.5, 0.0, 1.5), net.minecraft.world.phys.Vec3.ZERO, her.getYRot(), 0.0F,
+					net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
 			came++;
+			// WHAT HE SAYS ON THE OTHER SIDE, once. The copy that arrives is a new
+			// entity — teleport() across a dimension makes one — so the story is told
+			// by the one that is actually standing there.
+			if (moved instanceof CompanionEntity arrived
+				&& !Boolean.TRUE.equals(to.getAttached(TOLD_HIS_WORLD))) {
+				to.setAttached(TOLD_HIS_WORLD, true);
+				Sayings.tell(to, arrived, player, Sayings.CROSSED, 80);
+			}
 			HerobrineMod.LOGGER.info("addexio crossed with {}", player.getName().getString());
 		}
 		return came;
 	}
+
+	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> TOLD_HIS_WORLD =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.createPersistent(
+			HerobrineMod.id("addexio_told_his_world"), com.mojang.serialization.Codec.BOOL);
 
 	/** Whether this world's Addexio has been killed. Company does not send another. */
 	public static boolean lost(ServerLevel level) {
@@ -827,6 +840,15 @@ public class CompanionEntity extends PathfinderMob {
 				&& source.getDirectEntity().getType().toShortString().contains("fireball")
 				&& source.getEntity() instanceof HerobrineEntity);
 		if (his) {
+			// HIS FIREBALLS ARE NOT HOW THIS ENDS. A power-three ball is twenty-odd damage
+			// and lands at the player's feet — which is where Addexio stands — so he was
+			// dying to splash in seconds, before anybody saw him fight. The blows he is
+			// meant to die to are the ones Herobrine walks over and gives him (see
+			// breakHelper); the explosions and arrows are a third of themselves.
+			if (source.getDirectEntity() != source.getEntity()
+				|| source.is(net.minecraft.tags.DamageTypeTags.IS_EXPLOSION)) {
+				damage *= 0.3F;
+			}
 			if (this.getHealth() - damage <= 0.0F) {
 				this.fall(level, source);
 				return true;

@@ -114,6 +114,10 @@ final class Duel {
 	private int blindFor;
 	private int dealIn;
 	private int breachIn;
+	private int feintIn;
+	private int growlIn = 40;
+	private int heartIn = 200;
+	private int idleHeartIn = 260;
 	private List<Player> watchers = List.of();
 
 	private Move move = Move.ADVANCE;
@@ -170,6 +174,22 @@ final class Duel {
 			return;
 		}
 		this.him.engaged();
+		// THE SOUND OF THE FIGHT. The Warden's ambience dropped to half pitch, off him,
+		// every three to six seconds; his heartbeat under it, slower. Both attenuate
+		// with distance, which is the point: somebody forty blocks off hears a dull
+		// pulse in the ground. Somebody in the room with him hears it in their chest.
+		if (--this.growlIn <= 0) {
+			this.growlIn = 60 + this.him.getRandom().nextInt(60);
+			here.playSound(null, this.him.getX(), this.him.getY(), this.him.getZ(),
+				net.minecraft.sounds.SoundEvents.WARDEN_AMBIENT, this.him.getSoundSource(),
+				3.0F, 0.42F + this.him.getRandom().nextFloat() * 0.1F);
+		}
+		if (--this.heartIn <= 0) {
+			this.heartIn = 160 + this.him.getRandom().nextInt(120);
+			here.playSound(null, this.him.getX(), this.him.getY(), this.him.getZ(),
+				net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, this.him.getSoundSource(),
+				2.5F, 0.5F);
+		}
 		if (this.sweepIn > 0) {
 			this.sweepIn--;
 		}
@@ -326,6 +346,14 @@ final class Duel {
 			return;
 		}
 		this.rooms(here);            // measures the building the first time through
+		// Faint, from the walls: a friend coming in from a distance hears something
+		// in the ground before they see anything on the towers.
+		if (--this.idleHeartIn <= 0) {
+			this.idleHeartIn = 240 + this.him.getRandom().nextInt(200);
+			here.playSound(null, this.him.getX(), this.him.getY(), this.him.getZ(),
+				net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT, this.him.getSoundSource(),
+				2.0F, 0.5F);
+		}
 		double fromKeep = Math.sqrt(site.distToCenterSqr(target.getX(), site.getY(), target.getZ()));
 		boolean inside = this.insideTheWalls(target);
 
@@ -587,6 +615,20 @@ final class Duel {
 		this.him.getNavigation().stop();
 		this.him.face(target);
 
+		// IN A HOLE. See HerobrineEntity.breachCover — the one-block window exploit.
+		if (this.breachIn <= 0 && this.him.breachCover(target)) {
+			this.breachIn = 80;
+			this.say(here, "dug them out");
+			return;
+		}
+		// THE ARM NEVER STOPS. A real blow lands once a second; between them the arm
+		// swings anyway — a feint every third of a second — so at arm's length he
+		// reads as a man fighting, not a man waiting for a timer.
+		if (--this.feintIn <= 0) {
+			this.feintIn = 6 + this.him.getRandom().nextInt(4);
+			this.him.swingArm();
+		}
+
 		// TWO OR MORE ON HIM IS NOT A DUEL. One swing that reaches all of them, and
 		// then he is out of the middle of it — somewhere clear of EVERYONE, not
 		// merely away from the one he was looking at.
@@ -646,6 +688,13 @@ final class Duel {
 		}
 
 		this.cast(here, target);
+
+		// A man in a hole at mid range is the same problem as at arm's length.
+		if (d < 8.0 && this.breachIn <= 0 && this.him.breachCover(target)) {
+			this.breachIn = 80;
+			this.say(here, "dug them out");
+			return;
+		}
 
 		switch (this.move) {
 			case ADVANCE -> {

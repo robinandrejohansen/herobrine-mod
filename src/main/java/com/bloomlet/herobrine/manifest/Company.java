@@ -373,8 +373,10 @@ public final class Company {
 			return;
 		}
 		if (here.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
-			com.bloomlet.herobrine.entity.Sayings.toldOf(here, her, with,
-				com.bloomlet.herobrine.entity.Sayings.HIS_WORLD);
+			// Every four minutes at most. It was every twenty seconds from a pool of
+			// three, which is the same three sentences on a loop for the whole fight.
+			com.bloomlet.herobrine.entity.Sayings.toldOfRarely(here, her, with,
+				com.bloomlet.herobrine.entity.Sayings.HIS_WORLD, 4800L);
 			return;
 		}
 		// Dark, and underground or at night. Not "dark" alone — a player who

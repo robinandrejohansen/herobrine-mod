@@ -434,7 +434,7 @@ public class HerobrineEntity extends PathfinderMob {
 		net.minecraft.resources.ResourceKey.create(
 			net.minecraft.core.registries.Registries.DAMAGE_TYPE,
 			HerobrineMod.id("reckoning"));
-	private static final int STRIKE_COOLDOWN = 30;
+	private static final int STRIKE_COOLDOWN = 20;   // one a second; the feints fill the gaps
 
 	/**
 	 * AND HE DOES NOT LEAVE THE INSTANT HE HAS HIT YOU.
@@ -3079,7 +3079,7 @@ public class HerobrineEntity extends PathfinderMob {
 
 	/** How high he goes, how long he hangs there, and how wide the ring is. */
 	private static final int RISES = 10;
-	private static final int HANGS_FOR = 60;
+	private static final int HANGS_FOR = 120;   // six seconds: long enough to be a moment
 	private static final double RING = 4.5;
 
 	/** Ticks left of the pause. Nothing he does runs while this is above zero. */
@@ -5160,6 +5160,12 @@ public class HerobrineEntity extends PathfinderMob {
 		// has two completely different causes — he never got in range, or he
 		// swung and the damage was refused (creative, invulnerable, a totem) —
 		// and they are indistinguishable from the outside.
+		// HE IS NOT QUIET ABOUT IT. The Warden's impact, dropped low, on a blow that
+		// lands; the sweep, low and short, on one that does not. From forty blocks
+		// it is a thud in the ground. From three it is the worst sound in the room.
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			landed ? SoundEvents.WARDEN_ATTACK_IMPACT : SoundEvents.PLAYER_ATTACK_SWEEP,
+			this.getSoundSource(), landed ? 1.6F : 0.8F, landed ? 0.55F : 0.5F);
 		HerobrineMod.LOGGER.info("duel: swung at {} blocks from {}, landed={}{}",
 			String.format("%.1f", reach), player.getName().getString(), landed,
 			player.isCreative() ? " (creative — nothing can land)" : "");
@@ -5735,13 +5741,24 @@ public class HerobrineEntity extends PathfinderMob {
 	 * still connects (sound, flash, stagger); it just is not one of the seventy.
 	 */
 	private static final long BLOW_SPACING = 10L;
+
+	/**
+	 * THICKER SKIN EACH ACT. A counted blow needs ten ticks after the last in act
+	 * one, thirteen in act two, sixteen in act three: the same hundred blows, but
+	 * the last two acts cannot be landed at a sword's full rhythm. Read from the
+	 * outside: bigger, and he takes more to put down — which is what the size was
+	 * always supposed to mean.
+	 */
+	private long blowSpacing() {
+		return BLOW_SPACING + 3L * (this.act() - 1);
+	}
 	private final java.util.Map<java.util.UUID, Long> lastCounted = new java.util.HashMap<>();
 
 	private boolean takeTheBlow(ServerLevel level, DamageSource source, ServerPlayer striker,
 	                            float damage) {
 		long now = level.getGameTime();
 		Long last = this.lastCounted.get(striker.getUUID());
-		if (last != null && now - last < BLOW_SPACING) {
+		if (last != null && now - last < this.blowSpacing()) {
 			this.hurtTime = 10;
 			this.hurtDuration = 10;
 			this.stagger(striker, damage * 0.25F);
@@ -6179,6 +6196,78 @@ public class HerobrineEntity extends PathfinderMob {
 	/** The block he aimed the breach at, so the hole is there even if the ball hits short. */
 	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Long> BREACH_AT =
 		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.create(HerobrineMod.id("breach_at"));
+
+	/** The arm, without the blow: the swing animation and a short sound, nothing else. */
+	void swingArm() {
+		this.swipe();
+		if (this.level() instanceof ServerLevel here) {
+			here.playSound(null, this.getX(), this.getY(), this.getZ(),
+				SoundEvents.PLAYER_ATTACK_SWEEP, this.getSoundSource(), 0.5F, 0.45F);
+		}
+	}
+
+	/**
+	 * THE HOLE WITH ONE BLOCK OPEN.
+	 *
+	 * The way the last fight was won: dig in, leave a window, and hit him through
+	 * it fast enough that the fight never goes quiet — because the wall only went
+	 * when he had lost sight of you for three seconds, and a window is sight. So
+	 * cover is read directly: the blocks round your body, feet and head, four sides
+	 * and the lid. Five or more of nine solid is a man in a hole, and the hole goes
+	 * — two breach balls at the solid block nearest him, which takes the wall you
+	 * are hitting through and usually the floor you are standing on.
+	 */
+	boolean breachCover(ServerPlayer target) {
+		if (!(this.level() instanceof ServerLevel here) || !Config.get().breakIn
+			|| !here.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)
+			|| this.distanceTo(target) > BREACH_REACH) {
+			return false;
+		}
+		BlockPos feet = target.blockPosition();
+		java.util.List<BlockPos> solid = new java.util.ArrayList<>();
+		for (int dy = 0; dy <= 1; dy++) {
+			for (net.minecraft.core.Direction side : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+				BlockPos at = feet.above(dy).relative(side);
+				if (here.getBlockState(at).blocksMotion()) {
+					solid.add(at);
+				}
+			}
+		}
+		BlockPos lid = feet.above(2);
+		if (here.getBlockState(lid).blocksMotion()) {
+			solid.add(lid);
+		}
+		if (solid.size() < 5) {
+			return false;
+		}
+		BlockPos wall = solid.get(0);
+		for (BlockPos at : solid) {
+			if (at.distToCenterSqr(this.position()) < wall.distToCenterSqr(this.position())) {
+				wall = at;
+			}
+		}
+		Vec3 eye = this.getEyePosition();
+		Vec3 along = Vec3.atCenterOf(wall).subtract(eye);
+		if (along.lengthSqr() < 1.0) {
+			return false;
+		}
+		this.swipe();
+		for (int i = 0; i < 2; i++) {
+			net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball ball =
+				new net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball(
+					here, this, along.normalize(), 4);
+			ball.snapTo(eye.x, eye.y, eye.z, this.getYRot(), this.getXRot());
+			ball.shoot(along.x, along.y, along.z, 1.4F, 0.4F);
+			ball.setAttached(BREACH, true);
+			ball.setAttached(BREACH_AT, wall.asLong());
+			here.addFreshEntity(ball);
+		}
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.BLAZE_SHOOT, this.getSoundSource(), 1.6F, 0.5F);
+		HerobrineMod.LOGGER.info("duel: {} is in a hole with {} of nine sides shut — fire at [{}, {}, {}]",
+			target.getName().getString(), solid.size(), wall.getX(), wall.getY(), wall.getZ());
+		return true;
+	}
 
 	boolean breach(ServerPlayer target) {
 		if (!(this.level() instanceof ServerLevel here) || !Config.get().breakIn
