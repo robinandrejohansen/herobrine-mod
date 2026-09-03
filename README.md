@@ -192,6 +192,38 @@ seconds. *Removed Herobrine.* The music is the old one. Then:
 
 ---
 
+## Performance — the rules the code follows
+
+The mod runs about twenty things off the server tick, and a shared server must
+never feel any of them. These are the rules; a change that breaks one is a bug
+even if it works.
+
+- **Nothing scans every tick.** Every `END_SERVER_TICK` handler and every
+  entity `tick()` gates its entity or block scans behind an interval counter
+  (4, 5, 8, 20, 40 ticks — whatever the effect can tolerate). A growl does not
+  need 20 Hz.
+- **No big boxes for players.** Players come from `level.players()` filtered
+  by the same box test, never from `getEntitiesOfClass` over a 192-block AABB.
+  Companions come from the entity type index, not a box.
+- **One raycast per player per tick.** `hasLineOfSight` results are cached
+  for the tick (`HerobrineEntity.seenBy`); three callers ask one question.
+- **Block scans run over pieces, not boxes.** A village is boarded by walking
+  its structure pieces, not its bounding box; `isLoaded` is asked per chunk,
+  not per block.
+- **No `getChunk` on a tick path.** Force-loading a chunk is worldgen or a disk
+  read on the server thread. It happens once, in the tick something is built,
+  never on a poll.
+- **Big builds are one self-rescheduling job.** `Blueprint.place` and
+  `stagedClear` queue a single `Cadence` task that walks a cursor — a few chunks
+  a tick, then `PER_TICK` (600) rows a tick — and re-queues itself. Never one
+  queue entry per batch. `Cadence` warns if it is ever asked to drop work.
+- **First-join buildings are staggered.** The homestead's outbuilding,
+  passage, tower and tracks go down a few ticks apart, in dependency order.
+- **Mixins on hot vanilla paths have a fast path.** The corpse mixin on
+  `LivingEntity.tick` returns three ticks in four before it touches anything.
+
+---
+
 ## Commands
 
 All under `/herobrine`. Everything is for testing; nothing here is needed to
