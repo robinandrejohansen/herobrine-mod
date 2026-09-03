@@ -478,6 +478,23 @@ public class CompanionEntity extends PathfinderMob {
 		if (--this.hopIn > 0) {
 			return;
 		}
+		// NOT OFF A LEDGE. A hop carries him a block and a half forward; if there is
+		// nothing under that within four blocks it is a jump off a cliff, and the
+		// fall damage is what "that's too much, I'm going" half a minute after he
+		// joined was probably about.
+		net.minecraft.world.phys.Vec3 ahead = this.getDeltaMovement().normalize().scale(1.5);
+		BlockPos landing = BlockPos.containing(this.getX() + ahead.x, this.getY(), this.getZ() + ahead.z);
+		boolean floor = false;
+		for (int down = 0; down <= 4; down++) {
+			if (this.level().getBlockState(landing.below(down)).blocksMotion()) {
+				floor = true;
+				break;
+			}
+		}
+		if (!floor) {
+			this.hopIn = 10;
+			return;
+		}
 		this.hopIn = HOP_MIN + this.random.nextInt(HOP_SPREAD);
 		this.getJumpControl().jump();
 	}
@@ -512,10 +529,34 @@ public class CompanionEntity extends PathfinderMob {
 	 * DAWDLES_WITHIN, so the goal that would notice he had finally arrived is the
 	 * one that stops running the moment he does.
 	 */
+	/**
+	 * THE KIT IS PUT ON HIM WITH A LIVE LEVEL UNDER HIM — the same lesson blade()
+	 * taught for Herobrine. kit() ran from finalizeSpawn, and Company does not
+	 * call finalizeSpawn: it creates him, places him and addFreshEntity()s him. So
+	 * the man who walked sixty blocks to your door had no sword, no armour and no
+	 * shield, and the armour layer I added drew nothing because there was nothing
+	 * to draw. Once, on the first server tick, if his hand is empty.
+	 */
+	private boolean armed;
+
+	/** When he last swung, synced, so the client can draw the arm. See CompanionRenderer. */
+	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Long> SWUNG =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.<Long>builder()
+			.syncWith(net.minecraft.network.codec.ByteBufCodecs.VAR_LONG.cast(),
+				net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
+			.buildAndRegister(HerobrineMod.id("addexio_swung_at"));
+	public static final int SWING_SHOWS = 6;
+
 	@Override
 	public void tick() {
 		super.tick();
 		if (!this.level().isClientSide()) {
+			if (!this.armed) {
+				this.armed = true;
+				if (this.getMainHandItem().isEmpty()) {
+					this.kit(this.getRandom());
+				}
+			}
 			this.theWalkIn();
 			this.hop();
 			this.theIntroduction();
@@ -578,6 +619,13 @@ public class CompanionEntity extends PathfinderMob {
 			this.guardRest = GUARD_REST;
 		}
 		super.swing(hand, updateSelf);
+		// THE SWING IS TOLD TO THE CLIENT BY HAND. In 26.2 nothing in the humanoid
+		// render pipeline writes attackTime for a mob — Herobrine's renderer had to
+		// compute it from a synced timestamp, and so does his. Without this the arm
+		// never moves, whatever the model says it can do.
+		if (this.level() instanceof ServerLevel here) {
+			this.setAttached(SWUNG, here.getGameTime());
+		}
 	}
 
 	/**
@@ -643,7 +691,7 @@ public class CompanionEntity extends PathfinderMob {
 			return;
 		}
 		here.getServer().overworld().setAttached(INTRODUCED, true);
-		this.introducing = Sayings.INTRO_BEAT * Sayings.INTRODUCTION.length;
+		this.introducing = Sayings.introductionLength();
 		this.getNavigation().stop();
 		Sayings.introduce(here, this, to);
 	}
@@ -987,6 +1035,25 @@ public class CompanionEntity extends PathfinderMob {
 			// own eating goes through, so the pose, the timing and the item held to
 			// the mouth are vanilla's rather than a guess.
 			this.her.getNavigation().stop();
+			// A MAN EATING LOOKS AROUND. He stood with the loaf and stared at one point
+			// for the length of it, which is what a statue does. Every second: you,
+			// if you are near; where the last thing that hit him was; or just the
+			// room.
+			if (this.her.tickCount % 20 == 0) {
+				Player with = this.her.companion();
+				int roll = this.her.getRandom().nextInt(10);
+				if (with != null && this.her.distanceTo(with) < 10.0 && roll < 5) {
+					this.her.getLookControl().setLookAt(with, 30.0F, 30.0F);
+				} else if (this.her.lastAttacker != null && this.her.lastAttacker.isAlive()
+					&& this.her.distanceTo(this.her.lastAttacker) < 16.0 && roll < 8) {
+					this.her.getLookControl().setLookAt(this.her.lastAttacker, 30.0F, 30.0F);
+				} else {
+					double a = this.her.getRandom().nextDouble() * Math.PI * 2.0;
+					this.her.getLookControl().setLookAt(this.her.getX() + Math.cos(a) * 6.0,
+						this.her.getEyeY() - 0.5 + this.her.getRandom().nextDouble(),
+						this.her.getZ() + Math.sin(a) * 6.0);
+				}
+			}
 			ItemStack loaf = this.her.getOffhandItem();
 			if (!loaf.is(Items.BREAD)) {
 				loaf = new ItemStack(Items.BREAD);

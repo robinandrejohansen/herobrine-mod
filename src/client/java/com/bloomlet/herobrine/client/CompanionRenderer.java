@@ -67,4 +67,21 @@ public class CompanionRenderer extends HumanoidMobRenderer<
 	public Identifier getTextureLocation(HumanoidRenderState state) {
 		return TEXTURE;
 	}
+
+	/**
+	 * THE ARM. In 26.2 the humanoid render pipeline never writes attackTime for a
+	 * mob, so a mob's swing is invisible unless its renderer says so — Herobrine's
+	 * does, from a synced timestamp, and this is the same six-tick curve: rising to
+	 * a peak a third of the way through, falling off, gone.
+	 */
+	@Override
+	public void extractRenderState(CompanionEntity entity, HumanoidRenderState state,
+	                               float partialTicks) {
+		super.extractRenderState(entity, state, partialTicks);
+		Long swung = entity.getAttached(CompanionEntity.SWUNG);
+		float ago = swung == null ? Float.MAX_VALUE
+			: entity.level().getGameTime() - swung + partialTicks;
+		state.attackTime = ago < 0.0F || ago >= CompanionEntity.SWING_SHOWS ? 0.0F
+			: 1.0F - Math.abs(ago / CompanionEntity.SWING_SHOWS - 0.35F) / 0.65F;
+	}
 }

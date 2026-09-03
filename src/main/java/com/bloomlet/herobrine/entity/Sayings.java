@@ -151,25 +151,61 @@ public final class Sayings {
 	 */
 	static final String[] INTRODUCTION = {
 		"You're standing in my house. Or what's left of it.",
-		"Addexio. I lived here, before. I wrote the books you'll find in these places — all ten. Read them in order.",
+		"Addexio. I lived here, before.",
+		"I wrote the books you'll find in these places — all ten. Read them in order.",
 		"He has been seen again. That is why I came back.",
-		"I have lost to him more times than I can count. I am still here. That has to count for something.",
+		"I have lost to him more times than I can count.",
+		"I am still here. That has to count for something.",
 		"Walk. I'll keep up. And when we find him — you swing. I'll hold what's behind you.",
 	};
-	static final int INTRO_BEAT = 70;
+
+	/**
+	 * HOW LONG A LINE STAYS BEFORE THE NEXT: as long as it takes to read it.
+	 *
+	 * Every line got three and a half seconds, and the longest was twenty words —
+	 * which is a fast reader's pace with nothing else going on, and there is a game
+	 * going on. A second and a half to notice a line has appeared, then 0.45 s a
+	 * word (about 130 words a minute, a comfortable reading pace, not a skimming
+	 * one), never under three seconds. The two long lines were also split, so no
+	 * single line carries more than one thought:
+	 *
+	 *     10 words  6.0 s      15 words  8.3 s      16 words  8.7 s
+	 *
+	 * The whole introduction is about forty-five seconds. It is said once per world.
+	 */
+	static int beatFor(String line) {
+		int words = 0;
+		for (String token : line.split(" ")) {
+			if (token.chars().anyMatch(Character::isLetter)) {
+				words++;
+			}
+		}
+		return Math.max(60, 30 + 9 * words);
+	}
+
+	static int introductionLength() {
+		int total = 0;
+		for (String line : INTRODUCTION) {
+			total += beatFor(line);
+		}
+		return total;
+	}
 
 	static void introduce(ServerLevel here, CompanionEntity her, ServerPlayer to) {
-		for (int i = 0; i < INTRODUCTION.length; i++) {
-			final String line = INTRODUCTION[i];
-			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), i * INTRO_BEAT, () -> {
+		int at = 0;
+		for (String line : INTRODUCTION) {
+			final String said = line;
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), at, () -> {
 				if (her.isAlive() && to.isAlive()) {
 					to.sendSystemMessage(Component.literal("§c" + her.getName().getString()
-						+ "§7: " + line));
+						+ "§7: " + said));
 					her.lastSpoke = here.getGameTime();
 				}
 			});
+			at += beatFor(line);
 		}
-		HerobrineMod.LOGGER.info("addexio introduces himself to {}", to.getName().getString());
+		HerobrineMod.LOGGER.info("addexio introduces himself to {} — {} lines, {} seconds",
+			to.getName().getString(), INTRODUCTION.length, at / 20);
 	}
 
 	/**
