@@ -59,8 +59,14 @@ public abstract class HisFireballMixin {
 		}
 		net.minecraft.core.BlockPos at = net.minecraft.core.BlockPos.containing(hit.getLocation());
 		if (ball.getAttached(com.bloomlet.herobrine.entity.HerobrineEntity.BREACH) != null) {
-			// Aimed at a wall on purpose: the wall goes, whatever it is made of.
-			HisHost.punch(here, at, 1.6);
+			// Aimed at a wall on purpose: the wall goes, whatever it is made of — the
+			// one he AIMED at, not only the block the ball happened to reach. A ball
+			// that hits the player, or stops a block short, still opens the wall.
+			Long aimed = ball.getAttached(com.bloomlet.herobrine.entity.HerobrineEntity.BREACH_AT);
+			if (aimed != null) {
+				HisHost.punch(here, net.minecraft.core.BlockPos.of(aimed), 1.6);
+			}
+			HisHost.punch(here, at, 1.2);
 		}
 		HisHost.dent(here, at);
 	}

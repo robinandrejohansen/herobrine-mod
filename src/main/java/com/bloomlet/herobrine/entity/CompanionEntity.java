@@ -743,6 +743,29 @@ public class CompanionEntity extends PathfinderMob {
 		return this.getAttached(FALLEN_UNTIL) != null;
 	}
 
+	/**
+	 * HE COMES WITH YOU — through the way, or through a command.
+	 *
+	 * The crossing code brought him along; /herobrine boss did not, because it
+	 * teleports the player itself and never touches the way. So the one test route
+	 * everybody actually uses left him standing on the lawn. Anyone within thirty
+	 * blocks who is yours and on his feet crosses, and lands a step to your side.
+	 */
+	public static int crossWith(ServerPlayer player, ServerLevel from, ServerLevel to,
+	                            net.minecraft.world.phys.Vec3 at) {
+		int came = 0;
+		for (CompanionEntity her : from.getEntitiesOfClass(CompanionEntity.class,
+				player.getBoundingBox().inflate(30.0, 16.0, 30.0),
+				h -> h.isAlive() && !h.isFallen() && h.companion() == player)) {
+			her.teleport(new net.minecraft.world.level.portal.TeleportTransition(to,
+				at.add(1.5, 0.0, 1.5), net.minecraft.world.phys.Vec3.ZERO, her.getYRot(), 0.0F,
+				net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+			came++;
+			HerobrineMod.LOGGER.info("addexio crossed with {}", player.getName().getString());
+		}
+		return came;
+	}
+
 	/** Whether this world's Addexio has been killed. Company does not send another. */
 	public static boolean lost(ServerLevel level) {
 		return Boolean.TRUE.equals(level.getServer().overworld().getAttached(LOST));

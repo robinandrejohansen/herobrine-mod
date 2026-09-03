@@ -176,18 +176,9 @@ public class TheWayBlock extends Block {
 		// is level-local, so on the far side he simply did not exist — and the last
 		// chapter of the mod was the one chapter its narrator missed. Anyone within
 		// thirty blocks who is yours, and standing, crosses beside you.
-		for (com.bloomlet.herobrine.entity.CompanionEntity her : here.getEntitiesOfClass(
-				com.bloomlet.herobrine.entity.CompanionEntity.class,
-				player.getBoundingBox().inflate(30.0, 16.0, 30.0),
-				h -> h.isAlive() && !h.isFallen() && h.companion() == player)) {
-			her.teleport(new TeleportTransition(bound,
-				new net.minecraft.world.phys.Vec3(landing.getX() + 1.5, landing.getY(),
-					landing.getZ() + 1.5),
-				net.minecraft.world.phys.Vec3.ZERO, her.getYRot(), 0.0F,
-				TeleportTransition.DO_NOTHING));
-			com.bloomlet.herobrine.HerobrineMod.LOGGER.info("addexio crossed with {}",
-				player.getName().getString());
-		}
+		com.bloomlet.herobrine.entity.CompanionEntity.crossWith(player, here, bound,
+			new net.minecraft.world.phys.Vec3(landing.getX() + 0.5, landing.getY(),
+				landing.getZ() + 0.5));
 		bound.playSound(null, landing, com.bloomlet.herobrine.sound.ModSounds.CROSSING,
 			net.minecraft.sounds.SoundSource.HOSTILE, 1.1F, pitch);
 		HerobrineMod.LOGGER.info("{} went through, to {}", player.getName().getString(),

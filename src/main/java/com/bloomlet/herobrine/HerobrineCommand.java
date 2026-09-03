@@ -464,10 +464,16 @@ public final class HerobrineCommand {
 		his.getChunk(x >> 4, z >> 4);
 		int y = com.bloomlet.herobrine.structure.Ground.topOf(his, x, z) + 1;
 		float yaw = (float) Math.toDegrees(Math.atan2(site.getZ() - z, site.getX() - x)) - 90.0F;
+		ServerLevel from = (ServerLevel) player.level();
+		net.minecraft.world.phys.Vec3 there = new net.minecraft.world.phys.Vec3(x + 0.5, y, z + 0.5);
+		// Addexio first, from the level the player is still standing in.
+		int came = com.bloomlet.herobrine.entity.CompanionEntity.crossWith(player, from, his, there);
 		player.teleport(new net.minecraft.world.level.portal.TeleportTransition(his,
-			new net.minecraft.world.phys.Vec3(x + 0.5, y, z + 0.5),
-			net.minecraft.world.phys.Vec3.ZERO, yaw, 0.0F,
+			there, net.minecraft.world.phys.Vec3.ZERO, yaw, 0.0F,
 			net.minecraft.world.level.portal.TeleportTransition.DO_NOTHING));
+		if (came > 0) {
+			ctx.getSource().sendSuccess(() -> Component.literal("Addexio came with you."), false);
+		}
 
 		ctx.getSource().sendSuccess(() -> Component.literal(
 			"SIEGE. his city and his keep are going up — the keep is 70 blocks ahead"

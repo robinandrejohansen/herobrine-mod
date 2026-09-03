@@ -6139,6 +6139,9 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> BREACH =
 		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.create(HerobrineMod.id("breach"));
+	/** The block he aimed the breach at, so the hole is there even if the ball hits short. */
+	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Long> BREACH_AT =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.create(HerobrineMod.id("breach_at"));
 
 	boolean breach(ServerPlayer target) {
 		if (!(this.level() instanceof ServerLevel here) || !Config.get().breakIn
@@ -6177,6 +6180,7 @@ public class HerobrineEntity extends PathfinderMob {
 			ball.snapTo(eye.x, eye.y, eye.z, this.getYRot(), this.getXRot());
 			ball.shoot(along.x, along.y, along.z, 1.4F, 0.6F);
 			ball.setAttached(BREACH, true);
+			ball.setAttached(BREACH_AT, wall.asLong());
 			here.addFreshEntity(ball);
 		}
 		here.playSound(null, this.getX(), this.getY(), this.getZ(),
