@@ -237,6 +237,12 @@ public final class Config {
 	 * that runs on chat rather than voice will genuinely want the messages.
 	 */
 	public boolean quietDeaths = true;
+	/**
+	 * The dead stay where they fell — mobs killed by somebody lie there for good
+	 * and are looted like chests; a player's body holds everything they carried.
+	 * Herobrine is the one thing that leaves. See Corpses.
+	 */
+	public boolean corpses = true;
 	/** Fog, sky colour, the red rain. Client-side only; changes no spawning. */
 	public boolean atmosphere = true;
 

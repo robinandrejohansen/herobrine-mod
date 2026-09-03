@@ -83,12 +83,31 @@ can be read). From then on he follows, fights, and talks.
 - Enchanted diamond armour, a diamond sword, a shield he raises when something
   swings at him. Twenty hearts.
 - Fights monsters and anything of Herobrine's. Eats when he is hurt and it is
-  quiet; faces what attacks him; sprints to keep up.
+  quiet; faces what attacks him.
+- Follows like a person: keeps five blocks off you, jogs only when you are well
+  ahead, and in a fight lets you range while he has his own. Lose him entirely
+  and he comes back through the trees eight to thirteen blocks off — never onto
+  you.
 - **Only Herobrine can kill him.** Everything else stops at two hearts. When he
   falls he says one thing and lies where he fell, arms out, for thirty minutes.
 - Crosses into his world with you — through the way, or with `/herobrine boss` —
   if he is within thirty blocks when you go. He tells you what he knows of the
   other side, once.
+
+### The dead
+
+Nothing that is killed vanishes. A mob killed by somebody — you, Addexio, him,
+another mob — drops where it stands and lies there for good, and what it would
+have dropped is inside it: right-click the body and it opens like a chest. Kill
+a field of them and the field is full of them afterwards. They keep gravity, so
+mine the floor out from under one and it falls. Natural deaths — falls, lava,
+drowning, a mob farm — drop as they always did.
+
+Players too. Where you die your body lies, in your skin, arms out, and
+everything you carried is in it. Nothing drops, so nothing burns and nothing is
+taken; come back and take it. Herobrine is the one thing that leaves.
+
+Config: `corpses`.
 
 ### His world
 
@@ -210,6 +229,7 @@ decides; a player's own does nothing. The ones worth knowing:
 | `houses` · `town` · `villageDecay` | true | the places, and what happens to villages |
 | `weather` · `longerNights` · `endlessNight` | true | the storm and the night in the later phases |
 | `quietDeaths` | true | no death messages for what he takes |
+| `corpses` | true | the dead stay where they fell and are looted like chests; players' bodies hold their inventory |
 
 ---
 

@@ -113,6 +113,11 @@ public final class ModEntities {
 			.clientTrackingRange(24)
 	);
 
+	/** A player's body. See Corpses. */
+	public static final EntityType<PlayerCorpseEntity> PLAYER_CORPSE = register("player_corpse",
+		EntityType.Builder.of(PlayerCorpseEntity::new, MobCategory.MISC)
+			.sized(0.6F, 1.8F));
+
 	private static <T extends Entity> EntityType<T> register(String name, EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, HerobrineMod.id(name));
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
@@ -121,6 +126,7 @@ public final class ModEntities {
 	/** Called from the mod initialiser; attributes must be registered separately from the type. */
 	public static void register() {
 		FabricDefaultAttributeRegistry.register(HEROBRINE, HerobrineEntity.createAttributes());
+		FabricDefaultAttributeRegistry.register(PLAYER_CORPSE, PlayerCorpseEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(INFECTED, InfectedEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(MIMIC, MimicEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(TURNED, TurnedEntity.createAttributes());

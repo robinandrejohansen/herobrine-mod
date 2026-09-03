@@ -64,6 +64,7 @@ public class HerobrineMod implements ModInitializer {
 		// threw a saved wrath total away for a fortnight. See Wrath.register.
 		com.bloomlet.herobrine.manifest.Hearth.register();
 		com.bloomlet.herobrine.manifest.TheHunt.register();
+		com.bloomlet.herobrine.entity.Corpses.register();
 		Dwellings.register();
 		TheDogKnows.register();
 		ModEntities.register();

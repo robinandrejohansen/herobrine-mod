@@ -93,9 +93,10 @@ public class CompanionEntity extends PathfinderMob {
 	private static final float RECOVERED = 20.0F;
 
 	/** How far she lets you get before she stops strolling and starts running. */
-	private static final double DAWDLES_WITHIN = 4.0;
-	private static final double HURRIES_AFTER = 9.0;
-	private static final double GIVES_UP_AND_APPEARS = 26.0;
+	private static final double DAWDLES_WITHIN = 5.5;      // he does not stand on your heels
+	private static final double HURRIES_AFTER = 14.0;      // a jog, and only when you are well ahead
+	private static final double FIGHTS_APART = 24.0;      // in a fight he lets you range; he has his own
+	private static final double GIVES_UP_AND_APPEARS = 40.0;
 	/** How far he aims at a time while walking in. Inside what pathing solves. */
 	private static final double LEG = 20.0;
 
@@ -957,7 +958,8 @@ public class CompanionEntity extends PathfinderMob {
 			Player with = this.her.companion();
 			return with != null && !with.isSpectator()
 				&& !this.her.willNotGoDown(with)
-				&& this.her.distanceTo(with) > CompanionEntity.DAWDLES_WITHIN;
+				&& this.her.distanceTo(with) > (this.her.getTarget() != null || this.her.fleeing
+					? CompanionEntity.FIGHTS_APART : CompanionEntity.DAWDLES_WITHIN);
 		}
 
 		@Override
@@ -989,7 +991,7 @@ public class CompanionEntity extends PathfinderMob {
 			if (--this.repath > 0) {
 				return;
 			}
-			this.repath = 10;
+			this.repath = 14;                  // fewer corrections; less of the twitch
 
 			// ---- AND OVER A LONG DISTANCE HE WALKS IT IN LEGS.
 			//
@@ -1017,7 +1019,7 @@ public class CompanionEntity extends PathfinderMob {
 			// The catch-up modifier. A sprinting player pulls away from 1.0 no
 			// matter what the base attribute is, because they are also going in a
 			// straight line and she is going round things.
-			double pace = away > HURRIES_AFTER ? 1.4 : 1.0;
+			double pace = away > HURRIES_AFTER ? 1.2 : 0.95;
 			// SPRINTING, NOT JUST FASTER. He moved at 1.4x and looked like a villager
 			// on a treadmill. Sprinting is what a player does and it is what a player
 			// reads: the particles at his feet, and — see hop() — the jumps.
@@ -1038,8 +1040,14 @@ public class CompanionEntity extends PathfinderMob {
 			// A WIDER LOOK THAN THREE BLOCKS. Somebody moving fast is not going to
 			// have solid ground in the seven-block box they happen to be over.
 			for (int tries = 0; tries < 24; tries++) {
+				// INTO THE AREA, NOT ONTO YOU. Eight to thirteen blocks off, any side:
+				// you turn round and he is coming through the trees, not standing in
+				// your face.
+				double angle = roll.nextDouble() * Math.PI * 2.0;
+				double off = 8.0 + roll.nextDouble() * 5.0;
 				BlockPos at = with.blockPosition().offset(
-					roll.nextInt(11) - 5, roll.nextInt(7) - 3, roll.nextInt(11) - 5);
+					(int) Math.round(Math.cos(angle) * off), roll.nextInt(7) - 3,
+					(int) Math.round(Math.sin(angle) * off));
 				if (!here.getBlockState(at).isAir()
 					|| !here.getBlockState(at.above()).isAir()
 					|| !here.getBlockState(at.below()).isSolid()) {
