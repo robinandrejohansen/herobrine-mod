@@ -102,6 +102,18 @@ final class Duel {
 
 	private enum Move { ADVANCE, STRAFE, HOLD }
 
+	// ---- the group
+	private static final int FOCUS_HOLDS = 80;          // four seconds before he changes his mind
+	private static final int SWEEP_REST = 100;
+	private static final double CLEAR_OF_EVERYONE = 4.0;
+	private static final int BLIND_TOO_LONG = 100;
+	private java.util.@Nullable UUID focus;
+	private long focusSince;
+	private int sweepIn;
+	private int castTurn;
+	private int blindFor;
+	private List<Player> watchers = List.of();
+
 	private Move move = Move.ADVANCE;
 	private int decideIn;
 	private int castIn = 40;
@@ -147,11 +159,15 @@ final class Duel {
 			return;
 		}
 		this.him.noStalemate();
+		this.watchers = watchers;
 		if (!this.him.isBound()) {
 			this.idle(here, watchers);
 			return;
 		}
 		this.him.engaged();
+		if (this.sweepIn > 0) {
+			this.sweepIn--;
+		}
 
 		ServerPlayer target = this.pick(watchers);
 		if (target == null) {
@@ -201,6 +217,7 @@ final class Duel {
 			this.gone(here, target, d);
 			return;
 		}
+		this.blindFor = 0;
 		if (d <= CLOSE) {
 			this.close(here, target);
 		} else if (d <= MID) {
@@ -492,6 +509,21 @@ final class Duel {
 		this.him.getNavigation().stop();
 		this.him.face(target);
 
+		// TWO OR MORE ON HIM IS NOT A DUEL. One swing that reaches all of them, and
+		// then he is out of the middle of it — somewhere clear of EVERYONE, not
+		// merely away from the one he was looking at.
+		if (this.crowd() >= 2 && this.sweepIn <= 0) {
+			this.sweepIn = SWEEP_REST;
+			int caught = this.him.sweepThemOff();
+			this.say(here, "swept " + caught + " of them off him");
+			if (this.blinkIn <= 0 && (this.appear(here, target, 5.0, 9.0, false)
+				|| this.appear(here, target, 5.0, 9.0, true))) {
+				this.blinkIn = BLINK_REST_PUNISHED;
+				this.tookRecently = 0;
+				return;
+			}
+		}
+
 		int stands = STANDS_FOR[Math.min(STANDS_FOR.length - 1, this.him.actNow() - 1)];
 		if (this.tookRecently >= stands && this.blinkIn <= 0) {
 			this.tookRecently = 0;
@@ -605,10 +637,25 @@ final class Duel {
 	 * that, the door, on foot.
 	 */
 	private void gone(ServerLevel here, ServerPlayer target, double d) {
+		this.blindFor++;
 		if (this.blinkIn <= 0 && d > TOO_NEAR_TO_APPEAR) {
-			if (this.toARoom(here, target, 12.0, "came through the wall")
-				|| this.him.beside(target)) {
+			// A ROOM NEAR THEM, UNLESS THAT KEEPS NOT WORKING. Somebody on a wall top or
+			// in a corridor with no room within twelve blocks that can see them had him
+			// hopping rooms every three seconds for a minute — "came through the wall",
+			// twenty-five times, never arriving. Five seconds blind and he stops
+			// guessing rooms and goes to where they are.
+			boolean stubborn = this.blindFor > BLIND_TOO_LONG;
+			boolean moved = stubborn
+				? (this.him.beside(target) || this.him.upTo(target)
+					|| this.toARoom(here, target, 12.0, "came through the wall"))
+				: (this.toARoom(here, target, 12.0, "came through the wall")
+					|| this.him.beside(target));
+			if (moved) {
 				this.blinkIn = BLINK_REST;
+				if (stubborn) {
+					this.say(here, "stopped guessing rooms and went to them");
+					this.blindFor = 0;
+				}
 				return;
 			}
 		}
@@ -629,6 +676,15 @@ final class Duel {
 		}
 		int act = this.him.actNow();
 		this.castIn = Math.max(26, 70 - act * 18) + this.him.getRandom().nextInt(20);
+		// AGAINST A GROUP, EVERY OTHER THROW GOES TO THE ONE HANGING BACK. The archer
+		// at twenty blocks was the safest person in the room; now half of what he
+		// throws is theirs, and the melee player in front of him gets the other half.
+		if (this.party() >= 2 && ++this.castTurn % 2 == 0) {
+			ServerPlayer far = this.farthestSeen(target);
+			if (far != null) {
+				target = far;
+			}
+		}
 		int roll = this.him.getRandom().nextInt(100);
 		switch (act) {
 			case 1 -> {
@@ -698,7 +754,7 @@ final class Duel {
 				continue;
 			}
 			double d = Math.sqrt(room.at().distToCenterSqr(target.position()));
-			if (d < min || d > max) {
+			if (d < min || d > max || !this.clearOfEveryone(room.at())) {
 				continue;
 			}
 			Vec3 toSpot = new Vec3(room.at().getX() + 0.5 - target.getX(),
@@ -761,25 +817,109 @@ final class Duel {
 		}
 	}
 
+	/**
+	 * WHO HE IS ON, AND HE STAYS ON THEM.
+	 *
+	 * Against one player this is "the nearest". Against four it used to be "whoever
+	 * hit him last", re-decided every tick, which with four people hitting him is a
+	 * man spinning on the spot. Now a focus is held for four seconds unless they die
+	 * or run past forty blocks — and from the second act, with a group, the new
+	 * focus is THE ONE ON THEIR OWN: the player farthest from any other player. A
+	 * group that stays together is a group he cannot pick apart, and one that
+	 * spreads out to flank him hands him the straggler. Either is a decision they
+	 * can see him make.
+	 */
 	private @Nullable ServerPlayer pick(List<Player> watchers) {
-		ServerPlayer best = null;
-		double bestAt = Double.MAX_VALUE;
-		java.util.UUID struckBy = this.him.lastStruckBy();
+		long now = this.him.level().getGameTime();
+		ServerPlayer held = null;
+		List<ServerPlayer> live = new ArrayList<>();
 		for (Player who : watchers) {
-			if (!(who instanceof ServerPlayer p) || !p.isAlive() || p.isSpectator()) {
-				continue;
+			if (who instanceof ServerPlayer p && p.isAlive() && !p.isSpectator()) {
+				live.add(p);
+				if (this.focus != null && this.focus.equals(p.getUUID())) {
+					held = p;
+				}
 			}
-			double at = this.him.distanceTo(p);
-			// Whoever hit him last has his attention, unless they have run off.
-			if (struckBy != null && struckBy.equals(p.getUUID()) && at < 40.0) {
-				at -= 20.0;
+		}
+		if (live.isEmpty()) {
+			return null;
+		}
+		if (held != null && now - this.focusSince < FOCUS_HOLDS && this.him.distanceTo(held) < 40.0) {
+			return held;
+		}
+		ServerPlayer best = null;
+		double bestScore = Double.MAX_VALUE;
+		java.util.UUID struckBy = this.him.lastStruckBy();
+		boolean straggler = live.size() >= 2 && this.him.actNow() >= 2;
+		for (ServerPlayer p : live) {
+			double score;
+			if (straggler) {
+				double lonely = Double.MAX_VALUE;
+				for (ServerPlayer other : live) {
+					if (other != p) {
+						lonely = Math.min(lonely, p.distanceTo(other));
+					}
+				}
+				score = -lonely + (this.him.hasLineOfSight(p) ? 0.0 : 12.0);
+			} else {
+				score = this.him.distanceTo(p);
+				if (struckBy != null && struckBy.equals(p.getUUID()) && score < 40.0) {
+					score -= 20.0;
+				}
 			}
-			if (at < bestAt) {
-				bestAt = at;
+			if (score < bestScore) {
+				bestScore = score;
 				best = p;
 			}
 		}
+		if (best != null && (this.focus == null || !this.focus.equals(best.getUUID()))) {
+			this.focus = best.getUUID();
+			this.focusSince = now;
+			if (live.size() >= 2 && this.him.level() instanceof ServerLevel here) {
+				this.say(here, "turned on " + best.getName().getString()
+					+ (straggler ? " — the one on their own" : ""));
+			}
+		}
 		return best;
+	}
+
+	/** Players at arm's length of him, right now. */
+	private int crowd() {
+		int n = 0;
+		for (Player who : this.watchers) {
+			if (who.isAlive() && !who.isSpectator() && this.him.distanceTo(who) <= CLOSE + 0.6) {
+				n++;
+			}
+		}
+		return n;
+	}
+
+	/** Distinct players who have struck him lately — the size of the party he is fighting. */
+	private int party() {
+		return this.him.partyNow();
+	}
+
+	private @Nullable ServerPlayer farthestSeen(ServerPlayer not) {
+		ServerPlayer far = null;
+		double farAt = 0.0;
+		for (Player who : this.watchers) {
+			if (who instanceof ServerPlayer p && p != not && p.isAlive() && !p.isSpectator()
+				&& this.him.hasLineOfSight(p) && this.him.distanceTo(p) > farAt) {
+				farAt = this.him.distanceTo(p);
+				far = p;
+			}
+		}
+		return far;
+	}
+
+	private boolean clearOfEveryone(BlockPos at) {
+		for (Player who : this.watchers) {
+			if (who.isAlive() && !who.isSpectator()
+				&& at.distToCenterSqr(who.position()) < CLEAR_OF_EVERYONE * CLEAR_OF_EVERYONE) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private double above(Player target) {
@@ -794,7 +934,12 @@ final class Duel {
 	}
 
 	private int headroomHere(ServerLevel here) {
-		BlockPos at = this.him.blockPosition();
+		// FROM HALF A BLOCK UP, NOT FROM HIS FEET. Standing on a bottom slab his feet
+		// are at y+0.5 and blockPosition() is the slab itself, which blocks motion —
+		// headroom zero, "too tall for this room", blink, land on another slab. The
+		// first playtest did that loop at act one. Half a block up is the first block
+		// his body is actually in, on a slab or a full block alike.
+		BlockPos at = BlockPos.containing(this.him.getX(), this.him.getY() + 0.5, this.him.getZ());
 		// solid(), not isAir(): a lantern on a chain is not a ceiling, and a torch
 		// over his head is not a reason to leave the room.
 		for (int up = 0; up < 6; up++) {
@@ -823,7 +968,7 @@ final class Duel {
 				continue;
 			}
 			double d = Math.sqrt(room.at().distToCenterSqr(target.position()));
-			if (d > within || d < TOO_NEAR_TO_APPEAR + 1.0) {
+			if (d > within || d < TOO_NEAR_TO_APPEAR + 1.0 || !this.clearOfEveryone(room.at())) {
 				continue;
 			}
 			fit.add(room);

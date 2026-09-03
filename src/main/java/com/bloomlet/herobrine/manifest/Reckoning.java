@@ -67,14 +67,25 @@ public final class Reckoning {
 		return Boolean.TRUE.equals(his.getAttached(BOUND));
 	}
 
-	public static void record(ServerLevel his, int hits, boolean bound) {
+	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Integer> PARTY =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.createPersistent(
+			com.bloomlet.herobrine.HerobrineMod.id("reckoning_party"),
+			com.mojang.serialization.Codec.INT);
+
+	public static int party(ServerLevel his) {
+		return his.getAttachedOrElse(PARTY, 1);
+	}
+
+	public static void record(ServerLevel his, int hits, boolean bound, int party) {
 		his.setAttached(HITS, hits);
 		his.setAttached(BOUND, bound);
+		his.setAttached(PARTY, party);
 	}
 
 	public static void clear(ServerLevel his) {
 		his.removeAttached(HITS);
 		his.removeAttached(BOUND);
+		his.removeAttached(PARTY);
 	}
 	private Reckoning() {}
 

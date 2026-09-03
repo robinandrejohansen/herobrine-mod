@@ -2790,19 +2790,31 @@ public class HerobrineEntity extends PathfinderMob {
 		return made;
 	}
 
+	private static final String[] ACT_NAMES = { "Herobrine", "Herobrine · II", "Herobrine · III" };
+	private int barAct;
+
 	private void showBar(java.util.List<Player> watchers) {
 		if (this.bar == null) {
 			return;
 		}
-		if (!this.hunting || this.brokenOff) {
+		// THE BAR IS THE DUEL'S NOW. It was still wired to the hunt's damage ledger,
+		// which nothing writes any more, so it sat at full for seventy blows and told
+		// the one lie a boss bar must never tell. Blows taken of blows needed, and
+		// the act in its name — he grows, and the bar says so first.
+		if (!this.bound || !this.hisGround()) {
 			if (!this.bar.getPlayers().isEmpty()) {
 				this.bar.removeAllPlayers();
 			}
 			return;
 		}
-		double enough = Math.max(1.0, Config.get().damageToBreakOff);
-		this.bar.setProgress(
-			(float) net.minecraft.util.Mth.clamp(1.0 - this.huntDamage / enough, 0.0, 1.0));
+		int act = this.act();
+		if (act != this.barAct) {
+			this.barAct = act;
+			this.bar.setName(net.minecraft.network.chat.Component.literal(
+				ACT_NAMES[Math.min(ACT_NAMES.length - 1, act - 1)]));
+		}
+		this.bar.setProgress((float) net.minecraft.util.Mth.clamp(
+			1.0 - (double) this.hits / this.blowsNeeded(), 0.0, 1.0));
 		for (Player watcher : watchers) {
 			if (watcher instanceof ServerPlayer near && !this.bar.getPlayers().contains(near)) {
 				this.bar.addPlayer(near);
@@ -2976,7 +2988,42 @@ public class HerobrineEntity extends PathfinderMob {
 	 * Derived now, so the shape survives any number somebody puts in the config.
 	 */
 	private int act() {
-		return Math.min(3, 1 + this.hits / Math.max(1, Config.get().blowsToKill / 3));
+		return Math.min(3, 1 + this.hits / Math.max(1, this.blowsNeeded() / 3));
+	}
+
+	/**
+	 * THE FIGHT IS LONGER FOR A GROUP, AND IT NEVER GETS SHORTER MID-WAY.
+	 *
+	 * Seventy blows is seventy blows: four people land them in a quarter of the
+	 * time one does, and a fight tuned to be five minutes alone was seventy
+	 * seconds for a party. So the count scales with the PEAK party — the most
+	 * distinct players who have struck him inside a minute of each other — by half
+	 * again per extra hand, capped at three times. Peak, not current, so a player
+	 * dying or leaving never moves the acts backwards; and kept on the level with
+	 * the count, so a save does not shrink the fight either.
+	 *
+	 *     1 player    70      3 players   140
+	 *     2 players  105      4+ players  175 .. 210 (cap)
+	 */
+	private static final long PARTY_WINDOW = 1200L;
+	private static final double PER_EXTRA_HAND = 0.5;
+	private static final double PARTY_CAP = 3.0;
+	private final java.util.Map<java.util.UUID, Long> strikers = new java.util.HashMap<>();
+	private int partyPeak = 1;
+
+	private int blowsNeeded() {
+		double scale = Math.min(PARTY_CAP, 1.0 + PER_EXTRA_HAND * (this.partyPeak - 1));
+		return Math.max(1, (int) Math.round(Config.get().blowsToKill * scale));
+	}
+
+	private void noteStriker(ServerPlayer striker, long now) {
+		this.strikers.put(striker.getUUID(), now);
+		this.strikers.values().removeIf(at -> now - at > PARTY_WINDOW);
+		if (this.strikers.size() > this.partyPeak) {
+			this.partyPeak = this.strikers.size();
+			HerobrineMod.LOGGER.info("duel: {} of them now — {} blows to the end",
+				this.partyPeak, this.blowsNeeded());
+		}
 	}
 
 	/**
@@ -5036,8 +5083,9 @@ public class HerobrineEntity extends PathfinderMob {
 		// has two completely different causes — he never got in range, or he
 		// swung and the damage was refused (creative, invulnerable, a totem) —
 		// and they are indistinguishable from the outside.
-		HerobrineMod.LOGGER.info("hunt: swung at {} blocks from {}, landed={}",
-			String.format("%.1f", reach), player.getName().getString(), landed);
+		HerobrineMod.LOGGER.info("duel: swung at {} blocks from {}, landed={}{}",
+			String.format("%.1f", reach), player.getName().getString(), landed,
+			player.isCreative() ? " (creative — nothing can land)" : "");
 	}
 
 
@@ -5569,9 +5617,10 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 		this.hits = had;
 		this.bound = was;
+		this.partyPeak = Math.max(1, com.bloomlet.herobrine.manifest.Reckoning.party(his));
 		this.hunting = true;
 		this.wearTheAct();
-		this.setHealth(Math.max(1.0F, Config.get().blowsToKill - this.hits));
+		this.setHealth(Math.max(1.0F, this.blowsNeeded() - this.hits));
 		HerobrineMod.LOGGER.info("he remembers: {} blows taken, bound={}", had, was);
 	}
 
@@ -5589,11 +5638,13 @@ public class HerobrineEntity extends PathfinderMob {
 		int was = this.act();
 		this.hits++;
 		this.lastStruckBy = striker.getUUID();
+		this.noteStriker(striker, level.getGameTime());
 		// THE FIRST BLOW TAKES THE SKY FROM HIM. Only in his castle — the overworld
 		// siege is still the hunt's fight, and the hunt needs the air for walls.
 		if (this.hisGround()) {
 			this.bind();
-			com.bloomlet.herobrine.manifest.Reckoning.record(level, this.hits, this.bound);
+			com.bloomlet.herobrine.manifest.Reckoning.record(level, this.hits, this.bound,
+				this.partyPeak);
 		}
 		this.hunting = true;      // whatever he was doing, he is doing this now
 		this.relenting = false;
@@ -5615,19 +5666,19 @@ public class HerobrineEntity extends PathfinderMob {
 		// netherite sword still feels different from a fist in the last fight.
 		this.stagger(striker, damage);
 
-		if (this.hits >= Config.get().blowsToKill) {
+		if (this.hits >= this.blowsNeeded()) {
 			com.bloomlet.herobrine.manifest.Reckoning.clear(level);
 			super.hurtServer(level, source, Float.MAX_VALUE);
 			return true;
 		}
 		this.wearTheAct();
-		if (this.hits == Math.max(1, Config.get().blowsToKill / 3)) {
+		if (this.hits == Math.max(1, this.blowsNeeded() / 3)) {
 			com.bloomlet.herobrine.manifest.Reckoning.theWarning(level, striker, this);
 		}
 		// One point of the health bar per blow, which is why MAX_HEALTH is the
 		// hit count rather than a number of hearts. The bar is the honest
 		// progress meter and it is the only one the player gets.
-		this.setHealth(Math.max(1.0F, Config.get().blowsToKill - this.hits));
+		this.setHealth(Math.max(1.0F, this.blowsNeeded() - this.hits));
 		this.hurtTime = 10;
 		this.hurtDuration = 10;
 		return true;
@@ -5821,6 +5872,52 @@ public class HerobrineEntity extends PathfinderMob {
 		this.strike(player);
 	}
 
+	/** Distinct players who have struck him inside the last minute; never below one. */
+	int partyNow() {
+		long now = this.level().getGameTime();
+		this.strikers.values().removeIf(at -> now - at > PARTY_WINDOW);
+		return Math.max(1, this.strikers.size());
+	}
+
+	/**
+	 * THE SWEEP. Two or more of them at arm's length is not a duel, it is a mob
+	 * holding him down — and the answer is one swing that reaches all of them:
+	 * half a blow's damage to everyone within three and a half blocks, and a shove
+	 * apart. It is what makes standing together on him a mistake rather than a
+	 * strategy. Returns how many it caught.
+	 */
+	private static final double SWEEP_ARC = 3.5;
+
+	int sweepThemOff() {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return 0;
+		}
+		this.swipe();
+		int caught = 0;
+		net.minecraft.world.damagesource.DamageSource source =
+			new net.minecraft.world.damagesource.DamageSource(here.registryAccess()
+				.lookupOrThrow(net.minecraft.core.registries.Registries.DAMAGE_TYPE)
+				.getOrThrow(RECKONING), this);
+		for (ServerPlayer near : here.getEntitiesOfClass(ServerPlayer.class,
+				this.getBoundingBox().inflate(SWEEP_ARC), p -> p.isAlive() && !p.isSpectator())) {
+			if (near.hurtServer(here, source, RECKONING_DAMAGE * 0.5F)) {
+				caught++;
+			}
+			Vec3 push = new Vec3(near.getX() - this.getX(), 0.0, near.getZ() - this.getZ());
+			if (push.lengthSqr() < 1.0E-4) {
+				push = near.getViewVector(1.0F).scale(-1.0);
+			}
+			push = push.normalize().scale(1.2);
+			near.setDeltaMovement(push.x, 0.35, push.z);
+			near.hurtMarked = true;
+		}
+		here.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK,
+			this.getX(), this.getY() + 1.2, this.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.PLAYER_ATTACK_SWEEP, this.getSoundSource(), 1.3F, 0.6F);
+		return caught;
+	}
+
 	void fire(ServerLevel here, ServerPlayer target, int act) {
 		this.throwFire(here, target, act);
 	}
@@ -5879,7 +5976,7 @@ public class HerobrineEntity extends PathfinderMob {
 		this.hunting = true;
 		this.land();
 		if (this.level() instanceof ServerLevel his && this.hisGround()) {
-			com.bloomlet.herobrine.manifest.Reckoning.record(his, this.hits, true);
+			com.bloomlet.herobrine.manifest.Reckoning.record(his, this.hits, true, this.partyPeak);
 		}
 		HerobrineMod.LOGGER.info("the first blow — his feet are on the ground for the rest of this");
 	}
