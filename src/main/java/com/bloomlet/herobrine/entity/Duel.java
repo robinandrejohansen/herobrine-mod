@@ -115,6 +115,7 @@ final class Duel {
 	private int dealIn;
 	private int breachIn;
 	private int feintIn;
+	private int madeRoomIn;
 	private int growlIn = 40;
 	private int heartIn = 200;
 	private int idleHeartIn = 260;
@@ -248,7 +249,19 @@ final class Duel {
 
 		// HE HAS OUTGROWN THE ROOM. Act three is 3.06 blocks; a three-block ceiling
 		// pins him in the floor. The fight moves to somewhere tall.
-		if (this.blinkIn <= 0 && this.headroomHere(here) < this.needs()) {
+		if (this.madeRoomIn > 0) {
+			this.madeRoomIn--;             // the ceiling is still coming down; do not leave
+		} else if (this.blinkIn <= 0 && this.headroomHere(here) < this.needs()) {
+			// You are here and he does not fit: he makes the room fit, rather than
+			// leaving you for one that does. Only when you are actually with him —
+			// blowing the roof off an empty room is noise.
+			if (this.breachIn <= 0 && this.him.distanceTo(target) <= 8.0
+				&& this.him.breachCeiling(this.needs())) {
+				this.breachIn = 60;
+				this.madeRoomIn = 40;
+				this.say(here, "made room");
+				return;
+			}
 			if (this.toARoom(here, target, 30.0, "too tall for this room now")) {
 				return;
 			}

@@ -4614,7 +4614,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// seconds tells nobody anything, and it buried every swing in the log.
 		if (this.age > this.saidFlying + 200) {
 			this.saidFlying = this.age;
-			HerobrineMod.LOGGER.info("hunt: going over");
+			HerobrineMod.LOGGER.info("duel: going over");
 		}
 	}
 
@@ -4665,7 +4665,7 @@ public class HerobrineEntity extends PathfinderMob {
 				quarry.getZ() - at.getZ(), quarry.getX() - at.getX())
 				* (180.0 / Math.PI)) - 90.0F;
 			this.blink(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, yaw);
-			HerobrineMod.LOGGER.info("hunt: could not reach {} the honest way — "
+			HerobrineMod.LOGGER.info("duel: could not reach {} the honest way — "
 				+ "went to them instead", quarry.getName().getString());
 			return true;
 		}
@@ -4831,7 +4831,7 @@ public class HerobrineEntity extends PathfinderMob {
 		this.stopBreaking(here);
 		this.blink(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, this.getYRot());
 		this.lastDistance = Double.MAX_VALUE;
-		HerobrineMod.LOGGER.info("hunt: beaten on foot — he arrives {} blocks from {}",
+		HerobrineMod.LOGGER.info("duel: beaten on foot — he arrives {} blocks from {}",
 			(int) Math.sqrt(at.distSqr(theirs.blockPosition())),
 			theirs.getName().getString());
 		return true;
@@ -6266,6 +6266,51 @@ public class HerobrineEntity extends PathfinderMob {
 			SoundEvents.BLAZE_SHOOT, this.getSoundSource(), 1.6F, 0.5F);
 		HerobrineMod.LOGGER.info("duel: {} is in a hole with {} of nine sides shut — fire at [{}, {}, {}]",
 			target.getName().getString(), solid.size(), wall.getX(), wall.getY(), wall.getZ());
+		return true;
+	}
+
+	/**
+	 * TOO TALL FOR THE ROOM, SO THE ROOM GOES.
+	 *
+	 * The third-act log was "too tall for this room now" a dozen times: he lands
+	 * beside you in a three-block room, does not fit, leaves for a tall one, you
+	 * do not follow, he appears in front of you again, does not fit, leaves. A
+	 * fight with a hole in the middle of it. Instead: two breach balls straight
+	 * up into the ceiling over his head. The lid comes off, he fits, he stays.
+	 */
+	boolean breachCeiling(int needs) {
+		if (!(this.level() instanceof ServerLevel here) || !Config.get().breakIn
+			|| !here.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
+			return false;
+		}
+		BlockPos head = BlockPos.containing(this.getEyePosition());
+		BlockPos lid = null;
+		for (int dy = 1; dy <= needs + 1; dy++) {
+			BlockPos at = head.above(dy);
+			if (here.getBlockState(at).blocksMotion()) {
+				lid = at;
+				break;
+			}
+		}
+		if (lid == null) {
+			return false;
+		}
+		this.swipe();
+		Vec3 from = this.getEyePosition().add(0.0, 0.6, 0.0);
+		for (int i = 0; i < 2; i++) {
+			net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball ball =
+				new net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball(
+					here, this, new Vec3(0.0, 1.0, 0.0), 4);
+			ball.snapTo(from.x, from.y, from.z, this.getYRot(), -90.0F);
+			ball.shoot(0.0, 1.0, 0.0, 1.2F, 0.0F);
+			ball.setAttached(BREACH, true);
+			ball.setAttached(BREACH_AT, lid.asLong());
+			here.addFreshEntity(ball);
+		}
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.BLAZE_SHOOT, this.getSoundSource(), 1.6F, 0.45F);
+		HerobrineMod.LOGGER.info("duel: too tall for this room — the ceiling at [{}, {}, {}] goes",
+			lid.getX(), lid.getY(), lid.getZ());
 		return true;
 	}
 
