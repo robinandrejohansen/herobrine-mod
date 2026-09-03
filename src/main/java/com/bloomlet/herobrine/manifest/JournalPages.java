@@ -7,7 +7,7 @@ import com.bloomlet.herobrine.wrath.Phase;
  *
  * The only thing in the mod that carries the story. Signs are six words and
  * cannot; without these, the brother, the seal and the thing under the world
- * exist solely in LORE.md and never reach a player.
+ * exist solely in README.md and never reach a player.
  *
  * It works without breaking the "never explain" rule because the author is
  * unreliable and the pages are incomplete. He is not writing a record for

@@ -41,7 +41,7 @@ import net.minecraft.world.phys.Vec3;
  * looks like something happened here.
  *
  * Everything placed is ordinary and minable, and nothing is placed where the
- * player has built (DESIGN.md §9). He raises ruins at the edge of your world,
+ * player has built (README.md). He raises ruins at the edge of your world,
  * never in the middle of it.
  */
 public final class Ruins {
@@ -129,7 +129,7 @@ public final class Ruins {
 	/**
 	 * A cairn with a sign, and the name worn off.
 	 *
-	 * Per LORE.md the name has been scratched out so long that the scratching
+	 * Per README.md the name has been scratched out so long that the scratching
 	 * is the only legible part, so the sign reads as damage rather than as a
 	 * message. It is the only ruin that says anything at all, and it does not
 	 * say much.

@@ -13,7 +13,7 @@ import net.fabricmc.loader.api.FabricLoader;
 /**
  * Everything in this mod, and a switch for it.
  *
- * DESIGN.md §9 has asked for this from the beginning and it was the last thing
+ * README.md has asked for this from the beginning and it was the last thing
  * standing between this being a thing one person plays and a thing anybody can.
  * Some people want the stare and none of the theft. Some people want the whole
  * of it except the part where he takes a wall out. A mod that answers "no" to

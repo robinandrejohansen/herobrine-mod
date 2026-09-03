@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * Telling the player's world from the world's world.
  *
  * A ruin that appears inside someone's base is not frightening, it is
- * vandalism, and DESIGN.md §9 rules it out. But we cannot ask the game which
+ * vandalism, and README.md rules it out. But we cannot ask the game which
  * blocks a player placed — Minecraft does not record that — so this uses the
  * next best thing: whether a block is one that only turns up because somebody
  * put it there.

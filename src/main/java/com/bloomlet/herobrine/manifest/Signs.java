@@ -32,7 +32,7 @@ import net.minecraft.world.phys.Vec3;
  * with. A torch on the floor might have fallen; four words on a wall did not
  * get there by themselves. This is where the player stops being able to talk
  * themselves out of it, which is exactly why it belongs at TRESPASSER and not
- * before — spend deniability late (DESIGN.md §2).
+ * before — spend deniability late (README.md).
  *
  * Placement rules, all of which matter:
  *
@@ -46,7 +46,7 @@ import net.minecraft.world.phys.Vec3;
  *   NEVER MORE THAN ONE. A wall of them is funny. One in a dead end is not.
  *
  * The sign is a normal oak sign and can be broken and kept, which matters
- * twice over: it obeys the anti-frustration rule, and per DESIGN.md §7 a
+ * twice over: it obeys the anti-frustration rule, and per README.md a
  * broken sign is one of the Effigy reagents. Tearing his message down is both
  * the biggest single source of wrath and the thing that eventually lets you
  * end him.
@@ -73,7 +73,7 @@ public final class Signs {
 				return;
 			}
 			if (entity != null && Boolean.TRUE.equals(entity.getAttached(HIS))) {
-				// Per LORE.md this is the single biggest riser: tearing down
+				// Per README.md this is the single biggest riser: tearing down
 				// his message is what summons the next thing. The player's own
 				// reaction drives the escalation, which is a far better engine
 				// than a timer.

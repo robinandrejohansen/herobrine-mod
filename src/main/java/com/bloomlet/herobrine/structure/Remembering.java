@@ -74,7 +74,7 @@ import net.minecraft.world.level.block.state.properties.Half;
  * A player who has been to the homestead will get it in the chest and a player
  * who has not will walk past four odd little houses on a floor.
  *
- * The violet is only at the top. Per LORE.md the colour belongs to the THING and
+ * The violet is only at the top. Per README.md the colour belongs to the THING and
  * not to him, so it appears in exactly one room — the highest, the furthest from
  * the table, the one where there is the least of him left.
  */
@@ -190,7 +190,7 @@ public final class Remembering {
 	 * been four words aimed outward. This is the inside of his head and he does
 	 * not know anybody is reading.
 	 *
-	 * LORE.md: "He copies you because he is trying to remember himself." The
+	 * README.md: "He copies you because he is trying to remember himself." The
 	 * mimicry, the skin-wearing, the standing in somebody's base facing a wall —
 	 * this room is the note those events were footnotes to.
 	 *

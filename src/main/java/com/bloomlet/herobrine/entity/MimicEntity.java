@@ -35,7 +35,7 @@ import net.minecraft.world.level.Level;
  * a time and can be talked down afterwards. This one cannot be talked down,
  * because the only way to resolve it is to ask the group, and asking the group
  * spreads it. It attacks the reason people are logged in at all — the other
- * people — and per DESIGN.md §0 that is the whole of what he is trying to take.
+ * people — and per README.md that is the whole of what he is trying to take.
  *
  * ALMOST LIKE A PLAYER, AND EXACTLY ONE THING WRONG. This is the entire design
  * and both halves are load-bearing:
@@ -479,7 +479,7 @@ public class MimicEntity extends PathfinderMob {
 	 *
 	 * AND ONLY PLAIN ROCK, from a whitelist. Not ores, not anything crafted,
 	 * nothing anybody put anywhere. This is the one system in the mod that
-	 * removes blocks near a player without being asked to, and DESIGN.md's rule
+	 * removes blocks near a player without being asked to, and README.md's rule
 	 * about the player's world versus the world's world applies hardest here:
 	 * mining a metre of stone in a cave costs nobody anything, and a fake player
 	 * who chews through somebody's wall has stopped being a scare and become the

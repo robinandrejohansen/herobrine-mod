@@ -18,7 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Phase 0 content. The cheapest things in the whole mod and, per DESIGN.md,
+ * Phase 0 content. The cheapest things in the whole mod and, per README.md,
  * the most important.
  *
  * Every trace here must have a mundane explanation. A torch burned out. You

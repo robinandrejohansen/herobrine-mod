@@ -167,7 +167,7 @@ public class HerobrineEntity extends PathfinderMob {
 	 *
 	 * Walking at him used to be free: he dissolved, you felt powerful, and the
 	 * fear was spent. Now closing the distance is read as defiance and raises
-	 * wrath sharply — which per LORE.md is precisely the thing that thins the
+	 * wrath sharply — which per README.md is precisely the thing that thins the
 	 * seal. Players will chase him; the design should make chasing him the
 	 * mistake rather than the solution, and it should teach that through
 	 * consequence rather than a message.
@@ -364,7 +364,7 @@ public class HerobrineEntity extends PathfinderMob {
 	 * A door is not an answer to this any more.
 	 *
 	 * This is the one place the mod knowingly breaks its own rule about never
-	 * touching a player's build (DESIGN.md §9), and the exception is narrow and
+	 * touching a player's build (README.md), and the exception is narrow and
 	 * deliberate: shelter is the correct answer to almost everything he does,
 	 * and at HUNTER it has to stop being one. A pursuer that gives up at a
 	 * wooden door is not a pursuer, it is weather.
@@ -4010,7 +4010,7 @@ public class HerobrineEntity extends PathfinderMob {
 	 * dropped, and can be put straight back.
 	 *
 	 * Capped at three, and only ever torches. Anything that strands a player
-	 * without a pickaxe or destroys a build is out of bounds (DESIGN.md §9).
+	 * without a pickaxe or destroys a build is out of bounds (README.md).
 	 */
 	private void takeTheLight(ServerLevel server, Player player) {
 		if (!Config.get().takeTheLight) {

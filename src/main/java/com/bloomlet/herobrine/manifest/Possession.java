@@ -74,7 +74,7 @@ public final class Possession {
 	 * oscillates between a ring around each, and the catch-up can fire twice
 	 * and drag it toward whichever player happened to be iterated last.
 	 *
-	 * It is also the right design and not merely the fix. DESIGN.md's
+	 * It is also the right design and not merely the fix. README.md's
 	 * multiplayer rule is that the seal is shared but the ATTENTION is
 	 * personal, and nothing carries that better than this: your animals follow
 	 * you and walk straight past your friend as though they were furniture. To
@@ -343,7 +343,7 @@ public final class Possession {
 	 * technical one. A wolf you tamed, named and walked halfway across a world
 	 * with is the single most loaded thing he could take, and taking it would
 	 * be the most effective scare in the mod — which is exactly why it is out.
-	 * DESIGN.md §9 says he never touches what the player has built or earned,
+	 * README.md says he never touches what the player has built or earned,
 	 * because a haunting you cannot opt out of stops being a horror and starts
 	 * being griefing, and the player has no counter-play against losing a pet.
 	 *

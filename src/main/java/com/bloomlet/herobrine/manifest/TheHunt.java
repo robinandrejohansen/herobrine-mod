@@ -75,7 +75,7 @@ import net.minecraft.world.phys.Vec3;
  *
  * Every one of these refuses itself near anything the player built that is not
  * on the list. He takes the windows and the lights and the field; he does not
- * take the walls, the chests or the roof. See DESIGN.md §9 — this bends the
+ * take the walls, the chests or the roof. See README.md — this bends the
  * rule in the same direction the break-in already does, and stops in the same
  * place.
  */

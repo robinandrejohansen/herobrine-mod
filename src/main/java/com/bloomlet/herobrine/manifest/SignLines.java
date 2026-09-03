@@ -15,7 +15,7 @@ import net.minecraft.util.RandomSource;
 /**
  * What he writes.
  *
- * Voice rules from LORE.md, and they are not decoration — they are what keeps
+ * Voice rules from README.md, and they are not decoration — they are what keeps
  * this from reading like a horror-game cliché generator:
  *
  *   lowercase, no full stops   punctuation reads as composed, and he is not
@@ -181,7 +181,7 @@ public final class SignLines {
 	/**
 	 * Whose grave it is.
 	 *
-	 * Early ones are anonymous, and the anonymity is the point: per LORE.md
+	 * Early ones are anonymous, and the anonymity is the point: per README.md
 	 * the name has been scratched out so long that the scratching is the only
 	 * legible part. A worn marker asks a question; a named one answers it.
 	 *

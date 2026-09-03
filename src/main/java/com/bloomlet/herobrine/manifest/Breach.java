@@ -39,7 +39,7 @@ import net.minecraft.world.phys.Vec3;
  *
  * The whole feature is built around one restraint: GLASS ONLY. Not walls, not
  * doors, not floors. That is not timidity, it is what keeps this on the right
- * side of DESIGN.md §9 — a pane costs a shovelful of sand and thirty seconds
+ * side of README.md — a pane costs a shovelful of sand and thirty seconds
  * to replace, so losing one is a fright rather than a loss. Letting them chew
  * through stone would mean coming home to a demolished base with nothing to be
  * done about it, and no scare is worth that.

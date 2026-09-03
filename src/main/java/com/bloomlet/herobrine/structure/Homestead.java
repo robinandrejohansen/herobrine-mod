@@ -593,7 +593,7 @@ public final class Homestead {
 	 * What is written where.
 	 *
 	 * The family write like people. He writes in the sealed room, in the
-	 * lowercase-no-punctuation voice LORE.md gives him, and the change of hand
+	 * lowercase-no-punctuation voice README.md gives him, and the change of hand
 	 * halfway through the building is the loudest thing in it — nobody has to
 	 * be told that two different people wrote these.
 	 */

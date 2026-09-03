@@ -1,7 +1,7 @@
 package com.bloomlet.herobrine.wrath;
 
 /**
- * How far along the haunting is. See DESIGN.md §3.
+ * How far along the haunting is. See README.md
  *
  * Phases ADD to what he can do; they never replace it. A phase 5 world can
  * still get a silent phase 1 stare, and should — escalation that only ramps

@@ -39,7 +39,7 @@ import net.minecraft.world.phys.Vec3;
  * Pages arrive IN ORDER but gated by phase, so the arc always makes sense
  * while still leaving gaps: a player at TRESPASSER can reach page six and no
  * further, no matter how many they find. What they cannot yet reach, they
- * invent — and per LORE.md their invention is better than ours.
+ * invent — and per README.md their invention is better than ours.
  *
  * Placed into a chest that was already there if one is near, and left on the
  * floor otherwise. A page inside a mineshaft chest reads as something that has
@@ -68,7 +68,7 @@ public final class Journal {
 	 * would put two copies of page three in the same world, which breaks the
 	 * only guarantee this system makes.
 	 *
-	 * It also matches the split in DESIGN.md: the seal is shared, his
+	 * It also matches the split in README.md: the seal is shared, his
 	 * attention is personal. The journal is a physical object that predates
 	 * both players, so it sits firmly on the shared side, exactly like wrath.
 	 *
@@ -173,7 +173,7 @@ public final class Journal {
 	 * A written book carrying one page.
 	 *
 	 * The author is a single em dash. The name was scratched out so long ago
-	 * that the scratching is the only part still legible (LORE.md), and an
+	 * that the scratching is the only part still legible (README.md), and an
 	 * empty author field would just look like a bug.
 	 */
 	/**
