@@ -4,117 +4,76 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HEROBRINE — a survival-horror mod for Minecraft 26.2</title>
-<meta name="description" content="He was already in your world. A survival-horror mod for Minecraft 26.2 (Fabric) with a story, a companion, his own dimension — and one of the hardest boss fights the game has seen. Free to play. © Robin Johansen.">
+<meta name="description" content="Herobrine is in your world. Follow the books, find the door, kill him. A survival-horror story mod for Minecraft 26.2 with one very hard boss fight.">
 <meta property="og:title" content="HEROBRINE — a Minecraft mod">
-<meta property="og:description" content="He was already in your world. Six phases, ten books, a companion who cannot save you, and a fight in three levels.">
+<meta property="og:description" content="He is in your world. Follow the books. Find the door. Kill him.">
 <meta property="og:image" content="https://herobrine-mod.vercel.app/assets/icon.png">
 <meta name="theme-color" content="#0f0f12">
 <link rel="icon" href="/assets/icon.png">
-<link rel="stylesheet" href="/style.css?v=202609040028">
+<link rel="stylesheet" href="/style.css?v=202609040036">
 </head>
 <body>
-
-<canvas id="rain" aria-hidden="true"></canvas>
 
 <header class="nav">
   <a class="wordmark" href="#top"><img src="/assets/icon.png" alt="" width="20" height="20">HEROBRINE</a>
   <nav>
     <a href="#story">Story</a>
     <a href="#fight">The fight</a>
-    <a href="#download">Download</a>
-    <a href="/docs">Docs</a>
-    <a href="#partner">Partner</a>
-    <a class="ghost" href="https://github.com/robinandrejohansen/herobrine-mod" target="_blank" rel="noopener">Source</a>
+    <a href="#get">Download</a>
+    <a href="/docs">Setup</a>
+    <a class="ghost" href="mailto:hello@dimora.no">Contact</a>
   </nav>
 </header>
 
 <main id="top">
 
-  <!-- ============================================================ HERO -->
   <section class="hero">
-    <div class="hero-copy">
-      <p class="kicker">A survival-horror mod · Minecraft 26.2 · Fabric</p>
-      <h1>HE WAS ALREADY<br>IN YOUR WORLD</h1>
-      <p class="lede">
-        For hours, nothing is provable — a sound, a snuffed torch, a shape at the
-        treeline. Then a village that lost almost everyone, a man who wrote it all
-        down, and a door into the place he goes. What waits behind it is one of
-        the hardest fights Minecraft has seen.
-      </p>
-      <div class="cta">
-        <a class="btn mc" id="download" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">
-          <span class="btn-label">Download the mod</span>
-          <span class="btn-meta" id="dl-meta">latest release · .jar</span>
-        </a>
-        <a class="btn slate" href="/docs">Setup guide</a>
-      </div>
-      <p class="fineprint">Free to play · single-player and servers · Java 25+ · not affiliated with Mojang or Microsoft</p>
+    <p class="kicker">Minecraft 26.2 · Fabric · free</p>
+    <h1>HE IS IN<br>YOUR WORLD</h1>
+    <p class="lede">A horror story you play. It starts quiet. It ends with the hardest boss fight in Minecraft.</p>
+    <div class="cta">
+      <a class="btn mc" id="download" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">
+        <span class="btn-label">Download</span>
+        <span class="btn-meta" id="dl-meta">latest · .jar</span>
+      </a>
+      <a class="btn slate" href="/docs">How to install</a>
     </div>
   </section>
 
   <div class="chase-band">
-    <canvas id="chase" width="1" height="1" aria-label="An animation: Herobrine chasing two people through a forest, throwing fire, from day into night and back."></canvas>
-    <p class="chase-cap">Him, Addexio and you — the whole game in one loop.</p>
+    <canvas id="chase" width="1" height="1" aria-label="Herobrine chasing two people through a forest, throwing fire, day turning to night."></canvas>
   </div>
 
-  <!-- =========================================================== STORY -->
   <section id="story" class="story">
     <h2 class="section-title reveal">The story</h2>
-    <p class="section-sub reveal">Told the way Addexio would tell it, if he could bear to.</p>
-
-    <div class="story-grid">
-      <article class="panel reveal">
-        <span class="chapter">I</span>
-        <h3>A village, and a bad year</h3>
-        <p>Doors were boarded that nobody had boarded. Signs appeared that nobody had written. A man stood on the square at night who did not sleep, did not trade, and had a dot in the middle of each eye. People began to go missing, and the ones who came back were not the ones who had left.</p>
-      </article>
-      <article class="panel reveal">
-        <span class="chapter">II</span>
-        <h3>Addexio wrote it down</h3>
-        <p>One man would not accept it. He read what the others would not read and walked where they would not walk, and he left ten books behind him — one or two in every place the thing had touched — so that whoever came after would not learn it the way he had.</p>
-      </article>
-      <article class="panel reveal">
-        <span class="chapter">III</span>
-        <h3>They went out to fight him</h3>
-        <p>The village did the brave thing. They armed themselves and marched. Almost all of them died. Addexio came home alone, and the books were all that was left of anyone's courage.</p>
-      </article>
-      <article class="panel reveal">
-        <span class="chapter">IV</span>
-        <h3>Then somebody new arrives</h3>
-        <p>The player finds the farm and the first book. Addexio finds the player, and says the truth in the shortest form he can: <em>he has been seen again. Everyone I have ever walked this road with is dead. I am telling you now, while you can still say no.</em> Nobody says no.</p>
-      </article>
-      <article class="panel reveal">
-        <span class="chapter">V</span>
-        <h3>The road, and the door</h3>
-        <p>The town. His tower over lava. The prison and cell nine. The church he lived under. The last house — where the village lost him, and where the player finds what the village never had: a way through. A door into the place he goes.</p>
-      </article>
-      <article class="panel reveal">
-        <span class="chapter">VI</span>
-        <h3>His world</h3>
-        <p>A forest where it is always midnight and always raining. A city he built and filled with the people he took. In the trees, something tall — the Gaunt — that does not move while you are looking at it. Above it all his castle, lit and standing. He is waiting. The door behind the player is dead — there is no way home but through him.</p>
-      </article>
-    </div>
+    <ol class="beats">
+      <li class="reveal"><span>1</span><p><strong>A village went bad.</strong> Doors boarded themselves. People went missing. The ones who came back were not the same people.</p></li>
+      <li class="reveal"><span>2</span><p><strong>One man wrote it down.</strong> Addexio. Ten books, hidden in every place Herobrine touched.</p></li>
+      <li class="reveal"><span>3</span><p><strong>The village fought him. They lost.</strong> Almost everyone died. Addexio came home alone.</p></li>
+      <li class="reveal"><span>4</span><p><strong>Then you show up.</strong> Addexio finds you. You follow his books: town, tower, prison, church, last house.</p></li>
+      <li class="reveal"><span>5</span><p><strong>The last house has a door.</strong> It goes to his world. Once you step through, it shuts behind you.</p></li>
+      <li class="reveal danger"><span>6</span><p><strong>Kill him, or stay there.</strong> Win and the rain stops, the taken are people again, and the sun comes up for the first time in years.</p></li>
+    </ol>
 
     <div class="cast reveal">
       <figure>
         <canvas class="sprite" data-skin="/assets/addexio.png" width="1" height="1" aria-label="Addexio"></canvas>
-        <figcaption><strong>Addexio</strong><span>The last of the village. Enchanted diamond, a shield, twenty hearts. Only Herobrine can kill him — and when he falls, he lies where he fell.</span></figcaption>
+        <figcaption><strong>Addexio</strong><span>Your companion. Fights, follows you anywhere, and only Herobrine can kill him.</span></figcaption>
       </figure>
       <figure>
         <canvas class="sprite" data-skin="/assets/turned.png" data-kind="villager" width="1" height="1" aria-label="One of the turned"></canvas>
-        <figcaption><strong>The turned</strong><span>A villager with a dot in each eye. He does not sleep, he does not trade, and after dark, if he sees you, he comes with an axe. His city is full of them.</span></figcaption>
+        <figcaption><strong>The turned</strong><span>A villager with a dot in each eye. Never sleeps. Comes for you after dark.</span></figcaption>
       </figure>
       <figure>
         <canvas class="sprite" data-skin="/assets/herobrine.png" data-eyes="/assets/herobrine_eyes.png" width="1" height="1" aria-label="Herobrine"></canvas>
-        <figcaption><strong>Herobrine</strong><span>Never seen arriving. A man, until the first blow — then something that grows, darkens, and does not let go.</span></figcaption>
+        <figcaption><strong>Herobrine</strong><span>A man, until you hit him. Then he grows, goes dark, and does not stop.</span></figcaption>
       </figure>
     </div>
   </section>
 
-  <!-- =========================================================== FIGHT -->
   <section id="fight" class="fight">
-    <h2 class="section-title reveal">The fight, in three levels</h2>
-    <p class="section-sub reveal">Tap him. Every blow counts — until his skin gets too thick for your rhythm. At a third he rises. At two thirds the light goes out of him.</p>
+    <h2 class="section-title reveal">The fight</h2>
+    <p class="section-sub reveal">100 hits. Three levels. Try it — click him.</p>
 
     <div class="arena reveal">
       <div class="bossbar" aria-live="polite">
@@ -122,132 +81,72 @@
         <div class="bar"><div class="fill" id="bossfill"></div></div>
         <span class="blows" id="blows">0 / 100 blows</span>
       </div>
-      <canvas id="stage" width="1" height="1" aria-label="Interactive: Herobrine in his castle. Tap to strike."></canvas>
+      <canvas id="stage" width="1" height="1" aria-label="Interactive: click Herobrine to hit him."></canvas>
       <div class="arena-ui">
         <div class="levels" role="group" aria-label="Level">
           <button class="btn mc lvl is-on" data-level="1">Level 1</button>
           <button class="btn mc lvl" data-level="2">Level 2</button>
           <button class="btn mc lvl" data-level="3">Level 3</button>
         </div>
-        <p class="hint" id="hint">Tap or click him to strike.</p>
+        <p class="hint" id="hint">Click him.</p>
       </div>
     </div>
 
     <div class="level-cards">
-      <article class="panel level reveal" data-level="1">
-        <span class="chapter">LVL 1</span>
-        <h3>The man</h3>
-        <p>He circles the keep, watches from the walls, waits in the hall. The first blow takes the sky from him — grounded for the rest of it. Sword, fire, lightning that lands on the floor you stand on. Four blows in a row and he blinks out of your reach.</p>
-        <ul><li>1.0× · blows count at a sword's full rhythm</li><li>blinks after 4 blows taken</li><li>hide with a window open and he blows the cover out</li></ul>
-      </article>
-      <article class="panel level reveal" data-level="2">
-        <span class="chapter">LVL 2</span>
-        <h3>The walls stop mattering</h3>
-        <p>At a third of his blows he rises from where he stood, fourteen blocks, through the ceiling if there is one, hangs against the sky in a ring of lightning, drops, and lands with a blast that throws everyone within seven blocks. Bigger now. Blocks between you and him do not stay blocks.</p>
-        <ul><li>1.4× · his skin is thicker: blows must be spaced</li><li>the salvo: hold him at range and he fires eight exploding shots</li><li>blinks after 3</li></ul>
-      </article>
-      <article class="panel level reveal danger" data-level="3">
-        <span class="chapter">LVL 3</span>
-        <h3>The shadow</h3>
-        <p>At two thirds he rises again — and this time the light does not come back. He walks the rest of the fight unlit: a hole in the room with two white eyes, smoking. Too tall for a room, he takes the ceiling off rather than leave it.</p>
-        <ul><li>1.7× · dark for good</li><li>ten-shot salvo, wider craters, harder lightning</li><li>blinks after 2</li></ul>
-      </article>
+      <article class="panel level reveal"><span class="chapter">LVL 1</span><h3>A man</h3><p>He walks at you and swings. Hit him four times in a row and he vanishes — then he is behind you.</p></article>
+      <article class="panel level reveal"><span class="chapter">LVL 2</span><h3>Bigger</h3><p>He rises into the sky, drops, and the blast throws you. Walls stop working. So does hiding.</p></article>
+      <article class="panel level danger reveal"><span class="chapter">LVL 3</span><h3>A shadow</h3><p>The light goes out of him for good. Two white eyes in the dark, and ten fireballs at a time.</p></article>
     </div>
 
-    <div class="hard reveal">
-      <h3>Why it is hard</h3>
-      <ul>
-        <li><strong>A hundred blows</strong>, and the count only goes up honestly — the later acts refuse a spam rhythm.</li>
-        <li><strong>Groups scale him.</strong> Two players raise the count by half; four double it.</li>
-        <li><strong>Death is a checkpoint, not a reset.</strong> Fall in act three and the fight falls back to the start of act three — for you. He heals nothing.</li>
-        <li><strong>There is no way home</strong> until he is dead. The door you came through is dead behind you.</li>
-        <li><strong>He answers everything.</strong> Hide: he digs you out. Climb: he is beside you. Kite: the salvo. Crowd him: he sweeps the lot of you back.</li>
-      </ul>
-      <p class="after">And if you win — the rain stops, the people he turned are people again, his sky sees its first sunset, and a door home opens on the square of his city with his statue standing behind it.</p>
-    </div>
-  </section>
-
-  <!-- ======================================================== DOWNLOAD -->
-  <section id="download" class="download">
-    <h2 class="section-title reveal">Download</h2>
-    <p class="section-sub reveal">Alone, or on a server. The <a href="/docs">setup guide</a> has every step, the config and what to do when something is wrong.</p>
-
-    <div class="ways">
-      <article class="panel way reveal">
-        <h3>Playing alone</h3>
-        <ol>
-          <li>Install <a href="https://fabricmc.net/use/installer/" target="_blank" rel="noopener">Fabric</a> for <strong>Minecraft 26.2</strong>. Java 25 or newer.</li>
-          <li>Put <a href="https://modrinth.com/mod/fabric-api" target="_blank" rel="noopener">Fabric API</a> in your <code>mods</code> folder.</li>
-          <li>Put <code>herobrine-<span class="ver">x.y.z</span>.jar</code> beside it.</li>
-          <li>Play normally. Don't go looking. The first hour is meant to feel like nothing is installed.</li>
-        </ol>
-        <div class="paths">
-          <button class="copy" data-copy="%appdata%\.minecraft\mods">Windows path</button>
-          <button class="copy" data-copy="~/Library/Application Support/minecraft/mods">macOS path</button>
-          <button class="copy" data-copy="~/.minecraft/mods">Linux path</button>
-        </div>
-        <a class="btn mc" id="dl-jar" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download .jar</span><span class="btn-meta" id="jar-meta">latest</span></a>
-      </article>
-
-      <article class="panel way reveal">
-        <h3>Playing on a server</h3>
-        <p>A server cannot install a mod on your computer — Minecraft has never allowed it. Every player has to arrive already holding this mod, at the <em>same version</em> the server runs. So it ships packed differently for servers: a <strong>.mrpack</strong> that pins Fabric Loader, Fabric API and Herobrine by hash.</p>
-        <ol>
-          <li>Players: import the <code>.mrpack</code> into <a href="https://modrinth.com/app" target="_blank" rel="noopener">Modrinth App</a> or <a href="https://prismlauncher.org/" target="_blank" rel="noopener">Prism Launcher</a>. Launch from that profile.</li>
-          <li>Host: Fabric server launcher for 26.2, then <code>fabric-api</code> and <code>herobrine</code> jars in <code>mods/</code>. Both. Java 25+.</li>
-          <li>When the server updates, hand out the new pack. Same version, everyone, always.</li>
-        </ol>
-        <a class="btn mc" id="pack" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download .mrpack</span><span class="btn-meta" id="pack-meta">latest</span></a>
-      </article>
-
-    </div>
-
-    <p class="updates reveal"><a class="btn slate" href="/docs">Read the setup guide</a></p>
-    <p class="updates reveal">Every fix ships as a new release. <a href="https://github.com/robinandrejohansen/herobrine-mod/releases" target="_blank" rel="noopener">All releases</a> · <a href="https://github.com/robinandrejohansen/herobrine-mod/subscription" target="_blank" rel="noopener">Watch for updates</a>. Your world and your config carry over.</p>
-  </section>
-
-  <!-- ========================================================= PARTNER -->
-  <section id="partner" class="partner">
-    <div class="panel wide reveal">
-      <h2>Partner, collab, cover it</h2>
-      <p>Streamers, YouTubers, creators, server owners, other mod makers — if you want to play this on camera, bundle it, build on it, or make something new together, write. One person answers, and it is the one who made it.</p>
-      <a class="mail" href="mailto:hello@dimora.no">hello@dimora.no</a>
-      <ul class="icons" aria-label="Who this is for">
-        <li title="Email"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 2.4V17h16V7.4l-8 5.3-8-5.3zM5.2 7l6.8 4.5L18.8 7H5.2z"/></svg><span>Email</span></li>
-        <li title="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12a31 31 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 23.4 12 31 31 0 0 0 23 7.2zM9.8 15.1V8.9L15.7 12l-5.9 3.1z"/></svg><span>YouTube</span></li>
-        <li title="Twitch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.3 2 2 6.6v14h4.8V23h2.7l2.4-2.4h3.8L21 15.3V2H4.3zm14.9 12.4-2.9 2.9h-4.6l-2.4 2.4v-2.4H5.5V3.8h13.7v10.6zM16 7.3h-1.8v5.2H16V7.3zm-4.8 0H9.4v5.2h1.8V7.3z"/></svg><span>Twitch</span></li>
-        <li title="TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 2h-3.2v13.4a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .9.1V9.3a6.1 6.1 0 1 0 5.2 6.1V8.7a7.4 7.4 0 0 0 4.4 1.4V6.9A4.4 4.4 0 0 1 16.6 2z"/></svg><span>TikTok</span></li>
-        <li title="Discord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 5.6A17 17 0 0 0 15.4 4l-.5 1.1a15.8 15.8 0 0 0-5.8 0L8.6 4a17 17 0 0 0-4.2 1.6C1.7 9.6 1 13.5 1.4 17.3A17 17 0 0 0 6.6 20l1.1-1.8a11 11 0 0 1-1.7-.8l.4-.3a12.2 12.2 0 0 0 11.2 0l.4.3a11 11 0 0 1-1.7.8l1.1 1.8a17 17 0 0 0 5.2-2.7c.5-4.4-.7-8.3-3-11.7zM8.7 14.9c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1zm6.6 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1z"/></svg><span>Discord</span></li>
-        <li title="Other mods"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8zM5 5v4h4V5H5zm10 0v4h4V5h-4zM5 15v4h4v-4H5zm10 0v4h4v-4h-4z"/></svg><span>Other mods</span></li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- ======================================================= COPYRIGHT -->
-  <section class="rights reveal">
-    <h2>Copyright &amp; fair play</h2>
-    <p><strong>© 2026 Robin Johansen · Dimora. All rights reserved.</strong> The mod, its story, its characters (Herobrine as written here, Addexio, the turned, the infected), its textures, its sounds, its buildings and this website are copyrighted work.</p>
-    <ul>
-      <li><strong>Play it, stream it, review it, make videos of it</strong> — freely, with pleasure. Credit <em>Herobrine by Robin Johansen (dimora.no)</em> and link here.</li>
-      <li><strong>Link, do not re-upload.</strong> The only official downloads are this page and the GitHub releases. Mirrors and re-uploads go stale, break servers, and are not permitted.</li>
-      <li><strong>No bundling, forks, ports or derivative mods without permission.</strong> Ask — the answer is usually yes: <a href="mailto:hello@dimora.no">hello@dimora.no</a>.</li>
-      <li>Minecraft is a trademark of Microsoft. This is an independent work, not affiliated with or endorsed by Mojang or Microsoft.</li>
+    <ul class="hard reveal">
+      <li><strong>No way home</strong> until he is dead.</li>
+      <li><strong>Die and you lose the level</strong>, not the whole fight. Your body stays where you fell, holding everything.</li>
+      <li><strong>Bring friends</strong> — he gets tougher, but you get hands.</li>
     </ul>
   </section>
 
-  <section class="closer reveal">
-    <p>Play it at night. Don't tell anyone what to look for.</p>
+  <section id="get" class="download">
+    <h2 class="section-title reveal">Get it</h2>
+    <div class="ways">
+      <article class="panel way reveal">
+        <h3>Alone</h3>
+        <p>Fabric for 26.2, then two files in your <code>mods</code> folder: Fabric API and this.</p>
+        <a class="btn mc" id="dl-jar" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download .jar</span><span class="btn-meta" id="jar-meta">latest</span></a>
+      </article>
+      <article class="panel way reveal">
+        <h3>On a server</h3>
+        <p>A server can't install mods for you. Everyone imports the same modpack, so everyone is on the same version.</p>
+        <a class="btn mc" id="pack" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download .mrpack</span><span class="btn-meta" id="pack-meta">for servers</span></a>
+      </article>
+    </div>
+    <p class="updates reveal">Step-by-step, settings and fixes: <a href="/docs">the setup guide</a>.</p>
+  </section>
+
+  <section id="partner" class="partner">
+    <div class="panel wide reveal">
+      <h2>Want to play it on camera?</h2>
+      <p>Streamers, YouTubers, server owners, other mod makers — write. I answer.</p>
+      <a class="mail" href="mailto:hello@dimora.no">hello@dimora.no</a>
+    </div>
+  </section>
+
+  <section class="rights reveal">
+    <p><strong>© 2026 Robin Johansen · Dimora. All rights reserved.</strong></p>
+    <ul>
+      <li>Play it, stream it, review it — freely. Credit and link here.</li>
+      <li>Link, don't re-upload. No forks or derivative mods without asking.</li>
+      <li>Not affiliated with Mojang or Microsoft.</li>
+    </ul>
   </section>
 </main>
 
 <footer>
   <span>© 2026 Robin Johansen · Dimora</span>
   <a href="mailto:hello@dimora.no">hello@dimora.no</a>
-  <a href="/docs">Docs</a>
+  <a href="/docs">Setup guide</a>
   <a href="https://github.com/robinandrejohansen/herobrine-mod" target="_blank" rel="noopener">Source</a>
-  <span>Not affiliated with Mojang or Microsoft.</span>
 </footer>
 
-<script src="/app.js?v=202609040028" defer></script>
+<script src="/app.js?v=202609040036" defer></script>
 </body>
 </html>

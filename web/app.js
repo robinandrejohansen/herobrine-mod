@@ -264,9 +264,9 @@ document.querySelectorAll('canvas.sprite').forEach(async (c) => {
       // the skull. Everything is drawn facing right and then mirrored.
       g.save();
       g.shadowColor = 'rgba(255,255,255,.95)';
-      g.shadowBlur = s * 3.5;
+      g.shadowBlur = s * 2.6;
       g.fillStyle = '#fff';
-      g.fillRect(hx + f.head.width - s * 2.6, hy + f.head.height * 0.40, s * 2.0, s * 0.9);
+      g.fillRect(hx + f.head.width - s * 1.5, hy + f.head.height * 0.42, s * 1.0, s * 0.55);
       g.restore();
     }
     limb(f.leg, x - s * 0.6, hip, swing * 0.75);
@@ -294,102 +294,139 @@ document.querySelectorAll('canvas.sprite').forEach(async (c) => {
   }
 
   /* ------------------------------------------------------- the scenery ---- */
-  let W = 0, H = 0, ground = 0, unit = 3;
-  let mountains, farWood, nearWood, floor, stars, figures;
+  let W = 0, H = 0, ground = 0, unit = 3, B = 8;
+  let hills, far, near, dirt, clouds, stars, figures;
   const rand = (seed) => { let x = seed; return () => (x = (x * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff; };
 
-  function ridge(w, h, base, jag, colour, seed, snow) {
+  /*
+   * THE WORLD IS BUILT OUT OF BLOCKS, because the alternative — smooth ridges and
+   * vector pines — looked like a phone game with Minecraft skins walking through
+   * it. Everything here is on a grid: hills are columns of blocks, an oak is a
+   * one-block trunk under a canopy with the corners knocked off, and every block
+   * gets three specks of a lighter and a darker shade, which is the whole of what
+   * block texture amounts to at this size.
+   */
+  function block(x, bx, by, size, col, r) {
+    x.fillStyle = col[0];
+    x.fillRect(bx, by, size, size);
+    const q = Math.max(1, Math.round(size / 4));
+    for (let i = 0; i < 3; i++) {
+      x.fillStyle = r() > 0.5 ? col[1] : col[2];
+      x.fillRect(bx + Math.floor(r() * 4) * q, by + Math.floor(r() * 4) * q, q, q);
+    }
+  }
+  const GRASS = ['#5b8f3b', '#6ea54b', '#4a7931'];
+  const DIRT = ['#6b4c2f', '#7a5836', '#573d26'];
+  const STONE = ['#70747a', '#7e838a', '#5f6367'];
+  const LOG = ['#4a3521', '#59402a', '#3a2a1a'];
+  const LEAF = ['#14311f', '#1b3d28', '#0d2417'];
+  const FAR_LEAF = ['#1d3a4a', '#254556', '#152d3b'];
+  const FAR_LOG = ['#2a3340', '#333d4c', '#212936'];
+
+  /** Stepped stone hills, washed toward the sky the further back they stand. */
+  function mountainLayer(w, h, size, seed, haze) {
     const cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
     const x = cv.getContext('2d');
     const r = rand(seed);
-    const pts = [];
-    for (let i = 0; i <= 16; i++) pts.push(base - r() * jag);
-    x.beginPath();
-    x.moveTo(0, h);
-    for (let i = 0; i <= 16; i++) {
-      const px = (i / 16) * w;
-      x.lineTo(px, pts[i]);
-      if (i < 16) x.lineTo(px + w / 32, (pts[i] + pts[i + 1]) / 2 - r() * jag * 0.25);
+    const cols = Math.ceil(w / size) + 1;
+    let top = Math.round((h * 0.5) / size);
+    for (let i = 0; i < cols; i++) {
+      top += Math.round((r() - 0.5) * 2.4);
+      top = Math.max(3, Math.min(Math.round((h * 0.82) / size), top));
+      for (let k = 0; k < top; k++) block(x, i * size, h - (k + 1) * size, size, STONE, r);
     }
-    x.lineTo(w, h); x.closePath();
-    x.fillStyle = colour; x.fill();
-    if (snow) {
-      // Light down the near flank rather than caps on the peaks: a cap is a
-      // rectangle clipped to a jagged edge, and it reads as a box in the sky.
-      x.globalCompositeOperation = 'source-atop';
-      const lit = x.createLinearGradient(0, base - jag, 0, base + jag * 0.4);
-      lit.addColorStop(0, 'rgba(214,224,240,.30)');
-      lit.addColorStop(1, 'rgba(214,224,240,0)');
-      x.fillStyle = lit; x.fillRect(0, 0, w, h);
-      x.globalCompositeOperation = 'source-over';
+    x.globalCompositeOperation = 'source-atop';
+    x.fillStyle = `rgba(120,140,190,${haze})`;
+    x.fillRect(0, 0, w, h);
+    x.globalCompositeOperation = 'source-over';
+    return cv;
+  }
+
+  /** Oaks. Near ones are tall and nearly black; far ones are small and hazed. */
+  function treeLayer(w, h, size, count, seed, isNear) {
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const x = cv.getContext('2d');
+    const r = rand(seed);
+    const log = isNear ? LOG : FAR_LOG;
+    const leaf = isNear ? LEAF : FAR_LEAF;
+    for (let i = 0; i < count; i++) {
+      const bx = Math.round(((0.05 + r() * 0.9) * w) / size) * size;
+      const trunk = isNear ? 5 + Math.floor(r() * 3) : 3 + Math.floor(r() * 2);
+      for (let k = 0; k < trunk; k++) block(x, bx, h - (k + 1) * size, size, log, r);
+      const top = h - trunk * size;
+      // the oak: two rows five wide, a cap three wide, corners knocked off the top
+      for (let cx = -2; cx <= 2; cx++) {
+        block(x, bx + cx * size, top, size, leaf, r);
+        block(x, bx + cx * size, top - size, size, leaf, r);
+      }
+      for (let cx = -1; cx <= 1; cx++) block(x, bx + cx * size, top - size * 2, size, leaf, r);
     }
     return cv;
   }
 
-  function wood(w, h, count, minH, maxH, colour, seed) {
+  /** Grass over dirt over stone — the ground they are actually running on. */
+  function groundLayer(w, h, size, seed) {
     const cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
     const x = cv.getContext('2d');
     const r = rand(seed);
-    x.fillStyle = colour;
-    for (let i = 0; i < count; i++) {
-      const px = 20 + r() * (w - 40);
-      const th = minH + r() * (maxH - minH);
-      const tw = th * (0.15 + r() * 0.07);
-      x.fillRect(px - tw * 0.09, h - th * 0.34, tw * 0.18, th * 0.34);   // the trunk
-      for (let k = 0; k < 4; k++) {                                       // the pine, in steps
-        const ky = h - th + (th * 0.72 * k) / 4;
-        const kw = tw * (0.45 + (k * 0.55) / 3);
-        x.beginPath();
-        x.moveTo(px, ky - th * 0.1);
-        x.lineTo(px - kw, ky + th * 0.2);
-        x.lineTo(px + kw, ky + th * 0.2);
-        x.closePath(); x.fill();
+    for (let i = 0; i * size < w + size; i++) {
+      block(x, i * size, 0, size, GRASS, r);
+      for (let k = 1; k * size < h + size; k++) {
+        block(x, i * size, k * size, size, k < 3 ? DIRT : STONE, r);
       }
     }
     return cv;
   }
 
+  /** Flat white slabs, the way Minecraft clouds are flat white slabs. */
+  function cloudLayer(w, h, size, seed) {
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const x = cv.getContext('2d');
+    const r = rand(seed);
+    x.fillStyle = 'rgba(244,248,255,.8)';
+    for (let i = 0; i < 6; i++) {
+      const bx = Math.round((r() * w) / size) * size;
+      const by = Math.round(((0.1 + r() * 0.5) * h) / size) * size;
+      const len = (4 + Math.floor(r() * 9)) * size;
+      x.fillRect(bx, by, len, size);
+      if (r() > 0.5) x.fillRect(bx + size * 2, by - size, len - size * 3, size);
+    }
+    return cv;
+  }
+
   function size() {
-    // MEASURED, NEVER PINNED. fit() writes an inline width, and an inline width
-    // becomes what clientWidth reports — so a canvas first sized in a narrow
-    // window stays narrow for ever, in a band that is supposed to be full width.
-    // Here the CSS owns the size and only the backing store is set from it.
+    // MEASURED, NEVER PINNED. An inline width becomes what clientWidth reports,
+    // so a canvas first sized in a narrow window would stay narrow for ever.
     const cssW = Math.max(240, c.clientWidth || c.parentElement.clientWidth || 900);
     const cssH = Math.max(120, c.clientHeight || 240);
     c.width = Math.round(cssW * DPR);
     c.height = Math.round(cssH * DPR);
     g.imageSmoothingEnabled = false;
     W = c.width; H = c.height;
-    ground = Math.round(H * 0.86);
-    unit = Math.max(2, H / 108);                      // pixels per skin pixel for the runners
-    mountains = [
-      ridge(W, ground, ground * 0.52, ground * 0.30, '#2c3550', 7, true),
-      ridge(W, ground, ground * 0.66, ground * 0.22, '#232a41', 23, false),
+    ground = Math.round(H * 0.80);
+    B = Math.max(5, Math.round(H / 15));               // one Minecraft block, in pixels
+    unit = Math.max(2, H / 116);                       // a person, about four blocks tall
+    hills = [
+      mountainLayer(W, ground, B * 2, 7, 0.45),
+      mountainLayer(W, ground, B, 23, 0.24),
     ];
-    farWood = wood(W, ground, Math.round(W / 30), ground * 0.16, ground * 0.32, '#151d24', 41);
-    nearWood = wood(W, ground + H * 0.1, Math.max(2, Math.round(W / 420)), H * 0.55, H * 0.85, '#070a0d', 59);
-    floor = (() => {
-      const cv = document.createElement('canvas');
-      cv.width = W; cv.height = H - ground;
-      const x = cv.getContext('2d');
-      x.fillStyle = '#10161a'; x.fillRect(0, 0, W, cv.height);
-      const r = rand(97);
-      for (let i = 0; i < W / 5; i++) {
-        x.fillStyle = r() > 0.5 ? '#141a1e' : '#0b1013';
-        x.fillRect(r() * W, r() * cv.height, 2 + r() * 4, 1 + r() * 2);
-      }
-      return cv;
-    })();
+    far = treeLayer(W, ground, B, Math.max(3, Math.round(W / (B * 9))), 41, false);
+    near = treeLayer(W, Math.round(ground + H * 0.16), Math.round(B * 1.3),
+      Math.max(2, Math.round(W / (B * 26))), 59, true);
+    dirt = groundLayer(W, H - ground + B * 2, B, 97);
+    clouds = cloudLayer(W, Math.round(ground * 0.5), B, 13);
     stars = Array.from({ length: Math.round(W / 26) }, (_, i) => {
       const r = rand(i * 31 + 3);
-      return { x: r() * W, y: r() * ground * 0.7, a: 0.3 + r() * 0.7 };
+      return { x: r() * W, y: r() * ground * 0.6, a: 0.3 + r() * 0.7 };
     });
     figures = {
       you: figure(base, unit, 0.05, true),
       addexio: figure(addex, unit, 0.05, false),
-      him: figure(angry, unit * 1.6, 0.74, false),
+      him: figure(angry, unit * 1.45, 0.74, false),
     };
   }
 
@@ -462,34 +499,36 @@ document.querySelectorAll('canvas.sprite').forEach(async (c) => {
     g.restore();
 
     // the country, at four speeds
+    // THEY RUN LEFT, SO THE COUNTRY MOVES RIGHT. It was the other way round, and
+    // three people sprinting backwards is exactly what that looked like.
     const layer = (img, speed, y) => {
       const off = (scroll * speed) % W;
-      g.drawImage(img, -off, y);
-      g.drawImage(img, W - off, y);
+      g.drawImage(img, off - W, y);
+      g.drawImage(img, off, y);
     };
-    layer(mountains[0], 0.04, 0);
-    layer(mountains[1], 0.09, 0);
-    layer(farWood, 0.34, 0);
+    layer(clouds, 0.02, Math.round(ground * 0.05));
+    layer(hills[0], 0.05, 0);
+    layer(hills[1], 0.11, 0);
+    layer(far, 0.34, 0);
     // a low band of light where the sky meets the wood, so black shapes read
     const horizon = g.createLinearGradient(0, ground - H * 0.22, 0, ground);
     horizon.addColorStop(0, 'rgba(255,255,255,0)');
     horizon.addColorStop(1, `rgba(${s.low.join(',')},${(0.45 - night * 0.28).toFixed(2)})`);
     g.fillStyle = horizon; g.fillRect(0, ground - H * 0.22, W, H * 0.22);
-    g.drawImage(floor, 0, ground);
-    layer(floor, 1.25, ground);
+    layer(dirt, 1.25, ground);
 
     // the three of them, and the dust off their heels
     const stride = run * 9;
     const shadow = (x, w2) => {
-      g.fillStyle = 'rgba(0,0,0,.45)';
-      g.beginPath(); g.ellipse(x, ground + unit * 1.4, w2, unit * 0.7, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = 'rgba(0,0,0,.35)';
+      g.fillRect(Math.round(x - w2), ground + unit * 0.9, Math.round(w2 * 2), Math.max(2, unit * 0.7));
     };
     shadow(W * 0.24, unit * 3); shadow(W * 0.40, unit * 3);
-    const you = runner(figures.you, W * 0.24, ground + unit * 1.2, stride, -1, -0.07);
-    const add = runner(figures.addexio, W * 0.40, ground + unit * 1.2, stride + 1.9, -1, -0.06);
-    layer(nearWood, 1.0, ground - (ground + H * 0.1) + H * 0.1);
+    const you = runner(figures.you, W * 0.24, ground + unit * 1.2, stride, -1, 0.09);
+    const add = runner(figures.addexio, W * 0.40, ground + unit * 1.2, stride + 1.9, -1, 0.08);
+    layer(near, 1.0, Math.round(H * 0.16) - Math.round(H * 0.16));
     shadow(W * 0.78, unit * 4.6);
-    const him = runner(figures.him, W * 0.78, ground + unit * 2.0, stride * 0.86 + 0.7, -1, -0.10, true);
+    const him = runner(figures.him, W * 0.78, ground + unit * 2.0, stride * 0.86 + 0.7, -1, 0.17, true);
 
     if (Math.random() < 0.7) {
       embers.push({ x: W * 0.78 + (Math.random() - 0.5) * unit * 6, y: him.shoulder + Math.random() * unit * 10,

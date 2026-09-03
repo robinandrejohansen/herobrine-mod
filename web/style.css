@@ -112,7 +112,7 @@ main, footer { position: relative; z-index: 2; }
 
 /* ---- hero ----------------------------------------------------------------- */
 .hero {
-  max-width: var(--max); margin: 0 auto; padding: clamp(36px, 7vh, 84px) var(--pad) 28px;
+  max-width: var(--max); margin: 0 auto; padding: clamp(34px, 7vh, 76px) var(--pad) 22px;
 }
 .kicker { font: 600 12px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .3em; text-transform: uppercase; color: var(--dim); margin-bottom: 18px; }
 h1 { font-size: clamp(36px, 6.4vw, 78px); line-height: .98; letter-spacing: -.03em; color: var(--white); font-weight: 800; }
@@ -120,16 +120,12 @@ h1 { font-size: clamp(36px, 6.4vw, 78px); line-height: .98; letter-spacing: -.03
 .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; }
 .fineprint { margin-top: 16px; font-size: 13px; color: var(--dim); }
 /* The loop. Full width, because a chase reads as a chase only with room to run. */
-.chase-band { width: 100%; margin-bottom: 26px; }
+.chase-band { width: 100%; margin-bottom: 14px; }
 #chase {
   display: block; width: 100%;
   height: clamp(190px, 34vh, 380px);
   border-top: 2px solid var(--line); border-bottom: 2px solid var(--line);
   background: #0d1016;
-}
-.chase-cap {
-  max-width: var(--max); margin: 10px auto 0; padding: 0 var(--pad);
-  font-size: 13px; color: var(--dim);
 }
 
 /* ---- sections ------------------------------------------------------------- */
@@ -169,17 +165,27 @@ section { max-width: var(--max); margin: 0 auto; padding: 56px var(--pad); }
 
 .level .chapter { color: var(--green-hi); }
 .level.danger .chapter { color: var(--blood); }
-.level ul { margin-top: 12px; padding-left: 0; list-style: none; display: grid; gap: 6px; }
-.level li { font-size: 14px; color: var(--dim); padding-left: 14px; position: relative; }
-.level li::before { content: ""; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; background: var(--dim); }
-.level.danger li::before { background: var(--blood); }
 
-.hard { margin-top: 18px; background: var(--bg-2); border: 2px solid var(--line); border-radius: var(--r); padding: 24px; }
-.hard h3 { color: var(--white); margin-bottom: 12px; }
-.hard ul { list-style: none; display: grid; gap: 10px; }
-.hard li { padding-left: 18px; position: relative; }
+ol.beats { list-style: none; display: grid; gap: 10px; margin-bottom: 30px; }
+ol.beats li {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; align-items: start;
+  background: var(--panel); border: 2px solid var(--line); border-radius: var(--r);
+  box-shadow: inset 0 2px 0 var(--panel-hi), inset 0 -2px 0 var(--panel-lo);
+  padding: 16px 18px;
+}
+ol.beats span {
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r);
+  background: var(--panel-lo); border: 2px solid var(--line);
+  font: 600 14px/1 ui-monospace, "SF Mono", Menlo, monospace; color: var(--dim);
+}
+ol.beats li.danger span { color: var(--blood); border-color: color-mix(in srgb, var(--blood) 50%, var(--line)); }
+ol.beats strong { color: var(--white); }
+ol.beats p { color: var(--dim); font-size: 16px; }
+
+.hard { list-style: none; margin-top: 18px; background: var(--bg-2); border: 2px solid var(--line); border-radius: var(--r); padding: 20px 24px; display: grid; gap: 10px; }
+.hard li { padding-left: 18px; position: relative; color: var(--dim); }
 .hard li::before { content: ""; position: absolute; left: 0; top: .6em; width: 8px; height: 8px; background: var(--blood); }
-.hard .after { margin-top: 16px; color: var(--white); border-top: 2px solid var(--line); padding-top: 14px; }
+.hard strong { color: var(--text); }
 
 /* ---- download ------------------------------------------------------------- */
 .way ol { padding-left: 20px; display: grid; gap: 8px; margin: 8px 0 14px; }
@@ -297,3 +303,6 @@ footer a { color: var(--dim); }
   .guide-nav-title { display: none; }
   .guide-nav a { border-left: 0; border: 2px solid var(--line); border-radius: var(--r); white-space: nowrap; }
 }
+
+.rights p { color: var(--text); }
+.partner p { margin-bottom: 18px; }
