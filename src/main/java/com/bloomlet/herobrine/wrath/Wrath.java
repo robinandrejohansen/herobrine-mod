@@ -246,6 +246,14 @@ public final class Wrath {
 			net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
 		.buildAndRegister(HerobrineMod.id("clear_sky"));
 
+	/** The tick he fell. The client clears the sky over two minutes from here. */
+	public static final AttachmentType<Long> CLEARED_AT = AttachmentRegistry
+		.<Long>builder()
+		.persistent(Codec.LONG)
+		.syncWith(net.minecraft.network.codec.ByteBufCodecs.VAR_LONG.cast(),
+			net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
+		.buildAndRegister(HerobrineMod.id("cleared_at"));
+
 	public static void jumpTo(MinecraftServer server, Phase phase) {
 		set(server, phase);
 		HerobrineMod.LOGGER.info("story set to {} by command", phase.name());

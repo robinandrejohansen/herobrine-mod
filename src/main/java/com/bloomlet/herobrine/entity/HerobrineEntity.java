@@ -4428,6 +4428,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// Whereabouts stood a fresh one of him over the keep he had just died in.
 		com.bloomlet.herobrine.wrath.Wrath.remove(server);
 		here.setAttached(com.bloomlet.herobrine.wrath.Wrath.CLEAR_SKY, true);
+		here.setAttached(com.bloomlet.herobrine.wrath.Wrath.CLEARED_AT, here.getGameTime());
 
 		// AND IT IS MORNING. Not "the night ends when it ends" — he held it at
 		// midnight for as long as he lived, and the first thing that should happen
@@ -4437,8 +4438,18 @@ public class HerobrineEntity extends PathfinderMob {
 		java.util.Optional<? extends net.minecraft.core.Holder<net.minecraft.world.clock.WorldClock>>
 			clock = server.overworld().registryAccess()
 				.get(net.minecraft.world.clock.WorldClocks.OVERWORLD);
-		clock.ifPresent(held -> server.clockManager().moveToTimeMarker(held,
-			net.minecraft.world.clock.ClockTimeMarkers.DAY));
+		clock.ifPresent(held -> {
+			// THE FIRST SUNSET IN YEARS, not a cut to morning. Late afternoon: while
+			// the client lets the light back in over two minutes, the sun — which this
+			// world has never seen move — goes down. Then a night. Then a real dawn,
+			// and after that the ordinary days.
+			long total = server.clockManager().getTotalTicks(held);
+			long want = total - Math.floorMod(total, 24000L) + LATE_AFTERNOON;
+			if (want <= total) {
+				want += 24000L;
+			}
+			server.clockManager().setTotalTicks(held, want);
+		});
 
 		// AND THE PEOPLE HE TURNED GET BETTER. Every Turned in a loaded chunk, in any
 		// dimension, is a villager again before the smoke clears; the ones in
@@ -4450,7 +4461,7 @@ public class HerobrineEntity extends PathfinderMob {
 				cured++;
 			}
 		}
-		HerobrineMod.LOGGER.info("morning: the clock moved to day, {} of the turned cured", cured);
+		HerobrineMod.LOGGER.info("late afternoon: the first sunset in years is coming, {} of the turned cured", cured);
 
 		// THE BAR SAYS IT, THEN GOES. It used to stay on screen at whatever it last
 		// read, because nothing ever told the clients he was gone. Three seconds of
@@ -6275,6 +6286,8 @@ public class HerobrineEntity extends PathfinderMob {
 				net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
 			.buildAndRegister(HerobrineMod.id("dying_since"));
 	public static final int DYING_TAKES = 140;
+	/** Where the clock is put when he dies: an hour and a quarter before the sun touches the hills. */
+	private static final long LATE_AFTERNOON = 10500L;
 	private static final double DYING_GROWS_TO = 2.8;
 	private java.util.@org.jspecify.annotations.Nullable UUID dyingStruckBy;
 	private double dyingScaleFrom = 1.0;

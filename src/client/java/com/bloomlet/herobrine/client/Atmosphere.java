@@ -71,6 +71,28 @@ public final class Atmosphere {
 	}
 
 	/** Where the overworld's day is right now, 0..1 round the clock, vanilla's own curve. */
+	/**
+	 * HOW FAR THE SKY HAS CLEARED, 0..1. It used to be a switch: the frame he died,
+	 * the fog was gone and the sun was in its place. Now it is two minutes from the
+	 * tick he fell — the pall thinning, the horizon coming back, the sun sliding
+	 * into where it should have been — while the clock, set to late afternoon,
+	 * gives this world its first sunset. A world whose sky has not moved in years
+	 * should be seen to remember how.
+	 */
+	static float clearing() {
+		if (!cleared()) {
+			return 0.0F;
+		}
+		ClientLevel level = Minecraft.getInstance().level;
+		Long since = level == null ? null : level.getAttached(com.bloomlet.herobrine.wrath.Wrath.CLEARED_AT);
+		if (since == null) {
+			return 1.0F;
+		}
+		return net.minecraft.util.Mth.clamp((level.getGameTime() - since) / (float) CLEARS_OVER, 0.0F, 1.0F);
+	}
+
+	private static final int CLEARS_OVER = 2400;
+
 	private static float dayFraction() {
 		ClientLevel level = Minecraft.getInstance().level;
 		if (level == null) {
@@ -102,27 +124,27 @@ public final class Atmosphere {
 			// stars, light and colour all turning with the overworld clock. Until then
 			// they pass the values straight through.
 			builder.addTimeBasedLayer(EnvironmentAttributes.SUN_ANGLE,
-				(angle, tick) -> cleared() ? dayFraction() * 360.0F : angle);
+				(angle, tick) -> cleared() ? net.minecraft.util.Mth.rotLerp(clearing(), angle, dayFraction() * 360.0F) : angle);
 			builder.addTimeBasedLayer(EnvironmentAttributes.MOON_ANGLE,
-				(angle, tick) -> cleared() ? (dayFraction() * 360.0F + 180.0F) % 360.0F : angle);
+				(angle, tick) -> cleared() ? net.minecraft.util.Mth.rotLerp(clearing(), angle, (dayFraction() * 360.0F + 180.0F) % 360.0F) : angle);
 			builder.addTimeBasedLayer(EnvironmentAttributes.STAR_ANGLE,
-				(angle, tick) -> cleared() ? dayFraction() * 360.0F : angle);
+				(angle, tick) -> cleared() ? net.minecraft.util.Mth.rotLerp(clearing(), angle, dayFraction() * 360.0F) : angle);
 			builder.addTimeBasedLayer(EnvironmentAttributes.STAR_BRIGHTNESS,
-				(bright, tick) -> cleared() ? (1.0F - daylight()) * (1.0F - daylight()) * 0.5F : bright);
+				(bright, tick) -> cleared() ? net.minecraft.util.Mth.lerp(clearing(), bright, (1.0F - daylight()) * (1.0F - daylight()) * 0.5F) : bright);
 			builder.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_FACTOR,
-				(factor, tick) -> cleared() ? Math.max(0.05F, daylight()) : factor);
+				(factor, tick) -> cleared() ? net.minecraft.util.Mth.lerp(clearing(), factor, Math.max(0.05F, daylight())) : factor);
 			builder.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_LEVEL,
-				(lit, tick) -> cleared() ? Math.max(0.05F, daylight()) : lit);
+				(lit, tick) -> cleared() ? net.minecraft.util.Mth.lerp(clearing(), lit, Math.max(0.05F, daylight())) : lit);
 			builder.addTimeBasedLayer(EnvironmentAttributes.SKY_COLOR,
-				(colour, tick) -> cleared() ? ARGB.srgbLerp(daylight(), NIGHT_SKY, DAY_SKY) : colour);
+				(colour, tick) -> cleared() ? ARGB.srgbLerp(clearing(), colour, ARGB.srgbLerp(daylight(), NIGHT_SKY, DAY_SKY)) : colour);
 			builder.addTimeBasedLayer(EnvironmentAttributes.FOG_COLOR,
-				(colour, tick) -> cleared() ? ARGB.srgbLerp(daylight(), NIGHT_FOG, DAY_FOG) : colour);
+				(colour, tick) -> cleared() ? ARGB.srgbLerp(clearing(), colour, ARGB.srgbLerp(daylight(), NIGHT_FOG, DAY_FOG)) : colour);
 			builder.addTimeBasedLayer(EnvironmentAttributes.CLOUD_COLOR,
-				(colour, tick) -> cleared() ? ARGB.srgbLerp(daylight(), NIGHT_CLOUD, DAY_CLOUD) : colour);
+				(colour, tick) -> cleared() ? ARGB.srgbLerp(clearing(), colour, ARGB.srgbLerp(daylight(), NIGHT_CLOUD, DAY_CLOUD)) : colour);
 			builder.addTimeBasedLayer(EnvironmentAttributes.FOG_START_DISTANCE,
-				(distance, tick) -> cleared() ? Math.max(distance, 160.0F) : distance);
+				(distance, tick) -> cleared() ? net.minecraft.util.Mth.lerp(clearing(), distance, Math.max(distance, 160.0F)) : distance);
 			builder.addTimeBasedLayer(EnvironmentAttributes.FOG_END_DISTANCE,
-				(distance, tick) -> cleared() ? Math.max(distance, 480.0F) : distance);
+				(distance, tick) -> cleared() ? net.minecraft.util.Mth.lerp(clearing(), distance, Math.max(distance, 480.0F)) : distance);
 		}
 		// Same target, same strength, all three. They must agree.
 		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_COLOR,
@@ -138,11 +160,11 @@ public final class Atmosphere {
 		// for it to expose. All three move together — terrain, sky and cloud —
 		// so nothing stays sharp while the rest goes soft.
 		builder.addTimeBasedLayer(EnvironmentAttributes.FOG_END_DISTANCE,
-			(distance, tick) -> distance * closeness());
+			(distance, tick) -> distance * net.minecraft.util.Mth.lerp(clearing(), closeness(), 1.0F));
 		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_FOG_END_DISTANCE,
-			(distance, tick) -> distance * closeness());
+			(distance, tick) -> distance * net.minecraft.util.Mth.lerp(clearing(), closeness(), 1.0F));
 		builder.addTimeBasedLayer(EnvironmentAttributes.CLOUD_FOG_END_DISTANCE,
-			(distance, tick) -> distance * closeness());
+			(distance, tick) -> distance * net.minecraft.util.Mth.lerp(clearing(), closeness(), 1.0F));
 
 		// And the light, which was the real omission. Everything above changes
 		// what colour the world is; none of it changes how BRIGHT the world is,
@@ -151,9 +173,9 @@ public final class Atmosphere {
 		// stopping short of them meant recolouring a scene that was still lit
 		// like noon.
 		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_FACTOR,
-			(factor, tick) -> factor * (1.0F - gloom(level)));
+			(factor, tick) -> factor * (1.0F - (gloom(level) * (1.0F - clearing()))));
 		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_LEVEL,
-			(lit, tick) -> lit * (1.0F - gloom(level) * 0.7F));
+			(lit, tick) -> lit * (1.0F - (gloom(level) * (1.0F - clearing())) * 0.7F));
 
 		// Clouds come down. A ceiling you can nearly touch is oppressive in a
 		// way a grey one is not, and it is the only attribute here that changes
@@ -162,7 +184,7 @@ public final class Atmosphere {
 			(height, tick) -> height - 46.0F * pall());
 
 		builder.addTimeBasedLayer(EnvironmentAttributes.MUSIC_VOLUME,
-			(volume, tick) -> volume * loudness());
+			(volume, tick) -> volume * net.minecraft.util.Mth.lerp(clearing(), loudness(), 1.0F));
 	}
 
 	/**
@@ -243,7 +265,7 @@ public final class Atmosphere {
 		// nine tenths the biome stops having any say at all and the world in front
 		// of you is one flat colour, which stops being weather and starts being a
 		// broken shader.
-		return Math.min(0.88F, base + GREY_AT_HIS * near()) * daylit();
+		return Math.min(0.88F, base + GREY_AT_HIS * near()) * daylit() * (1.0F - clearing());
 	}
 
 	/**
@@ -360,6 +382,7 @@ public final class Atmosphere {
 			case HUNTER -> 0.6F;
 			case SIEGE -> 1.0F;
 		};
+		strength *= 1.0F - clearing();          // the red goes out of the rain with the rest
 		if (strength <= 0.0F) {
 			return white;
 		}
@@ -456,7 +479,7 @@ public final class Atmosphere {
 
 	private static float near() {
 		if (!com.bloomlet.herobrine.Config.get().enabled
-			|| !com.bloomlet.herobrine.Config.get().atmosphere || cleared()) {
+			|| !com.bloomlet.herobrine.Config.get().atmosphere) {
 			return 0.0F;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -505,7 +528,7 @@ public final class Atmosphere {
 		// whose whole job is to look like an ordinary world — so one gate at
 		// the source turns the lot off and cannot be forgotten in one of them.
 		if (!com.bloomlet.herobrine.Config.get().enabled
-			|| !com.bloomlet.herobrine.Config.get().atmosphere || cleared()) {
+			|| !com.bloomlet.herobrine.Config.get().atmosphere) {
 			return Phase.RUMOUR;
 		}
 		Minecraft client = Minecraft.getInstance();
