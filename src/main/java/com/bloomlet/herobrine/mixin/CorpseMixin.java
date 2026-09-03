@@ -14,11 +14,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * What keeps a kept mob a corpse. See Corpses.
  *
- * The pose is not saved with the entity, so a body reloaded with its chunk would
- * stand up; and a zombie's own aiStep sets it alight in daylight whether it has
- * a mind or not. Both are put back at the end of every tick. The lying-down box
- * is what makes a body clickable: the sleeping pose's own box is a fifth of a
- * block, which is a hitbox nobody can find.
+ * A zombie's own aiStep sets it alight in daylight whether it has a mind or not,
+ * so the fire is put out at the end of every tick. The lying-down box is what
+ * makes a body clickable. The lying-down LOOK is the client's: CorpseRenderMixin
+ * rolls the model onto its side the way the death animation does — the sleeping
+ * pose was tried first and stands a pig on its hind legs, because a quadruped's
+ * length is along the axis the sleeping rotation turns upright.
  */
 @Mixin(LivingEntity.class)
 public abstract class CorpseMixin {
@@ -28,10 +29,6 @@ public abstract class CorpseMixin {
 		LivingEntity self = (LivingEntity) (Object) this;
 		if (self instanceof PlayerCorpseEntity || !Corpses.isCorpse(self)) {
 			return;
-		}
-		if (self.getPose() != Pose.SLEEPING) {
-			self.setPose(Pose.SLEEPING);
-			self.refreshDimensions();
 		}
 		if (self.getRemainingFireTicks() > 0) {
 			self.clearFire();
@@ -47,7 +44,10 @@ public abstract class CorpseMixin {
 		if (self instanceof PlayerCorpseEntity || !Corpses.isCorpse(self)) {
 			return;
 		}
+		// Rolled onto its side, the body reaches about its own height sideways from
+		// where it stood, in whichever direction it faced — so the box is square,
+		// that wide, and knee-high. Generous on purpose: this is the thing you click.
 		float tall = self.getType().getDimensions().height();
-		cir.setReturnValue(EntityDimensions.fixed(Math.min(3.0F, Math.max(0.6F, tall)), 0.45F));
+		cir.setReturnValue(EntityDimensions.fixed(Math.min(3.0F, Math.max(1.0F, tall + 0.4F)), 0.6F));
 	}
 }

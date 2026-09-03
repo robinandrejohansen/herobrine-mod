@@ -169,22 +169,16 @@ public class CompanionEntity extends PathfinderMob {
 	 * directly overhead means a player in a house is still outdoors as far as he is
 	 * concerned, and a player who has gone down a ladder is not.
 	 */
+	/**
+	 * HE GOES WHERE YOU GO. There used to be a depth at which he stopped — eight
+	 * blocks under the surface and he turned back with an apology — and it read
+	 * as exactly what it was: the man who said "everyone I walked this road with
+	 * is dead" refusing to walk down a staircase. He follows into the mines, into
+	 * the undercity, through the way, up to the keep. The only thing that ends
+	 * it is Herobrine.
+	 */
 	public boolean willNotGoDown(Player with) {
-		if (!(this.level() instanceof ServerLevel here)) {
-			return false;
-		}
-		int surface = com.bloomlet.herobrine.structure.Ground.topOf(here,
-			with.getBlockX(), with.getBlockZ());
-		if (with.getBlockY() > surface - TOO_DEEP) {
-			this.excused = 0;
-			return false;
-		}
-		// AND HE SAYS SO, on a slow clock. Silently refusing to follow is
-		// indistinguishable from being stuck, and being stuck is a bug report.
-		if (this.excused++ % SAYS_SO_EVERY == 0) {
-			Sayings.say(here, this, with, Sayings.FALTERING);
-		}
-		return true;
+		return false;
 	}
 
 	/** Who she is with. Persistent, because she has to still be yours tomorrow. */
@@ -1140,7 +1134,7 @@ public class CompanionEntity extends PathfinderMob {
 			if (this.her.level() instanceof ServerLevel here) {
 				Player with = this.her.companion();
 				if (with != null) {
-					Sayings.say(here, this.her, with, Sayings.FALTERING);
+					Sayings.say(here, this.her, with, Sayings.SCARED);
 				}
 			}
 		}

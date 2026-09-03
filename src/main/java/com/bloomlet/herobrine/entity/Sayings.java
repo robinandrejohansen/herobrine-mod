@@ -58,10 +58,11 @@ public final class Sayings {
 		"Right behind you.",
 	};
 
-	static final String[] FALTERING = {
-		"I can't — I have to get back, I'm sorry —",
-		"That's too much, that's too much, I'm going —",
-		"Finish it without me. Please.",
+	/** Frightened, not leaving. He never says he is going; he is not. */
+	static final String[] SCARED = {
+		"Too many — keep moving, I'm right behind you.",
+		"Not like this. Not here.",
+		"Get me a second. One second.",
 	};
 
 	static final String[] BACK_UP = {
@@ -236,6 +237,7 @@ public final class Sayings {
 	};
 	public static final String[] FOUND_THRESHOLD = {
 		"The last house. This is where they lost him — and where I stopped looking, because I was afraid of what finding him would mean.",
+		"If we go through, know this: doors like his open one way. Do not count on coming back the way you went. Whatever we need, we bring.",
 		"The door under this house goes to his side. Everyone who went through and came back, came back wrong.",
 		"I am going through with you this time. Say nothing. Walk.",
 	};

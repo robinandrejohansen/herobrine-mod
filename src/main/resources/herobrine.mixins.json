@@ -11,6 +11,10 @@
     "PlayerInfoEntriesAccessor",
     "QuietDeathsMixin"
   ],
+  "client": [
+    "CorpseRenderMixin",
+    "CorpseStateMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   },

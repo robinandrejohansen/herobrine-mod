@@ -26,7 +26,6 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ChestMenu;
@@ -84,6 +83,9 @@ public final class Corpses {
 	public static void register() {
 		ServerLivingEntityEvents.ALLOW_DEATH.register(Corpses::onDeath);
 		UseEntityCallback.EVENT.register(Corpses::onUse);
+		// A body opens on either button. Chests open on the right; a sword swung at
+		// a corpse should not be a miss — it should be the pockets.
+		net.fabricmc.fabric.api.event.player.AttackEntityCallback.EVENT.register(Corpses::onUse);
 	}
 
 	private static boolean onDeath(LivingEntity died, DamageSource source, float amount) {
@@ -144,8 +146,7 @@ public final class Corpses {
 		mob.setAggressive(false);
 		mob.clearFire();
 		mob.setDeltaMovement(0.0, 0.0, 0.0);
-		mob.setPose(Pose.SLEEPING);
-		mob.refreshDimensions();
+		mob.refreshDimensions();          // the lying-down box; the roll is the renderer's (CorpseRenderMixin)
 	}
 
 	/** A player's body, with everything they carried inside it. */
