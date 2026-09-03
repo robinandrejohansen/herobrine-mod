@@ -4075,13 +4075,30 @@ public class HerobrineEntity extends PathfinderMob {
 		return 1.1F;
 	}
 
+	/**
+	 * WHAT IT SOUNDS LIKE TO HIT HIM.
+	 *
+	 * It was Steve's hurt sound a fifth down and a soul-escape whisper over it,
+	 * and it read as thin: one pitched-down voice is a small thing, and the whisper
+	 * is the wrong kind of eerie for a sword landing. Now it is Steve as himself —
+	 * the sound every player knows from their own screen — doubled an octave under
+	 * so it has a chest, with the Warden's hurt low underneath and a breath of the
+	 * Enderman's. Four layers, one blow, and the top one is unmistakably him.
+	 */
 	@Override
 	protected void playHurtSound(DamageSource source) {
-		super.playHurtSound(source);           // Steve, a fifth down
-		if (this.level() instanceof ServerLevel here) {
-			here.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.SOUL_ESCAPE.value(), this.getSoundSource(), 0.7F, 0.5F);
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
 		}
+		double x = this.getX();
+		double y = this.getY();
+		double z = this.getZ();
+		net.minecraft.sounds.SoundSource as = this.getSoundSource();
+		here.playSound(null, x, y, z, SoundEvents.PLAYER_HURT, as, 1.4F,
+			0.92F + this.random.nextFloat() * 0.12F);                 // Steve, as himself
+		here.playSound(null, x, y, z, SoundEvents.PLAYER_HURT, as, 1.0F, 0.5F);   // Steve, an octave under
+		here.playSound(null, x, y, z, SoundEvents.WARDEN_HURT, as, 0.5F, 0.7F);   // the chest
+		here.playSound(null, x, y, z, SoundEvents.ENDERMAN_HURT, as, 0.3F, 0.5F); // the breath
 	}
 
 	private static final double SHOVE_LEAST = 0.09;

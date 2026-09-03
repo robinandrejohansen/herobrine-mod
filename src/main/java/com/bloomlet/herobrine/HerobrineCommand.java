@@ -423,6 +423,34 @@ public final class HerobrineCommand {
 	}
 
 	/**
+	 * THE TESTER'S KIT. Full diamond, a shield on the left arm, a diamond sword and
+	 * twenty enchanted golden apples — what a player who has done the whole road
+	 * would plausibly walk in with, handed over so a test of the fight is a test
+	 * of the fight and not of the mining. Nothing on the body is overwritten: an
+	 * armour slot already worn keeps what it has, and the piece goes into the bag.
+	 */
+	private static void armFor(ServerPlayer player) {
+		java.util.Map<net.minecraft.world.entity.EquipmentSlot, net.minecraft.world.item.Item> body =
+			new java.util.LinkedHashMap<>();
+		body.put(net.minecraft.world.entity.EquipmentSlot.HEAD, net.minecraft.world.item.Items.DIAMOND_HELMET);
+		body.put(net.minecraft.world.entity.EquipmentSlot.CHEST, net.minecraft.world.item.Items.DIAMOND_CHESTPLATE);
+		body.put(net.minecraft.world.entity.EquipmentSlot.LEGS, net.minecraft.world.item.Items.DIAMOND_LEGGINGS);
+		body.put(net.minecraft.world.entity.EquipmentSlot.FEET, net.minecraft.world.item.Items.DIAMOND_BOOTS);
+		body.put(net.minecraft.world.entity.EquipmentSlot.OFFHAND, net.minecraft.world.item.Items.SHIELD);
+		body.forEach((slot, item) -> {
+			net.minecraft.world.item.ItemStack piece = new net.minecraft.world.item.ItemStack(item);
+			if (player.getItemBySlot(slot).isEmpty()) {
+				player.setItemSlot(slot, piece);
+			} else {
+				player.getInventory().add(piece);
+			}
+		});
+		player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD));
+		player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.ENCHANTED_GOLDEN_APPLE, 20));
+		player.containerMenu.broadcastChanges();
+	}
+
+	/**
 	 * /herobrine boss — STRAIGHT TO THE FIGHT.
 	 *
 	 * The story to SIEGE, the ending undone if a previous test reached it, the
@@ -490,6 +518,7 @@ public final class HerobrineCommand {
 			"SIEGE. his city and his keep are going up — the keep is 70 blocks ahead"
 				+ " of you at [" + site.getX() + ", " + site.getZ() + "]. he will be"
 				+ " over it in a couple of seconds. walk in."), false);
+		armFor(player);
 		HerobrineMod.LOGGER.info("boss: {} put down 70 blocks from the keep at [{}, {}]",
 			player.getName().getString(), site.getX(), site.getZ());
 		return 1;
