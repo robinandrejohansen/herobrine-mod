@@ -4313,7 +4313,14 @@ public class HerobrineEntity extends PathfinderMob {
 		// everything that was on it, which is the only trophy that means anything —
 		// plus the apples he kept in his own chests, diamonds, and a totem, because
 		// "removed" is a word that cuts both ways.
-		net.minecraft.world.entity.ExperienceOrb.award(here, this.position(), 4000);
+		// AT THE KILLER'S FEET. aftermath() opens the way home ON HIS CORPSE, and
+		// items and orbs travel through portals: the first kill's whole reward went
+		// through to the overworld before the player had turned round. Whoever landed
+		// the last blow gets it where they stand; if nobody is left, where he fell.
+		ServerPlayer taker = source.getEntity() instanceof ServerPlayer who
+			? who : here.getNearestPlayer(this, 64.0) instanceof ServerPlayer near ? near : null;
+		Vec3 at = taker != null ? taker.position() : this.position();
+		net.minecraft.world.entity.ExperienceOrb.award(here, at, 4000);
 		java.util.List<ItemStack> spoils = new java.util.ArrayList<>();
 		if (!this.getMainHandItem().isEmpty()) {
 			spoils.add(this.getMainHandItem().copy());
@@ -4325,7 +4332,7 @@ public class HerobrineEntity extends PathfinderMob {
 		for (ItemStack stack : spoils) {
 			net.minecraft.world.entity.item.ItemEntity drop =
 				new net.minecraft.world.entity.item.ItemEntity(here,
-					this.getX(), this.getY() + 1.0, this.getZ(), stack);
+					at.x, at.y + 1.0, at.z, stack);
 			drop.setDeltaMovement((this.random.nextDouble() - 0.5) * 0.3, 0.25,
 				(this.random.nextDouble() - 0.5) * 0.3);
 			drop.setUnlimitedLifetime();
@@ -5703,8 +5710,32 @@ public class HerobrineEntity extends PathfinderMob {
 			this.getSoundSource(), 1.4F, 0.45F);
 	}
 
+	/**
+	 * ONE BLOW PER HALF SECOND, PER HAND.
+	 *
+	 * Vanilla lets every click through: the attack-cooldown only scales the DAMAGE
+	 * down, it does not stop hurtServer being called, and vanilla's own immunity
+	 * frames live in the super.hurtServer this override never reaches. So a player
+	 * mashing the button landed four "blows" a second — the log showed act three at
+	 * 46 and him dead six seconds later — and the last fight in the mod was a
+	 * clicking contest. A sword's honest rhythm is 1.6 a second; a blow counts if
+	 * it is at least ten ticks after that player's last counted one. The click
+	 * still connects (sound, flash, stagger); it just is not one of the seventy.
+	 */
+	private static final long BLOW_SPACING = 10L;
+	private final java.util.Map<java.util.UUID, Long> lastCounted = new java.util.HashMap<>();
+
 	private boolean takeTheBlow(ServerLevel level, DamageSource source, ServerPlayer striker,
 	                            float damage) {
+		long now = level.getGameTime();
+		Long last = this.lastCounted.get(striker.getUUID());
+		if (last != null && now - last < BLOW_SPACING) {
+			this.hurtTime = 10;
+			this.hurtDuration = 10;
+			this.stagger(striker, damage * 0.25F);
+			return true;      // connected, not counted
+		}
+		this.lastCounted.put(striker.getUUID(), now);
 		int was = this.act();
 		this.hits++;
 		this.lastStruckBy = striker.getUUID();

@@ -647,6 +647,7 @@ public class CompanionEntity extends PathfinderMob {
 	private static final double COMES_TO_YOU_FROM = 24.0;
 	private static final double SPEAKS_FROM = 4.0;
 	private int introducing;
+	private java.util.@org.jspecify.annotations.Nullable UUID introducingTo;
 	/** Whoever hit him last, and when — a threat whether or not it is one of his. */
 	private net.minecraft.world.entity.@org.jspecify.annotations.Nullable Mob lastAttacker;
 	private long lastAttackedAt;
@@ -665,14 +666,25 @@ public class CompanionEntity extends PathfinderMob {
 		if (this.introducing > 0) {
 			this.introducing--;
 			this.getNavigation().stop();
-			Player to = here.getNearestPlayer(this, SPEAKS_FROM * 3);
+			// THE ONE HE IS TALKING TO, not the nearest. Walk off in the middle of it
+			// and he used to finish the speech to an empty room and then stand there
+			// for good, because "nearest player within twelve" had nobody in it. He
+			// follows the person he introduced himself to, wherever they have got to;
+			// Follow fetches him the rest of the way.
+			Player to = this.introducingTo == null ? null : here.getPlayerByUUID(this.introducingTo);
+			if (to == null) {
+				to = here.getNearestPlayer(this, 64.0);
+			}
 			if (to != null) {
 				this.getLookControl().setLookAt(to, 60.0F, 60.0F);
 			}
-			if (this.introducing == 0 && to != null && !this.isSpokenFor()) {
-				this.goWith(to);
-				HerobrineMod.LOGGER.info("{} is coming with {} — he said so himself",
-					this.getName().getString(), to.getName().getString());
+			if (this.introducing == 0) {
+				this.introducingTo = null;
+				if (to != null && !this.isSpokenFor()) {
+					this.goWith(to);
+					HerobrineMod.LOGGER.info("{} is coming with {} — he said so himself",
+						this.getName().getString(), to.getName().getString());
+				}
 			}
 			return;
 		}
@@ -691,6 +703,7 @@ public class CompanionEntity extends PathfinderMob {
 			return;
 		}
 		here.getServer().overworld().setAttached(INTRODUCED, true);
+		this.introducingTo = to.getUUID();
 		this.introducing = Sayings.introductionLength();
 		this.getNavigation().stop();
 		Sayings.introduce(here, this, to);
