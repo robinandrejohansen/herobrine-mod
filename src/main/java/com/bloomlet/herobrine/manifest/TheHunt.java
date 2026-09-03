@@ -1554,7 +1554,7 @@ public final class TheHunt {
 		String[] pool = TELLS[Math.max(0, Math.min(TELLS.length - 1, moment))];
 		String line = pool[level.getRandom().nextInt(pool.length)];
 		// No roll, no cue, nothing played. See above.
-		quarry.sendSystemMessage(Component.literal("§8§o" + line));
+		quarry.sendSystemMessage(com.bloomlet.herobrine.entity.Sayings.his(line));
 		HerobrineMod.LOGGER.info("hunt: tell {} to {} — \"{}\"",
 			moment, quarry.getName().getString(), line);
 	}
@@ -1638,7 +1638,7 @@ public final class TheHunt {
 		String line = pool[level.getRandom().nextInt(pool.length)];
 		for (ServerPlayer near : level.players()) {
 			if (near.blockPosition().closerThan(at, 64.0)) {
-				near.sendSystemMessage(Component.literal("§8§o" + line));
+				near.sendSystemMessage(com.bloomlet.herobrine.entity.Sayings.his(line));
 			}
 		}
 		HerobrineMod.LOGGER.info("suspicion at [{}, {}, {}] — \"{}\"",

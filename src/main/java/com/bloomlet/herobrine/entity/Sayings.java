@@ -149,6 +149,19 @@ public final class Sayings {
 	 * a half seconds apart, in the order they are written, past the quiet timer.
 	 * Once per world — see CompanionEntity.INTRODUCED.
 	 */
+	/**
+	 * HIS LINE, WITH HIS NAME ON IT.
+	 *
+	 * Everything he said arrived as dark grey italics and nothing else — which in a
+	 * chat where your own messages are the only other thing reads as something YOU
+	 * typed. Addexio has always had his name in front. So does he now, in the white
+	 * that is the only colour he has; the words stay grey and in italics, because
+	 * they are still a whisper, only now you know whose.
+	 */
+	public static Component his(String line) {
+		return Component.literal("§fHerobrine§7: §8§o" + line);
+	}
+
 	/** What he says when Herobrine puts him down. Once. */
 	public static final String[] FALLEN = {
 		"It's all right. Finish it.",

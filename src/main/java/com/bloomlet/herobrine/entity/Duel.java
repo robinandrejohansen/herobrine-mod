@@ -424,8 +424,8 @@ final class Duel {
 		this.silhouette(here, target, to);
 		if (here.getGameTime() - this.spokeAt > SPEAK_REST) {
 			this.spokeAt = here.getGameTime();
-			target.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-				"§8§o" + WATCHING[this.him.getRandom().nextInt(WATCHING.length)]));
+			target.sendSystemMessage(Sayings.his(
+				WATCHING[this.him.getRandom().nextInt(WATCHING.length)]));
 		}
 	}
 
@@ -508,7 +508,7 @@ final class Duel {
 		if (sees && d <= SPEAKS_WITHIN && here.getGameTime() - this.spokeAt > SPEAK_REST) {
 			this.spokeAt = here.getGameTime();
 			String line = WAITING[this.him.getRandom().nextInt(WAITING.length)];
-			target.sendSystemMessage(net.minecraft.network.chat.Component.literal("§8§o" + line));
+			target.sendSystemMessage(Sayings.his(line));
 		}
 		if (this.hallFor < THE_REVEAL) {
 			this.him.getNavigation().stop();
