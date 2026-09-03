@@ -103,6 +103,30 @@ function fit(canvas, cssW, cssH) {
 
 /* ------------------------------------------------------- static cast ----- */
 
+/*
+ * A villager's boxes, front view, for the turned: the head is eight by ten with
+ * the nose hanging off it, the arms are crossed, the robe overlay runs down over
+ * the legs. Texture coordinates are in 64-pixel units and scaled to the file.
+ */
+function composeVillager(img, s) {
+  const k = img.width / 64;
+  const c = document.createElement('canvas');
+  c.width = 16 * s; c.height = 34 * s;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  const box = (u, v, w, h, dx, dy) => g.drawImage(img, u * k, v * k, w * k, h * k, dx * s, dy * s, w * s, h * s);
+  box(8, 8, 8, 10, 4, 0);        // head
+  box(4, 26, 4, 12, 4, 22);      // right leg
+  box(4, 26, 4, 12, 8, 22);      // left leg (same face, mirrored texture in the model)
+  box(22, 26, 8, 12, 4, 10);     // body
+  box(6, 44, 8, 20, 4, 10);      // robe, over body and legs
+  box(48, 26, 4, 8, 0, 8);       // right upper arm
+  box(48, 26, 4, 8, 12, 8);      // left upper arm
+  box(44, 42, 8, 4, 4, 12);      // crossed forearms
+  box(26, 2, 2, 4, 7, 9);        // the nose, last, so it sits over the lip of the robe
+  return c;
+}
+
 document.querySelectorAll('canvas.sprite').forEach(async (c) => {
   try {
     const img = await skin(c.dataset.skin);
@@ -111,7 +135,12 @@ document.querySelectorAll('canvas.sprite').forEach(async (c) => {
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
     const s = 4.5 * DPR;
-    drawFigure(g, compose(img, s), eyes, 0, 0, s, 0.8);
+    if (c.dataset.kind === 'villager') {
+      const sp = composeVillager(img, s * 32 / 34);
+      g.drawImage(sp, (c.width - sp.width) / 2, c.height - sp.height);
+    } else {
+      drawFigure(g, compose(img, s), eyes, 0, 0, s, 0.8);
+    }
   } catch { /* the caption still says who it is */ }
 });
 
