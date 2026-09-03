@@ -5820,7 +5820,7 @@ public class HerobrineEntity extends PathfinderMob {
 		this.struck.clear();
 
 		Heat.noticed(striker, DEFIANCE_STRUCK);
-		this.anger(level);
+		this.anger(level, this.hits == 1);      // the roar once, when it begins
 		// The Reckoning gets the same shove as the hunt. Same reason, same
 		// numbers — see stagger. It is read off the source's own damage so a
 		// netherite sword still feels different from a fist in the last fight.
@@ -5857,6 +5857,18 @@ public class HerobrineEntity extends PathfinderMob {
 	 * already happened twice on this project.
 	 */
 	private void anger(ServerLevel level) {
+		this.anger(level, true);
+	}
+
+	/**
+	 * THE ROAR IS NOT PER BLOW. The roll below — volume three, and an echo off the
+	 * hills a beat later — was written for one man struck once in a field. In the
+	 * duel it fired on every counted blow, a hundred times a fight, and the echo
+	 * sat on top of the hurt voice so every hit sounded like a distant storm rather
+	 * than a sword landing. It rolls on the first blow, and when a player falls;
+	 * the smoke and the fire still come every time, because those are the point.
+	 */
+	private void anger(ServerLevel level, boolean roar) {
 		int stage = 1 + this.hits / THE_WARNING;
 		level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
 			this.getX(), this.getY() + 1.1, this.getZ(),
@@ -5868,9 +5880,11 @@ public class HerobrineEntity extends PathfinderMob {
 		// because one is sixteen blocks and the loudest thing in the mod could
 		// not be heard from the far side of a field — and then it comes back off
 		// the hills a beat later. See ModSounds.roll.
-		com.bloomlet.herobrine.sound.ModSounds.roll(level, this.blockPosition(),
-			com.bloomlet.herobrine.sound.ModSounds.ANGER,
-			3.0F, 1.06F - stage * 0.06F);
+		if (roar) {
+			com.bloomlet.herobrine.sound.ModSounds.roll(level, this.blockPosition(),
+				com.bloomlet.herobrine.sound.ModSounds.ANGER,
+				3.0F, 1.06F - stage * 0.06F);
+		}
 		// More of it every act, and still refused wherever it would spread.
 		this.scorch(level, stage * 2);
 	}
