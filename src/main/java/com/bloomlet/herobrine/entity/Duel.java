@@ -161,6 +161,9 @@ final class Duel {
 			return;
 		}
 		this.him.noStalemate();
+		if (this.him.isDying()) {
+			return;      // the ending owns him now
+		}
 		this.watchers = watchers;
 		if (!this.him.isBound()) {
 			this.idle(here, watchers);

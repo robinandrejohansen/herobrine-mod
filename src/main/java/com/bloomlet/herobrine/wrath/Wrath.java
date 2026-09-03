@@ -232,6 +232,20 @@ public final class Wrath {
 		}
 	}
 
+	/**
+	 * THE SKY OVER HIS WORLD IS CLEAR. Synced to clients, because the darkness over
+	 * there is drawn by the client: a timeline pins the sun, Atmosphere thickens the
+	 * fog by phase, and the client itself forces the rain level every tick. None of
+	 * that is reachable from the server except by telling the client to stop —
+	 * which is what this attachment on his level is. Set by his death; persistent.
+	 */
+	public static final AttachmentType<Boolean> CLEAR_SKY = AttachmentRegistry
+		.<Boolean>builder()
+		.persistent(Codec.BOOL)
+		.syncWith(net.minecraft.network.codec.ByteBufCodecs.BOOL.cast(),
+			net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
+		.buildAndRegister(HerobrineMod.id("clear_sky"));
+
 	public static void jumpTo(MinecraftServer server, Phase phase) {
 		set(server, phase);
 		HerobrineMod.LOGGER.info("story set to {} by command", phase.name());

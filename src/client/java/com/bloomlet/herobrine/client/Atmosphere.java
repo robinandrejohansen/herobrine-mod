@@ -57,7 +57,73 @@ public final class Atmosphere {
 	 */
 	private static final int PALL = ARGB.color(255, 58, 60, 66);
 
+	/**
+	 * WHETHER HIS SKY HAS BEEN CLEARED — he is dead, and the level says so. Every
+	 * darkening below answers to this; and the layers added first in addLayers
+	 * replace the timeline's pinned midnight with a day that turns with the
+	 * overworld clock.
+	 */
+	static boolean cleared() {
+		ClientLevel level = Minecraft.getInstance().level;
+		return level != null
+			&& level.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)
+			&& Boolean.TRUE.equals(level.getAttached(com.bloomlet.herobrine.wrath.Wrath.CLEAR_SKY));
+	}
+
+	/** Where the overworld's day is right now, 0..1 round the clock, vanilla's own curve. */
+	private static float dayFraction() {
+		ClientLevel level = Minecraft.getInstance().level;
+		if (level == null) {
+			return 0.25F;
+		}
+		double d = net.minecraft.util.Mth.frac(level.getOverworldClockTime() / 24000.0 - 0.25);
+		double e = 0.5 - Math.cos(d * Math.PI) / 2.0;
+		return (float) ((d * 2.0 + e) / 3.0);
+	}
+
+	/** How bright the sky is at that hour, 0 (midnight) to 1 (noon). */
+	private static float daylight() {
+		float f = 1.0F - (float) (Math.cos(dayFraction() * Math.PI * 2.0) * 2.0 + 0.2);
+		return 1.0F - net.minecraft.util.Mth.clamp(f, 0.0F, 1.0F);
+	}
+
+	private static final int DAY_SKY = ARGB.color(255, 120, 167, 255);
+	private static final int NIGHT_SKY = ARGB.color(255, 10, 12, 30);
+	private static final int DAY_FOG = ARGB.color(255, 192, 216, 255);
+	private static final int NIGHT_FOG = ARGB.color(255, 12, 12, 22);
+	private static final int DAY_CLOUD = ARGB.color(255, 255, 255, 255);
+	private static final int NIGHT_CLOUD = ARGB.color(255, 40, 40, 60);
+
 	public static void addLayers(EnvironmentAttributeSystem.Builder builder, ClientLevel level) {
+		if (level.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+			// A DAY OVER HIS WORLD, ONCE HE IS GONE. The timeline pins the sun at zero
+			// and the sky at black; these come after it and, when the level says the
+			// sky is clear, put the overworld's own day in its place — sun, moon,
+			// stars, light and colour all turning with the overworld clock. Until then
+			// they pass the values straight through.
+			builder.addTimeBasedLayer(EnvironmentAttributes.SUN_ANGLE,
+				(angle, tick) -> cleared() ? dayFraction() * 360.0F : angle);
+			builder.addTimeBasedLayer(EnvironmentAttributes.MOON_ANGLE,
+				(angle, tick) -> cleared() ? (dayFraction() * 360.0F + 180.0F) % 360.0F : angle);
+			builder.addTimeBasedLayer(EnvironmentAttributes.STAR_ANGLE,
+				(angle, tick) -> cleared() ? dayFraction() * 360.0F : angle);
+			builder.addTimeBasedLayer(EnvironmentAttributes.STAR_BRIGHTNESS,
+				(bright, tick) -> cleared() ? (1.0F - daylight()) * (1.0F - daylight()) * 0.5F : bright);
+			builder.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_FACTOR,
+				(factor, tick) -> cleared() ? Math.max(0.05F, daylight()) : factor);
+			builder.addTimeBasedLayer(EnvironmentAttributes.SKY_LIGHT_LEVEL,
+				(lit, tick) -> cleared() ? Math.max(0.05F, daylight()) : lit);
+			builder.addTimeBasedLayer(EnvironmentAttributes.SKY_COLOR,
+				(colour, tick) -> cleared() ? ARGB.srgbLerp(daylight(), NIGHT_SKY, DAY_SKY) : colour);
+			builder.addTimeBasedLayer(EnvironmentAttributes.FOG_COLOR,
+				(colour, tick) -> cleared() ? ARGB.srgbLerp(daylight(), NIGHT_FOG, DAY_FOG) : colour);
+			builder.addTimeBasedLayer(EnvironmentAttributes.CLOUD_COLOR,
+				(colour, tick) -> cleared() ? ARGB.srgbLerp(daylight(), NIGHT_CLOUD, DAY_CLOUD) : colour);
+			builder.addTimeBasedLayer(EnvironmentAttributes.FOG_START_DISTANCE,
+				(distance, tick) -> cleared() ? Math.max(distance, 160.0F) : distance);
+			builder.addTimeBasedLayer(EnvironmentAttributes.FOG_END_DISTANCE,
+				(distance, tick) -> cleared() ? Math.max(distance, 480.0F) : distance);
+		}
 		// Same target, same strength, all three. They must agree.
 		builder.addTimeBasedLayer(EnvironmentAttributes.SKY_COLOR,
 			(colour, tick) -> ARGB.srgbLerp(pall(), colour, PALL));
@@ -390,7 +456,7 @@ public final class Atmosphere {
 
 	private static float near() {
 		if (!com.bloomlet.herobrine.Config.get().enabled
-			|| !com.bloomlet.herobrine.Config.get().atmosphere) {
+			|| !com.bloomlet.herobrine.Config.get().atmosphere || cleared()) {
 			return 0.0F;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -439,7 +505,7 @@ public final class Atmosphere {
 		// whose whole job is to look like an ordinary world — so one gate at
 		// the source turns the lot off and cannot be forgotten in one of them.
 		if (!com.bloomlet.herobrine.Config.get().enabled
-			|| !com.bloomlet.herobrine.Config.get().atmosphere) {
+			|| !com.bloomlet.herobrine.Config.get().atmosphere || cleared()) {
 			return Phase.RUMOUR;
 		}
 		Minecraft client = Minecraft.getInstance();

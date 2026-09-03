@@ -3369,6 +3369,10 @@ public class HerobrineEntity extends PathfinderMob {
 		if (this.level().isClientSide()) {
 			return;
 		}
+		if (this.isDying() && this.level() instanceof ServerLevel leaving) {
+			this.dyingTick(leaving);
+			return;
+		}
 
 		// THE PAUSE HOLDS HIM WHERE HE IS. See ascend().
 		//
@@ -4253,6 +4257,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// next storm, TheTurning put another wrong villager in the town, and
 		// Whereabouts stood a fresh one of him over the keep he had just died in.
 		com.bloomlet.herobrine.wrath.Wrath.remove(server);
+		here.setAttached(com.bloomlet.herobrine.wrath.Wrath.CLEAR_SKY, true);
 
 		// AND IT IS MORNING. Not "the night ends when it ends" — he held it at
 		// midnight for as long as he lived, and the first thing that should happen
@@ -5311,6 +5316,9 @@ public class HerobrineEntity extends PathfinderMob {
 
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+		if (this.isDying()) {
+			return false;      // it is over; nothing lands on a man who is leaving
+		}
 		if (this.showing) {
 			return false;      // not while he is working
 		}
@@ -5772,8 +5780,7 @@ public class HerobrineEntity extends PathfinderMob {
 		this.stagger(striker, damage);
 
 		if (this.hits >= this.blowsNeeded()) {
-			com.bloomlet.herobrine.manifest.Reckoning.clear(level);
-			super.hurtServer(level, source, Float.MAX_VALUE);
+			this.beginDying(level, striker);
 			return true;
 		}
 		this.wearTheAct();
@@ -5934,6 +5941,85 @@ public class HerobrineEntity extends PathfinderMob {
 
 	boolean isBound() {
 		return this.bound;
+	}
+
+	boolean isDying() {
+		return this.getAttached(DYING_SINCE) != null;
+	}
+
+	/**
+	 * THE END, THE WAY THE DRAGON ENDS.
+	 *
+	 * He used to fall over. Seventy — now a hundred — blows, and the last one made
+	 * him lie down and vanish like a zombie, with the bar still on the screen. The
+	 * Ender Dragon rises, whitens, and bursts, and every player knows that shape
+	 * means the thing is over. So: for seven seconds nothing can touch him, he
+	 * lifts off the floor, grows to nearly three times his size, goes white (see
+	 * HerobrineRenderer.getWhiteOverlayProgress), the light pours out of him — and
+	 * then die() runs, with everything it already did: the morning, the loot at the
+	 * killer's feet, the song, the patch note on the screen.
+	 */
+	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Long> DYING_SINCE =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.<Long>builder()
+			.syncWith(net.minecraft.network.codec.ByteBufCodecs.VAR_LONG.cast(),
+				net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
+			.buildAndRegister(HerobrineMod.id("dying_since"));
+	public static final int DYING_TAKES = 140;
+	private static final double DYING_GROWS_TO = 2.8;
+	private java.util.@org.jspecify.annotations.Nullable UUID dyingStruckBy;
+	private double dyingScaleFrom = 1.0;
+	private int dyingFor;
+
+	private void beginDying(ServerLevel level, ServerPlayer striker) {
+		com.bloomlet.herobrine.manifest.Reckoning.clear(level);
+		this.setAttached(DYING_SINCE, level.getGameTime());
+		this.dyingStruckBy = striker.getUUID();
+		this.dyingFor = 0;
+		var size = this.getAttribute(Attributes.SCALE);
+		this.dyingScaleFrom = size == null ? 1.0 : size.getBaseValue();
+		this.getNavigation().stop();
+		this.setDeltaMovement(Vec3.ZERO);
+		this.setNoGravity(true);
+		this.setInvulnerable(true);
+		this.setRemainingFireTicks(0);
+		level.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.SOUL_ESCAPE.value(), this.getSoundSource(), 3.0F, 0.4F);
+		com.bloomlet.herobrine.sound.ModSounds.roll(level, this.blockPosition(),
+			com.bloomlet.herobrine.sound.ModSounds.ANGER, 4.0F, 0.5F);
+		HerobrineMod.LOGGER.info("the last blow — he is leaving, {} ticks", DYING_TAKES);
+	}
+
+	private void dyingTick(ServerLevel here) {
+		this.dyingFor++;
+		double t = Math.min(1.0, this.dyingFor / (double) DYING_TAKES);
+		this.setNoGravity(true);
+		this.setDeltaMovement(0.0, 0.045, 0.0);
+		this.hurtMarked = true;
+		var size = this.getAttribute(Attributes.SCALE);
+		if (size != null) {
+			size.setBaseValue(this.dyingScaleFrom + (DYING_GROWS_TO - this.dyingScaleFrom) * t);
+		}
+		double h = this.getBbHeight();
+		here.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD,
+			this.getX(), this.getY() + h * 0.5, this.getZ(), 3, 0.6 * t + 0.3, h * 0.4, 0.6 * t + 0.3, 0.02);
+		if (this.dyingFor % 20 == 0) {
+			here.sendParticles(net.minecraft.core.particles.ColorParticleOption.create(
+					net.minecraft.core.particles.ParticleTypes.FLASH, 0xFFFFFFFF),
+				this.getX(), this.getY() + h * 0.5, this.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
+			here.playSound(null, this.getX(), this.getY(), this.getZ(),
+				SoundEvents.SOUL_ESCAPE.value(), this.getSoundSource(), 2.0F, 0.5F + (float) t);
+		}
+		if (this.dyingFor >= DYING_TAKES) {
+			here.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
+				this.getX(), this.getY() + h * 0.5, this.getZ(), 2, 0.0, 0.0, 0.0, 0.0);
+			ServerPlayer killer = this.dyingStruckBy == null ? null
+				: here.getServer().getPlayerList().getPlayer(this.dyingStruckBy);
+			DamageSource source = killer != null
+				? this.damageSources().playerAttack(killer) : this.damageSources().generic();
+			this.setInvulnerable(false);
+			this.removeAttached(DYING_SINCE);
+			super.hurtServer(here, source, Float.MAX_VALUE);
+		}
 	}
 
 	boolean inTheAir() {

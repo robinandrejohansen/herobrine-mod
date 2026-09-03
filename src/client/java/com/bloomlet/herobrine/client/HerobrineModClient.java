@@ -47,7 +47,12 @@ public class HerobrineModClient implements ClientModInitializer {
 						com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
 					return;
 				}
-				client.level.setRainLevel(1.0F);
+				// THE CLIENT FORCES THE RAIN OVER HIS WORLD — which is why the server's
+				// "it is dry now" packets never showed: this line put it back every
+				// tick. Once his sky is clear, it forces the opposite.
+				boolean clear = Boolean.TRUE.equals(
+					client.level.getAttached(com.bloomlet.herobrine.wrath.Wrath.CLEAR_SKY));
+				client.level.setRainLevel(clear ? 0.0F : 1.0F);
 				// Thunder level is what darkens the sky and deepens the sound.
 				//
 				// PULLED BACK FROM 0.85, and the reasoning that set it there was
@@ -58,7 +63,7 @@ public class HerobrineModClient implements ClientModInitializer {
 				// up to atmosphere, they add up to a black screen — you could not
 				// see the castle from the city, which is the one shot the whole
 				// dimension is built for.
-				client.level.setThunderLevel(0.6F);
+				client.level.setThunderLevel(clear ? 0.0F : 0.6F);
 			});
 	}
 }

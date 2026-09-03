@@ -145,6 +145,9 @@ public final class HisWeather {
 		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
 			his.setRainLevel(0.0F);
 			his.setThunderLevel(0.0F);
+			if (!Boolean.TRUE.equals(his.getAttached(com.bloomlet.herobrine.wrath.Wrath.CLEAR_SKY))) {
+				his.setAttached(com.bloomlet.herobrine.wrath.Wrath.CLEAR_SKY, true);
+			}
 			// AND SAY SO. Vanilla sends the rain-level packet only when ITS OWN step
 			// changed the level; ours is forced after that step, so the client kept
 			// the last value it was ever told — 0.99 — and drew rain in a dry sky for

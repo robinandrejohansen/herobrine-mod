@@ -22,7 +22,7 @@ import net.minecraft.resources.Identifier;
  * which is typed to AvatarRenderState and drags in player-specific state.
  */
 public class HerobrineRenderer
-		extends HumanoidMobRenderer<HerobrineEntity, HumanoidRenderState, HumanoidModel<HumanoidRenderState>> {
+		extends HumanoidMobRenderer<HerobrineEntity, HerobrineRenderState, HumanoidModel<HerobrineRenderState>> {
 
 	private static final Identifier TEXTURE = HerobrineMod.id("textures/entity/herobrine.png");
 	/**
@@ -45,12 +45,12 @@ public class HerobrineRenderer
 	}
 
 	@Override
-	public HumanoidRenderState createRenderState() {
-		return new HumanoidRenderState();
+	public HerobrineRenderState createRenderState() {
+		return new HerobrineRenderState();
 	}
 
 	@Override
-	public Identifier getTextureLocation(HumanoidRenderState state) {
+	public Identifier getTextureLocation(HerobrineRenderState state) {
 		return state.scale > STOPPED_PRETENDING ? ANGRY : TEXTURE;
 	}
 
@@ -65,9 +65,15 @@ public class HerobrineRenderer
 	 * why black could never have worked on a black skin.
 	 */
 	@Override
-	public void extractRenderState(HerobrineEntity entity, HumanoidRenderState state,
+	public void extractRenderState(HerobrineEntity entity, HerobrineRenderState state,
 	                               float partialTicks) {
 		super.extractRenderState(entity, state, partialTicks);
+		// THE WHITE. The same overlay a creeper uses when it swells: from nothing to
+		// everything over the seven seconds he takes to leave.
+		Long dying = entity.getAttached(HerobrineEntity.DYING_SINCE);
+		state.whiteness = dying == null ? 0.0F : net.minecraft.util.Mth.clamp(
+			(entity.level().getGameTime() - dying + partialTicks) / (float) HerobrineEntity.DYING_TAKES,
+			0.0F, 1.0F);
 		Long hit = entity.getAttached(HerobrineEntity.WOUNDED);
 		long since = hit == null ? Long.MAX_VALUE : entity.level().getGameTime() - hit;
 		// Vanilla's own field, so the body is tinted by the same code that tints
@@ -90,5 +96,10 @@ public class HerobrineRenderer
 			: entity.level().getGameTime() - swung + partialTicks;
 		state.attackTime = ago < 0.0F || ago >= HerobrineEntity.SWING_SHOWS ? 0.0F
 			: 1.0F - Math.abs(ago / HerobrineEntity.SWING_SHOWS - 0.35F) / 0.65F;
+	}
+
+	@Override
+	protected float getWhiteOverlayProgress(HerobrineRenderState state) {
+		return state.whiteness;
 	}
 }
