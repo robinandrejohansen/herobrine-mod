@@ -2062,6 +2062,7 @@ public class HerobrineEntity extends PathfinderMob {
 			field.getEntitiesOfClass(net.minecraft.world.entity.Mob.class,
 				this.getBoundingBox().inflate(SWEEP_REACH),
 				m -> m.isAlive() && !(m instanceof HerobrineEntity)
+					&& !(m instanceof CompanionEntity)
 					&& !com.bloomlet.herobrine.manifest.TheHunt.isHis(m)
 					&& (challenger(m) || m.getTarget() == this));
 		if (lot.size() < SWEEP_NEEDS) {
@@ -4056,8 +4057,11 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final float CURSED_PITCH = 0.55F;
 
 	@Override
-	protected net.minecraft.sounds.SoundEvent getHurtSound(DamageSource source) {
-		return SoundEvents.PLAYER_HURT;
+	protected net.minecraft.sounds.@org.jspecify.annotations.Nullable SoundEvent getHurtSound(DamageSource source) {
+		// Null on purpose. The client plays this itself off the damage event, at a
+		// random pitch near one, and it would sit on top of the layered voice below.
+		// The blow's sound is playHurtSound, server-side, and only that.
+		return null;
 	}
 
 	@Override
@@ -4760,7 +4764,12 @@ public class HerobrineEntity extends PathfinderMob {
 				net.minecraft.world.entity.Mob.class,
 				this.getBoundingBox().inflate(ANSWERS_AT),
 				m -> m.isAlive() && m.getTarget() == this
-					&& !com.bloomlet.herobrine.manifest.TheHunt.isHis(m))) {
+					&& !com.bloomlet.herobrine.manifest.TheHunt.isHis(m)
+					// ADDEXIO IS NOT ANSWERED. He fell four seconds before the first
+					// blow: he chose Herobrine as a target, this loop found a mob that
+					// had, and put him down with the smoke. He is the Duel's to break —
+					// slowly, twelve at a time, where the player can see it happen.
+					&& !(m instanceof CompanionEntity))) {
 			if (challenger(mob)) {
 				// It gets a duel, not a death. One place does the fighting so the
 				// facing, the pacing and the interruption cannot disagree.
@@ -5399,6 +5408,7 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 		if (source.getEntity() instanceof net.minecraft.world.entity.Mob other
 			&& !com.bloomlet.herobrine.manifest.TheHunt.isHis(other)
+			&& !(other instanceof CompanionEntity)
 			&& other.getTarget() == this) {
 			level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
 				other.getX(), other.getY() + 0.6, other.getZ(), 16, 0.3, 0.5, 0.3, 0.02);
@@ -5778,6 +5788,9 @@ public class HerobrineEntity extends PathfinderMob {
 		if (last != null && now - last < this.blowSpacing()) {
 			this.hurtTime = 10;
 			this.hurtDuration = 10;
+			// The client only flashes him red and hears the blow if it is told.
+			level.broadcastDamageEvent(this, source);
+			this.playHurtSound(source);
 			this.stagger(striker, damage * 0.25F);
 			return true;      // connected, not counted
 		}
@@ -5827,6 +5840,9 @@ public class HerobrineEntity extends PathfinderMob {
 		this.setHealth(Math.max(1.0F, this.blowsNeeded() - this.hits));
 		this.hurtTime = 10;
 		this.hurtDuration = 10;
+		// The client only flashes him red and hears the blow if it is told.
+		level.broadcastDamageEvent(this, source);
+		this.playHurtSound(source);
 		return true;
 	}
 
