@@ -74,6 +74,19 @@ public class HerobrineRenderer
 		state.whiteness = dying == null ? 0.0F : net.minecraft.util.Mth.clamp(
 			(entity.level().getGameTime() - dying + partialTicks) / (float) HerobrineEntity.DYING_TAKES,
 			0.0F, 1.0F);
+		// THE DARK. While he rises between acts the light goes out of him over two
+		// seconds — sky and block light on the render state scaled toward zero — so
+		// he hangs there as a shape, not a lit model. His eyes render fullbright and
+		// stay.
+		Long rising = entity.getAttached(HerobrineEntity.RISING_SINCE);
+		if (rising != null) {
+			float dark = net.minecraft.util.Mth.clamp(
+				(entity.level().getGameTime() - rising + partialTicks) / 40.0F, 0.0F, 1.0F);
+			int sky = (state.lightCoords >> 20) & 0xF;
+			int block = (state.lightCoords >> 4) & 0xF;
+			state.lightCoords = (Math.round(sky * (1.0F - dark)) << 20)
+				| (Math.round(block * (1.0F - dark)) << 4);
+		}
 		Long hit = entity.getAttached(HerobrineEntity.WOUNDED);
 		long since = hit == null ? Long.MAX_VALUE : entity.level().getGameTime() - hit;
 		// Vanilla's own field, so the body is tinted by the same code that tints

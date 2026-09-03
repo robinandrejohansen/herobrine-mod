@@ -3079,15 +3079,50 @@ public class HerobrineEntity extends PathfinderMob {
 	}
 
 	/** How high he goes, how long he hangs there, and how wide the ring is. */
-	private static final int RISES = 10;
-	private static final int HANGS_FOR = 120;   // six seconds: long enough to be a moment
+	/*
+	 * THE CEREMONY BETWEEN ACTS.
+	 *
+	 * It was a cut: he was ten blocks up in one tick, hung there on fire for six
+	 * seconds, and fell like a dropped item. Now it is a scene with a shape —
+	 *
+	 *     RISE     four seconds       he leaves the floor and goes up slowly, dark,
+	 *                                 the light going out of him as he climbs;
+	 *                                 through the ceiling if there is one
+	 *     HANG     two and a half     high enough to be a figure against the sky,
+	 *                                 low enough to be seen from the yard; the ring
+	 *                                 of bolts comes down round him
+	 *     DROP     under two          straight down, faster every tick, through
+	 *                                 whatever he broke on the way up
+	 *     SLAM                        the walls round the landing go, everybody
+	 *                                 within seven blocks is thrown, and the fight
+	 *                                 resumes where it stopped
+	 *
+	 * The darkness is the client's: RISING_SINCE is synced, and the renderer puts
+	 * his light out over the first two seconds of it (HerobrineRenderer). Fire was
+	 * removed from the scene for that reason — a burning man is a lit man.
+	 */
+	private static final double RISE_HEIGHT = 14.0;
+	private static final int RISE_TAKES = 80;
+	private static final int HANGS_AT_TOP = 50;
+	private static final int DROP_MOST = 80;          // a floor he cannot find ends it
+	private static final double SLAM_THROWS = 7.0;
+	private static final double SLAM_CLEARS = 1.9;    // the walls round him, not the floor
+
+	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Long> RISING_SINCE =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.<Long>builder()
+			.syncWith(net.minecraft.network.codec.ByteBufCodecs.VAR_LONG.cast(),
+				net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
+			.buildAndRegister(HerobrineMod.id("rising_since"));
 	private static final double RING = 4.5;
 
 	/** Ticks left of the pause. Nothing he does runs while this is above zero. */
 	private int ascending;
+	private boolean dropping;
+	private int droppingFor;
+	private double roseFrom;
 
 	public boolean isAscending() {
-		return this.ascending > 0;
+		return this.ascending > 0 || this.dropping;
 	}
 
 	/**
@@ -3113,24 +3148,30 @@ public class HerobrineEntity extends PathfinderMob {
 	 * he buys the spectacle by handing the player the only opening in the fight.
 	 */
 	private void ascend(ServerLevel here) {
-		this.ascending = HANGS_FOR;
+		this.ascending = RISE_TAKES + HANGS_AT_TOP;
+		this.dropping = false;
+		this.droppingFor = 0;
+		this.roseFrom = this.getY();
 		this.takeOff();
+		this.setNoGravity(true);
 		this.setDeltaMovement(0.0, 0.0, 0.0);
-		this.snapTo(this.getX(), this.getY() + RISES, this.getZ(),
-			this.getYRot(), 0.0F);
-		this.hurtMarked = true;
-		this.setRemainingFireTicks(HANGS_FOR + 40);
+		this.clearFire();
+		this.setAttached(RISING_SINCE, here.getGameTime());
 		here.playSound(null, this.getX(), this.getY(), this.getZ(),
 			SoundEvents.LIGHTNING_BOLT_THUNDER, this.getSoundSource(), 3.0F, 0.6F);
+		// The Warden's charge: a sound that is nothing but "something is building".
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.WARDEN_SONIC_CHARGE, this.getSoundSource(), 2.2F, 0.65F);
 
-		int bolts = 6;
+		// THE RING OF BOLTS comes down round him across the whole of the rise and
+		// the hang, not in the first second — visual bolts, so they light the yard
+		// and crack without burning anything he has not chosen to burn.
+		int bolts = 9;
 		for (int i = 0; i < bolts; i++) {
-			double angle = Math.PI * 2.0 * i / bolts
-				+ this.random.nextDouble() * 0.4;
+			double angle = Math.PI * 2.0 * i / bolts + this.random.nextDouble() * 0.4;
 			final double x = this.getX() + Math.cos(angle) * RING;
 			final double z = this.getZ() + Math.sin(angle) * RING;
-			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(),
-					6 + i * 7, () -> {
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), 12 + i * 13, () -> {
 				int y = here.getHeight(
 					net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
 					net.minecraft.util.Mth.floor(x), net.minecraft.util.Mth.floor(z));
@@ -3145,8 +3186,52 @@ public class HerobrineEntity extends PathfinderMob {
 				here.addFreshEntity(bolt);
 			});
 		}
-		HerobrineMod.LOGGER.info("he is hanging over it, on fire, for {} ticks",
-			HANGS_FOR);
+		HerobrineMod.LOGGER.info("he rises from y={} — {} up over {} ticks, hangs {}, then comes down",
+			(int) this.roseFrom, (int) RISE_HEIGHT, RISE_TAKES, HANGS_AT_TOP);
+	}
+
+	/** Whatever his body is about to pass through goes. Ceilings up, floors down. */
+	private void clearThePath(ServerLevel here, BlockPos at) {
+		int gone = com.bloomlet.herobrine.manifest.HisHost.punch(here, at, 1.3);
+		if (gone > 0) {
+			here.playSound(null, at.getX(), at.getY(), at.getZ(),
+				SoundEvents.GENERIC_EXPLODE.value(), this.getSoundSource(), 0.9F, 0.8F);
+		}
+	}
+
+	/** The landing. The walls round him go; the floor stays; everybody is thrown. */
+	private void slam(ServerLevel here) {
+		this.dropping = false;
+		this.droppingFor = 0;
+		this.removeAttached(RISING_SINCE);
+		this.land();
+		this.setDeltaMovement(0.0, 0.0, 0.0);
+		this.hurtMarked = true;
+		BlockPos at = this.blockPosition();
+		int gone = com.bloomlet.herobrine.manifest.HisHost.punch(here, at.above(), SLAM_CLEARS);
+		here.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
+			this.getX(), this.getY() + 0.5, this.getZ(), 2, 1.2, 0.2, 1.2, 0.0);
+		here.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+			this.getX(), this.getY() + 0.4, this.getZ(), 70, 2.6, 0.5, 2.6, 0.06);
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.GENERIC_EXPLODE.value(), this.getSoundSource(), 3.0F, 0.55F);
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.WARDEN_SONIC_BOOM, this.getSoundSource(), 2.0F, 0.6F);
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.LIGHTNING_BOLT_IMPACT, this.getSoundSource(), 2.0F, 0.7F);
+		for (ServerPlayer one : here.getPlayers(p -> p.isAlive()
+				&& p.distanceTo(this) <= SLAM_THROWS && !p.isSpectator())) {
+			Vec3 away = one.position().subtract(this.position()).multiply(1.0, 0.0, 1.0);
+			if (away.lengthSqr() < 0.01) {
+				away = new Vec3(1.0, 0.0, 0.0);
+			}
+			double close = 1.0 - one.distanceTo(this) / (SLAM_THROWS + 1.0);
+			away = away.normalize().scale(0.6 + 0.9 * close);
+			one.setDeltaMovement(away.x, 0.45 + 0.3 * close, away.z);
+			one.hurtMarked = true;
+		}
+		HerobrineMod.LOGGER.info("he came down at [{}, {}, {}] — {} blocks gone round him",
+			at.getX(), at.getY(), at.getZ(), gone);
 	}
 	// ---- END THE RECKONING ------------------------------------------------
 
@@ -3381,13 +3466,48 @@ public class HerobrineEntity extends PathfinderMob {
 		// the velocity is zeroed every tick rather than once: he is flying, and a
 		// flying mob that is merely told to stop drifts. Hanging perfectly still is
 		// the entire image.
-		if (this.ascending > 0) {
+		if (this.ascending > 0 && this.level() instanceof ServerLevel stage) {
 			this.ascending--;
-			this.setDeltaMovement(0.0, 0.0, 0.0);
 			this.setNoGravity(true);
+			if (this.ascending >= HANGS_AT_TOP) {
+				// RISING. Slowly, and dark: the smoke is his, the ink is the light
+				// leaving him. The ceiling over his head goes before he reaches it.
+				this.setDeltaMovement(0.0, RISE_HEIGHT / RISE_TAKES, 0.0);
+				this.clearThePath(stage, BlockPos.containing(this.getEyePosition()).above(2));
+				stage.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+					this.getX(), this.getY() + 1.0, this.getZ(), 6, 0.5, 0.9, 0.5, 0.01);
+				stage.sendParticles(net.minecraft.core.particles.ParticleTypes.SQUID_INK,
+					this.getX(), this.getY() + 1.2, this.getZ(), 3, 0.4, 0.8, 0.4, 0.02);
+			} else {
+				// HANGING. Still, and looked at.
+				this.setDeltaMovement(0.0, 0.0, 0.0);
+				stage.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+					this.getX(), this.getY() + 1.0, this.getZ(), 4, 0.6, 1.0, 0.6, 0.01);
+				stage.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL,
+					this.getX(), this.getY() + 1.2, this.getZ(), 2, 0.5, 0.8, 0.5, 0.01);
+			}
+			this.hurtMarked = true;
 			if (this.ascending == 0) {
+				this.dropping = true;
+				this.droppingFor = 0;
 				this.setNoGravity(false);
+				this.setDeltaMovement(0.0, -0.9, 0.0);
+				stage.playSound(null, this.getX(), this.getY(), this.getZ(),
+					SoundEvents.FIREWORK_ROCKET_LAUNCH, this.getSoundSource(), 2.0F, 0.4F);
 				HerobrineMod.LOGGER.info("he is coming down");
+			}
+		} else if (this.dropping && this.level() instanceof ServerLevel stage) {
+			// DROPPING. Faster every tick, through whatever is under him — except the
+			// floor he left from, which is where he is going.
+			this.droppingFor++;
+			this.setDeltaMovement(0.0, Math.max(-2.4, this.getDeltaMovement().y - 0.3), 0.0);
+			this.hurtMarked = true;
+			if (this.getY() > this.roseFrom + 1.5) {
+				this.clearThePath(stage, this.blockPosition().below());
+			}
+			if (this.onGround() || this.verticalCollision || this.getY() <= this.roseFrom + 0.1
+				|| this.droppingFor > DROP_MOST) {
+				this.slam(stage);
 			}
 		}
 
@@ -5751,8 +5871,15 @@ public class HerobrineEntity extends PathfinderMob {
 			x, y + 1.0, z, 24, 0.35, 0.7, 0.35, 0.02);
 		where.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL_FIRE_FLAME,
 			x, y + 1.0, z, 10, 0.3, 0.6, 0.3, 0.01);
+		// SOFT AND DARK, NOT BRIGHT. The Enderman's teleport is a sharp, bright
+		// "vwoop" — a sound the player has heard ten thousand times and files under
+		// "enderman", not "him". So it is the soul's escape an octave down, which
+		// is air moving in a cold room, with the enderman note faint and low
+		// underneath so the ear still reads "something moved".
+		where.playSound(null, x, y, z, SoundEvents.SOUL_ESCAPE.value(),
+			this.getSoundSource(), 1.3F, 0.5F);
 		where.playSound(null, x, y, z, SoundEvents.ENDERMAN_TELEPORT,
-			this.getSoundSource(), 1.4F, 0.45F);
+			this.getSoundSource(), 0.35F, 0.4F);
 	}
 
 	/**
