@@ -123,6 +123,15 @@ final class Duel {
 	private int keptOff;
 	private int barrageIn = 200;                      // never in the first ten seconds
 	private int holdFor;
+	private int withoutFor;
+	/** What he says when you come back to a fight you left — by dying, usually. */
+	private static final String[] RETURNED = {
+		"you came back",
+		"again.",
+		"i kept your place",
+		"the dead do not usually return. you will learn why",
+		"i have not moved",
+	};
 	private int growlIn = 40;
 	private int heartIn = 200;
 	private int idleHeartIn = 260;
@@ -210,8 +219,21 @@ final class Duel {
 
 		ServerPlayer target = this.pick(watchers);
 		if (target == null) {
+			this.withoutFor++;
 			return;
 		}
+		// YOU CAME BACK. Ten seconds or more with nobody, then somebody: he does not
+		// start over and he does not orbit. He says one thing, the heart under the
+		// floor speeds up, and the fight resumes at the range it finds you at —
+		// which, through gone() and far(), means he is on you inside a few seconds.
+		if (this.withoutFor > 200) {
+			target.sendSystemMessage(Sayings.his(RETURNED[this.him.getRandom().nextInt(RETURNED.length)]));
+			here.playSound(null, this.him.getX(), this.him.getY(), this.him.getZ(),
+				net.minecraft.sounds.SoundEvents.WARDEN_NEARBY_CLOSEST, this.him.getSoundSource(), 3.0F, 0.6F);
+			this.growlIn = 10;
+			this.say(here, "they came back after " + (this.withoutFor / 20) + " s — resuming");
+		}
+		this.withoutFor = 0;
 		this.him.getLookControl().setLookAt(target, 90.0F, 90.0F);
 
 		// THE PAUSE. He is up there on fire and the bolts are coming down round

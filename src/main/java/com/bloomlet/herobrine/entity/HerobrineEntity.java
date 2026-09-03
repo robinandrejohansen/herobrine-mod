@@ -3555,6 +3555,15 @@ public class HerobrineEntity extends PathfinderMob {
 		// anywhere to say so.
 		//
 		// Once, on the first server tick, where the level is unambiguous.
+		// HE REMEMBERS ON HIS OWN. recall() ran only from beginProwl — the path a
+		// freshly placed one takes. One saved in the castle chunks and loaded again
+		// when you came back took no such path: hits zero, unbound, and the Duel
+		// handed him the ENTRANCE — the orbit round the keep, the patrol of a man
+		// who has never met you — while the ledger on the level said act three.
+		// Now the first tick in his world reads the ledger, whichever way he got here.
+		if (!this.recalled && this.level() instanceof ServerLevel && this.hisGround()) {
+			this.recall();
+		}
 		if (!this.armed) {
 			this.armed = true;
 			this.blade();
