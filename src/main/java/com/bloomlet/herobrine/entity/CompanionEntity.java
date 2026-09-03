@@ -1279,16 +1279,39 @@ public class CompanionEntity extends PathfinderMob {
 		 * list. Now: his things, anything that has him as its target, and whatever
 		 * hit him in the last three seconds.
 		 */
+		private long threatsAt = Long.MIN_VALUE;
+		private List<Mob> threats = List.of();
+
+		/**
+		 * Asked by canUse, canContinueToUse and tick — several times a tick, each a
+		 * box scan and a stream. The scan now runs once every five ticks at the
+		 * widest radius anybody asks for, and every question is answered from that
+		 * list with the same box test the scan used.
+		 */
 		private @org.jspecify.annotations.Nullable Mob nearestThreat(double within) {
 			long now = this.her.level().getGameTime();
+			if (now - this.threatsAt >= 5) {
+				this.threatsAt = now;
+				AABB wide = this.her.getBoundingBox().inflate(Math.max(within, FLEES));
+				this.threats = this.her.level().getEntitiesOfClass(Mob.class, wide,
+					m -> m != this.her && m.isAlive() && (Sayings.isHis(m)
+						|| m.getTarget() == this.her
+						|| (m == this.her.lastAttacker && now - this.her.lastAttackedAt < 60)));
+			}
 			AABB near = this.her.getBoundingBox().inflate(within);
-			List<Mob> found = this.her.level().getEntitiesOfClass(Mob.class, near,
-				m -> m != this.her && m.isAlive() && (Sayings.isHis(m)
-					|| m.getTarget() == this.her
-					|| (m == this.her.lastAttacker && now - this.her.lastAttackedAt < 60)));
-			return found.stream()
-				.min(Comparator.comparingDouble(this.her::distanceToSqr))
-				.orElse(null);
+			Mob best = null;
+			double closest = Double.MAX_VALUE;
+			for (Mob m : this.threats) {
+				if (!m.isAlive() || !near.intersects(m.getBoundingBox())) {
+					continue;
+				}
+				double d = this.her.distanceToSqr(m);
+				if (d < closest) {
+					closest = d;
+					best = m;
+				}
+			}
+			return best;
 		}
 	}
 

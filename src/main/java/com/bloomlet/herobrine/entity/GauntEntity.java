@@ -195,7 +195,12 @@ public class GauntEntity extends PathfinderMob {
 	 * does both halves and plays the latch, which is the part you actually hear
 	 * happen behind you.
 	 */
+	private @org.jspecify.annotations.Nullable Player lastWatcher;
+
 	private void unbolt() {
+		if ((this.tickCount % 5) != 0) {
+			return;          // a nearest-player search four times a second is plenty for a latch
+		}
 		this.unbolt(false);
 	}
 
@@ -425,7 +430,12 @@ public class GauntEntity extends PathfinderMob {
 			this.entityData.set(VOICE, (byte) (left - 1));
 		}
 
-		Player seen = this.watcher();
+		// EVERY OTHER TICK. The stare costs a raycast per player in range; nobody
+		// blinks inside a twentieth of a second, so the thing is not made weaker.
+		if ((this.tickCount & 1) == 0) {
+			this.lastWatcher = this.watcher();
+		}
+		Player seen = this.lastWatcher;
 		this.entityData.set(STARING, seen != null);
 		// THE CLOCK STARTS THE MOMENT IT IS IN THE ROOM WITH SOMEBODY.
 		//

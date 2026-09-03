@@ -34,7 +34,7 @@ public final class Cadence {
 	private static final List<Pending> pending = new ArrayList<>();
 
 	/** A runaway guard. Nothing here should ever queue more than a handful. */
-	private static final int CEILING = 512;
+	private static final int CEILING = 4096;
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Cadence::onTick);
@@ -43,6 +43,11 @@ public final class Cadence {
 	/** Run this in {@code ticks} ticks' time, on the server thread. */
 	public static void in(MinecraftServer server, int ticks, Runnable action) {
 		if (pending.size() >= CEILING) {
+			// Dropping work is worse than doing it late, and doing it silently is
+			// worse than either. Nothing should get here now that the builders queue
+			// one self-rescheduling job each instead of one entry per batch.
+			com.bloomlet.herobrine.HerobrineMod.LOGGER.warn(
+				"cadence: {} jobs pending — dropping one; something is scheduling in a loop", pending.size());
 			return;
 		}
 		pending.add(new Pending(server.overworld().getGameTime() + Math.max(0, ticks), action));

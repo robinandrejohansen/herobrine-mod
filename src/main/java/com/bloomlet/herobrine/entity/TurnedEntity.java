@@ -753,6 +753,9 @@ public class TurnedEntity extends PathfinderMob {
 		if (this.getTarget() != null) {
 			return;      // he is busy
 		}
+		if ((this.tickCount & 3) != 0) {
+			return;          // a village holds many of these; a look every fourth tick is the same look
+		}
 		Player watching = this.level().getNearestPlayer(this, NOTICES);
 		if (watching == null || !this.hasLineOfSight(watching)) {
 			return;

@@ -64,7 +64,9 @@ public final class Blueprint {
 	private static final Gson GSON = new Gson();
 
 	/** How many blocks go down per tick. */
-	private static final int PER_TICK = 2000;
+	private static final int PER_TICK = 600;
+	/** Chunks force-loaded per tick before a blueprint's rows start. */
+	private static final int CHUNKS_PER_TICK = 3;
 
 	/**
 	 * Make the folder and drop a note in it, once, at startup.
@@ -539,27 +541,36 @@ public final class Blueprint {
 		JsonArray rows = root.getAsJsonArray("blocks");
 		MinecraftServer server = level.getServer();
 
-		// ---- the chunks, before anything is written
+		// ---- THE CHUNKS, THEN THE BLOCKS: ONE JOB THAT RESCHEDULES ITSELF.
+		//
+		// It was one Cadence entry per PER_TICK rows — thirty-seven for the castle,
+		// more for the city on top of it — into a queue with a ceiling that dropped
+		// work silently. And every chunk under the footprint was force-loaded in
+		// the tick this was called, which on a fresh world is worldgen on the server
+		// thread: the three-second "Can't keep up" at the boss command. Now one task
+		// walks a cursor — the chunks a few a tick, then the rows PER_TICK a tick —
+		// and re-queues itself until it is done. One entry, however big the build.
 		int fx = size.get("x").getAsInt();
 		int fz = size.get("z").getAsInt();
 		// THE FILE'S WIDTH AND THE OCCUPIED WIDTH ARE NOT THE SAME AT 90 DEGREES.
-		// Loading chunks over the file's box would leave the far edge of a turned
-		// building unloaded, and setBlock into an unloaded chunk is a silent miss.
 		int sx = quarter(rot) ? fz : fx;
 		int sz = quarter(rot) ? fx : fz;
-		for (int cx = at.getX() >> 4; cx <= (at.getX() + sx) >> 4; cx++) {
-			for (int cz = at.getZ() >> 4; cz <= (at.getZ() + sz) >> 4; cz++) {
-				level.getChunk(cx, cz);
-			}
-		}
-
-		// ---- and the blocks, PER_TICK at a time
-		int placed = 0;
-		for (int from = 0; from < rows.size(); from += PER_TICK) {
-			final int start = from;
-			final int end = Math.min(rows.size(), from + PER_TICK);
-			com.bloomlet.herobrine.manifest.Cadence.in(server, after + from / PER_TICK, () -> {
-				for (int i = start; i < end; i++) {
+		final int cx0 = at.getX() >> 4;
+		final int cxN = ((at.getX() + sx) >> 4) - cx0 + 1;
+		final int cz0 = at.getZ() >> 4;
+		final int chunks = cxN * (((at.getZ() + sz) >> 4) - cz0 + 1);
+		final int chunkTicks = (chunks + CHUNKS_PER_TICK - 1) / CHUNKS_PER_TICK;
+		final int rowTicks = (rows.size() + PER_TICK - 1) / PER_TICK;
+		final int[] cursor = { 0, 0 };           // chunks loaded, rows placed
+		final Runnable[] step = new Runnable[1];
+		step[0] = () -> {
+			if (cursor[0] < chunks) {
+				for (int n = 0; n < CHUNKS_PER_TICK && cursor[0] < chunks; n++, cursor[0]++) {
+					level.getChunk(cx0 + cursor[0] % cxN, cz0 + cursor[0] / cxN);
+				}
+			} else {
+				int end = Math.min(rows.size(), cursor[1] + PER_TICK);
+				for (int i = cursor[1]; i < end; i++) {
 					JsonArray r = rows.get(i).getAsJsonArray();
 					BlockState state = states[r.get(3).getAsInt()];
 					if (state == null) {
@@ -570,13 +581,19 @@ public final class Blueprint {
 					level.setBlock(at.offset(spinX(dx, dz, fx, fz, rot),
 						r.get(1).getAsInt(), spinZ(dx, dz, fx, fz, rot)), state, 2);
 				}
-			});
-			placed += end - start;
-		}
-		HerobrineMod.LOGGER.info("blueprint {}: {} blocks at [{}, {}, {}], {} palette"
-			+ " entries unplaceable", name, placed, at.getX(), at.getY(), at.getZ(), lost);
+				cursor[1] = end;
+			}
+			if (cursor[0] < chunks || cursor[1] < rows.size()) {
+				com.bloomlet.herobrine.manifest.Cadence.in(server, 1, step[0]);
+			}
+		};
+		com.bloomlet.herobrine.manifest.Cadence.in(server, after, step[0]);
+		int placed = rows.size();
+		HerobrineMod.LOGGER.info("blueprint {}: {} blocks at [{}, {}, {}], {} palette entries"
+			+ " unplaceable — {} chunks, then {} rows a tick, {} ticks in all",
+			name, placed, at.getX(), at.getY(), at.getZ(), lost, chunks, PER_TICK, chunkTicks + rowTicks);
 		return new Placed(placed, lost, sx, size.get("y").getAsInt(), sz,
-			after + (rows.size() + PER_TICK - 1) / PER_TICK);
+			after + chunkTicks + rowTicks);
 	}
 
 	/**
@@ -633,7 +650,7 @@ public final class Blueprint {
 	 * still being emptied.
 	 */
 	/** How many columns are emptied per tick. */
-	private static final int COLUMNS_PER_TICK = 3000;
+	private static final int COLUMNS_PER_TICK = 700;
 
 	/**
 	 * BY COLUMN, AND ONLY ABOVE THE GROUND LINE.
@@ -658,28 +675,31 @@ public final class Blueprint {
 	                               int sx, int sy, int sz, int ground) {
 		MinecraftServer server = level.getServer();
 		int columns = sx * sz;
-		int ticks = 0;
-		for (int from = 0; from < columns; from += COLUMNS_PER_TICK) {
-			final int start = from;
-			final int end = Math.min(columns, from + COLUMNS_PER_TICK);
-			Cadence.in(server, ticks, () -> {
-				for (int i = start; i < end; i++) {
-					int x = at.getX() + i % sx;
-					int z = at.getZ() + i / sx;
-					int floor = at.getY() + ground;
-					int top = Math.min(at.getY() + sy - 1, level.getHeight(
-						net.minecraft.world.level.levelgen.Heightmap.Types
-							.MOTION_BLOCKING, x, z));
-					for (int y = floor; y <= top; y++) {
-						BlockPos pos = new BlockPos(x, y, z);
-						if (!level.getBlockState(pos).isAir()) {
-							level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
-						}
+		int ticks = (columns + COLUMNS_PER_TICK - 1) / COLUMNS_PER_TICK;
+		// One self-rescheduling job, like place(): a cursor over the columns.
+		final int[] cursor = { 0 };
+		final Runnable[] step = new Runnable[1];
+		step[0] = () -> {
+			int end = Math.min(columns, cursor[0] + COLUMNS_PER_TICK);
+			for (int i = cursor[0]; i < end; i++) {
+				int x = at.getX() + i % sx;
+				int z = at.getZ() + i / sx;
+				int floor = at.getY() + ground;
+				int top = Math.min(at.getY() + sy - 1, level.getHeight(
+					net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z));
+				for (int y = floor; y <= top; y++) {
+					BlockPos pos = new BlockPos(x, y, z);
+					if (!level.getBlockState(pos).isAir()) {
+						level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
 					}
 				}
-			});
-			ticks++;
-		}
+			}
+			cursor[0] = end;
+			if (cursor[0] < columns) {
+				Cadence.in(server, 1, step[0]);
+			}
+		};
+		Cadence.in(server, 0, step[0]);
 		HerobrineMod.LOGGER.info(
 			"clearing {} columns above the ground line over {} ticks", columns, ticks);
 		return ticks;

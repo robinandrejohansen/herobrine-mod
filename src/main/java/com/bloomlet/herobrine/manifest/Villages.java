@@ -131,7 +131,7 @@ public final class Villages {
 		RandomSource random = level.getRandom();
 		int severity = phase.ordinal() - Phase.TRESPASSER.ordinal() + 1;
 
-		int boarded = board(level, player, bounds, random, severity * 3);
+		int boarded = board(level, player, village, random, severity * 3);
 		int dug = graves(level, player, bounds, random, severity, phase);
 		age(level, player, bounds, random, severity * 6);
 
@@ -151,19 +151,41 @@ public final class Villages {
 	 * strictly safer than a glass one. All the meaning is in the direction:
 	 * nobody boards their own windows from outside.
 	 */
-	private static int board(ServerLevel level, ServerPlayer player, BoundingBox bounds,
+	private static int board(ServerLevel level, ServerPlayer player, StructureStart village,
 	                         RandomSource random, int wanted) {
 		List<BlockPos> panes = new ArrayList<>();
 		BlockPos at = player.blockPosition();
+		BoundingBox reach = new BoundingBox(at.getX() - REACH, at.getY() - 8, at.getZ() - REACH,
+			at.getX() + REACH, at.getY() + 12, at.getZ() + REACH);
 
-		for (BlockPos pos : BlockPos.betweenClosed(
-				at.offset(-REACH, -8, -REACH), at.offset(REACH, 12, REACH))) {
-			if (!bounds.isInside(pos) || !level.isLoaded(pos)) {
+		// THE PIECES, NOT THE BOX. Eighty-one by twenty-one by eighty-one is 138,000
+		// positions, each asking isLoaded and then getBlockState — a stall of
+		// hundreds of milliseconds for everyone in the village the moment one player
+		// walked in. A village's box is mostly street and air; its glass is in its
+		// buildings, and the buildings are the pieces. Same panes, a tenth of the
+		// reads, and the loaded test is per chunk rather than per block.
+		for (net.minecraft.world.level.levelgen.structure.StructurePiece piece : village.getPieces()) {
+			BoundingBox box = piece.getBoundingBox();
+			if (!box.intersects(reach)) {
 				continue;
 			}
-			BlockState state = level.getBlockState(pos);
-			if (state.is(Blocks.GLASS_PANE) || state.is(Blocks.GLASS)) {
-				panes.add(pos.immutable());
+			int x0 = Math.max(box.minX(), reach.minX()), x1 = Math.min(box.maxX(), reach.maxX());
+			int y0 = Math.max(box.minY(), reach.minY()), y1 = Math.min(box.maxY(), reach.maxY());
+			int z0 = Math.max(box.minZ(), reach.minZ()), z1 = Math.min(box.maxZ(), reach.maxZ());
+			for (int cx = x0 >> 4; cx <= x1 >> 4; cx++) {
+				for (int cz = z0 >> 4; cz <= z1 >> 4; cz++) {
+					if (!level.hasChunk(cx, cz)) {
+						continue;
+					}
+					for (BlockPos pos : BlockPos.betweenClosed(
+							Math.max(x0, cx << 4), y0, Math.max(z0, cz << 4),
+							Math.min(x1, (cx << 4) + 15), y1, Math.min(z1, (cz << 4) + 15))) {
+						BlockState state = level.getBlockState(pos);
+						if (state.is(Blocks.GLASS_PANE) || state.is(Blocks.GLASS)) {
+							panes.add(pos.immutable());
+						}
+					}
+				}
 			}
 		}
 		java.util.Collections.shuffle(panes, new java.util.Random(random.nextLong()));

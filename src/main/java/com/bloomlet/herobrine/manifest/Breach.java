@@ -88,7 +88,7 @@ public final class Breach {
 	 * Three rather than four, because this drives door-chewing and a player can
 	 * feel the difference between a door coming apart at 7Hz and at 5Hz.
 	 */
-	private static final int CHEWS_EVERY = 3;
+	private static final int CHEWS_EVERY = 8;   // two zombie scans and up to four raycasts each; 2.5 Hz is plenty for a chew
 
 	private static void onTick(MinecraftServer server) {
 		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {

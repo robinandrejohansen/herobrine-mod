@@ -397,9 +397,17 @@ public final class Company {
 	 * box before it is next opened. Five hundred covers the whole build height,
 	 * and there is nothing else down there for the query to find.
 	 */
-	private static List<CompanionEntity> hers(ServerLevel here, Player with) {
-		return here.getEntitiesOfClass(CompanionEntity.class,
-			with.getBoundingBox().inflate(64.0, 512.0, 64.0),
-			her -> !her.isFallen() && her.companion() == with);
+	private static List<? extends CompanionEntity> hers(ServerLevel here, Player with) {
+		// OFF THE TYPE INDEX, NOT A 128 x 1024 x 128 BOX. That box spans four
+		// thousand entity sections and was walked twice per player every two
+		// seconds to find, at most, one man. There are never more than a few of him
+		// in a level; the index hands them over for the price of counting them. The
+		// reach is kept as the same plain distances, so the answer does not change.
+		return here.getEntities(
+			net.minecraft.world.level.entity.EntityTypeTest.forClass(CompanionEntity.class),
+			her -> !her.isFallen() && her.companion() == with
+				&& Math.abs(her.getX() - with.getX()) <= 65.0
+				&& Math.abs(her.getZ() - with.getZ()) <= 65.0
+				&& Math.abs(her.getY() - with.getY()) <= 513.0);
 	}
 }

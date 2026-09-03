@@ -131,8 +131,8 @@ public final class TheDark {
 		for (BlockPos pos : BlockPos.betweenClosed(
 				origin.offset(-REACH, -REACH_Y, -REACH),
 				origin.offset(REACH, REACH_Y, REACH))) {
-			if (!level.getBlockState(pos).is(Blocks.TORCH)
-				&& !level.getBlockState(pos).is(Blocks.WALL_TORCH)) {
+			net.minecraft.world.level.block.state.BlockState lit = level.getBlockState(pos);   // once, not twice
+			if (!lit.is(Blocks.TORCH) && !lit.is(Blocks.WALL_TORCH)) {
 				continue;
 			}
 			BlockPos at = pos.immutable();

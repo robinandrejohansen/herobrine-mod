@@ -56,7 +56,7 @@ public final class TheDogKnows {
 	private static final double DUTY_RANGE = 16.0;
 	/** Roughly every two seconds. Often enough to read as a warning. */
 	private static final int GROWL_INTERVAL = 45;
-	private static final int CHECK_INTERVAL = 5;
+	private static final int CHECK_INTERVAL = 20;   // a growl a second is a growl; four scans per wolf per quarter-second was a bill
 
 	private static int tickCounter;
 

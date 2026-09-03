@@ -137,7 +137,7 @@ public final class Feral {
 	 * drives: hunt() sets a target and watch() turns a head. Neither is perceptible
 	 * at 20Hz and neither is missed at 5Hz.
 	 */
-	private static final int LOOKS_EVERY = 4;
+	private static final int LOOKS_EVERY = 8;
 
 	private static void onTick(MinecraftServer server) {
 		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {

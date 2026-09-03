@@ -562,18 +562,22 @@ public final class Keep {
 		// question once a couple of seconds and fix it the first time somebody is
 		// over there. Only ever runs before RAISED — a keep already standing is
 		// never moved, whatever its Y says.
-		his.getChunk(site.getX() >> 4, site.getZ() >> 4);
-		int ground = Ground.topOf(his, site.getX(), site.getZ());
-		if (Math.abs(site.getY() - ground) > SLIPPED) {
-			his.setAttached(SITE, null);
-			HerobrineMod.LOGGER.warn(
-				"the keep was sited at Y {} where the ground is {} — forgetting it,"
-					+ " it will be chosen again", site.getY(), ground);
-			return;
-		}
-
+		// NO FORCED CHUNK LOAD ON THE TICK. This used to getChunk() the keep site
+		// every forty ticks for as long as the keep stood unraised: an unloaded chunk
+		// is a disk read, or worldgen, twice a second, for nothing. The load — and
+		// the ground check that needs it — now happen once, in the tick somebody has
+		// come near enough for the keep to go up.
 		for (ServerPlayer player : his.players()) {
 			if (player.blockPosition().closerThan(site, RAISE_RANGE)) {
+				his.getChunk(site.getX() >> 4, site.getZ() >> 4);
+				int ground = Ground.topOf(his, site.getX(), site.getZ());
+				if (Math.abs(site.getY() - ground) > SLIPPED) {
+					his.setAttached(SITE, null);
+					HerobrineMod.LOGGER.warn(
+						"the keep was sited at Y {} where the ground is {} — forgetting it,"
+							+ " it will be chosen again", site.getY(), ground);
+					return;
+				}
 				raise(his, site);
 				his.setAttached(RAISED, true);
 				return;

@@ -1107,9 +1107,7 @@ public class HerobrineEntity extends PathfinderMob {
 		if (!(this.level() instanceof ServerLevel here) || this.age < this.slipAt) {
 			return false;
 		}
-		java.util.List<Player> near = here.getEntitiesOfClass(Player.class,
-			this.getBoundingBox().inflate(WATCH_RANGE),
-			who -> who.isAlive() && !who.isSpectator());
+		java.util.List<Player> near = this.playersWithin(WATCH_RANGE);
 		for (Player watcher : near) {
 			// Eyes on him, or simply close enough that a man ceasing to be there is
 			// something you would notice out of the corner of one. Facing away is
@@ -2821,9 +2819,11 @@ public class HerobrineEntity extends PathfinderMob {
 				this.bar.addPlayer(near);
 			}
 		}
-		for (ServerPlayer shown : java.util.List.copyOf(this.bar.getPlayers())) {
-			if (!watchers.contains(shown)) {
-				this.bar.removePlayer(shown);
+		if (this.tickCount % 10 == 0) {           // a copy of the bar's list every tick was the only allocation left in his tick
+			for (ServerPlayer shown : java.util.List.copyOf(this.bar.getPlayers())) {
+				if (!watchers.contains(shown)) {
+					this.bar.removePlayer(shown);
+				}
 			}
 		}
 	}
@@ -3649,9 +3649,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// you stood still did nothing; you looking away made him leave even
 		// though your friend was staring straight at him; and fleeing from the
 		// nearest player ran him directly into the other one.
-		List<Player> watchers = this.level().getEntitiesOfClass(
-			Player.class, this.getBoundingBox().inflate(WATCH_RANGE),
-			player -> player.isAlive() && !player.isSpectator());
+		List<Player> watchers = this.playersWithin(WATCH_RANGE);
 
 		// Did ANYONE actually see him? Not "was he rendered" — was he in
 		// somebody's view, unobstructed. A visit nobody perceived should not
@@ -3937,6 +3935,35 @@ public class HerobrineEntity extends PathfinderMob {
 	 * suppression is wanted everywhere except here.
 	 */
 	/** Loosely in front of the player, with line of sight. Not aiming at him. */
+	/**
+	 * THE PLAYERS IN HIS BOX, OFF THE PLAYER LIST. getEntitiesOfClass over a
+	 * 192-block box walks some seventeen hundred entity sections to find at most a
+	 * handful of players, every tick, and the level's player list is that handful
+	 * already. The same box test against each one, so the answer is identical.
+	 */
+	private List<Player> playersWithin(double reach) {
+		net.minecraft.world.phys.AABB box = this.getBoundingBox().inflate(reach);
+		List<Player> found = new java.util.ArrayList<>(4);
+		for (Player player : this.level().players()) {
+			if (player.isAlive() && !player.isSpectator() && player.getBoundingBox().intersects(box)) {
+				found.add(player);
+			}
+		}
+		return found;
+	}
+
+	private int sightTick = -1;
+	private final java.util.Map<java.util.UUID, Boolean> sight = new java.util.HashMap<>();
+
+	/** player.hasLineOfSight(this) — a block raycast — once per player per tick, not once per caller. */
+	private boolean seenBy(Player player) {
+		if (this.sightTick != this.tickCount) {
+			this.sight.clear();
+			this.sightTick = this.tickCount;
+		}
+		return this.sight.computeIfAbsent(player.getUUID(), id -> player.hasLineOfSight(this));
+	}
+
 	private boolean inViewOf(Player player) {
 		Vec3 look = player.getViewVector(1.0F).normalize();
 		Vec3 toMe = new Vec3(
@@ -3944,7 +3971,7 @@ public class HerobrineEntity extends PathfinderMob {
 			this.getEyeY() - player.getEyeY(),
 			this.getZ() - player.getZ()
 		).normalize();
-		return look.dot(toMe) > SEEN_CONE && player.hasLineOfSight(this);
+		return look.dot(toMe) > SEEN_CONE && this.seenBy(player);
 	}
 
 	/**
@@ -3968,7 +3995,7 @@ public class HerobrineEntity extends PathfinderMob {
 			this.getEyeY() - player.getEyeY(),
 			this.getZ() - player.getZ()
 		).normalize();
-		return look.dot(toMe) > HELD_CONE && player.hasLineOfSight(this);
+		return look.dot(toMe) > HELD_CONE && this.seenBy(player);
 	}
 
 	/**

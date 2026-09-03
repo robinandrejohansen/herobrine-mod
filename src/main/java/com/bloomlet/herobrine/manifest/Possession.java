@@ -283,6 +283,10 @@ public final class Possession {
 		AttachmentRegistry.createPersistent(HerobrineMod.id("possession_toll"), Codec.INT);
 
 	private static int tickCounter;
+	/** How often the near scan runs. Four ticks: nothing a possessed animal does needs 20 Hz. */
+	private static final int TEND_INTERVAL = 4;
+	/** Owner ids, parsed once. UUID.fromString per mob per tick was a garbage fountain. */
+	private static final java.util.Map<String, UUID> OWNER_IDS = new java.util.HashMap<>();
 
 	/**
 	 * Animals that saw you do it, and which of you they saw.
@@ -677,12 +681,19 @@ public final class Possession {
 		if (id == null) {
 			return null;
 		}
-		ServerPlayer owner;
-		try {
-			owner = level.getServer().getPlayerList().getPlayer(UUID.fromString(id));
-		} catch (IllegalArgumentException malformed) {
-			return null;
+		UUID uuid = OWNER_IDS.get(id);
+		if (uuid == null) {
+			try {
+				uuid = UUID.fromString(id);
+			} catch (IllegalArgumentException malformed) {
+				return null;
+			}
+			if (OWNER_IDS.size() > 256) {
+				OWNER_IDS.clear();
+			}
+			OWNER_IDS.put(id, uuid);
 		}
+		ServerPlayer owner = level.getServer().getPlayerList().getPlayer(uuid);
 		// Another dimension counts as gone. It has no way to follow them there
 		// and should not be twitching toward a player who is not in this world.
 		return owner != null && owner.level() == level ? owner : null;
@@ -707,11 +718,17 @@ public final class Possession {
 			return;      // Removed Herobrine. See Wrath.removed.
 		}
 		boolean sweep = ++tickCounter % SWEEP_INTERVAL == 0;
+		// THE NEAR SCAN WAS UNGUARDED: a 48-block box of every mob, per player, per
+		// world, twenty times a second. Now every fourth tick; the sweep keeps its own.
+		boolean tend = tickCounter % TEND_INTERVAL == 0;
+		if (!tend && !sweep) {
+			return;
+		}
 
 		for (ServerLevel level : server.getAllLevels()) {
 			for (ServerPlayer player : level.players()) {
 				AABB close = player.getBoundingBox().inflate(TEND_RADIUS);
-				for (Mob mob : level.getEntitiesOfClass(Mob.class, close)) {
+				for (Mob mob : tend ? level.getEntitiesOfClass(Mob.class, close) : java.util.List.<Mob>of()) {
 					if (isPossessed(mob)) {
 						ServerPlayer owner = ownerOf(level, mob);
 						if (owner == null) {
@@ -734,7 +751,7 @@ public final class Possession {
 							// straight to the nearest person would spend that
 							// for nothing — this way somebody finds it stopped,
 							// looks at it, walks away, and it follows them.
-							if (mob.tickCount % ADOPT_INTERVAL == 0
+							if (mob.tickCount % ADOPT_INTERVAL < TEND_INTERVAL   // once per window, whichever tick we look
 								&& player.distanceTo(mob) < ADOPT_RADIUS) {
 								mob.setAttached(OWNER, player.getUUID().toString());
 								HerobrineMod.LOGGER.info("an orphaned {} attached itself to {}",

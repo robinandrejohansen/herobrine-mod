@@ -27,6 +27,9 @@ public abstract class CorpseMixin {
 	@Inject(method = "tick", at = @At("TAIL"))
 	private void herobrine$lieStill(CallbackInfo ci) {
 		LivingEntity self = (LivingEntity) (Object) this;
+		if ((self.tickCount & 3) != 0) {
+			return;          // this runs on every living thing in every world; three ticks in four it does not
+		}
 		if (self instanceof PlayerCorpseEntity || !Corpses.isCorpse(self)) {
 			return;
 		}

@@ -400,46 +400,32 @@ public final class Whereabouts {
 			if (!Ground.dry(over, x, z)) {
 				continue;
 			}
-			over.getChunk(x >> 4, z >> 4);
-			BlockPos cellar = com.bloomlet.herobrine.structure.Outbuilding.build(
-				over, new BlockPos(x, over.getSeaLevel(), z), random);
-			over.setAttached(SHED,
-				new BlockPos(x, Ground.topOf(over, x, z) + 1, z).asLong());
-			// The undercroft's mouth is a fixed offset from the homestead — see
-			// Homestead.build. Aiming at it is what turns two buildings and a hole
-			// into one place.
-			// THE UNDERCROFT IS ONLY THREE BELOW THE HOUSE, and running the passage
-			// straight at it would have the whole thing skimming just under the
-			// topsoil — which is not a cave system, it is a trench with a roof.
-			//
-			// So it dives first. A waypoint twenty-two blocks under the halfway
-			// point sends it properly down, along at depth, and back up to arrive at
-			// the cells — and the climb at the end is the part a player feels,
-			// because they have been walking downhill in the dark for a minute and
-			// suddenly the floor is rising toward something.
-			BlockPos cells = house.offset(6, -3, 14);
-			BlockPos deep = new BlockPos(
-				(cellar.getX() + cells.getX()) / 2,
-				Math.max(over.getMinY() + 12, Math.min(cellar.getY(), cells.getY()) - 22),
-				(cellar.getZ() + cells.getZ()) / 2);
-			com.bloomlet.herobrine.structure.Passage.bore(over, cellar, cells, deep, random);
-			// AND THE TOWER, which is the only thing on his land visible from off
-			// it. Raised last so it can be sited relative to the house rather than
-			// the other way round — the house is where he lives and the tower is
-			// something that was already here.
-			com.bloomlet.herobrine.structure.Spire.raise(over, house, random);
-			// AND NOW THEY ARE ONE PROPERTY RATHER THAN THREE BUILDINGS.
-			//
-			// This is the cheapest thing in the file and close to the most valuable.
-			// The house, the shed and the tower have always been sited relative to
-			// each other and have never been JOINED — so the player walked forty
-			// blocks of untouched forest between two of his buildings and read them
-			// as two separate finds. A worn track between them is what makes the
-			// second one his as well.
-			//
-			// Laid last, after everything is standing, because a path has to be able
-			// to see what it is going round.
-			tracks(over, house, random);
+			// STAGGERED. The outbuilding, the passage, the tower and the tracks used
+			// to go down in the same tick as the house itself — ten seconds of
+			// "Can't keep up" on a player's first join. Now they are a few ticks
+			// apart, in the same order, with the same dependency: the passage needs
+			// the cellar, so the cellar goes first. Nobody is standing there yet.
+			final int fx = x;
+			final int fz = z;
+			Cadence.in(over.getServer(), 2, () -> {
+				over.getChunk(fx >> 4, fz >> 4);
+				BlockPos cellar = com.bloomlet.herobrine.structure.Outbuilding.build(
+					over, new BlockPos(fx, over.getSeaLevel(), fz), random);
+				over.setAttached(SHED,
+					new BlockPos(fx, Ground.topOf(over, fx, fz) + 1, fz).asLong());
+				// THE UNDERCROFT IS ONLY THREE BELOW THE HOUSE, so the passage dives first:
+				// a waypoint twenty-two under the halfway point, then back up to the cells.
+				BlockPos cells = house.offset(6, -3, 14);
+				BlockPos deep = new BlockPos(
+					(cellar.getX() + cells.getX()) / 2,
+					Math.max(over.getMinY() + 12, Math.min(cellar.getY(), cells.getY()) - 22),
+					(cellar.getZ() + cells.getZ()) / 2);
+				Cadence.in(over.getServer(), 3, () ->
+					com.bloomlet.herobrine.structure.Passage.bore(over, cellar, cells, deep, random));
+				Cadence.in(over.getServer(), 7, () ->
+					com.bloomlet.herobrine.structure.Spire.raise(over, house, random));
+				Cadence.in(over.getServer(), 11, () -> tracks(over, house, random));
+			});
 			// The door goes at the bottom of the passage, which is a position we
 			// chose rather than found — see below for why it is not called here.
 			door(over, house, random);
@@ -456,7 +442,7 @@ public final class Whereabouts {
 		// The shed and the passage are scenery. The door is the point, and it is
 		// the one thing that has to exist in every world regardless of what the
 		// terrain would or would not take.
-		com.bloomlet.herobrine.structure.Spire.raise(over, house, random);
+		Cadence.in(over.getServer(), 4, () -> com.bloomlet.herobrine.structure.Spire.raise(over, house, random));
 		door(over, house, random);
 	}
 

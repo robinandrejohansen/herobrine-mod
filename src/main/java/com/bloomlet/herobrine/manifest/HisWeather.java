@@ -258,6 +258,11 @@ public final class HisWeather {
 	 */
 	private static final int HALO_LOOK = 6;
 	private static final int HALO_REACH = 4;
+	/** Where spread() puts its light round a torch — and therefore where a light's torch must be. */
+	private static final int[][] HALO_STEPS = {
+		{ HALO_REACH, 0, 0 }, { -HALO_REACH, 0, 0 },
+		{ 0, 0, HALO_REACH }, { 0, 0, -HALO_REACH },
+		{ 0, HALO_REACH - 1, 0 }, { 0, -HALO_REACH + 1, 0 } };
 
 	private static void halo(ServerLevel his, ServerPlayer player) {
 		BlockPos middle = player.blockPosition();
@@ -276,10 +281,7 @@ public final class HisWeather {
 
 	/** Six points on a ring, which is enough to read as a wider pool of light. */
 	private static void spread(ServerLevel his, BlockPos torch) {
-		for (int[] step : new int[][] {
-				{ HALO_REACH, 0, 0 }, { -HALO_REACH, 0, 0 },
-				{ 0, 0, HALO_REACH }, { 0, 0, -HALO_REACH },
-				{ 0, HALO_REACH - 1, 0 }, { 0, -HALO_REACH + 1, 0 } }) {
+		for (int[] step : HALO_STEPS) {
 			BlockPos at = torch.offset(step[0], step[1], step[2]);
 			if (his.getBlockState(at).isAir()) {
 				his.setBlock(at, Blocks.LIGHT.defaultBlockState()
@@ -290,10 +292,12 @@ public final class HisWeather {
 	}
 
 	private static boolean nearATorch(ServerLevel his, BlockPos at) {
-		for (BlockPos pos : BlockPos.betweenClosed(
-				at.offset(-HALO_REACH, -HALO_REACH, -HALO_REACH),
-				at.offset(HALO_REACH, HALO_REACH, HALO_REACH))) {
-			if (isTorch(his.getBlockState(pos))) {
+		// A LIGHT block in his world only ever comes from spread(), and spread()
+		// puts them at six fixed offsets from a torch. So the torch that owns this
+		// one is at one of six places, not somewhere in a nine-cube: 729 reads
+		// became 6, and a well-lit base stopped being quadratic.
+		for (int[] step : HALO_STEPS) {
+			if (isTorch(his.getBlockState(at.offset(-step[0], -step[1], -step[2])))) {
 				return true;
 			}
 		}
