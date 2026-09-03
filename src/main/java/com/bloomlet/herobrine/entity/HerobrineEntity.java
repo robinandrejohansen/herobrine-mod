@@ -4469,7 +4469,16 @@ public class HerobrineEntity extends PathfinderMob {
 		net.minecraft.world.entity.ExperienceOrb.award(here, at, 4000);
 		java.util.List<ItemStack> spoils = new java.util.ArrayList<>();
 		if (!this.getMainHandItem().isEmpty()) {
-			spoils.add(this.getMainHandItem().copy());
+			// THE SWORD IS CALLED HEROBRINE. It is the one thing of his you keep.
+			ItemStack his = this.getMainHandItem().copy();
+			his.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+				net.minecraft.network.chat.Component.literal("Herobrine").withStyle(
+					style -> style.withItalic(false).withColor(net.minecraft.ChatFormatting.WHITE)));
+			his.set(net.minecraft.core.component.DataComponents.LORE,
+				new net.minecraft.world.item.component.ItemLore(java.util.List.of(
+					net.minecraft.network.chat.Component.literal("His. Taken at his castle.")
+						.withStyle(net.minecraft.ChatFormatting.DARK_GRAY))));
+			spoils.add(his);
 		}
 		spoils.add(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 3));
 		spoils.add(new ItemStack(Items.DIAMOND, 12 + this.random.nextInt(9)));

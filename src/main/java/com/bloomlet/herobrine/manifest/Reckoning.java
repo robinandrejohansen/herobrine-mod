@@ -144,8 +144,18 @@ public final class Reckoning {
 	 */
 	public static void aftermath(ServerLevel level, BlockPos where, ServerPlayer killer) {
 		RandomSource random = level.getRandom();
-		BlockPos site = new BlockPos(where.getX(),
-			Ground.topOf(level, where.getX(), where.getZ()) + 1, where.getZ());
+		// THE WAY HOME OPENS ON THE SQUARE, not where he happened to fall. Where he
+		// fell is wherever the last blow landed — a corridor, a roof, a hole he dug
+		// somebody out of — and a door there is a door nobody can find twice. The
+		// square is the one place in his city everybody has walked through.
+		BlockPos square = com.bloomlet.herobrine.structure.Keep.city(level);
+		BlockPos stand = square != null ? square : where;
+		BlockPos site = new BlockPos(stand.getX(),
+			Ground.topOf(level, stand.getX(), stand.getZ()) + 1, stand.getZ());
+		if (square != null) {
+			HerobrineMod.LOGGER.info("the way home opens on the square at [{}, {}, {}], {} blocks from where he fell",
+				site.getX(), site.getY(), site.getZ(), (int) Math.sqrt(where.distSqr(site)));
+		}
 
 		// THE TOWER CLOSES OVER ITSELF, and that is where the way out is.
 		//
@@ -241,41 +251,10 @@ public final class Reckoning {
 	 * was in the middle of when it stopped, which is a far worse note to leave
 	 * a player standing in.
 	 */
+	/** His statue, ten blocks behind the way and facing it. See Statue. */
 	private static void memorial(ServerLevel level, BlockPos site, RandomSource random,
 	                             ServerPlayer killer) {
-		BlockPos at = site.offset(6, 0, 4);
-		BlockPos base = new BlockPos(at.getX(),
-			Ground.topOf(level, at.getX(), at.getZ()) + 1, at.getZ());
-
-		for (int dx = -3; dx <= 3; dx++) {
-			for (int dz = -3; dz <= 3; dz++) {
-				boolean wall = Math.abs(dx) == 3 || Math.abs(dz) == 3;
-				level.setBlock(base.offset(dx, -1, dz),
-					Blocks.POLISHED_BLACKSTONE.defaultBlockState(), 2);
-				if (!wall) {
-					continue;
-				}
-				// Ragged. Each course of each column stops at its own height.
-				int up = 1 + random.nextInt(3);
-				for (int dy = 0; dy < up; dy++) {
-					level.setBlock(base.offset(dx, dy, dz), random.nextInt(4) == 0
-						? Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS.defaultBlockState()
-						: Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState(), 2);
-				}
-			}
-		}
-		// The doorway, such as it is.
-		for (int dy = 0; dy <= 2; dy++) {
-			level.setBlock(base.offset(0, dy, 3), Blocks.AIR.defaultBlockState(), 2);
-		}
-
-		level.setBlock(base, Blocks.CHISELED_POLISHED_BLACKSTONE.defaultBlockState(), 2);
-		level.setBlock(base.above(), com.bloomlet.herobrine.block.ModBlocks.EFFIGY
-			.defaultBlockState(), 2);
-		for (int dx : new int[] { -1, 1 }) {
-			level.setBlock(base.offset(dx, 0, 0), Blocks.CANDLE.defaultBlockState()
-				.setValue(BlockStateProperties.LIT, true), 2);
-		}
+		com.bloomlet.herobrine.structure.Statue.raise(level, site.offset(0, 0, 10), killer);
 	}
 
 	/**

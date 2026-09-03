@@ -326,6 +326,12 @@ public final class TheWay {
 				return near.immutable().offset(0, 0, 2);
 			}
 		}
+		// A vault already cut here has no THE_WAY block to find — its door is dead
+		// by design — so it is known by its floor and its shell.
+		if (bound.getBlockState(site.below()).is(Blocks.POLISHED_DEEPSLATE)
+			&& bound.getBlockState(site.offset(0, -2, 0)).is(Blocks.DEEPSLATE_TILES)) {
+			return site.offset(0, 0, 3);
+		}
 		chamber(bound, site);
 		return site.offset(0, 0, 3);
 	}
@@ -358,15 +364,104 @@ public final class TheWay {
 		}
 		// The way back, facing the room, so it is the first thing they see when
 		// they turn round. Nobody is stranded here.
-		open(level, site);
+		// THE DOOR BEHIND YOU IS DEAD. The frame stands — it is what you came
+		// through — but it does not work from this side. There is no going back
+		// the way you came; the way home is the one his death opens.
+		remains(level, site);
+		stairOut(level, site);
 		for (int dx : new int[] { -3, 3 }) {
 			level.setBlock(site.offset(dx, 1, 3), Blocks.SOUL_LANTERN.defaultBlockState(), 2);
 		}
-		HerobrineMod.LOGGER.info("cut a landing in his world at [{}, {}, {}]",
+		HerobrineMod.LOGGER.info("cut a landing in his world at [{}, {}, {}] — dead door, barred stair out",
 			site.getX(), site.getY(), site.getZ());
 	}
 
 	/** Which way the frame faces, for anything that needs to stand clear of it. */
+	/**
+	 * THE WAY OUT OF THE VAULT, AND IT IS OLD.
+	 *
+	 * A one-wide stair leaves the far wall and climbs south until it breaks the
+	 * surface, and everything about it says it was cut long before you: the steps
+	 * are deepslate brick gone to moss, roots hang from the ceiling, cobwebs sit in
+	 * the corners, and where the wall has failed it is cracked brick and gravel.
+	 * Iron bars close it at the bottom — you see it through them from the vault, a
+	 * soul lantern a few steps up — and the top is grown over, moss and rooted
+	 * earth you dig through into the open. Somebody barred this from the inside.
+	 */
+	private static void stairOut(ServerLevel level, BlockPos site) {
+		net.minecraft.util.RandomSource random = level.getRandom();
+		int x = site.getX();
+		int wall = site.getZ() + 7;
+		int surface = Ground.topOf(level, x, wall + 30);
+		int steps = Math.max(6, Math.min(40, surface - site.getY() + 1));
+
+		// The gate in the wall, barred.
+		for (int up = 0; up <= 1; up++) {
+			level.setBlock(new BlockPos(x, site.getY() + up, wall), Blocks.IRON_BARS.defaultBlockState(), 2);
+		}
+		level.setBlock(new BlockPos(x, site.getY() + 2, wall), Blocks.DEEPSLATE_TILES.defaultBlockState(), 2);
+
+		for (int i = 0; i < steps; i++) {
+			int y = site.getY() + i;
+			int z = wall + 1 + i;
+			BlockPos step = new BlockPos(x, y, z);
+			BlockState tread = random.nextInt(4) == 0
+				? Blocks.MOSSY_COBBLESTONE_STAIRS.defaultBlockState()
+				: Blocks.DEEPSLATE_BRICK_STAIRS.defaultBlockState();
+			level.setBlock(step, tread.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
+			level.setBlock(step.below(), random.nextInt(3) == 0
+				? Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState()
+				: Blocks.DEEPSLATE_BRICKS.defaultBlockState(), 2);
+			// Headroom, and the walls either side made good where they were air.
+			for (int up = 1; up <= 2; up++) {
+				level.setBlock(step.above(up), Blocks.AIR.defaultBlockState(), 2);
+				for (int side = -1; side <= 1; side += 2) {
+					BlockPos flank = step.offset(side, up, 0);
+					if (!level.getBlockState(flank).isSolid()) {
+						level.setBlock(flank, random.nextInt(3) == 0
+							? Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState()
+							: Blocks.DEEPSLATE_BRICKS.defaultBlockState(), 2);
+					}
+				}
+			}
+			BlockPos lid = step.above(3);
+			if (!level.getBlockState(lid).isSolid()) {
+				level.setBlock(lid, Blocks.DEEPSLATE_BRICKS.defaultBlockState(), 2);
+			}
+			// What grew in here.
+			if (i == 2) {
+				level.setBlock(step.above(2), Blocks.SOUL_LANTERN.defaultBlockState()
+					.setValue(BlockStateProperties.HANGING, true), 2);
+			} else if (random.nextInt(4) == 0) {
+				level.setBlock(step.above(2), Blocks.HANGING_ROOTS.defaultBlockState(), 2);
+			} else if (random.nextInt(5) == 0) {
+				level.setBlock(step.above(2), Blocks.COBWEB.defaultBlockState(), 2);
+			}
+			if (random.nextInt(3) == 0) {
+				int side = random.nextBoolean() ? 1 : -1;
+				level.setBlock(step.offset(side, 1, 0), Blocks.GLOW_LICHEN.defaultBlockState()
+					.setValue(side == 1 ? BlockStateProperties.WEST : BlockStateProperties.EAST, true), 2);
+			}
+		}
+		// The top: grown shut. Moss and rooted earth for the last three steps'
+		// headroom, azalea over the hole, and then the sky.
+		for (int i = steps - 3; i < steps; i++) {
+			BlockPos step = new BlockPos(x, site.getY() + i, wall + 1 + i);
+			for (int up = 1; up <= 2; up++) {
+				level.setBlock(step.above(up), random.nextBoolean()
+					? Blocks.MOSS_BLOCK.defaultBlockState()
+					: Blocks.ROOTED_DIRT.defaultBlockState(), 2);
+			}
+		}
+		BlockPos mouth = new BlockPos(x, site.getY() + steps, wall + steps);
+		level.setBlock(mouth, Blocks.MOSS_BLOCK.defaultBlockState(), 2);
+		if (level.getBlockState(mouth.above()).isAir()) {
+			level.setBlock(mouth.above(), Blocks.AZALEA.defaultBlockState(), 2);
+		}
+		HerobrineMod.LOGGER.info("the stair out of the vault climbs {} steps south from [{}, {}, {}], barred and grown over",
+			steps, x, site.getY(), wall);
+	}
+
 	public static Direction across() {
 		return Direction.EAST;
 	}
