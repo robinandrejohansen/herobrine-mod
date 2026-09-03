@@ -194,7 +194,7 @@ public final class Sayings {
 	/**
 	 * THE INTRODUCTION IS A WARNING WITH A NAME ON IT. The first version said who he
 	 * was and stopped there. This one says why there is no time: what he has seen,
-	 * what happened to everyone else, and that the map in your hand is his. Easy
+	 * what happened to everyone else, and where the next map is: up the tower. Easy
 	 * words, one thought a line, and the pace of a man who keeps looking at the
 	 * treeline while he talks.
 	 */
@@ -202,7 +202,7 @@ public final class Sayings {
 		"Don't stop here. Not at this house. He knows this house.",
 		"Addexio. I lived here, before. I wrote the ten books you will find — one in every place he took.",
 		"He has been seen again. Three nights ago. He does not come back for nothing.",
-		"The map in your hand — I sent it. It goes to the town. Follow it, and do not read it out loud.",
+		"There is a map at the top of the tower. It goes to the town. Climb up and take it — and do not read it out loud.",
 		"Everyone I have ever walked this road with is dead. I am telling you now, while you can still say no.",
 		"You're still here. Good. Then we move before dark.",
 		"Walk. I'll keep up. And if you hear me stop talking — run.",
