@@ -244,6 +244,19 @@ public class CompanionEntity extends PathfinderMob {
 			this.setItemSlot(slot.getKey(), stack);
 			this.setDropChance(slot.getKey(), 0.0F);
 		}
+		// AND A SHIELD, in the off hand, which is also where the bread goes when he
+		// eats — Falter swaps them and puts the shield back. See guard() for when he
+		// raises it.
+		this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND,
+			new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SHIELD));
+		this.setDropChance(net.minecraft.world.entity.EquipmentSlot.OFFHAND, 0.0F);
+	}
+
+	/** The off hand goes back to the shield — after eating, after anything. */
+	void shieldUp() {
+		if (!this.getOffhandItem().is(Items.SHIELD)) {
+			this.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.SHIELD));
+		}
 	}
 
 	/**
@@ -359,6 +372,13 @@ public class CompanionEntity extends PathfinderMob {
 		// villager, or the player's own wolf. He also cannot target the player:
 		// Monster excludes them by type, which is a stronger guarantee than a
 		// predicate somebody can widen later.
+		// HIS THINGS. The Gaunt, the Turned, the Infected, the mimic and the man
+		// himself are not Monsters, so the Monster goal below never saw them: a Gaunt
+		// could beat him to the floor and he would stand there wondering what happened.
+		this.targetSelector.addGoal(3,
+			new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(
+				this, Mob.class, 10, true, false,
+				(candidate, level) -> candidate instanceof Mob m && Sayings.isHis(m)));
 		this.targetSelector.addGoal(1,
 			new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this));
 		this.targetSelector.addGoal(2,
@@ -498,11 +518,153 @@ public class CompanionEntity extends PathfinderMob {
 		if (!this.level().isClientSide()) {
 			this.theWalkIn();
 			this.hop();
+			this.theIntroduction();
+			this.guard();
+		}
+	}
+
+	/**
+	 * THE SHIELD COMES UP WHEN THE BLOW IS COMING.
+	 *
+	 * Not held up permanently — a man behind a shield is not fighting — and not
+	 * random. When the thing he is on is within reach and mid-swing, or simply
+	 * close and it is a moment since he last struck, up it goes for a second; then
+	 * down, and a short rest before the next. LivingEntity's own blocking does the
+	 * rest: the arm pose, the damage, the knockback. swing() drops it first so his
+	 * own blow is never thrown from behind it.
+	 */
+	private void guard() {
+		if (this.guardRest > 0) {
+			this.guardRest--;
+		}
+		if (!this.getOffhandItem().is(Items.SHIELD) || this.fleeing) {
+			if (this.fleeing && this.guardFor > 0) {
+				this.guardFor = 0;
+				this.stopUsingItem();
+			}
+			return;      // eating, unarmed, or running — the shield is for standing
+		}
+		net.minecraft.world.entity.LivingEntity foe = this.getTarget();
+		if (this.guardFor > 0) {
+			this.guardFor--;
+			if (foe != null) {
+				this.getLookControl().setLookAt(foe, 90.0F, 90.0F);
+			}
+			if (this.guardFor == 0 || foe == null || !foe.isAlive()
+				|| this.distanceTo(foe) > GUARDS_WITHIN + 1.5) {
+				this.guardFor = 0;
+				this.stopUsingItem();
+				this.guardRest = GUARD_REST;
+			}
+			return;
+		}
+		if (foe == null || !foe.isAlive() || this.guardRest > 0 || this.swinging
+			|| this.isUsingItem() || this.distanceTo(foe) > GUARDS_WITHIN) {
+			return;
+		}
+		if (foe.swinging || this.random.nextInt(12) == 0) {
+			this.startUsingItem(InteractionHand.OFF_HAND);
+			this.guardFor = GUARD_HOLDS;
+			this.getLookControl().setLookAt(foe, 90.0F, 90.0F);
 		}
 	}
 
 	@Override
+	public void swing(InteractionHand hand, boolean updateSelf) {
+		// His own blow is never thrown from behind the shield.
+		if (this.isUsingItem() && this.getOffhandItem().is(Items.SHIELD)) {
+			this.stopUsingItem();
+			this.guardFor = 0;
+			this.guardRest = GUARD_REST;
+		}
+		super.swing(hand, updateSelf);
+	}
+
+	/**
+	 * HE COMES TO YOU, AND HE SAYS WHO HE IS.
+	 *
+	 * The walk-in brought him to ten blocks and stopped, and there he stood until
+	 * somebody worked out he could be clicked. Now, once he is in and nobody has
+	 * claimed him, he closes the last of it himself — to four blocks, looking at
+	 * you — and gives the introduction (Sayings.INTRODUCTION), standing still for
+	 * the length of it. When the last line lands he is yours: goWith(), without a
+	 * click, because the last line is him saying so.
+	 *
+	 * Once per world. A save reloaded mid-way, or a second player arriving later,
+	 * gets a man who already knows you, not the speech again.
+	 */
+	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> INTRODUCED =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.createPersistent(
+			HerobrineMod.id("addexio_introduced"), com.mojang.serialization.Codec.BOOL);
+	private static final double COMES_TO_YOU_FROM = 24.0;
+	private static final double SPEAKS_FROM = 4.0;
+	private int introducing;
+	/** Whoever hit him last, and when — a threat whether or not it is one of his. */
+	private net.minecraft.world.entity.@org.jspecify.annotations.Nullable Mob lastAttacker;
+	private long lastAttackedAt;
+	private static final double GUARDS_WITHIN = 3.5;
+	private static final int GUARD_HOLDS = 20;
+	private static final int GUARD_REST = 25;
+	private int guardFor;
+	private int guardRest;
+	/** Set by Falter while he is running: the shield stays down and the legs do the work. */
+	boolean fleeing;
+
+	private void theIntroduction() {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		if (this.introducing > 0) {
+			this.introducing--;
+			this.getNavigation().stop();
+			Player to = here.getNearestPlayer(this, SPEAKS_FROM * 3);
+			if (to != null) {
+				this.getLookControl().setLookAt(to, 60.0F, 60.0F);
+			}
+			if (this.introducing == 0 && to != null && !this.isSpokenFor()) {
+				this.goWith(to);
+				HerobrineMod.LOGGER.info("{} is coming with {} — he said so himself",
+					this.getName().getString(), to.getName().getString());
+			}
+			return;
+		}
+		if (this.walkingIn > 0 || this.isSpokenFor()
+			|| Boolean.TRUE.equals(here.getServer().overworld().getAttached(INTRODUCED))) {
+			return;
+		}
+		if (!(here.getNearestPlayer(this, COMES_TO_YOU_FROM) instanceof ServerPlayer to)
+			|| !to.isAlive() || to.isSpectator()) {
+			return;
+		}
+		if (this.distanceTo(to) > SPEAKS_FROM) {
+			if (this.tickCount % 10 == 0) {
+				this.getNavigation().moveTo(to, 1.0);
+			}
+			return;
+		}
+		here.getServer().overworld().setAttached(INTRODUCED, true);
+		this.introducing = Sayings.INTRO_BEAT * Sayings.INTRODUCTION.length;
+		this.getNavigation().stop();
+		Sayings.introduce(here, this, to);
+	}
+
+	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+		// FACE IT. A man who is being hit turns round — before anything else, and
+		// with the sandwich down. He was finishing his bread with his back to a
+		// zombie because the zombie was not one of Herobrine's and so did not count.
+		if (source.getEntity() instanceof Mob attacker && attacker != this) {
+			this.lastAttacker = attacker;
+			this.lastAttackedAt = level.getGameTime();
+			this.getLookControl().setLookAt(attacker, 90.0F, 90.0F);
+			if (this.getOffhandItem().is(Items.BREAD)) {
+				this.stopUsingItem();
+				this.shieldUp();
+			}
+			if (this.getTarget() == null) {
+				this.setTarget(attacker);
+			}
+		}
 		float room = Math.max(0.0F, this.getHealth() - LOWEST);
 		if (damage >= room) {
 			damage = room;
@@ -719,11 +881,28 @@ public class CompanionEntity extends PathfinderMob {
 	 * rather than a frightened person.
 	 */
 	private static final class Falter extends Goal {
-		private static final double FLEES = 12.0;
-		private static final int BITE_EVERY = 25;
+		/**
+		 * THE LOOP, AND WHY IT IS GONE.
+		 *
+		 * Hurt, he fled anything within twelve blocks, ate when it was further than
+		 * twelve, dropped the bread when it came back, fled again — and since a
+		 * zombie walks as fast as he does he never once got to twenty hearts, this
+		 * goal never ended, and the sword goal under it never ran. Twenty loaves,
+		 * no swing, a man running in a circle from a zombie with a diamond sword in
+		 * his hand.
+		 *
+		 * Now he disengages only when he HAS room: nothing within FIGHTS_AT. A threat
+		 * closer than that ends the goal and he turns and fights it — he cannot die,
+		 * see hurtServer, so fighting is never the wrong call — and he eats when it is
+		 * dead or he has genuinely got away. A loaf heals four, so recovering is three
+		 * bites, not eight.
+		 */
+		private static final double FLEES = 8.0;
+		private static final double FIGHTS_AT = 5.0;
+		private static final int BITE_EVERY = 30;
 		/** Vanilla's own eating cadence: LivingEntity spawns its crumbs on every 4th. */
 		private static final int CRUMBS_EVERY = 4;
-		private static final float A_BITE = 1.5F;
+		private static final float A_BITE = 4.0F;
 
 		private final CompanionEntity her;
 		private int chewing;
@@ -735,12 +914,12 @@ public class CompanionEntity extends PathfinderMob {
 
 		@Override
 		public boolean canUse() {
-			return this.her.getHealth() < FALTERS_UNDER;
+			return this.her.getHealth() < FALTERS_UNDER && this.nearestThreat(FIGHTS_AT) == null;
 		}
 
 		@Override
 		public boolean canContinueToUse() {
-			return this.her.getHealth() < RECOVERED;
+			return this.her.getHealth() < RECOVERED && this.nearestThreat(FIGHTS_AT) == null;
 		}
 
 		@Override
@@ -763,7 +942,9 @@ public class CompanionEntity extends PathfinderMob {
 			// and the first time he broke off to eat his sword would have stopped
 			// existing. Permanently, and with no way to notice except wondering why
 			// he had got worse.
-			this.her.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
+			this.her.fleeing = false;
+			this.her.stopUsingItem();
+			this.her.shieldUp();
 			this.her.getNavigation().stop();
 			if (this.her.level() instanceof ServerLevel here) {
 				Player with = this.her.companion();
@@ -775,12 +956,15 @@ public class CompanionEntity extends PathfinderMob {
 
 		@Override
 		public void tick() {
-			Mob threat = this.nearestThreat();
+			Mob threat = this.nearestThreat(FLEES);
+			this.her.fleeing = threat != null;
 			if (threat != null) {
-				// Bread away, and the sword is already where it always is.
-				this.her.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
-				this.her.stopUsingItem();
-				this.her.getLookControl().setLookAt(threat, 30.0F, 30.0F);
+				// Bread away, shield back; the sword is already where it always is.
+				if (this.her.getOffhandItem().is(Items.BREAD)) {
+					this.her.stopUsingItem();
+					this.her.shieldUp();
+				}
+				this.her.getLookControl().setLookAt(threat, 90.0F, 90.0F);
 				if (this.her.getNavigation().isDone()) {
 					Vec3 out = DefaultRandomPos.getPosAway(this.her, 16, 7,
 						threat.position());
@@ -862,10 +1046,20 @@ public class CompanionEntity extends PathfinderMob {
 				at.x, at.y, at.z, 4, out.x * 0.2, out.y * 0.2 + 0.05, out.z * 0.2, 0.02);
 		}
 
-		private @org.jspecify.annotations.Nullable Mob nearestThreat() {
-			AABB near = this.her.getBoundingBox().inflate(FLEES);
+		/**
+		 * A THREAT IS ANYTHING THAT MEANS HIM HARM — not only one of Herobrine's.
+		 * It used to be isHis() alone, which is how a zombie got to hit a man for a
+		 * minute while he ate a loaf with his back to it: the zombie was not on the
+		 * list. Now: his things, anything that has him as its target, and whatever
+		 * hit him in the last three seconds.
+		 */
+		private @org.jspecify.annotations.Nullable Mob nearestThreat(double within) {
+			long now = this.her.level().getGameTime();
+			AABB near = this.her.getBoundingBox().inflate(within);
 			List<Mob> found = this.her.level().getEntitiesOfClass(Mob.class, near,
-				m -> m != this.her && m.isAlive() && Sayings.isHis(m));
+				m -> m != this.her && m.isAlive() && (Sayings.isHis(m)
+					|| m.getTarget() == this.her
+					|| (m == this.her.lastAttacker && now - this.her.lastAttackedAt < 60)));
 			return found.stream()
 				.min(Comparator.comparingDouble(this.her::distanceToSqr))
 				.orElse(null);

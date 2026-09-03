@@ -1112,10 +1112,23 @@ final class Duel {
 				}
 			}
 		}
+		// NOTHING BELOW THE GROUND COURSE. On a slope the terrain under the castle can
+		// leave a cavity between the hillside and the building's underside: terrain
+		// for a floor, the castle for a roof, hundreds of "standable" tiles — and the
+		// biggest floor in the box. The third castle chose it as the great hall and he
+		// stood seven blocks under the courtyard for three minutes while the player
+		// looted the chests over his head. The castle is above the ground; anything
+		// under its ground course is terrain, foundation or a mistake.
+		int below = 0;
 		for (var e : head.entrySet()) {
-			if (reached.contains(e.getKey())) {
-				found.add(new Room(e.getKey(), e.getValue()));
+			if (!reached.contains(e.getKey())) {
+				continue;
 			}
+			if (e.getKey().getY() < surface) {
+				below++;
+				continue;
+			}
+			found.add(new Room(e.getKey(), e.getValue()));
 		}
 		// THE PERCHES: under open sky, on the building — six or more above its floor
 		// keeps the field outside the wall and the courtyard paving off the list.
@@ -1163,9 +1176,11 @@ final class Duel {
 				tall++;
 			}
 		}
-		HerobrineMod.LOGGER.info("duel: the castle has {} places to stand indoors, {} of them"
-			+ " tall enough for the third act, {} perches on the walls, the hall at {}",
-			found.size(), tall, walls.size(), this.hall);
+		HerobrineMod.LOGGER.info("duel: the castle has {} places to stand indoors ({} more under"
+			+ " the ground course, refused), {} of them tall enough for the third act, {} perches"
+			+ " on the walls, the hall at {} ({} above the ground)",
+			found.size(), below, tall, walls.size(), this.hall,
+			this.hall == null ? "?" : this.hall.getY() - surface);
 		return found;
 	}
 

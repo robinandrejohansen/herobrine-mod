@@ -67,7 +67,7 @@
     "category": "music",
     "sounds": [
       {
-        "name": "minecraft:music/game/calm1",
+        "name": "minecraft:music/game/minecraft",
         "stream": true
       }
     ]

@@ -46,6 +46,16 @@ public class CompanionRenderer extends HumanoidMobRenderer<
 
 	public CompanionRenderer(EntityRendererProvider.Context context) {
 		super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5F);
+		// THE ARMOUR. HumanoidMobRenderer's constructor adds the head, the item in
+		// hand and the wings — and not the armour layer, which every vanilla
+		// humanoid adds for itself (see AbstractZombieRenderer). So he wore enchanted
+		// diamond from head to foot and rendered in a tunic. Player armour models on
+		// the player-shaped mesh, drawn by the game's own equipment renderer.
+		this.addLayer(new net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer<>(this,
+			net.minecraft.client.renderer.entity.ArmorModelSet
+				.<HumanoidModel<HumanoidRenderState>>bake(ModelLayers.PLAYER_ARMOR,
+					context.getModelSet(), HumanoidModel::new),
+			context.getEquipmentRenderer()));
 	}
 
 	@Override

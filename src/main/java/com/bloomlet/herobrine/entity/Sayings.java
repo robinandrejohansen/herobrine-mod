@@ -132,9 +132,44 @@ public final class Sayings {
 		String line = pool[here.getRandom().nextInt(pool.length)];
 		heard.sendSystemMessage(Component.literal("§c" + her.getName().getString()
 			+ "§7: " + line));
-		here.playSound(null, her.getX(), her.getY(), her.getZ(),
-			SoundEvents.VILLAGER_AMBIENT, her.getSoundSource(), 0.5F, 1.2F);
+		// NO SOUND. It was VILLAGER_AMBIENT — the hum — left over from when he was
+		// Vera in a red coat, and it made a man with a name and a diamond sword go
+		// "hrmm" like a trader every time you spoke to him. There is no vanilla
+		// sound for a man saying something; the line in the chat is his voice.
 		HerobrineMod.LOGGER.info("addexio to {}: \"{}\"", heard.getName().getString(), line);
+	}
+
+	/**
+	 * THE FIRST THING HE SAYS, AND IT IS SEVERAL THINGS.
+	 *
+	 * He walked sixty blocks to the first house and then stood there until somebody
+	 * clicked him, and the only thing he had to say was one line from a pool. A
+	 * companion the whole story is narrated by should introduce himself: who he
+	 * is, why he is here, what he wrote, and what he is for. Five lines, three and
+	 * a half seconds apart, in the order they are written, past the quiet timer.
+	 * Once per world — see CompanionEntity.INTRODUCED.
+	 */
+	static final String[] INTRODUCTION = {
+		"You're standing in my house. Or what's left of it.",
+		"Addexio. I lived here, before. I wrote the books you'll find in these places — all ten. Read them in order.",
+		"He has been seen again. That is why I came back.",
+		"I have lost to him more times than I can count. I am still here. That has to count for something.",
+		"Walk. I'll keep up. And when we find him — you swing. I'll hold what's behind you.",
+	};
+	static final int INTRO_BEAT = 70;
+
+	static void introduce(ServerLevel here, CompanionEntity her, ServerPlayer to) {
+		for (int i = 0; i < INTRODUCTION.length; i++) {
+			final String line = INTRODUCTION[i];
+			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), i * INTRO_BEAT, () -> {
+				if (her.isAlive() && to.isAlive()) {
+					to.sendSystemMessage(Component.literal("§c" + her.getName().getString()
+						+ "§7: " + line));
+					her.lastSpoke = here.getGameTime();
+				}
+			});
+		}
+		HerobrineMod.LOGGER.info("addexio introduces himself to {}", to.getName().getString());
 	}
 
 	/**

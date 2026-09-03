@@ -84,7 +84,10 @@ public final class ModSounds {
 	public static final SoundEvent HUM = register("hum");
 	/**
 	 * THE ENDING'S MUSIC — C418's "Minecraft", which is the client's own
-	 * music/game/calm1.ogg, referenced by name in sounds.json and never shipped.
+	 * music/game/minecraft.ogg, referenced by name in sounds.json and never shipped.
+	 * (26.2 names the music files by track: minecraft, sweden, clark, haggstrom…
+	 * — the old calm1/hal1/piano1 names are gone, and a sounds.json entry that
+	 * points at one plays nothing, silently.)
 	 * The one track everybody knows, over the one moment the mod is built towards:
 	 * the world that was his is yours again.
 	 */
