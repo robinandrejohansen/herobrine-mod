@@ -4213,6 +4213,16 @@ public class HerobrineEntity extends PathfinderMob {
 	 * could be pushed back.
 	 */
 	@Override
+	public void remove(RemovalReason reason) {
+		// Discarded — everybody left his world, or Whereabouts sent a duplicate back.
+		// The bar is a static-lifetime object on the clients until somebody says so.
+		if (this.bar != null) {
+			this.bar.removeAllPlayers();
+		}
+		super.remove(reason);
+	}
+
+	@Override
 	public void die(DamageSource source) {
 		super.die(source);
 		if (!(this.level() instanceof ServerLevel here)) {
@@ -4266,6 +4276,61 @@ public class HerobrineEntity extends PathfinderMob {
 			}
 		}
 		HerobrineMod.LOGGER.info("morning: the clock moved to day, {} of the turned cured", cured);
+
+		// THE BAR SAYS IT, THEN GOES. It used to stay on screen at whatever it last
+		// read, because nothing ever told the clients he was gone. Three seconds of
+		// the patch note, empty, then removed for everyone who had it.
+		this.bar.setName(net.minecraft.network.chat.Component.literal("Removed Herobrine."));
+		this.bar.setProgress(0.0F);
+		final net.minecraft.server.level.ServerBossEvent said = this.bar;
+		com.bloomlet.herobrine.manifest.Cadence.in(server, 60, said::removeAllPlayers);
+
+		// AND THE SCREEN SAYS IT, AND THE SONG PLAYS. The title is the joke, the
+		// running gag and the honest ending all at once; the music is the client's
+		// own "Minecraft", the track everybody knows, over the moment the world
+		// stops being his. Whatever was playing stops first so they do not overlap.
+		// The rain packets go with it: HisWeather forces the level's rain every tick,
+		// vanilla only tells clients about a level it changed itself, so a client
+		// standing in his world would have gone on drawing rain in a dry sky.
+		for (ServerPlayer witness : here.players()) {
+			witness.connection.send(new net.minecraft.network.protocol.game
+				.ClientboundSetTitlesAnimationPacket(20, 100, 40));
+			witness.connection.send(new net.minecraft.network.protocol.game
+				.ClientboundSetSubtitleTextPacket(
+					net.minecraft.network.chat.Component.literal("§7The rain stops.")));
+			witness.connection.send(new net.minecraft.network.protocol.game
+				.ClientboundSetTitleTextPacket(
+					net.minecraft.network.chat.Component.literal("§fRemoved Herobrine.")));
+			witness.connection.send(new net.minecraft.network.protocol.game
+				.ClientboundStopSoundPacket(null, net.minecraft.sounds.SoundSource.MUSIC));
+			here.playSound(null, witness, com.bloomlet.herobrine.sound.ModSounds.THE_ENDING,
+				net.minecraft.sounds.SoundSource.MUSIC, 1.0F, 1.0F);
+			com.bloomlet.herobrine.manifest.HisWeather.tellDry(witness);
+		}
+
+		// AND HE IS WORTH SOMETHING. The dragon gives twelve thousand experience; this
+		// gives four, in a burst, and what he was holding — the sword itself, with
+		// everything that was on it, which is the only trophy that means anything —
+		// plus the apples he kept in his own chests, diamonds, and a totem, because
+		// "removed" is a word that cuts both ways.
+		net.minecraft.world.entity.ExperienceOrb.award(here, this.position(), 4000);
+		java.util.List<ItemStack> spoils = new java.util.ArrayList<>();
+		if (!this.getMainHandItem().isEmpty()) {
+			spoils.add(this.getMainHandItem().copy());
+		}
+		spoils.add(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 3));
+		spoils.add(new ItemStack(Items.DIAMOND, 12 + this.random.nextInt(9)));
+		spoils.add(new ItemStack(Items.NETHERITE_INGOT, 4));
+		spoils.add(new ItemStack(Items.TOTEM_OF_UNDYING));
+		for (ItemStack stack : spoils) {
+			net.minecraft.world.entity.item.ItemEntity drop =
+				new net.minecraft.world.entity.item.ItemEntity(here,
+					this.getX(), this.getY() + 1.0, this.getZ(), stack);
+			drop.setDeltaMovement((this.random.nextDouble() - 0.5) * 0.3, 0.25,
+				(this.random.nextDouble() - 0.5) * 0.3);
+			drop.setUnlimitedLifetime();
+			here.addFreshEntity(drop);
+		}
 		// The total that used to be zeroed here does not exist any more. Nothing
 		// replaces it: the story stays where it is because the story is what the
 		// player earned, and heat expires on its own within the minute.
@@ -5396,7 +5461,7 @@ public class HerobrineEntity extends PathfinderMob {
 			// only to the skeletons'.
 			net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball ball =
 				new net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball(
-					here, this, to.normalize(), 1);
+					here, this, to.normalize(), act >= 2 ? 2 : 1);
 			ball.snapTo(from.x, from.y, from.z, this.getYRot(), this.getXRot());
 			ball.shoot(to.x, to.y, to.z, 1.3F, spread);
 			here.addFreshEntity(ball);
@@ -5582,11 +5647,16 @@ public class HerobrineEntity extends PathfinderMob {
 	 */
 	private static final int HELPER_BLOWS_PER = 4;
 
+	private net.minecraft.world.entity.@org.jspecify.annotations.Nullable Mob lastHelper;
+	private long lastHelperAt;
+
 	private boolean helperBlow(ServerLevel level, DamageSource source, float damage) {
 		if (!(source.getEntity() instanceof net.minecraft.world.entity.Mob other)
 			|| com.bloomlet.herobrine.manifest.TheHunt.isHis(other) || damage <= 0.0F) {
 			return false;
 		}
+		this.lastHelper = other;
+		this.lastHelperAt = level.getGameTime();
 		this.hurtTime = 10;
 		this.hurtDuration = 10;
 		this.playHurtSound(source);
@@ -5870,6 +5940,108 @@ public class HerobrineEntity extends PathfinderMob {
 
 	void slash(ServerPlayer player) {
 		this.strike(player);
+	}
+
+	/**
+	 * A HELPER THAT NEEDS DEALING WITH. The one that hit him in the last ten seconds
+	 * if it is still within six blocks, else anything within four that has him as
+	 * its target — a golem walking up to swing. Never one of his own.
+	 */
+	net.minecraft.world.entity.@org.jspecify.annotations.Nullable Mob helperToDealWith() {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return null;
+		}
+		long now = here.getGameTime();
+		if (this.lastHelper != null && this.lastHelper.isAlive() && now - this.lastHelperAt < 200
+			&& this.distanceTo(this.lastHelper) < 6.0) {
+			return this.lastHelper;
+		}
+		this.lastHelper = null;
+		for (net.minecraft.world.entity.Mob mob : here.getEntitiesOfClass(
+				net.minecraft.world.entity.Mob.class, this.getBoundingBox().inflate(4.0),
+				m -> m.isAlive() && m.getTarget() == this
+					&& !com.bloomlet.herobrine.manifest.TheHunt.isHis(m))) {
+			return mob;
+		}
+		return null;
+	}
+
+	/**
+	 * NOTHING OUT HERE IS GOING TO HELP YOU. He turns, and it is over: the same
+	 * sentence the overworld apparition says to anything that puts a hand on him,
+	 * said in his castle to the golems somebody brought. Four golems bought seventy
+	 * blows in seventy seconds from behind a pillar; now they buy a few seconds and
+	 * a couple of blows, and the player watches what bringing them cost. Addexio is
+	 * the exception by construction — his hurtServer will not let him below two
+	 * hearts, so this puts him to flight instead of in the ground.
+	 */
+	void breakHelper(net.minecraft.world.entity.Mob helper) {
+		if (!(this.level() instanceof ServerLevel here)) {
+			return;
+		}
+		this.squareUp(helper);
+		this.swipe();
+		here.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+			helper.getX(), helper.getY() + helper.getBbHeight() * 0.5, helper.getZ(),
+			24, 0.4, 0.6, 0.4, 0.02);
+		here.playSound(null, helper.getX(), helper.getY(), helper.getZ(),
+			SoundEvents.PLAYER_ATTACK_CRIT, this.getSoundSource(), 1.4F, 0.5F);
+		helper.hurtServer(here, this.damageSources().mobAttack(this), Float.MAX_VALUE);
+		HerobrineMod.LOGGER.info("duel: {} put a hand on him and stopped",
+			helper.getType().toShortString());
+	}
+
+	/**
+	 * THERE ARE BLOCKS BETWEEN US. HE REMOVES THEM.
+	 *
+	 * Two things a player does that a fight should not reward: wall themselves in,
+	 * and pillar up. Both put blocks between him and them where a blink has no
+	 * room to land, and he stood there. Now the blocks go: two fireballs at power
+	 * two, at the first block on the line from his eye to theirs — or, if they are
+	 * above him with nothing between but air and height, at the block under their
+	 * feet. Gated on breakIn and on mobGriefing like every other hole he makes.
+	 */
+	private static final double BREACH_REACH = 24.0;
+
+	boolean breach(ServerPlayer target) {
+		if (!(this.level() instanceof ServerLevel here) || !Config.get().breakIn
+			|| !here.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)
+			|| this.distanceTo(target) > BREACH_REACH) {
+			return false;
+		}
+		Vec3 eye = this.getEyePosition();
+		Vec3 theirs = target.getEyePosition();
+		net.minecraft.world.phys.BlockHitResult hit = here.clip(
+			new net.minecraft.world.level.ClipContext(eye, theirs,
+				net.minecraft.world.level.ClipContext.Block.COLLIDER,
+				net.minecraft.world.level.ClipContext.Fluid.NONE, this));
+		BlockPos wall;
+		if (hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+			wall = hit.getBlockPos();
+		} else if (target.getY() - this.getY() > 3.0 && target.onGround()) {
+			wall = target.blockPosition().below();
+		} else {
+			return false;
+		}
+		Vec3 at = Vec3.atCenterOf(wall);
+		Vec3 along = at.subtract(eye);
+		if (along.lengthSqr() < 1.0) {
+			return false;
+		}
+		this.swipe();
+		for (int i = 0; i < 2; i++) {
+			net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball ball =
+				new net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball(
+					here, this, along.normalize(), 2);
+			ball.snapTo(eye.x, eye.y, eye.z, this.getYRot(), this.getXRot());
+			ball.shoot(along.x, along.y, along.z, 1.4F, 0.6F);
+			here.addFreshEntity(ball);
+		}
+		here.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.BLAZE_SHOOT, this.getSoundSource(), 1.6F, 0.5F);
+		HerobrineMod.LOGGER.info("duel: blocks between them — fire at [{}, {}, {}]",
+			wall.getX(), wall.getY(), wall.getZ());
+		return true;
 	}
 
 	/** Distinct players who have struck him inside the last minute; never below one. */

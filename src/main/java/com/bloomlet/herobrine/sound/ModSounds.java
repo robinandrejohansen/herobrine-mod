@@ -82,6 +82,13 @@ public final class ModSounds {
 	 * and it should only be obviously wrong once there are twelve of them.
 	 */
 	public static final SoundEvent HUM = register("hum");
+	/**
+	 * THE ENDING'S MUSIC — C418's "Minecraft", which is the client's own
+	 * music/game/calm1.ogg, referenced by name in sounds.json and never shipped.
+	 * The one track everybody knows, over the one moment the mod is built towards:
+	 * the world that was his is yours again.
+	 */
+	public static final SoundEvent THE_ENDING = register("the_ending");
 
 
 	// ---- AND IT COMES BACK OFF THE HILLS ----------------------------------

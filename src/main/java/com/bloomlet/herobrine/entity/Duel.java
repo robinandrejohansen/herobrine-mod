@@ -112,6 +112,8 @@ final class Duel {
 	private int sweepIn;
 	private int castTurn;
 	private int blindFor;
+	private int dealIn;
+	private int breachIn;
 	private List<Player> watchers = List.of();
 
 	private Move move = Move.ADVANCE;
@@ -168,6 +170,9 @@ final class Duel {
 		if (this.sweepIn > 0) {
 			this.sweepIn--;
 		}
+		if (this.breachIn > 0) {
+			this.breachIn--;
+		}
 
 		ServerPlayer target = this.pick(watchers);
 		if (target == null) {
@@ -191,6 +196,22 @@ final class Duel {
 			this.castIn--;
 		}
 		this.wounds(here);
+
+		// WHATEVER THEY BROUGHT, FIRST. A golem on him is dealt with before the
+		// player is — one every two seconds, so a pack buys a few seconds and the
+		// sight of what it cost. See HerobrineEntity.breakHelper.
+		if (this.dealIn > 0) {
+			this.dealIn--;
+		} else {
+			net.minecraft.world.entity.Mob helper = this.him.helperToDealWith();
+			if (helper != null) {
+				this.dealIn = 40;
+				this.him.getNavigation().stop();
+				this.him.breakHelper(helper);
+				this.say(here, "dealt with a " + helper.getType().toShortString());
+				return;
+			}
+		}
 
 		// FIRST TICK BACK. A save reloaded, or a fresh one of him after the last was
 		// unloaded, arrives on the keep with the count intact and nowhere in
@@ -638,6 +659,14 @@ final class Duel {
 	 */
 	private void gone(ServerLevel here, ServerPlayer target, double d) {
 		this.blindFor++;
+		// WALLED IN. Three seconds without a line to them and they are close: the
+		// wall between goes before he tries another room. A player who bricks the
+		// doorway has bought three seconds and a hole.
+		if (this.blindFor > 60 && this.breachIn <= 0 && d <= 24.0 && this.him.breach(target)) {
+			this.breachIn = 80;
+			this.say(here, "there were blocks between them, and then there were not");
+			return;
+		}
 		if (this.blinkIn <= 0 && d > TOO_NEAR_TO_APPEAR) {
 			// A ROOM NEAR THEM, UNLESS THAT KEEPS NOT WORKING. Somebody on a wall top or
 			// in a corridor with no room within twelve blocks that can see them had him
@@ -695,7 +724,7 @@ final class Duel {
 				}
 			}
 			case 2 -> {
-				if (roll < 40) {
+				if (roll < 45) {
 					this.him.fire(here, target, act);
 				} else if (roll < 75) {
 					this.him.volley(here, target, act);
@@ -704,7 +733,9 @@ final class Duel {
 				}
 			}
 			default -> {
-				if (roll < 35) {
+				// Fire is the act-three weapon: three balls at power two, and the
+				// ground they land on is not ground afterwards.
+				if (roll < 45) {
 					this.him.fire(here, target, act);
 				} else if (roll < 65) {
 					this.him.volley(here, target, act);
@@ -727,6 +758,13 @@ final class Duel {
 			|| this.toARoom(here, target, 10.0, why)) {
 			this.blinkIn = BLINK_REST;
 			this.say(here, why);
+			return;
+		}
+		// NOWHERE TO LAND UP THERE. A one-wide pillar has no spot beside it and no room
+		// near it; the pillar goes instead, at the block under their feet.
+		if (this.breachIn <= 0 && this.him.breach(target)) {
+			this.breachIn = 80;
+			this.say(here, "took the ground out from under them");
 		}
 	}
 

@@ -62,5 +62,14 @@
         "name": "herobrine:hum"
       }
     ]
+  },
+  "the_ending": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "minecraft:music/game/calm1",
+        "stream": true
+      }
+    ]
   }
 }

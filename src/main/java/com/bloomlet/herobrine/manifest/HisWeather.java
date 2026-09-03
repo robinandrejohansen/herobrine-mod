@@ -145,6 +145,15 @@ public final class HisWeather {
 		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
 			his.setRainLevel(0.0F);
 			his.setThunderLevel(0.0F);
+			// AND SAY SO. Vanilla sends the rain-level packet only when ITS OWN step
+			// changed the level; ours is forced after that step, so the client kept
+			// the last value it was ever told — 0.99 — and drew rain in a dry sky for
+			// as long as anybody stood there. Every five seconds, to everyone here.
+			if (++tickCounter % 100 == 0) {
+				for (ServerPlayer player : his.players()) {
+					tellDry(player);
+				}
+			}
 			return;
 		}
 		// Every tick, and before the interval check — this is what makes it wet
@@ -332,6 +341,16 @@ public final class HisWeather {
 			return STRIKE_CHANCE_IN;
 		}
 		return STRIKE_CHANCE_NEAR;
+	}
+
+	/** The three packets that make a client stop drawing rain, right now. */
+	public static void tellDry(ServerPlayer player) {
+		player.connection.send(new net.minecraft.network.protocol.game.ClientboundGameEventPacket(
+			net.minecraft.network.protocol.game.ClientboundGameEventPacket.STOP_RAINING, 0.0F));
+		player.connection.send(new net.minecraft.network.protocol.game.ClientboundGameEventPacket(
+			net.minecraft.network.protocol.game.ClientboundGameEventPacket.RAIN_LEVEL_CHANGE, 0.0F));
+		player.connection.send(new net.minecraft.network.protocol.game.ClientboundGameEventPacket(
+			net.minecraft.network.protocol.game.ClientboundGameEventPacket.THUNDER_LEVEL_CHANGE, 0.0F));
 	}
 
 	private static void strike(ServerLevel his, ServerPlayer player, RandomSource random) {
