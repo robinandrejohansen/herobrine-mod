@@ -144,59 +144,417 @@ document.querySelectorAll('canvas.sprite').forEach(async (c) => {
   } catch { /* the caption still says who it is */ }
 });
 
-/* --------------------------------------------------------- the hero ------ */
+
+
+/* ------------------------------------------------------------ the chase -- */
 /*
- * Level three, standing in the dark, breathing. The eyes drift a little toward
- * the cursor — noticing, not tracking.
+ * THE LOOP ON THE LANDING PAGE, and there is no game framework under it.
+ *
+ * A framework here would be a 400 KB download to move about twenty things, on a
+ * page whose whole promise is that it opens instantly on a phone in a field. So
+ * this is a small renderer written for exactly this scene: the skins are the
+ * mod's own, cut into head/body/arm/leg the way the model is, and swung about
+ * their joints — a running man is a hip and a shoulder and a sine wave.
+ *
+ * Everything behind them is drawn once into offscreen canvases and scrolled at
+ * four speeds: mountains almost still, far wood slow, near wood fast, ground
+ * fastest. The sky is one gradient interpolated round a forty-second day, with
+ * the sun and moon on the same arc and the stars fading in behind them. Nothing
+ * is computed twice per frame that can be computed once at load.
  */
-(async function hero() {
-  const c = document.getElementById('hero-sprite');
+(async function chase() {
+  const c = document.getElementById('chase');
   if (!c) return;
-  let img, eyesImg;
-  try { [img, eyesImg] = await Promise.all([skin('/assets/herobrine_angry.png'), skin('/assets/herobrine_eyes.png')]); }
-  catch { return; }
+  let base, angry, addex;
+  try {
+    [base, angry, addex] = await Promise.all([
+      skin('/assets/herobrine.png'), skin('/assets/herobrine_angry.png'), skin('/assets/addexio.png')]);
+  } catch { return; }
 
   const g = c.getContext('2d');
-  let s, sprite, eyes, x, y, smoke = [];
-  function size() {
-    // Measured when it is actually laid out — a hidden tab reports zero.
-    const cssW = c.clientWidth > 40 ? c.clientWidth : 300, cssH = cssW * 5 / 3;
-    fit(c, cssW, cssH);
-    g.imageSmoothingEnabled = false;
-    s = Math.max(2, Math.floor((cssH * DPR) / 34));
-    sprite = compose(img, s, 1);
-    eyes = composeEyes(eyesImg, s);
-    x = (c.width - sprite.width) / 2; y = c.height - sprite.height - 2 * s;
-    smoke = Array.from({ length: 18 }, () => puff(true));
-  }
-  function puff(any) {
-    return { x: x + Math.random() * sprite.width, y: any ? y + Math.random() * sprite.height : y + sprite.height * (0.2 + Math.random() * 0.7),
-      r: (1 + Math.random() * 2) * s, a: 0.25 + Math.random() * 0.25, vy: (0.15 + Math.random() * 0.25) * s, vx: (Math.random() - 0.5) * 0.3 * s };
-  }
-  let mx = 0, my = 0;
-  addEventListener('pointermove', (e) => { mx = (e.clientX / innerWidth - 0.5) * 2; my = (e.clientY / innerHeight - 0.5) * 2; }, { passive: true });
 
-  let visible = true, resizeTimer = 0;
-  size();
-  addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(size, 150); }, { passive: true });
-  new IntersectionObserver((es) => { visible = es[0].isIntersecting; if (visible) { if (c.clientWidth > 40 && Math.abs(c.width / DPR - c.clientWidth) > 2) size(); requestAnimationFrame(frame); } }).observe(c);
-  let last = 0;
-  function frame(now) {
-    if (!visible) return;                       // the browser itself pauses rAF in a hidden tab
-    if (now - last < 33) { requestAnimationFrame(frame); return; }   // 30 fps is plenty for a still man
-    last = now;
-    const t = now / 1000;
-    g.clearRect(0, 0, c.width, c.height);
-    if (!REDUCED) {
-      for (const p of smoke) {
-        g.fillStyle = `rgba(20,20,26,${p.a.toFixed(2)})`;
-        g.fillRect(Math.round(p.x), Math.round(p.y), p.r, p.r);
-        p.y -= p.vy; p.x += p.vx; p.a -= 0.004;
-        if (p.a <= 0 || p.y < y - 10 * s) Object.assign(p, puff(false));
+  /* ---- cutting a skin into the pieces of a person, seen from the side ---- */
+  /* Face boxes in the 64x64 layout: [u, v, w, h] of the side face, and of the
+     overlay above it. Side faces are four pixels wide; the head is eight. */
+  const FACES = {
+    head: [[0, 8, 8, 8], [32, 8, 8, 8]],
+    body: [[16, 20, 4, 12], [16, 36, 4, 12]],
+    arm: [[40, 20, 4, 12], [40, 36, 4, 12]],
+    leg: [[0, 20, 4, 12], [0, 36, 4, 12]],
+  };
+
+  /** One piece, at `s` pixels per skin pixel, optionally darkened or tinted. */
+  function piece(img, face, s, dark, warm) {
+    const [[u, v, w, h], [ou, ov]] = face;
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(w * s));
+    cv.height = Math.max(1, Math.round(h * s));
+    const x = cv.getContext('2d');
+    x.imageSmoothingEnabled = false;
+    x.drawImage(img, u, v, w, h, 0, 0, cv.width, cv.height);
+    x.drawImage(img, ou, ov, w, h, 0, 0, cv.width, cv.height);
+    if (warm) {
+      // The player wears the same Steve base as him. A warm shirt is what tells
+      // the two of them apart at forty pixels tall.
+      const d = x.getImageData(0, 0, cv.width, cv.height);
+      const p = d.data;
+      for (let i = 0; i < p.length; i += 4) {
+        if (p[i + 3] > 0 && p[i + 2] > p[i] + 20 && p[i + 1] > p[i] + 10) {
+          const t = p[i + 1];
+          p[i] = Math.min(255, t + 40); p[i + 1] = Math.round(t * 0.42); p[i + 2] = Math.round(t * 0.30);
+        }
+      }
+      x.putImageData(d, 0, 0);
+    }
+    if (dark > 0) {
+      x.globalCompositeOperation = 'source-atop';
+      x.fillStyle = `rgba(6,6,10,${dark})`;
+      x.fillRect(0, 0, cv.width, cv.height);
+      x.globalCompositeOperation = 'source-over';
+    }
+    return cv;
+  }
+
+  function figure(img, s, dark, warm) {
+    return {
+      s,
+      head: piece(img, FACES.head, s, dark, false),
+      body: piece(img, FACES.body, s, dark, warm),
+      arm: piece(img, FACES.arm, s, dark, warm),
+      leg: piece(img, FACES.leg, s, dark, warm),
+    };
+  }
+
+  /**
+   * Draws a runner. (x, y) is the point between the feet; `phase` is where the
+   * stride is; `face` is -1 running left, 1 running right. Limbs rotate about
+   * the joint, which is the top edge of the piece, because that is what a hip
+   * and a shoulder do.
+   */
+  function runner(f, x, y, phase, face, lean, glow) {
+    const s = f.s;
+    const bob = Math.abs(Math.sin(phase)) * s * 0.6;
+    const hip = y - 12 * s - bob;
+    const shoulder = hip - 11 * s;
+    const swing = Math.sin(phase);
+    const swing2 = Math.sin(phase + Math.PI);
+
+    g.save();
+    g.translate(Math.round(x), Math.round(y));
+    g.scale(face, 1);
+    g.rotate(lean);
+    g.translate(-Math.round(x), -Math.round(y));
+
+    const limb = (tex, jx, jy, angle) => {
+      g.save();
+      g.translate(jx, jy);
+      g.rotate(angle);
+      g.drawImage(tex, -tex.width / 2, 0);
+      g.restore();
+    };
+    // far side first, then the body, then the near side: a person, in order.
+    limb(f.leg, x + s * 0.6, hip, swing2 * 0.75);
+    limb(f.arm, x - s * 0.4, shoulder, swing * 0.85 + 0.25);
+    g.drawImage(f.body, Math.round(x - f.body.width / 2), Math.round(hip - f.body.height));
+    const hx = Math.round(x - f.head.width / 2 + s * 0.5);
+    const hy = Math.round(shoulder - f.head.height + s * 0.4);
+    g.drawImage(f.head, hx, hy);
+    if (glow) {
+      // Drawn here, inside the flip, so the eyes are on the face and not behind
+      // the skull. Everything is drawn facing right and then mirrored.
+      g.save();
+      g.shadowColor = 'rgba(255,255,255,.95)';
+      g.shadowBlur = s * 3.5;
+      g.fillStyle = '#fff';
+      g.fillRect(hx + f.head.width - s * 2.6, hy + f.head.height * 0.40, s * 2.0, s * 0.9);
+      g.restore();
+    }
+    limb(f.leg, x - s * 0.6, hip, swing * 0.75);
+    limb(f.arm, x + s * 0.4, shoulder, swing2 * 0.85 + 0.25);
+    g.restore();
+    return { shoulder, head: shoulder - f.head.height + s * 0.4 };
+  }
+
+  /* ------------------------------------------------------------- the sky -- */
+  /* Four keys round the clock. Everything else is a mix of two of them. */
+  const SKY = [
+    { at: 0.00, top: [96, 150, 214], low: [190, 214, 236], sun: 1.0 },   // day
+    { at: 0.34, top: [58, 60, 104], low: [226, 122, 74], sun: 0.35 },    // dusk
+    { at: 0.50, top: [8, 10, 22], low: [22, 26, 44], sun: 0.0 },         // night
+    { at: 0.84, top: [50, 56, 96], low: [198, 138, 110], sun: 0.35 },    // dawn
+  ];
+  const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+  function sky(t) {
+    let i = 0;
+    for (let k = 0; k < SKY.length; k++) if (t >= SKY[k].at) i = k;
+    const a = SKY[i], b = SKY[(i + 1) % SKY.length];
+    const span = (b.at > a.at ? b.at : b.at + 1) - a.at;
+    const f = Math.min(1, Math.max(0, (t - a.at) / span));
+    return { top: mix(a.top, b.top, f), low: mix(a.low, b.low, f), sun: a.sun + (b.sun - a.sun) * f };
+  }
+
+  /* ------------------------------------------------------- the scenery ---- */
+  let W = 0, H = 0, ground = 0, unit = 3;
+  let mountains, farWood, nearWood, floor, stars, figures;
+  const rand = (seed) => { let x = seed; return () => (x = (x * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff; };
+
+  function ridge(w, h, base, jag, colour, seed, snow) {
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const x = cv.getContext('2d');
+    const r = rand(seed);
+    const pts = [];
+    for (let i = 0; i <= 16; i++) pts.push(base - r() * jag);
+    x.beginPath();
+    x.moveTo(0, h);
+    for (let i = 0; i <= 16; i++) {
+      const px = (i / 16) * w;
+      x.lineTo(px, pts[i]);
+      if (i < 16) x.lineTo(px + w / 32, (pts[i] + pts[i + 1]) / 2 - r() * jag * 0.25);
+    }
+    x.lineTo(w, h); x.closePath();
+    x.fillStyle = colour; x.fill();
+    if (snow) {
+      // Light down the near flank rather than caps on the peaks: a cap is a
+      // rectangle clipped to a jagged edge, and it reads as a box in the sky.
+      x.globalCompositeOperation = 'source-atop';
+      const lit = x.createLinearGradient(0, base - jag, 0, base + jag * 0.4);
+      lit.addColorStop(0, 'rgba(214,224,240,.30)');
+      lit.addColorStop(1, 'rgba(214,224,240,0)');
+      x.fillStyle = lit; x.fillRect(0, 0, w, h);
+      x.globalCompositeOperation = 'source-over';
+    }
+    return cv;
+  }
+
+  function wood(w, h, count, minH, maxH, colour, seed) {
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const x = cv.getContext('2d');
+    const r = rand(seed);
+    x.fillStyle = colour;
+    for (let i = 0; i < count; i++) {
+      const px = 20 + r() * (w - 40);
+      const th = minH + r() * (maxH - minH);
+      const tw = th * (0.15 + r() * 0.07);
+      x.fillRect(px - tw * 0.09, h - th * 0.34, tw * 0.18, th * 0.34);   // the trunk
+      for (let k = 0; k < 4; k++) {                                       // the pine, in steps
+        const ky = h - th + (th * 0.72 * k) / 4;
+        const kw = tw * (0.45 + (k * 0.55) / 3);
+        x.beginPath();
+        x.moveTo(px, ky - th * 0.1);
+        x.lineTo(px - kw, ky + th * 0.2);
+        x.lineTo(px + kw, ky + th * 0.2);
+        x.closePath(); x.fill();
       }
     }
-    const bob = REDUCED ? 0 : Math.sin(t * 1.3) * s * 0.35;
-    drawFigure(g, sprite, eyes, Math.round(x + mx * s * 0.6), Math.round(y + bob + my * s * 0.3), s, 0.8 + 0.2 * Math.sin(t * 2.2));
+    return cv;
+  }
+
+  function size() {
+    // MEASURED, NEVER PINNED. fit() writes an inline width, and an inline width
+    // becomes what clientWidth reports — so a canvas first sized in a narrow
+    // window stays narrow for ever, in a band that is supposed to be full width.
+    // Here the CSS owns the size and only the backing store is set from it.
+    const cssW = Math.max(240, c.clientWidth || c.parentElement.clientWidth || 900);
+    const cssH = Math.max(120, c.clientHeight || 240);
+    c.width = Math.round(cssW * DPR);
+    c.height = Math.round(cssH * DPR);
+    g.imageSmoothingEnabled = false;
+    W = c.width; H = c.height;
+    ground = Math.round(H * 0.86);
+    unit = Math.max(2, H / 108);                      // pixels per skin pixel for the runners
+    mountains = [
+      ridge(W, ground, ground * 0.52, ground * 0.30, '#2c3550', 7, true),
+      ridge(W, ground, ground * 0.66, ground * 0.22, '#232a41', 23, false),
+    ];
+    farWood = wood(W, ground, Math.round(W / 30), ground * 0.16, ground * 0.32, '#151d24', 41);
+    nearWood = wood(W, ground + H * 0.1, Math.max(2, Math.round(W / 420)), H * 0.55, H * 0.85, '#070a0d', 59);
+    floor = (() => {
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H - ground;
+      const x = cv.getContext('2d');
+      x.fillStyle = '#10161a'; x.fillRect(0, 0, W, cv.height);
+      const r = rand(97);
+      for (let i = 0; i < W / 5; i++) {
+        x.fillStyle = r() > 0.5 ? '#141a1e' : '#0b1013';
+        x.fillRect(r() * W, r() * cv.height, 2 + r() * 4, 1 + r() * 2);
+      }
+      return cv;
+    })();
+    stars = Array.from({ length: Math.round(W / 26) }, (_, i) => {
+      const r = rand(i * 31 + 3);
+      return { x: r() * W, y: r() * ground * 0.7, a: 0.3 + r() * 0.7 };
+    });
+    figures = {
+      you: figure(base, unit, 0.05, true),
+      addexio: figure(addex, unit, 0.05, false),
+      him: figure(angry, unit * 1.6, 0.74, false),
+    };
+  }
+
+  /* ------------------------------------------------------------- the fire - */
+  const fires = [];
+  const bursts = [];
+  const embers = [];
+
+  function throwFire(fromX, fromY, toX, toY) {
+    const dx = toX - fromX, dy = toY - fromY;
+    const time = 46;
+    fires.push({ x: fromX, y: fromY, vx: dx / time, vy: dy / time - 0.13 * time * 0.5 / time * 6, life: time + 20, g: 0.035 * (H / 300) });
+  }
+
+  /* ----------------------------------------------------------- the frame -- */
+  let visible = true, last = 0, t0 = 0, resizeTimer = 0, fireIn = 90;
+  size();
+  // A ResizeObserver, not a resize listener: the element's box can go from zero
+  // to real without the window ever resizing — a pane that opens, a font that
+  // lands, a phone rotating — and a scene built at zero stays wrong for ever.
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (c.clientWidth > 80 && Math.abs(c.width / DPR - c.clientWidth) > 2) size();
+      }, 120);
+    }).observe(c);
+  } else {
+    addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(size, 160); }, { passive: true });
+  }
+  new IntersectionObserver((es) => {
+    visible = es[0].isIntersecting;
+    if (visible) { if (c.clientWidth > 80 && Math.abs(c.width / DPR - c.clientWidth) > 2) size(); requestAnimationFrame(frame); }
+  }).observe(c);
+
+  const CYCLE = 46000;         // a day and a night, in ms
+  function frame(now) {
+    if (!visible) return;
+    if (now - last < 32) { requestAnimationFrame(frame); return; }       // 30 fps
+    if (!t0) t0 = now;
+    last = now;
+    const t = ((now - t0) % CYCLE) / CYCLE;
+    const s = sky(t);
+    const night = 1 - Math.min(1, s.sun / 0.9);
+    const run = now / 1000;
+    const scroll = (now / 1000) * (H * 0.55);
+
+    // sky
+    const grad = g.createLinearGradient(0, 0, 0, ground);
+    grad.addColorStop(0, `rgb(${s.top.join(',')})`);
+    grad.addColorStop(1, `rgb(${s.low.join(',')})`);
+    g.fillStyle = grad; g.fillRect(0, 0, W, ground);
+
+    // stars, then the sun and the moon on one arc
+    if (night > 0.02) {
+      for (const st of stars) {
+        g.fillStyle = `rgba(226,232,240,${(st.a * night * 0.9).toFixed(2)})`;
+        g.fillRect(st.x, st.y, DPR, DPR);
+      }
+    }
+    const arc = (t * Math.PI * 2) - Math.PI / 2;
+    const cx = W / 2 - Math.cos(arc) * W * 0.40;
+    const cy = ground * 0.72 - Math.sin(arc) * ground * 0.62;
+    const disc = Math.max(6, H * 0.045);
+    g.save();
+    g.shadowColor = s.sun > 0.5 ? 'rgba(255,226,170,.75)' : 'rgba(200,215,240,.5)';
+    g.shadowBlur = disc * 1.6;
+    g.fillStyle = s.sun > 0.5 ? '#ffe9b0' : '#dfe6f2';
+    g.fillRect(cx - disc / 2, cy - disc / 2, disc, disc);
+    g.restore();
+
+    // the country, at four speeds
+    const layer = (img, speed, y) => {
+      const off = (scroll * speed) % W;
+      g.drawImage(img, -off, y);
+      g.drawImage(img, W - off, y);
+    };
+    layer(mountains[0], 0.04, 0);
+    layer(mountains[1], 0.09, 0);
+    layer(farWood, 0.34, 0);
+    // a low band of light where the sky meets the wood, so black shapes read
+    const horizon = g.createLinearGradient(0, ground - H * 0.22, 0, ground);
+    horizon.addColorStop(0, 'rgba(255,255,255,0)');
+    horizon.addColorStop(1, `rgba(${s.low.join(',')},${(0.45 - night * 0.28).toFixed(2)})`);
+    g.fillStyle = horizon; g.fillRect(0, ground - H * 0.22, W, H * 0.22);
+    g.drawImage(floor, 0, ground);
+    layer(floor, 1.25, ground);
+
+    // the three of them, and the dust off their heels
+    const stride = run * 9;
+    const shadow = (x, w2) => {
+      g.fillStyle = 'rgba(0,0,0,.45)';
+      g.beginPath(); g.ellipse(x, ground + unit * 1.4, w2, unit * 0.7, 0, 0, Math.PI * 2); g.fill();
+    };
+    shadow(W * 0.24, unit * 3); shadow(W * 0.40, unit * 3);
+    const you = runner(figures.you, W * 0.24, ground + unit * 1.2, stride, -1, -0.07);
+    const add = runner(figures.addexio, W * 0.40, ground + unit * 1.2, stride + 1.9, -1, -0.06);
+    layer(nearWood, 1.0, ground - (ground + H * 0.1) + H * 0.1);
+    shadow(W * 0.78, unit * 4.6);
+    const him = runner(figures.him, W * 0.78, ground + unit * 2.0, stride * 0.86 + 0.7, -1, -0.10, true);
+
+    if (Math.random() < 0.7) {
+      embers.push({ x: W * 0.78 + (Math.random() - 0.5) * unit * 6, y: him.shoulder + Math.random() * unit * 10,
+        r: unit * (0.7 + Math.random()), a: 0.34, vy: -unit * 0.06, vx: unit * (0.05 + Math.random() * 0.06), smoke: true });
+    }
+
+    // fire: he throws at where they are going, and it bursts on the ground
+    if (--fireIn <= 0) {
+      fireIn = 80 + Math.round(Math.random() * 70);
+      throwFire(W * 0.78 - figures.him.body.width, him.shoulder + unit * 1.5,
+        W * 0.24 + (Math.random() - 0.2) * W * 0.08, ground - unit * 2);
+    }
+    for (let i = fires.length - 1; i >= 0; i--) {
+      const f = fires[i];
+      f.x += f.vx; f.y += f.vy; f.vy += f.g; f.life--;
+      embers.push({ x: f.x + (Math.random() - 0.5) * unit * 1.6, y: f.y + (Math.random() - 0.5) * unit * 1.6,
+        r: unit * (0.5 + Math.random() * 0.8), a: 0.6, vy: -unit * 0.04, vx: unit * 0.1, smoke: false });
+      g.save();
+      g.shadowColor = 'rgba(255,120,20,.95)'; g.shadowBlur = unit * 7;
+      g.fillStyle = '#ff8a1e';
+      g.fillRect(f.x - unit * 1.3, f.y - unit * 1.3, unit * 2.6, unit * 2.6);
+      g.fillStyle = '#fff2c8';
+      g.fillRect(f.x - unit * 0.5, f.y - unit * 0.5, unit * 1.1, unit * 1.1);
+      g.restore();
+      if (f.y >= ground || f.life <= 0 || f.x < -20) {
+        bursts.push({ x: f.x, y: Math.min(f.y, ground), r: unit * 2, life: 14 });
+        fires.splice(i, 1);
+      }
+    }
+    for (let i = bursts.length - 1; i >= 0; i--) {
+      const b = bursts[i];
+      const k = 1 - b.life / 14;
+      const rr = b.r + k * unit * 11;
+      const flare = g.createRadialGradient(b.x, b.y, 0, b.x, b.y, rr);
+      flare.addColorStop(0, `rgba(255,246,214,${(0.9 * (1 - k)).toFixed(2)})`);
+      flare.addColorStop(0.45, `rgba(255,138,30,${(0.6 * (1 - k)).toFixed(2)})`);
+      flare.addColorStop(1, 'rgba(255,90,10,0)');
+      g.fillStyle = flare;
+      g.beginPath(); g.arc(b.x, b.y, rr, 0, Math.PI * 2); g.fill();
+      if (b.life === 14) {
+        for (let n = 0; n < 14; n++) {
+          embers.push({ x: b.x, y: b.y, r: unit * (0.5 + Math.random()), a: 0.9,
+            vx: (Math.random() - 0.5) * unit * 1.6, vy: -Math.random() * unit * 1.2, smoke: false });
+        }
+      }
+      if (--b.life <= 0) bursts.splice(i, 1);
+    }
+    for (let i = embers.length - 1; i >= 0; i--) {
+      const e = embers[i];
+      g.fillStyle = e.smoke ? `rgba(18,18,24,${e.a.toFixed(2)})` : `rgba(255,${140 + Math.round(Math.random() * 60)},50,${e.a.toFixed(2)})`;
+      g.fillRect(e.x, e.y, e.r, e.r);
+      e.x += e.vx; e.y += e.vy; e.a -= e.smoke ? 0.008 : 0.055;
+      if (e.a <= 0) embers.splice(i, 1);
+    }
+    if (embers.length > 160) embers.splice(0, embers.length - 160);
+
+    if (night > 0.02) {
+      g.fillStyle = `rgba(6,8,18,${(night * 0.42).toFixed(2)})`;
+      g.fillRect(0, 0, W, H);
+    }
+    const vig = g.createLinearGradient(0, 0, 0, H);
+    vig.addColorStop(0, 'rgba(15,15,18,.55)');
+    vig.addColorStop(0.35, 'rgba(15,15,18,0)');
+    vig.addColorStop(1, 'rgba(15,15,18,.75)');
+    g.fillStyle = vig; g.fillRect(0, 0, W, H);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

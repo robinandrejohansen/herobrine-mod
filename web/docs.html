@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Setup guide — HEROBRINE</title>
-<meta name="description" content="How to install the Herobrine mod for Minecraft 26.2: alone, on a server, the config, the commands, and what to do when something is wrong.">
+<meta name="description" content="How to install the Herobrine mod for Minecraft 26.2 — alone or on a server — plus the config, the commands, and what to do when something is wrong.">
 <meta name="theme-color" content="#0f0f12">
 <link rel="icon" href="/assets/icon.png">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=202609040028">
 </head>
 <body>
 
@@ -22,118 +22,140 @@
   </nav>
 </header>
 
-<main>
-  <section class="docs docs-head">
+<main class="guide">
+  <aside class="guide-nav">
+    <p class="guide-nav-title">Setup guide</p>
+    <a href="#start">Before you start</a>
+    <a href="#solo">Playing alone</a>
+    <a href="#server">Running a server</a>
+    <a href="#join">Joining a server</a>
+    <a href="#config">Settings</a>
+    <a href="#commands">Commands</a>
+    <a href="#update">Updating</a>
+    <a href="#wrong">Something is wrong</a>
+  </aside>
+
+  <article class="guide-body">
     <p class="kicker">Setup guide</p>
     <h1>Getting it running</h1>
-    <p class="lede">Everything on this page is for the person installing. Nothing here is needed to <em>play</em> — once it is in, it starts on its own.</p>
-    <nav class="toc" aria-label="On this page">
-      <a href="#req">Requirements</a> · <a href="#solo">Playing alone</a> · <a href="#server">Running a server</a> · <a href="#join">Joining a server</a> · <a href="#config">Config</a> · <a href="#commands">Commands</a> · <a href="#update">Updating</a> · <a href="#wrong">When something is wrong</a>
-    </nav>
-  </section>
+    <p class="lede">Four minutes, alone. A little longer for a server. Nothing on this page is needed to <em>play</em> — once it is installed, it starts on its own.</p>
 
-  <section class="docs">
-    <h2 id="req">Requirements</h2>
-    <table>
-      <tr><th>Minecraft</th><td>Java Edition <strong>26.2</strong>. Not Bedrock, not another version.</td></tr>
-      <tr><th>Loader</th><td><a href="https://fabricmc.net/use/installer/" target="_blank" rel="noopener">Fabric Loader</a> for 26.2.</td></tr>
-      <tr><th>Library</th><td><a href="https://modrinth.com/mod/fabric-api" target="_blank" rel="noopener">Fabric API</a> <code>0.156.0+26.2</code>. Not optional — the mod will not load without it.</td></tr>
-      <tr><th>Java</th><td><strong>25 or newer.</strong> <code>java -version</code> must say 25+, not 17 or 21. The vanilla launcher's bundled Java for 26.2 is fine.</td></tr>
-      <tr><th>The mod</th><td><code>herobrine-&lt;version&gt;.jar</code> from the <a href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest" target="_blank" rel="noopener">latest release</a>.</td></tr>
-    </table>
+    <section id="start">
+      <h2>Before you start</h2>
+      <p>Four things have to be true. If one of them is not, nothing else on this page will work.</p>
+      <dl class="facts">
+        <dt>Minecraft 26.2</dt><dd>Java Edition. Not Bedrock, not another version.</dd>
+        <dt>Fabric Loader</dt><dd>The mod loader. <a href="https://fabricmc.net/use/installer/" target="_blank" rel="noopener">Get the installer →</a></dd>
+        <dt>Fabric API <code>0.156.0+26.2</code></dt><dd>A library every Fabric mod needs. Not optional. <a href="https://modrinth.com/mod/fabric-api" target="_blank" rel="noopener">Download →</a></dd>
+        <dt>Java 25 or newer</dt><dd>The launcher's own Java for 26.2 is fine. If you run a server yourself, <code>java -version</code> must say 25 or higher.</dd>
+      </dl>
+    </section>
 
-    <h2 id="solo">Playing alone</h2>
-    <ol>
-      <li>Run the Fabric installer. Pick <strong>26.2</strong>, keep the default loader version, install. It creates a "fabric-loader-26.2" profile in the vanilla launcher.</li>
-      <li>Open your <code>mods</code> folder (create it if it is not there):
-        <table>
-          <tr><th>Windows</th><td><code>%appdata%\.minecraft\mods</code></td></tr>
-          <tr><th>macOS</th><td><code>~/Library/Application Support/minecraft/mods</code></td></tr>
-          <tr><th>Linux</th><td><code>~/.minecraft/mods</code></td></tr>
-        </table>
-      </li>
-      <li>Put <code>fabric-api-0.156.0+26.2.jar</code> in it.</li>
-      <li>Put <code>herobrine-&lt;version&gt;.jar</code> beside it.</li>
-      <li>Launch the <strong>Fabric</strong> profile, not the vanilla one. Make a new world. Play normally.</li>
-    </ol>
-    <div class="note">Don't go looking. The first hour is meant to feel like nothing is installed. If you need to prove to yourself that it loaded, type <code>/herobrine status</code> — if the command exists, it did.</div>
+    <section id="solo">
+      <h2>Playing alone</h2>
+      <ol class="steps-list">
+        <li><strong>Install Fabric.</strong> Run the installer, choose <em>26.2</em>, keep the suggested loader version, install. It adds a Fabric profile to your normal launcher.</li>
+        <li><strong>Open your mods folder.</strong> Create it if it is not there.
+          <div class="paths">
+            <button class="copy" data-copy="%appdata%\.minecraft\mods">Windows</button>
+            <button class="copy" data-copy="~/Library/Application Support/minecraft/mods">macOS</button>
+            <button class="copy" data-copy="~/.minecraft/mods">Linux</button>
+          </div>
+        </li>
+        <li><strong>Drop in two files.</strong> <code>fabric-api-0.156.0+26.2.jar</code> and <code>herobrine-&lt;version&gt;.jar</code>. Nothing else is needed.</li>
+        <li><strong>Launch the Fabric profile</strong> — not the vanilla one — and make a world.</li>
+      </ol>
+      <p class="aside">Then play normally and don't go looking. The first hour is meant to feel like nothing is installed. If you want proof it loaded, type <code>/herobrine status</code>.</p>
+      <a class="btn mc" id="dl-jar" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download the mod</span><span class="btn-meta" id="jar-meta">latest release</span></a>
+    </section>
 
-    <h2 id="server">Running a server</h2>
-    <p>For the machine hosting the game. Players joining it do something different — see <a href="#join">Joining a server</a>.</p>
-    <ol>
-      <li>Get the <a href="https://fabricmc.net/use/server/" target="_blank" rel="noopener">Fabric server launcher</a> for 26.2. Java 25+ on the host.</li>
-      <li>Run it once so it creates <code>mods/</code>, <code>server.properties</code> and <code>eula.txt</code>. Accept the EULA.</li>
-      <li>Put <strong>both</strong> jars in <code>mods/</code>: Fabric API and Herobrine.</li>
-      <li>Start it again. The log says <code>wrote a default config to config/herobrine.json</code> the first time.</li>
-    </ol>
-    <div class="note"><strong>The server and every client must run the same version of this mod.</strong> Not close — the same. A player on 2.82.4 joining a 2.82.5 server gets a confusing disconnect, not a clear message. When you update the server, hand every player the new pack.</div>
-    <h3>Settings that matter</h3>
-    <ul>
-      <li><code>simulation-distance</code>: he needs ticking chunks to do anything. The default 10 is ample; below 5 his sightings get unreliable.</li>
-      <li><code>view-distance</code> only affects whether distant buildings are visible. 8 or more is fine.</li>
-      <li>No whitelist, permission plugin or extra port is needed.</li>
-    </ul>
-    <h3>With several people</h3>
-    <ul>
-      <li>Wrath is one number for the whole world. Six people reach the late phases far faster than one.</li>
-      <li>There is only ever one of him. If he is busy with somebody, everybody else gets a quiet night.</li>
-      <li>Buildings appear when the first player comes within 112 blocks, and are then permanent for everyone.</li>
-      <li>In the fight, two players raise his count by half; four double it. Dying alone rolls the fight back to the start of the act; dying with others standing changes nothing.</li>
-      <li>The ending is world-wide: when he dies, the rain stops and the people he turned are people again, for everyone.</li>
-    </ul>
+    <section id="server">
+      <h2>Running a server</h2>
+      <p>This part is for the machine hosting the game. Everyone joining it does something different — see <a href="#join">Joining a server</a>.</p>
+      <ol class="steps-list">
+        <li><strong>Get the Fabric server launcher</strong> for 26.2. <a href="https://fabricmc.net/use/server/" target="_blank" rel="noopener">fabricmc.net/use/server →</a></li>
+        <li><strong>Run it once</strong> so it writes <code>mods/</code>, <code>server.properties</code> and <code>eula.txt</code>. Accept the EULA.</li>
+        <li><strong>Put both jars in <code>mods/</code></strong> — Fabric API and Herobrine.</li>
+        <li><strong>Start it again.</strong> The log says <code>wrote a default config to config/herobrine.json</code> the first time.</li>
+      </ol>
+      <p class="warn"><strong>Everyone must run the same mod version as the server.</strong> Not close — the same. A mismatch shows up as a confusing disconnect, not a clear message. When you update the server, hand out the new modpack the same day.</p>
 
-    <h2 id="join">Joining a server</h2>
-    <p>A server cannot install a mod on your computer — Minecraft has never allowed it. You have to arrive already holding this mod, at the same version the server runs. The <strong>.mrpack</strong> on every release is that, in one file: it pins Fabric Loader, Fabric API and Herobrine by hash.</p>
-    <ol>
-      <li>Install <a href="https://modrinth.com/app" target="_blank" rel="noopener">Modrinth App</a> or <a href="https://prismlauncher.org/" target="_blank" rel="noopener">Prism Launcher</a>.</li>
-      <li>Download the <code>.mrpack</code> from the release your server runs (ask the host which).</li>
-      <li>In the launcher: <em>Add instance → Import</em> (Prism) or <em>Create profile → From file</em> (Modrinth App) → pick the <code>.mrpack</code>. It fetches everything and makes a profile.</li>
-      <li>Launch from <strong>that</strong> profile, not the vanilla launcher. Add the server as usual.</li>
-    </ol>
-    <div class="note">If the join is refused, nine times out of ten it is a version mismatch. Compare the <code>.mrpack</code> version with what the host installed.</div>
+      <h3>What changes with several people</h3>
+      <ul class="plain">
+        <li>Wrath is one number for the whole world, so six people reach the late phases far faster than one.</li>
+        <li>There is only ever one of him. While he is busy with somebody, everyone else gets a quiet night.</li>
+        <li>Buildings appear when the first player comes within 112 blocks, then stay for everyone.</li>
+        <li>In the fight, two players raise his count by half and four double it.</li>
+        <li>The ending is world-wide: the rain stops and the turned are cured for everyone at once.</li>
+      </ul>
 
-    <h2 id="config">Config</h2>
-    <p><code>config/herobrine.json</code> writes itself on first run. On a server the server's copy decides; a player's own copy does nothing to a multiplayer game. Everything is a switch; these are the ones people actually change:</p>
-    <table>
-      <tr><th>Key</th><th>Default</th><th></th></tr>
-      <tr><td><code>enabled</code></td><td>true</td><td>the whole mod</td></tr>
-      <tr><td><code>atmosphere</code></td><td>true</td><td>the sky, fog and music changes as the story darkens</td></tr>
-      <tr><td><code>breakIn</code></td><td>true</td><td>he breaks through walls, doors and cover; everything he breaks drops</td></tr>
-      <tr><td><code>realLightning</code></td><td>true</td><td>his bolts hurt and burn</td></tr>
-      <tr><td><code>blowsToKill</code></td><td>100</td><td>the length of the fight for one player</td></tr>
-      <tr><td><code>corpses</code></td><td>true</td><td>the dead stay where they fell and are looted like chests; a player's body holds their inventory</td></tr>
-      <tr><td><code>theTurning</code></td><td>true</td><td>the villager who does not sleep</td></tr>
-      <tr><td><code>hisKeep</code> · <code>keepBlueprint</code></td><td>true · tutorial_castle</td><td>the castle, and which blueprint it is</td></tr>
-      <tr><td><code>houses</code> · <code>town</code> · <code>villageDecay</code></td><td>true</td><td>the places, and what happens to villages</td></tr>
-      <tr><td><code>weather</code> · <code>longerNights</code> · <code>endlessNight</code></td><td>true</td><td>the storm and the night in the later phases</td></tr>
-      <tr><td><code>quietDeaths</code></td><td>true</td><td>no death messages for what he takes</td></tr>
-    </table>
+      <h3>Server settings worth a glance</h3>
+      <ul class="plain">
+        <li><code>simulation-distance</code> — he needs ticking chunks. The default 10 is ample; below 5 his appearances get unreliable.</li>
+        <li><code>view-distance</code> — only affects how far away buildings are visible. 8 or more is fine.</li>
+        <li>No whitelist, permission plugin or extra port is needed.</li>
+      </ul>
+    </section>
 
-    <h2 id="commands">Commands</h2>
-    <p>All under <code>/herobrine</code>, all for testing. None are needed to play.</p>
-    <table>
-      <tr><td><code>status</code></td><td>wrath, phase, where things stand — and proof the mod loaded</td></tr>
-      <tr><td><code>phase &lt;name&gt;</code></td><td>jump the story to a phase (rumour, watcher, trespasser, mimic, hunter, siege)</td></tr>
-      <tr><td><code>boss [fresh]</code></td><td>straight to the fight, in full diamond with his sword; resumes a bound fight unless <code>fresh</code></td></tr>
-      <tr><td><code>resite</code></td><td>forget where unbuilt places were going to go; choose again near whoever is online</td></tr>
-      <tr><td><code>turned</code></td><td>put one of the turned in the nearest village</td></tr>
-    </table>
+    <section id="join">
+      <h2>Joining a server</h2>
+      <p>A server cannot install a mod on your computer — Minecraft has never allowed that. You have to arrive already holding it, at the same version the server runs. The <strong>.mrpack</strong> on every release does exactly that: it pins Fabric Loader, Fabric API and Herobrine by hash.</p>
+      <ol class="steps-list">
+        <li><strong>Install a launcher that reads modpacks</strong> — <a href="https://modrinth.com/app" target="_blank" rel="noopener">Modrinth App</a> or <a href="https://prismlauncher.org/" target="_blank" rel="noopener">Prism Launcher</a>.</li>
+        <li><strong>Download the <code>.mrpack</code></strong> for the version your server runs. Ask the host which one.</li>
+        <li><strong>Import it.</strong> Prism: <em>Add Instance → Import</em>. Modrinth App: <em>Create profile → From file</em>.</li>
+        <li><strong>Launch from that profile</strong> and add the server as usual.</li>
+      </ol>
+      <a class="btn mc" id="pack" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download the modpack</span><span class="btn-meta" id="pack-meta">.mrpack</span></a>
+    </section>
 
-    <h2 id="update">Updating</h2>
-    <p>Every fix ships as a new <a href="https://github.com/robinandrejohansen/herobrine-mod/releases" target="_blank" rel="noopener">release</a>. Swap the jar in <code>mods/</code>; your world and your config carry over — every position, phase and flag is saved in the world itself. On a server, update the host and hand out the new <code>.mrpack</code> the same day.</p>
+    <section id="config">
+      <h2>Settings</h2>
+      <p><code>config/herobrine.json</code> writes itself the first time the mod runs. On a server the server's copy is the one that decides. Everything is a switch; these are the ones people actually change.</p>
+      <table class="settings">
+        <tr><td><code>enabled</code></td><td>The whole mod.</td></tr>
+        <tr><td><code>breakIn</code></td><td>He breaks through walls, doors and cover. Everything he breaks drops, so nothing is lost but the wall.</td></tr>
+        <tr><td><code>realLightning</code></td><td>His lightning hurts and burns.</td></tr>
+        <tr><td><code>blowsToKill</code></td><td>How long the final fight is. 100 by default, for one player.</td></tr>
+        <tr><td><code>corpses</code></td><td>The dead stay where they fell and are looted like chests. Your own body holds everything you carried.</td></tr>
+        <tr><td><code>atmosphere</code></td><td>The sky, fog and music changing as the story darkens.</td></tr>
+        <tr><td><code>theTurning</code></td><td>The villager who does not sleep.</td></tr>
+        <tr><td><code>houses</code> · <code>town</code></td><td>The places the story leads you to.</td></tr>
+        <tr><td><code>weather</code> · <code>endlessNight</code></td><td>The storm and the night that does not end, late on.</td></tr>
+        <tr><td><code>quietDeaths</code></td><td>No death messages for what he takes.</td></tr>
+      </table>
+    </section>
 
-    <h2 id="wrong">When something is wrong</h2>
-    <table>
-      <tr><th>You see</th><th>It means</th></tr>
-      <tr><td>The game crashes at launch mentioning <code>fabric-api</code></td><td>Fabric API is missing or the wrong version. It must be <code>0.156.0+26.2</code>.</td></tr>
-      <tr><td>"Unsupported class file version" / Java errors</td><td>Java is older than 25. Install a current JDK, or let the launcher use its bundled one.</td></tr>
-      <tr><td>Refused when joining a server</td><td>Your mod version differs from the server's, or you launched the vanilla profile. Use the server's <code>.mrpack</code> profile.</td></tr>
-      <tr><td>Nothing happens for an hour</td><td>Correct. Keep playing.</td></tr>
-      <tr><td><code>/herobrine</code> is unknown</td><td>The mod did not load. Check <code>mods/</code> has both jars and read the log near startup.</td></tr>
-      <tr><td>The fight feels impossible</td><td>It is meant to be very hard. Lower <code>blowsToKill</code>, or bring friends — and keep spare gear at home. Your body holds what you carried; go back for it.</td></tr>
-    </table>
-    <p>Anything else: <a href="mailto:hello@dimora.no">hello@dimora.no</a>.</p>
-  </section>
+    <section id="commands">
+      <h2>Commands</h2>
+      <p>All for testing. None are needed to play, and using them will spoil things.</p>
+      <table class="settings">
+        <tr><td><code>/herobrine status</code></td><td>Where the story stands — and proof the mod loaded.</td></tr>
+        <tr><td><code>/herobrine phase &lt;name&gt;</code></td><td>Jump to a phase: rumour, watcher, trespasser, mimic, hunter, siege.</td></tr>
+        <tr><td><code>/herobrine boss</code></td><td>Straight to the fight, in full diamond with his sword. Add <code>fresh</code> to start it over.</td></tr>
+        <tr><td><code>/herobrine resite</code></td><td>Choose again where unbuilt places will go, near whoever is online.</td></tr>
+      </table>
+    </section>
+
+    <section id="update">
+      <h2>Updating</h2>
+      <p>Every fix ships as a new release. Swap the jar in <code>mods/</code> — your world and your settings carry over, because every position, phase and flag is saved inside the world itself. On a server: update the host, then hand out the new modpack.</p>
+      <p><a href="https://github.com/robinandrejohansen/herobrine-mod/releases" target="_blank" rel="noopener">All releases →</a></p>
+    </section>
+
+    <section id="wrong">
+      <h2>Something is wrong</h2>
+      <dl class="facts">
+        <dt>It crashes at launch, mentioning fabric-api</dt><dd>Fabric API is missing or the wrong build. It must be <code>0.156.0+26.2</code>.</dd>
+        <dt>"Unsupported class file version"</dt><dd>Java is older than 25. Use the launcher's bundled Java, or install a current JDK.</dd>
+        <dt>The server refuses the join</dt><dd>Your version differs from the server's, or you launched the vanilla profile instead of the modpack one.</dd>
+        <dt><code>/herobrine</code> is an unknown command</dt><dd>The mod did not load. Check that <code>mods/</code> holds both jars, and read the log near startup.</dd>
+        <dt>Nothing has happened for an hour</dt><dd>Correct. Keep playing.</dd>
+        <dt>The fight feels impossible</dt><dd>It is meant to be hard. Bring friends, keep spare gear at home, and remember your body holds what you carried — go back for it. Or lower <code>blowsToKill</code>.</dd>
+      </dl>
+      <p>Anything else, write to <a href="mailto:hello@dimora.no">hello@dimora.no</a>.</p>
+    </section>
+  </article>
 </main>
 
 <footer>
@@ -144,6 +166,6 @@
   <span>Not affiliated with Mojang or Microsoft.</span>
 </footer>
 
-<script src="/app.js" defer></script>
+<script src="/app.js?v=202609040028" defer></script>
 </body>
 </html>
