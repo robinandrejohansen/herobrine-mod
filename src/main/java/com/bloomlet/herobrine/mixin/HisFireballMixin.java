@@ -57,6 +57,11 @@ public abstract class HisFireballMixin {
 		if (!here.getGameRules().get(GameRules.MOB_GRIEFING)) {
 			return;
 		}
-		HisHost.dent(here, net.minecraft.core.BlockPos.containing(hit.getLocation()));
+		net.minecraft.core.BlockPos at = net.minecraft.core.BlockPos.containing(hit.getLocation());
+		if (ball.getAttached(com.bloomlet.herobrine.entity.HerobrineEntity.BREACH) != null) {
+			// Aimed at a wall on purpose: the wall goes, whatever it is made of.
+			HisHost.punch(here, at, 1.6);
+		}
+		HisHost.dent(here, at);
 	}
 }

@@ -268,7 +268,7 @@ public final class Config {
 	/** He can be killed at SIEGE. Off means the mod has no ending. */
 	public boolean theReckoning = true;
 	/** How many blows he takes. The church still arrives a third of the way. */
-	public int blowsToKill = 70;
+	public int blowsToKill = 100;
 
 	// ------------------------------------------------------------------------
 
@@ -297,7 +297,7 @@ public final class Config {
 	 * Bump it, and add a case, whenever a DEFAULT changes in a way an existing
 	 * world should get.
 	 */
-	private static final int SETTINGS_VERSION = 4;
+	private static final int SETTINGS_VERSION = 5;
 	public int settingsVersion = 0;
 
 	/**
@@ -358,6 +358,12 @@ public final class Config {
 			HerobrineMod.LOGGER.info(
 				"oakhold is gone — it was too big. lastHouseBlueprint blanked, so the"
 					+ " last house is the village now.");
+		}
+		if (it.settingsVersion < 5 && it.blowsToKill == 70) {
+			it.blowsToKill = 100;
+			HerobrineMod.LOGGER.info(
+				"blowsToKill was still 70 — raised to 100. With one counted blow per half"
+					+ " second, seventy was a fight of about three minutes.");
 		}
 		it.settingsVersion = SETTINGS_VERSION;
 		return true;

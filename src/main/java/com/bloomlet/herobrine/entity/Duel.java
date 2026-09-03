@@ -275,11 +275,17 @@ final class Duel {
 	private static final double SPEAKS_WITHIN = 24.0;
 	private static final double STARES_WITHIN = 12.0;
 	private static final double STOPS_AT = 5.0;
-	private static final int PATIENCE = 400;          // twenty seconds of you standing there
+	private static final int PATIENCE = 80;           // four seconds inside six blocks, and it is his
+	private static final int THE_REVEAL = 60;          // three seconds standing in the hall before he moves
+	private static final double COMES_FOR_YOU_FROM = 40.0;
+	private static final double STRIKES_FIRST_WITHIN = 6.0;
+	private int hallFor;
+	private int hallStuck;
+	private double hallWasAt = Double.MAX_VALUE;
 	private static final int PERCH_REST = 100;
 	private static final int UNSEEN_MOVES_HIM = 160;
 	private static final int SPEAK_REST = 400;
-	private static final double APPROACH_PACE = 0.6;
+	private static final double APPROACH_PACE = 0.9;
 
 	private static final String[] WATCHING = {
 		"i can see you from here",
@@ -464,17 +470,37 @@ final class Duel {
 	 * he settles it himself: the first blow of the fight is his, and from that
 	 * swing he is bound and the Duel has him.
 	 */
+	/**
+	 * THE HALL, AND HE DOES NOT WAIT IN IT.
+	 *
+	 * He used to: stand at the seat, and move only when you were inside twelve
+	 * blocks WITH a line of sight — so he stood round the corner while you ran the
+	 * corridors, and a player who kept moving never saw him follow. And the first
+	 * blow took twenty seconds of you standing still. Neither is a man who owns the
+	 * house.
+	 *
+	 * Now: three seconds standing where you first see him — the reveal — and then
+	 * he COMES. On foot, through his own doors, toward wherever you are within
+	 * forty blocks, line of sight or not; stuck for two seconds and he is in the
+	 * room next to you (silently — nothing is announced before the first blow).
+	 * Inside twelve with a line he closes to five and stops. Four seconds inside six
+	 * and he swings. You can start it sooner. You cannot make him wait.
+	 */
 	private void waitInTheHall(ServerLevel here, ServerPlayer target) {
 		if (this.hall == null) {
 			return;
 		}
 		if (!this.inTheHall) {
 			this.inTheHall = true;
+			this.hallFor = 0;
+			this.hallStuck = 0;
+			this.hallWasAt = Double.MAX_VALUE;
 			this.him.blinkTo(this.hall.getX() + 0.5, this.hall.getY(), this.hall.getZ() + 0.5,
 				this.yawTo(this.hall, target));
 			this.him.getNavigation().stop();
 			return;
 		}
+		this.hallFor++;
 		double d = this.him.distanceTo(target);
 		boolean sees = this.him.hasLineOfSight(target);
 		this.him.face(target);
@@ -484,21 +510,49 @@ final class Duel {
 			String line = WAITING[this.him.getRandom().nextInt(WAITING.length)];
 			target.sendSystemMessage(net.minecraft.network.chat.Component.literal("§8§o" + line));
 		}
-		if (!sees || d > STARES_WITHIN) {
-			this.patience = Math.max(0, this.patience - 2);
+		if (this.hallFor < THE_REVEAL) {
 			this.him.getNavigation().stop();
 			return;
 		}
-		if (d > STOPS_AT) {
-			this.him.getNavigation().moveTo(target, APPROACH_PACE);
-		} else {
+
+		if (sees && d <= STARES_WITHIN) {
+			if (d > STOPS_AT) {
+				this.him.getNavigation().moveTo(target, APPROACH_PACE);
+			} else {
+				this.him.getNavigation().stop();
+			}
+			if (d <= STRIKES_FIRST_WITHIN) {
+				this.patience++;
+			} else {
+				this.patience = Math.max(0, this.patience - 1);
+			}
+			if (this.patience >= PATIENCE) {
+				this.say(here, "close enough for long enough — the first blow is his");
+				this.him.bind();
+				this.him.slash(target);
+			}
+			this.hallStuck = 0;
+			this.hallWasAt = d;
+			return;
+		}
+
+		// OUT OF SIGHT, OR FURTHER. He comes for you.
+		this.patience = Math.max(0, this.patience - 1);
+		if (d > COMES_FOR_YOU_FROM) {
 			this.him.getNavigation().stop();
+			return;
 		}
-		if (++this.patience >= PATIENCE && d <= CLOSE + 1.5) {
-			this.say(here, "you stood there too long — the first blow is his");
-			this.him.bind();
-			this.him.slash(target);
+		this.him.getNavigation().moveTo(target, APPROACH_PACE);
+		if (d < this.hallWasAt - 0.05) {
+			this.hallStuck = 0;
+		} else if (++this.hallStuck > 40) {
+			this.hallStuck = 0;
+			if (this.toARoom(here, target, 10.0, "came to find you")) {
+				this.hallWasAt = Double.MAX_VALUE;
+				return;
+			}
 		}
+		this.hallWasAt = d;
 	}
 
 	private boolean insideTheWalls(Player who) {

@@ -149,6 +149,14 @@ public final class Sayings {
 	 * a half seconds apart, in the order they are written, past the quiet timer.
 	 * Once per world — see CompanionEntity.INTRODUCED.
 	 */
+	/** What he says when Herobrine puts him down. Once. */
+	public static final String[] FALLEN = {
+		"It's all right. Finish it.",
+		"Go. Don't look at me. Go.",
+		"I said I'd hold what was behind you. I held it.",
+		"Not this time either. Finish it for me.",
+	};
+
 	static final String[] INTRODUCTION = {
 		"You're standing in my house. Or what's left of it.",
 		"Addexio. I lived here, before.",

@@ -109,6 +109,12 @@ public final class ManifestationDirector {
 		long now = server.overworld().getGameTime();
 		for (ServerLevel level : server.getAllLevels()) {
 			for (ServerPlayer player : level.players()) {
+				// NOT IN HIS WORLD. A sign appeared in the castle mid-fight; the haunting
+				// is what he does to YOUR world, and over there he is standing in front
+				// of you.
+				if (level.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
+					continue;
+				}
 				if (player.isSpectator() || !player.isAlive()) {
 					continue;
 				}

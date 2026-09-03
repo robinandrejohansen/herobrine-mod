@@ -328,7 +328,7 @@ public final class Company {
 	 * in front of you right now.
 	 */
 	private static void notice(ServerLevel here, CompanionEntity her, Player with) {
-		if (her.isFaltering()) {
+		if (her.isFallen() || her.isFaltering()) {
 			return;               // she has other things on her mind. Falter talks.
 		}
 		AABB round = her.getBoundingBox().inflate(NOTICES);
@@ -367,6 +367,6 @@ public final class Company {
 	private static List<CompanionEntity> hers(ServerLevel here, Player with) {
 		return here.getEntitiesOfClass(CompanionEntity.class,
 			with.getBoundingBox().inflate(64.0, 512.0, 64.0),
-			her -> her.companion() == with);
+			her -> !her.isFallen() && her.companion() == with);
 	}
 }

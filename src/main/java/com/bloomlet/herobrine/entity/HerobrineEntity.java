@@ -5467,8 +5467,12 @@ public class HerobrineEntity extends PathfinderMob {
 			// damage the mixin was written for finally applies to HIS shots and not
 			// only to the skeletons'.
 			net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball ball =
+				// POWER BY ACT: one, two, three. Two scratched stone — a ray of intensity
+				// two loses 1.9 per stone block, so a castle wall shrugged it off and the
+				// fireballs read as fireworks. Three takes a bite out of masonry; the
+				// breach below uses four, which is TNT.
 				new net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball(
-					here, this, to.normalize(), act >= 2 ? 2 : 1);
+					here, this, to.normalize(), Math.min(3, act));
 			ball.snapTo(from.x, from.y, from.z, this.getYRot(), this.getXRot());
 			ball.shoot(to.x, to.y, to.z, 1.3F, spread);
 			here.addFreshEntity(ball);
@@ -6017,9 +6021,16 @@ public class HerobrineEntity extends PathfinderMob {
 			24, 0.4, 0.6, 0.4, 0.02);
 		here.playSound(null, helper.getX(), helper.getY(), helper.getZ(),
 			SoundEvents.PLAYER_ATTACK_CRIT, this.getSoundSource(), 1.4F, 0.5F);
-		helper.hurtServer(here, this.damageSources().mobAttack(this), Float.MAX_VALUE);
-		HerobrineMod.LOGGER.info("duel: {} put a hand on him and stopped",
-			helper.getType().toShortString());
+		// A golem ends in one. Addexio is a man in diamond with twenty-four hearts and
+		// the only one whose death this fight can cause — he gets a blow, the real
+		// one, and it takes several. Long enough for the player to notice and decide.
+		if (helper instanceof CompanionEntity) {
+			helper.hurtServer(here, this.damageSources().mobAttack(this), RECKONING_DAMAGE);
+		} else {
+			helper.hurtServer(here, this.damageSources().mobAttack(this), Float.MAX_VALUE);
+		}
+		HerobrineMod.LOGGER.info("duel: {} put a hand on him and {}",
+			helper.getType().toShortString(), helper.isAlive() ? "paid for it" : "stopped");
 	}
 
 	/**
@@ -6033,6 +6044,15 @@ public class HerobrineEntity extends PathfinderMob {
 	 * feet. Gated on breakIn and on mobGriefing like every other hole he makes.
 	 */
 	private static final double BREACH_REACH = 24.0;
+	/**
+	 * A BREACH BALL CARVES. Vanilla's blast is a poor mason: a ray loses 1.9 for
+	 * every step through stone, so even TNT takes one block out of a wall and none
+	 * out of the next. The two balls he fires at a wall carry this mark, and on
+	 * impact HisFireballMixin punches a hole through whatever they hit — see
+	 * HisHost.punch. Not synced, not saved: a fireball lives two seconds.
+	 */
+	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> BREACH =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.create(HerobrineMod.id("breach"));
 
 	boolean breach(ServerPlayer target) {
 		if (!(this.level() instanceof ServerLevel here) || !Config.get().breakIn
@@ -6060,12 +6080,17 @@ public class HerobrineEntity extends PathfinderMob {
 			return false;
 		}
 		this.swipe();
+		// TNT-CLASS FROM ACT TWO. Power two did nothing to a stone wall — see
+		// throwFire — so "he blows the place up" was a puff of smoke and a dent in
+		// the floor. Four goes through a block and a half of masonry.
+		int power = this.act() >= 2 ? 4 : 3;
 		for (int i = 0; i < 2; i++) {
 			net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball ball =
 				new net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball(
-					here, this, along.normalize(), 2);
+					here, this, along.normalize(), power);
 			ball.snapTo(eye.x, eye.y, eye.z, this.getYRot(), this.getXRot());
 			ball.shoot(along.x, along.y, along.z, 1.4F, 0.6F);
+			ball.setAttached(BREACH, true);
 			here.addFreshEntity(ball);
 		}
 		here.playSound(null, this.getX(), this.getY(), this.getZ(),

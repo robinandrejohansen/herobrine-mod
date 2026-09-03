@@ -597,6 +597,27 @@ public final class HisHost {
 		dent(here, impact, DENT);
 	}
 
+	/**
+	 * THE HOLE HE MEANT TO MAKE. A sphere of that radius round the impact, every
+	 * diggable block in it gone — diggable meaning no bedrock, no block entities
+	 * (chests, the way), nothing anybody would have to lose. This is what makes
+	 * "he blows the place up" true for a stone wall two blocks thick, which vanilla
+	 * explosions of any size only scratch. Fires only for a ball marked BREACH.
+	 */
+	public static void punch(ServerLevel here, BlockPos impact, double radius) {
+		int r = (int) Math.ceil(radius);
+		int taken = 0;
+		for (BlockPos pos : BlockPos.betweenClosed(impact.offset(-r, -r, -r), impact.offset(r, r, r))) {
+			if (Math.sqrt(pos.distSqr(impact)) > radius || !diggable(here, pos)) {
+				continue;
+			}
+			here.destroyBlock(pos, false);
+			taken++;
+		}
+		HerobrineMod.LOGGER.info("duel: the wall at [{}, {}, {}] — {} blocks gone",
+			impact.getX(), impact.getY(), impact.getZ(), taken);
+	}
+
 	public static void dent(ServerLevel here, BlockPos impact, int wide) {
 		RandomSource random = here.getRandom();
 		// Down to the floor from wherever it burst. Six is enough to reach the

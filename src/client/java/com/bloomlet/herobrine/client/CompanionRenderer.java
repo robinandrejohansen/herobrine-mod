@@ -39,13 +39,43 @@ import net.minecraft.resources.Identifier;
  * hold the bread in, which is where a man eating would hold it.
  */
 public class CompanionRenderer extends HumanoidMobRenderer<
-		CompanionEntity, HumanoidRenderState, HumanoidModel<HumanoidRenderState>> {
+		CompanionEntity, CompanionRenderState, HumanoidModel<CompanionRenderState>> {
+
+	/**
+	 * THE BODY. The SLEEPING pose lays him flat on his back — that is vanilla, and
+	 * it is what a villager in a bed does. A man who has been killed does not lie
+	 * like a man asleep: the arms go out, the legs apart, the head to one side.
+	 * Applied after the ordinary animation so nothing else has to know.
+	 */
+	static final class Body extends HumanoidModel<CompanionRenderState> {
+		Body(net.minecraft.client.model.geom.ModelPart root) {
+			super(root);
+		}
+
+		@Override
+		public void setupAnim(CompanionRenderState state) {
+			super.setupAnim(state);
+			if (!state.fallen) {
+				return;
+			}
+			this.rightArm.xRot = 0.0F;
+			this.leftArm.xRot = 0.0F;
+			this.rightArm.zRot = 1.35F;
+			this.leftArm.zRot = -1.35F;
+			this.rightLeg.xRot = 0.0F;
+			this.leftLeg.xRot = 0.0F;
+			this.rightLeg.zRot = 0.35F;
+			this.leftLeg.zRot = -0.35F;
+			this.head.yRot = 0.6F;
+			this.head.xRot = 0.15F;   // the hat is the head's child and turns with it
+		}
+	}
 
 	private static final Identifier TEXTURE =
 		HerobrineMod.id("textures/entity/addexio/addexio.png");
 
 	public CompanionRenderer(EntityRendererProvider.Context context) {
-		super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5F);
+		super(context, new Body(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5F);
 		// THE ARMOUR. HumanoidMobRenderer's constructor adds the head, the item in
 		// hand and the wings — and not the armour layer, which every vanilla
 		// humanoid adds for itself (see AbstractZombieRenderer). So he wore enchanted
@@ -53,18 +83,18 @@ public class CompanionRenderer extends HumanoidMobRenderer<
 		// the player-shaped mesh, drawn by the game's own equipment renderer.
 		this.addLayer(new net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer<>(this,
 			net.minecraft.client.renderer.entity.ArmorModelSet
-				.<HumanoidModel<HumanoidRenderState>>bake(ModelLayers.PLAYER_ARMOR,
+				.<HumanoidModel<CompanionRenderState>>bake(ModelLayers.PLAYER_ARMOR,
 					context.getModelSet(), HumanoidModel::new),
 			context.getEquipmentRenderer()));
 	}
 
 	@Override
-	public HumanoidRenderState createRenderState() {
-		return new HumanoidRenderState();
+	public CompanionRenderState createRenderState() {
+		return new CompanionRenderState();
 	}
 
 	@Override
-	public Identifier getTextureLocation(HumanoidRenderState state) {
+	public Identifier getTextureLocation(CompanionRenderState state) {
 		return TEXTURE;
 	}
 
@@ -75,9 +105,10 @@ public class CompanionRenderer extends HumanoidMobRenderer<
 	 * a peak a third of the way through, falling off, gone.
 	 */
 	@Override
-	public void extractRenderState(CompanionEntity entity, HumanoidRenderState state,
+	public void extractRenderState(CompanionEntity entity, CompanionRenderState state,
 	                               float partialTicks) {
 		super.extractRenderState(entity, state, partialTicks);
+		state.fallen = entity.getAttached(CompanionEntity.FALLEN_UNTIL) != null;
 		Long swung = entity.getAttached(CompanionEntity.SWUNG);
 		float ago = swung == null ? Float.MAX_VALUE
 			: entity.level().getGameTime() - swung + partialTicks;

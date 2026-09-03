@@ -551,6 +551,10 @@ public class CompanionEntity extends PathfinderMob {
 	public void tick() {
 		super.tick();
 		if (!this.level().isClientSide()) {
+			if (this.isFallen() && this.level() instanceof ServerLevel here) {
+				this.lieThere(here);
+				return;
+			}
 			if (!this.armed) {
 				this.armed = true;
 				if (this.getMainHandItem().isEmpty()) {
@@ -709,8 +713,103 @@ public class CompanionEntity extends PathfinderMob {
 		Sayings.introduce(here, this, to);
 	}
 
+	/**
+	 * ONLY HE CAN KILL HIM — AND IT LEAVES A BODY.
+	 *
+	 * Everything else in the world is clamped at two hearts: zombies, falls, fire,
+	 * the Gaunt. Herobrine is not. His blows, his fireballs, anything whose source
+	 * is him, take Addexio all the way down — through twenty-four hearts and
+	 * enchanted diamond, so it takes him a while, and a player who is fighting
+	 * beside him can stop it. A player who is not, watches it happen.
+	 *
+	 * And he does not vanish in a puff of smoke like a mob. He falls where he
+	 * stands and lies there: no AI, no health bar, sword still in his hand, the
+	 * sleeping pose laid flat with the arms out (see CompanionRenderer). For half an
+	 * hour of game time, then he is gone — and he does not come back. Once per
+	 * world, like the introduction; the story has a cost now.
+	 */
+	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Long> FALLEN_UNTIL =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.<Long>builder()
+			.persistent(com.mojang.serialization.Codec.LONG)
+			.syncWith(net.minecraft.network.codec.ByteBufCodecs.VAR_LONG.cast(),
+				net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
+			.buildAndRegister(HerobrineMod.id("addexio_fallen_until"));
+	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> LOST =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.createPersistent(
+			HerobrineMod.id("addexio_lost"), com.mojang.serialization.Codec.BOOL);
+	private static final long LIES_FOR = 36000L;   // thirty minutes
+
+	public boolean isFallen() {
+		return this.getAttached(FALLEN_UNTIL) != null;
+	}
+
+	/** Whether this world's Addexio has been killed. Company does not send another. */
+	public static boolean lost(ServerLevel level) {
+		return Boolean.TRUE.equals(level.getServer().overworld().getAttached(LOST));
+	}
+
+	private void fall(ServerLevel level, DamageSource source) {
+		this.setHealth(1.0F);
+		this.setAttached(FALLEN_UNTIL, level.getGameTime() + LIES_FOR);
+		level.getServer().overworld().setAttached(LOST, true);
+		this.stopUsingItem();
+		this.getNavigation().stop();
+		this.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+		this.setTarget(null);
+		this.setNoAi(true);
+		this.setInvulnerable(true);
+		this.setPose(net.minecraft.world.entity.Pose.SLEEPING);
+		this.fleeing = false;
+		this.guardFor = 0;
+		Player with = this.companion();
+		if (with instanceof ServerPlayer heard) {
+			this.lastSpoke = -100000L;     // past the quiet timer: these words are not optional
+			Sayings.say(level, this, heard, Sayings.FALLEN);
+		}
+		level.playSound(null, this.getX(), this.getY(), this.getZ(),
+			SoundEvents.PLAYER_DEATH, this.getSoundSource(), 1.0F, 0.85F);
+		HerobrineMod.LOGGER.info("{} has fallen to {} at [{}, {}, {}] — he lies there {} minutes",
+			this.getName().getString(), source.getEntity() == null ? "him"
+				: source.getEntity().getType().toShortString(),
+			this.getBlockX(), this.getBlockY(), this.getBlockZ(), LIES_FOR / 1200);
+	}
+
+	private void lieThere(ServerLevel level) {
+		Long until = this.getAttached(FALLEN_UNTIL);
+		if (until == null) {
+			return;
+		}
+		if (!this.isNoAi()) {              // a reload: the pose and the stillness come back
+			this.setNoAi(true);
+			this.setInvulnerable(true);
+		}
+		this.setPose(net.minecraft.world.entity.Pose.SLEEPING);
+		this.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+		if (level.getGameTime() >= until) {
+			level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+				this.getX(), this.getY() + 0.3, this.getZ(), 30, 0.6, 0.2, 0.6, 0.01);
+			HerobrineMod.LOGGER.info("{} is gone", this.getName().getString());
+			this.discard();
+		}
+	}
+
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+		if (this.isFallen()) {
+			return false;
+		}
+		// HIS HAND IS THE ONE THAT CAN CLOSE. See fall().
+		boolean his = source.getEntity() instanceof HerobrineEntity
+			|| (source.getDirectEntity() != null
+				&& source.getDirectEntity().getType().toShortString().contains("fireball")
+				&& source.getEntity() instanceof HerobrineEntity);
+		if (his) {
+			if (this.getHealth() - damage <= 0.0F) {
+				this.fall(level, source);
+				return true;
+			}
+			return super.hurtServer(level, source, damage);
+		}
 		// FACE IT. A man who is being hit turns round — before anything else, and
 		// with the sandwich down. He was finishing his bread with his back to a
 		// zombie because the zombie was not one of Herobrine's and so did not count.
