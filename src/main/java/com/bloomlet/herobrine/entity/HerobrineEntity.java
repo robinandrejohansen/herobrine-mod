@@ -6611,11 +6611,20 @@ public class HerobrineEntity extends PathfinderMob {
 				}
 				Vec3 from = this.getEyePosition();
 				Vec3 to = target.position().add(0.0, 0.9, 0.0).subtract(from);
-				net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball fire =
-					new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(
-						here, this, to.normalize());
+				// ACT ONE IS FIRE; FROM ACT TWO IT IS THE REAL THING. Blaze shots in the
+				// first act — they burn, they do not dig. From the second act the salvo
+				// is ghast fire like his ordinary throw, at a power below it (one, then
+				// two): ten of those at three would not be a move, it would be the end
+				// of the building.
+				int act = this.act();
+				net.minecraft.world.entity.projectile.hurtingprojectile.AbstractHurtingProjectile fire =
+					act >= 2
+						? new net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball(
+							here, this, to.normalize(), act - 1)
+						: new net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball(
+							here, this, to.normalize());
 				fire.snapTo(from.x, from.y, from.z, this.getYRot(), this.getXRot());
-				fire.shoot(to.x, to.y, to.z, 1.7F, 4.0F);
+				fire.shoot(to.x, to.y, to.z, 1.7F, act >= 2 ? 3.0F : 4.0F);
 				here.addFreshEntity(fire);
 				this.swipe();
 				here.playSound(null, this.getX(), this.getY(), this.getZ(),
