@@ -445,7 +445,7 @@ public final class HerobrineCommand {
 				player.getInventory().add(piece);
 			}
 		});
-		player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD));
+		player.getInventory().add(com.bloomlet.herobrine.entity.HerobrineEntity.hisSword(player.level(), false));
 		player.getInventory().add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.ENCHANTED_GOLDEN_APPLE, 20));
 		player.containerMenu.broadcastChanges();
 	}

@@ -4468,18 +4468,7 @@ public class HerobrineEntity extends PathfinderMob {
 		Vec3 at = taker != null ? taker.position() : this.position();
 		net.minecraft.world.entity.ExperienceOrb.award(here, at, 4000);
 		java.util.List<ItemStack> spoils = new java.util.ArrayList<>();
-		if (!this.getMainHandItem().isEmpty()) {
-			// THE SWORD IS CALLED HEROBRINE. It is the one thing of his you keep.
-			ItemStack his = this.getMainHandItem().copy();
-			his.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-				net.minecraft.network.chat.Component.literal("Herobrine").withStyle(
-					style -> style.withItalic(false).withColor(net.minecraft.ChatFormatting.WHITE)));
-			his.set(net.minecraft.core.component.DataComponents.LORE,
-				new net.minecraft.world.item.component.ItemLore(java.util.List.of(
-					net.minecraft.network.chat.Component.literal("His. Taken at his castle.")
-						.withStyle(net.minecraft.ChatFormatting.DARK_GRAY))));
-			spoils.add(his);
-		}
+		spoils.add(hisSword(here, false));      // the real sword, not a copy of his prop
 		spoils.add(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 3));
 		spoils.add(new ItemStack(Items.DIAMOND, 12 + this.random.nextInt(9)));
 		spoils.add(new ItemStack(Items.NETHERITE_INGOT, 4));
@@ -4580,32 +4569,50 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 	}
 
-	private void blade() {
+	/**
+	 * HIS SWORD, AND THE ONE YOU GET.
+	 *
+	 * One recipe, two owners. In his hand the item's own damage is stripped (the
+	 * blow is RECKONING_DAMAGE, flat, and the sword is a prop); in a player's hand
+	 * it is a full diamond sword under the same enchantments, named. The loot copy
+	 * used to be a literal copy of his — and inherited the stripped damage, so the
+	 * trophy of the whole fight hit like a stick with Sharpness on it. The test
+	 * kit gives the same sword, because a test of the fight should be fought with
+	 * what the fight is worth.
+	 */
+	public static ItemStack hisSword(ServerLevel here, boolean forHim) {
 		ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
-		sword.set(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS,
-			net.minecraft.world.item.component.ItemAttributeModifiers.EMPTY);
-		if (this.level() instanceof ServerLevel here) {
-			var book = here.registryAccess().lookup(
-				net.minecraft.core.registries.Registries.ENCHANTMENT);
-			if (book.isPresent()) {
-				bite(sword, book.get(),
-					net.minecraft.world.item.enchantment.Enchantments.SHARPNESS, 10);
-				bite(sword, book.get(),
-					net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT, 5);
-				bite(sword, book.get(),
-					net.minecraft.world.item.enchantment.Enchantments.KNOCKBACK, 5);
-				bite(sword, book.get(),
-					net.minecraft.world.item.enchantment.Enchantments.SWEEPING_EDGE, 5);
-				bite(sword, book.get(),
-					net.minecraft.world.item.enchantment.Enchantments.UNBREAKING, 10);
-				bite(sword, book.get(),
-					net.minecraft.world.item.enchantment.Enchantments.MENDING, 1);
-			}
+		if (forHim) {
+			sword.set(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS,
+				net.minecraft.world.item.component.ItemAttributeModifiers.EMPTY);
+		} else {
+			sword.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
+				net.minecraft.network.chat.Component.literal("Herobrine").withStyle(
+					style -> style.withItalic(false).withColor(net.minecraft.ChatFormatting.WHITE)));
+			sword.set(net.minecraft.core.component.DataComponents.LORE,
+				new net.minecraft.world.item.component.ItemLore(java.util.List.of(
+					net.minecraft.network.chat.Component.literal("His. Taken at his castle.")
+						.withStyle(net.minecraft.ChatFormatting.DARK_GRAY))));
 		}
+		var book = here.registryAccess().lookup(net.minecraft.core.registries.Registries.ENCHANTMENT);
+		if (book.isPresent()) {
+			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.SHARPNESS, 10);
+			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT, 5);
+			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.KNOCKBACK, 5);
+			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.SWEEPING_EDGE, 5);
+			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.UNBREAKING, 10);
+			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.MENDING, 1);
+		}
+		return sword;
+	}
+
+	private void blade() {
+		ItemStack sword = this.level() instanceof ServerLevel here
+			? hisSword(here, true) : new ItemStack(Items.DIAMOND_SWORD);
 		this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, sword);
 	}
 
-	private void bite(ItemStack on,
+	private static void bite(ItemStack on,
 			net.minecraft.core.HolderLookup.RegistryLookup<
 				net.minecraft.world.item.enchantment.Enchantment> book,
 			net.minecraft.resources.ResourceKey<
