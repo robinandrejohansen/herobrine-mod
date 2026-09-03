@@ -310,4 +310,18 @@ src/main/resources/                            textures, sounds, the castle blue
 tools/                                         generators — castle (tools/castle), books (tools/books), pack
 ```
 
-Licence: CC0-1.0, inherited from the Fabric example mod scaffold.
+---
+
+## Website, licence, contact
+
+The site — [herobrine-mod.vercel.app](https://herobrine-mod.vercel.app) — lives in
+`web/` (three files, no build step) and is deployed with `vercel --prod` from that
+directory. It reads the latest GitHub release at page load, so a release needs no
+site change. For agents and LLMs installing the mod it serves
+[`/llms.txt`](https://herobrine-mod.vercel.app/llms.txt) and
+[`/install.json`](https://herobrine-mod.vercel.app/install.json).
+
+**© 2026 Robin Johansen · Dimora. All rights reserved.** See [LICENSE](LICENSE).
+Play it, stream it, review it freely, with credit and a link. Do not re-upload
+the files, bundle, fork or make derivatives without permission — ask, the answer
+is usually yes. Partnerships, creators, other mods: **hello@dimora.no**.

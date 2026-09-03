@@ -42,3 +42,4 @@ replay_*.log
 # generated preview renders
 tools/preview_*.png
 tools/__pycache__/
+.claude/

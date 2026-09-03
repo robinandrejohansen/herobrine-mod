@@ -7,8 +7,13 @@
   "authors": [
     "Robin Johansen"
   ],
-  "contact": {},
-  "license": "CC0-1.0",
+  "contact": {
+    "homepage": "https://herobrine-mod.vercel.app",
+    "sources": "https://github.com/robinandrejohansen/herobrine-mod",
+    "issues": "https://github.com/robinandrejohansen/herobrine-mod/issues",
+    "email": "hello@dimora.no"
+  },
+  "license": "All-Rights-Reserved",
   "icon": "assets/herobrine/icon.png",
   "environment": "*",
   "entrypoints": {

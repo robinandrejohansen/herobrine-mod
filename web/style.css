@@ -1,394 +1,218 @@
 /*
  * HEROBRINE — the site.
  *
- * The brief was "Minecraft, but premium, in a way nobody has done". Nearly
- * every mod page reaches for the same three things: grass-block green, a
- * cobblestone tile, and a pixel font at 48px. That reads as fan art.
- *
- * So this goes the other way. The only pixels on the page are the ones that
- * matter — a two-block pair of eyes, a hard-edged tick on the phase ladder,
- * a 1px rain that is genuinely square. Everything else is deep black, thin
- * type and a great deal of space, which is what "premium" actually means and
- * which almost nothing in this corner of the internet does.
- *
- * No web fonts, no CDN, no framework. It loads instantly on a phone in a
- * field, which for a Minecraft audience is not a hypothetical.
+ * Modern Minecraft, not fan-art Minecraft: the launcher's dark slate, panels
+ * with a two-pixel bevel, the green button everybody knows, and the only pixels
+ * on the page are the ones that are actually him — real skins, composed on a
+ * canvas, scaled without smoothing. No web fonts, no framework, no CDN, no build
+ * step. It has to load on a phone in a field.
  */
 
 :root {
-  --ink: #07070a;
-  --ink-2: #0c0c11;
-  --line: #1b1b22;
-  --text: #d6d6dd;
-  --dim: #7a7a86;
-  --white: #eef0f4;
-  --eye: #e8ecf0;
+  --bg: #0f0f12;
+  --bg-2: #15151a;
+  --panel: #1a1a20;
+  --panel-hi: #26262e;
+  --panel-lo: #0a0a0d;
+  --line: #2b2b34;
+  --text: #dcdce3;
+  --dim: #8a8a97;
+  --white: #f2f3f7;
+  --eye: #ffffff;
+  --green: #3c8527;
+  --green-hi: #5fae3d;
+  --green-lo: #1f4a12;
   --blood: #b4322a;
-  --pad: clamp(20px, 5vw, 64px);
-  --max: 1080px;
+  --pad: clamp(18px, 5vw, 64px);
+  --max: 1120px;
+  --r: 4px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 html { scroll-behavior: smooth; }
-
 body {
-  background: var(--ink);
+  background: var(--bg);
   color: var(--text);
-  font: 400 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  font: 400 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
+a { color: var(--white); text-decoration-color: color-mix(in srgb, var(--white) 35%, transparent); }
+a:hover { text-decoration-color: var(--white); }
+code { font: 500 .92em ui-monospace, "SF Mono", Menlo, monospace; background: var(--panel-lo); padding: 1px 6px; border: 1px solid var(--line); border-radius: 3px; }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
 
-/* The rain sits behind everything and never gets in the way of a click. */
-#rain {
-  position: fixed; inset: 0;
-  width: 100%; height: 100%;
-  pointer-events: none; z-index: 0;
-  opacity: .5;
-}
-
-/* A very slight tooth over the whole page. Flat black on an OLED phone looks
-   like the screen is off; a little noise makes it read as a room. */
-.grain {
-  position: fixed; inset: 0; z-index: 1; pointer-events: none;
-  opacity: .035;
-  background-image: repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 2px),
-                    repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 2px);
-  background-size: 3px 3px;
-  mix-blend-mode: overlay;
-}
-
+#rain { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: .35; }
 main, .nav, footer { position: relative; z-index: 2; }
 
-/* ---------------------------------------------------------------- nav ---- */
+/* ---- the bevelled panel every card is made of ----------------------------- */
+.panel {
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: inset 0 2px 0 var(--panel-hi), inset 0 -2px 0 var(--panel-lo);
+  padding: 24px 24px 22px;
+}
+.panel h3 { color: var(--white); font-size: 20px; letter-spacing: -.01em; margin-bottom: 8px; }
+.panel p { color: var(--text); }
+.chapter {
+  display: inline-block; margin-bottom: 10px;
+  font: 700 11px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .3em;
+  color: var(--dim); text-transform: uppercase;
+}
 
+/* ---- the button --------------------------------------------------------- */
+.btn {
+  display: inline-flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  gap: 2px; min-height: 52px; padding: 10px 20px;
+  border-radius: var(--r); text-decoration: none; cursor: pointer;
+  font: 600 15px/1.2 inherit; color: var(--white); border: 2px solid transparent;
+  transition: transform .08s ease, filter .15s ease;
+  user-select: none;
+}
+.btn:active { transform: translateY(2px); }
+.btn-meta { font: 500 12px/1 ui-monospace, "SF Mono", Menlo, monospace; color: color-mix(in srgb, var(--white) 70%, transparent); letter-spacing: .04em; }
+.btn.mc {
+  background: var(--green);
+  border-color: var(--green-lo);
+  box-shadow: inset 0 3px 0 var(--green-hi), inset 0 -4px 0 var(--green-lo), 0 4px 0 #0b1d06;
+  text-shadow: 0 2px 0 rgba(0,0,0,.45);
+}
+.btn.mc:hover { filter: brightness(1.08); }
+.btn.mc:active { box-shadow: inset 0 3px 0 var(--green-hi), inset 0 -2px 0 var(--green-lo), 0 2px 0 #0b1d06; }
+.btn.slate {
+  background: var(--panel); border-color: var(--line);
+  box-shadow: inset 0 2px 0 var(--panel-hi), inset 0 -3px 0 var(--panel-lo), 0 3px 0 #06060a;
+  justify-content: center; align-items: center;
+}
+.btn.slate:hover { filter: brightness(1.12); }
+.btn.ghost { background: transparent; border-color: var(--line); }
+
+/* ---- nav ------------------------------------------------------------------ */
 .nav {
   position: sticky; top: 0;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 24px;
-  padding: 18px var(--pad);
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 14px var(--pad);
   backdrop-filter: blur(14px);
-  background: color-mix(in srgb, var(--ink) 78%, transparent);
-  border-bottom: 1px solid transparent;
-  transition: border-color .4s ease, background .4s ease;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-bottom: 2px solid transparent;
+  transition: border-color .3s ease;
 }
 .nav.stuck { border-bottom-color: var(--line); }
-
 .wordmark {
-  font: 600 13px/1 ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: .42em;
-  color: var(--white);
-  text-decoration: none;
-  white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
+  font: 700 13px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .42em; color: var(--white);
 }
+.wordmark img { image-rendering: pixelated; }
+.nav nav { display: flex; gap: 6px 22px; flex-wrap: wrap; justify-content: flex-end; }
+.nav nav a { font-size: 14px; color: var(--dim); text-decoration: none; }
+.nav nav a:hover { color: var(--white); }
+.nav nav a.ghost { padding: 6px 12px; border: 2px solid var(--line); border-radius: var(--r); color: var(--text); }
 
-.nav nav { display: flex; gap: 6px; flex-wrap: wrap; }
-.nav nav a {
-  font: 500 13px/1 ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: .08em;
-  color: var(--dim); text-decoration: none;
-  padding: 8px 12px; border-radius: 2px;
-  transition: color .25s ease, background .25s ease;
-}
-.nav nav a:hover { color: var(--white); background: #ffffff0a; }
-.nav nav a.ghost { border: 1px solid var(--line); }
-
-/* --------------------------------------------------------------- hero ---- */
-
+/* ---- hero ----------------------------------------------------------------- */
 .hero {
-  min-height: 92vh;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center;
-  padding: 80px var(--pad) 60px;
-  position: relative;
+  max-width: var(--max); margin: 0 auto; padding: clamp(40px, 8vh, 96px) var(--pad) 40px;
+  display: grid; grid-template-columns: 1.2fr .8fr; gap: 32px; align-items: center;
 }
+.kicker { font: 600 12px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .3em; text-transform: uppercase; color: var(--dim); margin-bottom: 18px; }
+h1 { font-size: clamp(36px, 6.4vw, 78px); line-height: .98; letter-spacing: -.03em; color: var(--white); font-weight: 800; }
+.lede { max-width: 56ch; margin: 22px 0 26px; font-size: clamp(17px, 1.4vw, 19px); color: var(--text); }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; }
+.fineprint { margin-top: 16px; font-size: 13px; color: var(--dim); }
+.hero-stage { display: flex; justify-content: center; align-items: flex-end; min-height: 360px; }
+#hero-sprite { width: min(100%, 300px); aspect-ratio: 3 / 5; filter: drop-shadow(0 30px 40px rgba(0,0,0,.6)); }
 
-/*
- * The eyes. Two squares — the only literal Minecraft reference on the page,
- * and it earns its place by being the one thing everybody recognises without
- * a caption. They drift a little toward the cursor, and they blink rarely
- * enough that you are never quite sure you saw it.
- */
-.eyes {
-  display: flex; gap: 26px;
-  margin-bottom: 46px;
-  transform: translate3d(var(--ex, 0px), var(--ey, 0px), 0);
-  transition: transform .9s cubic-bezier(.16,1,.3,1);
-}
-.eye {
-  width: 26px; height: 13px;
-  background: var(--eye);
-  box-shadow: 0 0 26px 5px #cfe0ff2e, 0 0 70px 18px #7fa8ff12;
-  animation: wake 2.6s ease-out both, blink 9s 4s infinite steps(1, end);
-}
-.eye:last-child { animation-delay: .18s, 4.6s; }
+/* ---- sections ------------------------------------------------------------- */
+section { max-width: var(--max); margin: 0 auto; padding: 56px var(--pad); }
+.section-title { font-size: clamp(28px, 4vw, 44px); letter-spacing: -.02em; color: var(--white); font-weight: 800; }
+.section-sub { color: var(--dim); max-width: 60ch; margin: 10px 0 30px; }
 
-@keyframes wake {
-  from { opacity: 0; transform: scaleY(.06); filter: blur(3px); }
-  60%  { opacity: 1; }
-  to   { opacity: 1; transform: scaleY(1); filter: blur(0); }
-}
-@keyframes blink {
-  0%, 96%, 100% { transform: scaleY(1); }
-  97.5%         { transform: scaleY(.06); }
-}
+.story-grid, .level-cards, .ways { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+.story-grid .panel p em { color: var(--white); font-style: italic; }
 
-h1 {
-  display: flex; flex-direction: column; gap: .12em;
-  font: 500 clamp(30px, 7.2vw, 76px)/1.02 ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: .02em;
-  color: var(--white);
-}
-h1 span {
-  opacity: 0; transform: translateY(18px);
-  animation: rise .9s cubic-bezier(.16,1,.3,1) forwards;
-}
-h1 span:nth-child(1) { animation-delay: .55s; }
-h1 span:nth-child(2) { animation-delay: .7s; color: var(--dim); }
+.cast { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; }
+.cast figure { display: flex; gap: 18px; align-items: center; background: var(--bg-2); border: 2px solid var(--line); border-radius: var(--r); padding: 16px; }
+.cast .sprite { width: 72px; height: 144px; flex: 0 0 72px; filter: drop-shadow(0 8px 10px rgba(0,0,0,.5)); }
+.cast figcaption { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--dim); }
+.cast figcaption strong { color: var(--white); font-size: 16px; }
 
-@keyframes rise { to { opacity: 1; transform: none; } }
+/* ---- the arena ------------------------------------------------------------ */
+.arena {
+  background: linear-gradient(180deg, #0b0b0f 0%, #121218 60%, #1a1a20 100%);
+  border: 2px solid var(--line); border-radius: var(--r);
+  box-shadow: inset 0 2px 0 var(--panel-hi), inset 0 -2px 0 var(--panel-lo);
+  padding: 18px; display: grid; gap: 14px; justify-items: center; margin-bottom: 18px;
+}
+.bossbar { width: min(100%, 560px); display: grid; gap: 6px; text-align: center; }
+.bossname { font: 700 13px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .3em; color: var(--white); text-shadow: 0 2px 0 #000; }
+.bar { height: 12px; background: #2a0c0c; border: 2px solid #000; box-shadow: inset 0 0 0 1px #4a1a1a; }
+.fill { height: 100%; width: 100%; background: linear-gradient(180deg, #ff4b4b, #b41f1f); transition: width .25s ease; }
+.blows { font: 500 12px/1 ui-monospace, "SF Mono", Menlo, monospace; color: var(--dim); letter-spacing: .1em; }
+#stage { width: min(100%, 420px); aspect-ratio: 4 / 5; cursor: crosshair; touch-action: manipulation; border-radius: 3px; }
+.arena-ui { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.levels { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.lvl { min-height: 40px; padding: 6px 16px; font-size: 14px; opacity: .8; }
+.lvl.is-on { opacity: 1; outline: 2px solid var(--white); outline-offset: 2px; }
+.hint { font-size: 13px; color: var(--dim); min-height: 1.4em; text-align: center; }
 
-.lede {
-  max-width: 54ch; margin: 30px auto 0;
-  color: var(--dim); font-size: clamp(15px, 1.7vw, 18px);
-  opacity: 0; animation: rise .9s .95s cubic-bezier(.16,1,.3,1) forwards;
-}
-.lede em { color: var(--text); font-style: italic; }
+.level .chapter { color: var(--green-hi); }
+.level.danger .chapter { color: var(--blood); }
+.level ul { margin-top: 12px; padding-left: 0; list-style: none; display: grid; gap: 6px; }
+.level li { font-size: 14px; color: var(--dim); padding-left: 14px; position: relative; }
+.level li::before { content: ""; position: absolute; left: 0; top: .55em; width: 6px; height: 6px; background: var(--dim); }
+.level.danger li::before { background: var(--blood); }
 
-.cta {
-  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
-  margin-top: 40px;
-  opacity: 0; animation: rise .9s 1.15s cubic-bezier(.16,1,.3,1) forwards;
-}
+.hard { margin-top: 18px; background: var(--bg-2); border: 2px solid var(--line); border-radius: var(--r); padding: 24px; }
+.hard h3 { color: var(--white); margin-bottom: 12px; }
+.hard ul { list-style: none; display: grid; gap: 10px; }
+.hard li { padding-left: 18px; position: relative; }
+.hard li::before { content: ""; position: absolute; left: 0; top: .6em; width: 8px; height: 8px; background: var(--blood); }
+.hard .after { margin-top: 16px; color: var(--white); border-top: 2px solid var(--line); padding-top: 14px; }
 
-.btn {
-  display: inline-flex; flex-direction: column; align-items: center;
-  gap: 3px;
-  padding: 15px 30px;
-  border: 1px solid var(--line);
-  color: var(--text); text-decoration: none;
-  font: 500 14px/1 ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: .1em;
-  background: #ffffff05;
-  transition: transform .2s ease, border-color .3s ease, background .3s ease, color .3s ease;
-}
-.btn:hover { transform: translateY(-2px); border-color: #3a3a46; background: #ffffff0d; color: var(--white); }
-.btn.primary {
-  background: var(--white); color: #07070a; border-color: var(--white);
-  box-shadow: 0 0 0 0 #eef0f455;
-}
-.btn.primary:hover { box-shadow: 0 10px 40px -12px #eef0f466; background: #fff; }
-.btn.ghost { background: transparent; }
-.btn-meta { font-size: 10px; letter-spacing: .14em; opacity: .55; }
+/* ---- download ------------------------------------------------------------- */
+.way ol { padding-left: 20px; display: grid; gap: 8px; margin: 8px 0 14px; }
+.way li { color: var(--text); }
+.paths { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.copy { font: 500 12px/1 ui-monospace, "SF Mono", Menlo, monospace; color: var(--text); background: var(--panel-lo); border: 1px solid var(--line); border-radius: 3px; padding: 7px 10px; cursor: pointer; }
+.copy.done { color: var(--green-hi); border-color: var(--green); }
+.way .btn { margin-top: 6px; }
+.agents pre { background: var(--panel-lo); border: 1px solid var(--line); border-radius: 3px; padding: 14px; overflow-x: auto; margin: 12px 0; }
+.agents code { background: none; border: 0; padding: 0; font-size: 12.5px; line-height: 1.55; color: var(--text); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.updates { margin-top: 22px; color: var(--dim); font-size: 14px; }
 
-.fineprint {
-  margin-top: 22px; color: #55555f;
-  font: 400 12px/1.6 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .08em;
-  opacity: 0; animation: rise .9s 1.3s cubic-bezier(.16,1,.3,1) forwards;
-}
-
-.scroll-hint {
-  position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%);
-  width: 1px; height: 46px; background: linear-gradient(var(--line), transparent);
-  overflow: hidden;
-}
-.scroll-hint span {
-  position: absolute; inset: 0; background: linear-gradient(#8a8a96, transparent);
-  animation: trickle 2.6s ease-in-out infinite;
-}
-@keyframes trickle {
-  0% { transform: translateY(-100%); } 100% { transform: translateY(100%); }
-}
-
-/* ------------------------------------------------------------ sections --- */
-
-section { padding: clamp(72px, 12vw, 150px) var(--pad); }
-.pitch, .quote, .closer { max-width: 720px; margin: 0 auto; text-align: center; }
-.pitch p { font-size: clamp(18px, 2.4vw, 25px); line-height: 1.55; color: var(--text); }
-.pitch em { color: var(--white); font-style: normal; border-bottom: 1px solid #ffffff22; }
-
-.section-title {
-  font: 500 clamp(22px, 3.4vw, 36px)/1.1 ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--white); letter-spacing: .02em;
-  max-width: var(--max); margin: 0 auto 14px;
-}
-.section-sub {
-  color: var(--dim); max-width: 58ch; margin: 0 auto clamp(40px, 6vw, 72px);
-  font-size: 16px;
-}
-
-/* --------------------------------------------------------------- ladder -- */
-
-.phases { max-width: var(--max); margin: 0 auto; }
-
-.ladder { list-style: none; position: relative; padding-left: 34px; }
-/* The spine, drawn as it is scrolled past. */
-.ladder::before {
-  content: ""; position: absolute; left: 5px; top: 8px; bottom: 8px;
-  width: 1px; background: var(--line);
-}
-.ladder::after {
-  content: ""; position: absolute; left: 5px; top: 8px;
-  width: 1px; height: var(--fill, 0%);
-  background: linear-gradient(#eef0f4, #6c6c78);
-  transition: height .25s linear;
-}
-
-.phase { position: relative; padding: 0 0 clamp(38px, 5vw, 58px); }
-.phase .tick {
-  position: absolute; left: -34px; top: 7px;
-  width: 11px; height: 11px;
-  background: var(--ink); border: 1px solid #33333e;
-  transition: background .5s ease, border-color .5s ease, box-shadow .5s ease;
-}
-.phase.lit .tick {
-  background: var(--white); border-color: var(--white);
-  box-shadow: 0 0 18px 2px #eef0f455;
-}
-.phase.danger.lit .tick {
-  background: var(--blood); border-color: var(--blood);
-  box-shadow: 0 0 20px 3px #b4322a66;
-}
-.phase h3 {
-  font: 500 clamp(19px, 2.4vw, 26px)/1.2 ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--white); margin-bottom: 8px;
-}
-.phase::after {
-  content: attr(data-wrath) " wrath";
-  position: absolute; right: 0; top: 10px;
-  font: 400 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: .14em; color: #4d4d57;
-}
-.phase p { color: var(--dim); max-width: 62ch; }
-.phase.danger h3 { color: #e8908a; }
-
-/* ---------------------------------------------------------------- grid --- */
-
-.grid-section { max-width: var(--max); margin: 0 auto; }
-.grid {
-  display: grid; gap: 1px;
-  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
-  background: var(--line);
-  border: 1px solid var(--line);
-}
-.card {
-  background: var(--ink);
-  padding: clamp(26px, 3.4vw, 38px);
-  transition: background .4s ease, transform .4s ease;
-}
-.card:hover { background: var(--ink-2); }
-.card h3 {
-  font: 500 16px/1.35 ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--white); margin-bottom: 10px;
-}
-.card p { color: var(--dim); font-size: 15px; }
-
-/* --------------------------------------------------------------- quote --- */
-
-.quote blockquote {
-  font: 400 clamp(24px, 4.4vw, 46px)/1.25 ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--white);
-}
-.quote cite {
-  display: block; margin-top: 18px; font-style: normal;
-  font: 400 12px/1 ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: .18em; color: #4d4d57;
-}
-
-/* ------------------------------------------------------------- install --- */
-
-.install { max-width: var(--max); margin: 0 auto; }
-.steps { list-style: none; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
-.steps li {
-  display: flex; gap: 22px; align-items: flex-start;
-  background: var(--ink); padding: clamp(24px, 3vw, 34px);
-}
-.num {
-  flex: 0 0 auto; width: 30px; height: 30px;
-  display: grid; place-items: center;
-  border: 1px solid var(--line); color: var(--dim);
-  font: 500 13px/1 ui-monospace, "SF Mono", Menlo, monospace;
-}
-.steps h3 {
-  font: 500 16px/1.3 ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--white); margin-bottom: 6px;
-}
-.steps p { color: var(--dim); font-size: 15px; }
-.steps code {
-  font: 400 13px/1 ui-monospace, "SF Mono", Menlo, monospace;
-  background: #ffffff0d; padding: 3px 6px; color: var(--text);
-}
-.mini {
-  display: inline-block; margin-top: 10px;
-  font: 400 12px/1 ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: .08em; color: var(--dim); text-decoration: none;
-  border-bottom: 1px solid var(--line); padding-bottom: 3px;
-}
-.mini:hover { color: var(--white); border-color: #3a3a46; }
-
-.paths { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
-.copy {
-  cursor: pointer; background: transparent; border: 1px solid var(--line);
-  color: var(--dim); padding: 8px 13px;
-  font: 500 12px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .08em;
-  transition: color .25s, border-color .25s, background .25s;
-}
-.copy:hover { color: var(--white); border-color: #3a3a46; background: #ffffff08; }
-.copy.done { color: #8ee39a; border-color: #2f5a37; }
-
-.updates {
-  margin-top: 46px; padding: clamp(26px, 3.4vw, 38px);
-  border: 1px solid var(--line);
-}
-.updates h3 {
-  font: 500 16px/1 ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--white); margin-bottom: 10px;
-}
-.updates p { color: var(--dim); max-width: 62ch; font-size: 15px; }
-.updates .cta { margin-top: 22px; justify-content: flex-start; animation: none; opacity: 1; }
-
-.closer p {
-  font: 400 clamp(18px, 2.6vw, 26px)/1.5 ui-monospace, "SF Mono", Menlo, monospace;
-  color: var(--dim);
-}
-
-/* The server block sits above the updates one and carries a little more
-   weight, because "I cannot join my friend" is the single most common way
-   somebody arrives at this page. */
-.updates.server { border-color: #2c2c36; background: #ffffff05; margin-top: 36px; }
-.updates.server em { color: var(--white); font-style: normal; }
-.updates.server a { color: var(--text); }
-.updates.server .cta .btn.primary { padding: 13px 26px; }
-
-/* -------------------------------------------------------------- footer --- */
+/* ---- partner / rights ----------------------------------------------------- */
+.partner .wide { text-align: center; padding: 40px clamp(20px, 5vw, 64px); }
+.partner h2 { font-size: clamp(26px, 3.6vw, 40px); color: var(--white); letter-spacing: -.02em; }
+.partner p { max-width: 64ch; margin: 12px auto 22px; color: var(--text); }
+.mail { display: inline-block; font: 700 clamp(18px, 3vw, 28px)/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .04em; color: var(--white); text-decoration: none; border-bottom: 3px solid var(--green); padding-bottom: 4px; }
+.mail:hover { border-bottom-color: var(--green-hi); }
+.icons { list-style: none; display: flex; gap: 10px 22px; flex-wrap: wrap; justify-content: center; margin-top: 26px; }
+.icons li { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--dim); font-size: 12px; }
+.icons svg { width: 30px; height: 30px; fill: var(--text); }
+.rights { color: var(--dim); font-size: 15px; }
+.rights h2 { color: var(--white); font-size: 22px; margin-bottom: 10px; }
+.rights ul { margin-top: 12px; padding-left: 18px; display: grid; gap: 8px; }
+.rights strong { color: var(--text); }
+.closer { text-align: center; color: var(--dim); font-style: italic; padding-top: 20px; }
 
 footer {
-  display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-  padding: 34px var(--pad); border-top: 1px solid var(--line);
-  font: 400 12px/1.6 ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: .06em; color: #45454f;
+  display: flex; gap: 12px 28px; flex-wrap: wrap; justify-content: center;
+  padding: 26px var(--pad) 40px; border-top: 2px solid var(--line);
+  color: var(--dim); font-size: 13px;
 }
+footer a { color: var(--dim); }
 
-/* -------------------------------------------------------------- reveal --- */
+/* ---- reveal --------------------------------------------------------------- */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+.reveal.seen { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
 
-.reveal { opacity: 0; transform: translateY(22px); }
-.reveal.seen {
-  opacity: 1; transform: none;
-  transition: opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1);
-}
-
-@media (max-width: 620px) {
-  .phase::after { position: static; display: block; margin-bottom: 6px; }
+/* ---- small screens -------------------------------------------------------- */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; text-align: left; }
+  .hero-stage { order: -1; min-height: 0; }
+  #hero-sprite { width: min(60vw, 220px); }
+  .story-grid, .level-cards, .ways, .cast { grid-template-columns: 1fr; }
   .nav nav a:not(.ghost) { display: none; }
-}
-
-/* Somebody who has asked for less movement gets a still page, not a broken
-   one — every animation here is decoration over content that is already
-   there. */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-  .reveal { opacity: 1; transform: none; }
-  h1 span, .lede, .cta, .fineprint { opacity: 1; }
-  #rain { display: none; }
 }

@@ -3,197 +3,249 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HEROBRINE — a survival horror mod for Minecraft</title>
-<meta name="description" content="He is never seen arriving. A six-phase survival horror mod for Minecraft 26.2, built on deniability: everything he does has a mundane explanation, until it doesn't.">
-<meta property="og:title" content="HEROBRINE">
-<meta property="og:description" content="He is never seen arriving.">
-<meta name="theme-color" content="#07070a">
+<title>HEROBRINE — a survival-horror mod for Minecraft 26.2</title>
+<meta name="description" content="He was already in your world. A survival-horror mod for Minecraft 26.2 (Fabric) with a story, a companion, his own dimension — and one of the hardest boss fights the game has seen. Free to play. © Robin Johansen.">
+<meta property="og:title" content="HEROBRINE — a Minecraft mod">
+<meta property="og:description" content="He was already in your world. Six phases, ten books, a companion who cannot save you, and a fight in three levels.">
+<meta property="og:image" content="https://herobrine-mod.vercel.app/assets/icon.png">
+<meta name="theme-color" content="#0f0f12">
+<link rel="icon" href="/assets/icon.png">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
 <canvas id="rain" aria-hidden="true"></canvas>
-<div class="grain" aria-hidden="true"></div>
 
 <header class="nav">
-  <a class="wordmark" href="#top">HEROBRINE</a>
+  <a class="wordmark" href="#top"><img src="/assets/icon.png" alt="" width="20" height="20">HEROBRINE</a>
   <nav>
-    <a href="#phases">Phases</a>
-    <a href="#world">World</a>
-    <a href="#install">Install</a>
+    <a href="#story">Story</a>
+    <a href="#fight">The fight</a>
+    <a href="#download">Download</a>
+    <a href="#partner">Partner</a>
     <a class="ghost" href="https://github.com/robinandrejohansen/herobrine-mod" target="_blank" rel="noopener">Source</a>
   </nav>
 </header>
 
 <main id="top">
 
+  <!-- ============================================================ HERO -->
   <section class="hero">
-    <div class="eyes" id="eyes" aria-hidden="true">
-      <span class="eye"></span><span class="eye"></span>
-    </div>
-    <h1><span>HE IS NEVER</span><span>SEEN ARRIVING</span></h1>
-    <p class="lede">
-      A survival horror mod for Minecraft&nbsp;26.2. Six phases, and the first
-      five are deniable — a sound, a snuffed torch, a shape at the treeline you
-      could talk yourself out of. Then it stops being deniable.
-    </p>
-    <div class="cta">
-      <a class="btn primary" id="download" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">
-        <span class="btn-label">Download</span>
-        <span class="btn-meta" id="dl-meta">latest release</span>
-      </a>
-      <a class="btn" href="#install">How to install</a>
-    </div>
-    <p class="fineprint">Fabric · Minecraft 26.2 · Java 25+ · single-player &amp; servers</p>
-    <div class="scroll-hint" aria-hidden="true"><span></span></div>
-  </section>
-
-  <section class="pitch reveal">
-    <p>
-      Most horror mods answer the question. This one refuses to — for hours.
-      Every early event has a mundane explanation available, and the fear lives
-      in the gap between <em>something happened</em> and <em>I can prove it</em>.
-    </p>
-  </section>
-
-  <section id="phases" class="phases">
-    <h2 class="section-title reveal">Six phases</h2>
-    <p class="section-sub reveal">Wrath is one number per world. It only ever goes up — and the things you do to feel safer are the things that raise it.</p>
-
-    <ol class="ladder">
-      <li class="phase reveal" data-wrath="0">
-        <span class="tick"></span>
-        <h3>Rumour</h3>
-        <p>Footsteps behind you, once, with nothing there. A torch you placed, on the ground, unlit. A heartbeat buried in rock, with nothing behind it.</p>
-      </li>
-      <li class="phase reveal" data-wrath="60">
-        <span class="tick"></span>
-        <h3>Watcher</h3>
-        <p>He is simply there, at distance, and gone when you look. Whoever spots him first spends the clock — so your friend saw him and you didn't.</p>
-      </li>
-      <li class="phase reveal" data-wrath="200">
-        <span class="tick"></span>
-        <h3>Trespasser</h3>
-        <p>Four words on your wall, written from your own statistics. Pages of somebody else's account, on the floor where you will find them.</p>
-      </li>
-      <li class="phase reveal" data-wrath="500">
-        <span class="tick"></span>
-        <h3>Mimic</h3>
-        <p>One of your animals stops being an animal. It follows. It waits when you turn.</p>
-      </li>
-      <li class="phase reveal" data-wrath="1000">
-        <span class="tick"></span>
-        <h3>Hunter</h3>
-        <p>He follows — faster than your sprint. Shelter stops working: he opens what opens and mines through what doesn't. The day ends early and every torch you own goes out at once.</p>
-      </li>
-      <li class="phase reveal danger" data-wrath="1800">
-        <span class="tick"></span>
-        <h3>Siege</h3>
-        <p>The night does not end. The storm does not stop. Every animal in the field turns, and every one of them is looking at you. And for the first time in forty hours, he can be hurt.</p>
-      </li>
-    </ol>
-  </section>
-
-  <section id="world" class="grid-section">
-    <h2 class="section-title reveal">What's in it</h2>
-    <div class="grid">
-      <article class="card reveal">
-        <h3>A town that isn't on any map</h3>
-        <p>Walled, populated, eight houses and a hall and a forge with its front wall missing. Under the square, a vaulted chamber with streets, lantern posts and a library holding more books than the whole town above it. Two ways down — and neither is a lever.</p>
-      </article>
-      <article class="card reveal">
-        <h3>Five houses, in order</h3>
-        <p>Each one less like somewhere a person lived than the last. The first has the furniture still in it. The last is not a house.</p>
-      </article>
-      <article class="card reveal">
-        <h3>Nothing irreversible</h3>
-        <p>Torches drop. Blocks he mines drop. Nothing he does costs you an item — right up until the ending, which is allowed to leave a mark, and which you can switch off.</p>
-      </article>
-      <article class="card reveal">
-        <h3>An ending you start</h3>
-        <p>Thirty blows, counted rather than measured, so a netherite axe changes how it looks and never how long it takes. At the tenth, a church goes up with your grave outside it.</p>
-      </article>
-      <article class="card reveal">
-        <h3>Built for company</h3>
-        <p>He works through a group one at a time. Standing together is the worst possible arrangement. There is only ever one of him in the world.</p>
-      </article>
-      <article class="card reveal">
-        <h3>All of it optional</h3>
-        <p>One flat config file. A master switch, a pace dial, every event individually, and separate toggles for the three things people actually argue about.</p>
-      </article>
-    </div>
-  </section>
-
-  <section class="quote reveal">
-    <blockquote>“You shouldn't have done that.”</blockquote>
-    <cite>— the tenth blow</cite>
-  </section>
-
-  <section id="install" class="install">
-    <h2 class="section-title reveal">Install</h2>
-    <ol class="steps">
-      <li class="reveal">
-        <span class="num">1</span>
-        <div>
-          <h3>Get Fabric</h3>
-          <p>Install the Fabric loader for <strong>Minecraft 26.2</strong>, then drop <strong>Fabric API</strong> into your mods folder.</p>
-          <a class="mini" href="https://fabricmc.net/use/installer/" target="_blank" rel="noopener">fabricmc.net ↗</a>
-        </div>
-      </li>
-      <li class="reveal">
-        <span class="num">2</span>
-        <div>
-          <h3>Drop in the jar</h3>
-          <p>Put <code>herobrine-<span class="ver">1.0.0</span>.jar</code> in your <code>mods</code> folder, beside Fabric API.</p>
-          <div class="paths">
-            <button class="copy" data-copy="%appdata%\.minecraft\mods">Windows</button>
-            <button class="copy" data-copy="~/Library/Application Support/minecraft/mods">macOS</button>
-            <button class="copy" data-copy="~/.minecraft/mods">Linux</button>
-          </div>
-        </div>
-      </li>
-      <li class="reveal">
-        <span class="num">3</span>
-        <div>
-          <h3>Play normally</h3>
-          <p>Don't go looking. It starts on its own, and the first hour is meant to feel like nothing is installed.</p>
-        </div>
-      </li>
-    </ol>
-
-    <div class="updates reveal server">
-      <h3>Joining a server?</h3>
-      <p>
-        Then don't do the three steps above — do this instead. Minecraft can
-        push a resource pack to a joining player and <em>nothing else</em>; it
-        has never been able to install mods, so a server cannot hand you this
-        one. You have to arrive already holding it, at the same version the
-        server is running.
-      </p>
-      <p>
-        The modpack is that, in one file. Import it into
-        <a href="https://modrinth.com/app" target="_blank" rel="noopener">Modrinth App</a>
-        or <a href="https://prismlauncher.org/" target="_blank" rel="noopener">Prism Launcher</a>
-        and it fetches Fabric Loader, Fabric API and Herobrine at the pinned
-        versions and makes a profile. Launch from <em>that</em> profile, not the
-        vanilla launcher.
+    <div class="hero-copy">
+      <p class="kicker">A survival-horror mod · Minecraft 26.2 · Fabric</p>
+      <h1>HE WAS ALREADY<br>IN YOUR WORLD</h1>
+      <p class="lede">
+        For hours, nothing is provable — a sound, a snuffed torch, a shape at the
+        treeline. Then a village that lost almost everyone, a man who wrote it all
+        down, and a door into the place he goes. What waits behind it is one of
+        the hardest fights Minecraft has seen.
       </p>
       <div class="cta">
-        <a class="btn primary" id="pack" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">
-          <span class="btn-label">Download modpack</span>
-          <span class="btn-meta" id="pack-meta">.mrpack</span>
+        <a class="btn mc" id="download" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">
+          <span class="btn-label">Download the mod</span>
+          <span class="btn-meta" id="dl-meta">latest release · .jar</span>
         </a>
+        <a class="btn slate" href="#download">Solo · server · agents</a>
+      </div>
+      <p class="fineprint">Free to play · single-player and servers · Java 25+ · not affiliated with Mojang or Microsoft</p>
+    </div>
+    <div class="hero-stage">
+      <canvas id="hero-sprite" width="1" height="1" aria-label="Herobrine, level three, standing in the dark"></canvas>
+    </div>
+  </section>
+
+  <!-- =========================================================== STORY -->
+  <section id="story" class="story">
+    <h2 class="section-title reveal">The story</h2>
+    <p class="section-sub reveal">Told the way Addexio would tell it, if he could bear to.</p>
+
+    <div class="story-grid">
+      <article class="panel reveal">
+        <span class="chapter">I</span>
+        <h3>A village, and a bad year</h3>
+        <p>Doors were boarded that nobody had boarded. Signs appeared that nobody had written. A man stood on the square at night who did not sleep, did not trade, and had a dot in the middle of each eye. People began to go missing, and the ones who came back were not the ones who had left.</p>
+      </article>
+      <article class="panel reveal">
+        <span class="chapter">II</span>
+        <h3>Addexio wrote it down</h3>
+        <p>One man would not accept it. He read what the others would not read and walked where they would not walk, and he left ten books behind him — one or two in every place the thing had touched — so that whoever came after would not learn it the way he had.</p>
+      </article>
+      <article class="panel reveal">
+        <span class="chapter">III</span>
+        <h3>They went out to fight him</h3>
+        <p>The village did the brave thing. They armed themselves and marched. Almost all of them died. Addexio came home alone, and the books were all that was left of anyone's courage.</p>
+      </article>
+      <article class="panel reveal">
+        <span class="chapter">IV</span>
+        <h3>Then somebody new arrives</h3>
+        <p>The player finds the farm and the first book. Addexio finds the player, and says the truth in the shortest form he can: <em>he has been seen again. Everyone I have ever walked this road with is dead. I am telling you now, while you can still say no.</em> Nobody says no.</p>
+      </article>
+      <article class="panel reveal">
+        <span class="chapter">V</span>
+        <h3>The road, and the door</h3>
+        <p>The town. His tower over lava. The prison and cell nine. The church he lived under. The last house — where the village lost him, and where the player finds what the village never had: a way through. A door into the place he goes.</p>
+      </article>
+      <article class="panel reveal">
+        <span class="chapter">VI</span>
+        <h3>His world</h3>
+        <p>A forest where it is always midnight and always raining. A city he built and filled with the people he took. Above it his castle, lit and standing. He is waiting. The door behind the player is dead — there is no way home but through him.</p>
+      </article>
+    </div>
+
+    <div class="cast reveal">
+      <figure>
+        <canvas class="sprite" data-skin="/assets/addexio.png" width="1" height="1" aria-label="Addexio"></canvas>
+        <figcaption><strong>Addexio</strong><span>The last of the village. Enchanted diamond, a shield, twenty hearts. Only Herobrine can kill him — and when he falls, he lies where he fell.</span></figcaption>
+      </figure>
+      <figure>
+        <canvas class="sprite" data-skin="/assets/infected.png" width="1" height="1" aria-label="One of the infected"></canvas>
+        <figcaption><strong>The infected</strong><span>What his world does to what walks into it. They fill his city. Do not go into the houses.</span></figcaption>
+      </figure>
+      <figure>
+        <canvas class="sprite" data-skin="/assets/herobrine.png" data-eyes="/assets/herobrine_eyes.png" width="1" height="1" aria-label="Herobrine"></canvas>
+        <figcaption><strong>Herobrine</strong><span>Never seen arriving. A man, until the first blow — then something that grows, darkens, and does not let go.</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- =========================================================== FIGHT -->
+  <section id="fight" class="fight">
+    <h2 class="section-title reveal">The fight, in three levels</h2>
+    <p class="section-sub reveal">Tap him. Every blow counts — until his skin gets too thick for your rhythm. At a third he rises. At two thirds the light goes out of him.</p>
+
+    <div class="arena reveal">
+      <div class="bossbar" aria-live="polite">
+        <span class="bossname" id="bossname">Herobrine</span>
+        <div class="bar"><div class="fill" id="bossfill"></div></div>
+        <span class="blows" id="blows">0 / 100 blows</span>
+      </div>
+      <canvas id="stage" width="1" height="1" aria-label="Interactive: Herobrine in his castle. Tap to strike."></canvas>
+      <div class="arena-ui">
+        <div class="levels" role="group" aria-label="Level">
+          <button class="btn mc lvl is-on" data-level="1">Level 1</button>
+          <button class="btn mc lvl" data-level="2">Level 2</button>
+          <button class="btn mc lvl" data-level="3">Level 3</button>
+        </div>
+        <p class="hint" id="hint">Tap or click him to strike.</p>
       </div>
     </div>
 
-    <div class="updates reveal">
-      <h3>Updates</h3>
-      <p>Every fix ships as a new release. Watch the repository and GitHub will tell you when one lands — then swap the jar in your mods folder. Your world and your config carry over.</p>
-      <div class="cta">
-        <a class="btn" href="https://github.com/robinandrejohansen/herobrine-mod/releases" target="_blank" rel="noopener">All releases</a>
-        <a class="btn ghost" href="https://github.com/robinandrejohansen/herobrine-mod/subscription" target="_blank" rel="noopener">Watch for updates</a>
-      </div>
+    <div class="level-cards">
+      <article class="panel level reveal" data-level="1">
+        <span class="chapter">LVL 1</span>
+        <h3>The man</h3>
+        <p>He circles the keep, watches from the walls, waits in the hall. The first blow takes the sky from him — grounded for the rest of it. Sword, fire, lightning that lands on the floor you stand on. Four blows in a row and he blinks out of your reach.</p>
+        <ul><li>1.0× · blows count at a sword's full rhythm</li><li>blinks after 4 blows taken</li><li>hide with a window open and he blows the cover out</li></ul>
+      </article>
+      <article class="panel level reveal" data-level="2">
+        <span class="chapter">LVL 2</span>
+        <h3>The walls stop mattering</h3>
+        <p>At a third of his blows he rises from where he stood, fourteen blocks, through the ceiling if there is one, hangs against the sky in a ring of lightning, drops, and lands with a blast that throws everyone within seven blocks. Bigger now. Blocks between you and him do not stay blocks.</p>
+        <ul><li>1.4× · his skin is thicker: blows must be spaced</li><li>the salvo: hold him at range and he fires eight exploding shots</li><li>blinks after 3</li></ul>
+      </article>
+      <article class="panel level reveal danger" data-level="3">
+        <span class="chapter">LVL 3</span>
+        <h3>The shadow</h3>
+        <p>At two thirds he rises again — and this time the light does not come back. He walks the rest of the fight unlit: a hole in the room with two white eyes, smoking. Too tall for a room, he takes the ceiling off rather than leave it.</p>
+        <ul><li>1.7× · dark for good</li><li>ten-shot salvo, wider craters, harder lightning</li><li>blinks after 2</li></ul>
+      </article>
     </div>
+
+    <div class="hard reveal">
+      <h3>Why it is hard</h3>
+      <ul>
+        <li><strong>A hundred blows</strong>, and the count only goes up honestly — the later acts refuse a spam rhythm.</li>
+        <li><strong>Groups scale him.</strong> Two players raise the count by half; four double it.</li>
+        <li><strong>Death is a checkpoint, not a reset.</strong> Fall in act three and the fight falls back to the start of act three — for you. He heals nothing.</li>
+        <li><strong>There is no way home</strong> until he is dead. The door you came through is dead behind you.</li>
+        <li><strong>He answers everything.</strong> Hide: he digs you out. Climb: he is beside you. Kite: the salvo. Crowd him: he sweeps the lot of you back.</li>
+      </ul>
+      <p class="after">And if you win — the rain stops, the people he turned are people again, his sky sees its first sunset, and a door home opens on the square of his city with his statue standing behind it.</p>
+    </div>
+  </section>
+
+  <!-- ======================================================== DOWNLOAD -->
+  <section id="download" class="download">
+    <h2 class="section-title reveal">Download</h2>
+    <p class="section-sub reveal">Three ways in. Pick the one that is you.</p>
+
+    <div class="ways">
+      <article class="panel way reveal">
+        <h3>Playing alone</h3>
+        <ol>
+          <li>Install <a href="https://fabricmc.net/use/installer/" target="_blank" rel="noopener">Fabric</a> for <strong>Minecraft 26.2</strong>. Java 25 or newer.</li>
+          <li>Put <a href="https://modrinth.com/mod/fabric-api" target="_blank" rel="noopener">Fabric API</a> in your <code>mods</code> folder.</li>
+          <li>Put <code>herobrine-<span class="ver">x.y.z</span>.jar</code> beside it.</li>
+          <li>Play normally. Don't go looking. The first hour is meant to feel like nothing is installed.</li>
+        </ol>
+        <div class="paths">
+          <button class="copy" data-copy="%appdata%\.minecraft\mods">Windows path</button>
+          <button class="copy" data-copy="~/Library/Application Support/minecraft/mods">macOS path</button>
+          <button class="copy" data-copy="~/.minecraft/mods">Linux path</button>
+        </div>
+        <a class="btn mc" id="dl-jar" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download .jar</span><span class="btn-meta" id="jar-meta">latest</span></a>
+      </article>
+
+      <article class="panel way reveal">
+        <h3>Playing on a server</h3>
+        <p>A server cannot install a mod on your computer — Minecraft has never allowed it. Every player has to arrive already holding this mod, at the <em>same version</em> the server runs. So it ships packed differently for servers: a <strong>.mrpack</strong> that pins Fabric Loader, Fabric API and Herobrine by hash.</p>
+        <ol>
+          <li>Players: import the <code>.mrpack</code> into <a href="https://modrinth.com/app" target="_blank" rel="noopener">Modrinth App</a> or <a href="https://prismlauncher.org/" target="_blank" rel="noopener">Prism Launcher</a>. Launch from that profile.</li>
+          <li>Host: Fabric server launcher for 26.2, then <code>fabric-api</code> and <code>herobrine</code> jars in <code>mods/</code>. Both. Java 25+.</li>
+          <li>When the server updates, hand out the new pack. Same version, everyone, always.</li>
+        </ol>
+        <a class="btn mc" id="pack" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download .mrpack</span><span class="btn-meta" id="pack-meta">latest</span></a>
+      </article>
+
+      <article class="panel way agents reveal">
+        <h3>For LLMs and agents</h3>
+        <p>Installing this for someone? Everything you need is machine-readable and stable. Read <a href="/llms.txt">/llms.txt</a> for the full instructions in plain text, or <a href="/install.json">/install.json</a> for the manifest.</p>
+        <pre><code id="agent-code"># latest jar and modpack, always:
+curl -sL https://api.github.com/repos/robinandrejohansen/herobrine-mod/releases/latest \
+  | grep browser_download_url
+
+# requirements
+Minecraft 26.2 · Fabric Loader · Fabric API 0.156.0+26.2 · Java 25+
+# solo:   mods/fabric-api-*.jar + mods/herobrine-*.jar
+# server: same two jars in the server's mods/; players import the .mrpack</code></pre>
+        <div class="row">
+          <a class="btn slate" href="/llms.txt">llms.txt</a>
+          <a class="btn slate" href="/install.json">install.json</a>
+          <a class="btn slate" href="https://github.com/robinandrejohansen/herobrine-mod/blob/main/README.md" target="_blank" rel="noopener">README</a>
+        </div>
+      </article>
+    </div>
+
+    <p class="updates reveal">Every fix ships as a new release. <a href="https://github.com/robinandrejohansen/herobrine-mod/releases" target="_blank" rel="noopener">All releases</a> · <a href="https://github.com/robinandrejohansen/herobrine-mod/subscription" target="_blank" rel="noopener">Watch for updates</a>. Your world and your config carry over.</p>
+  </section>
+
+  <!-- ========================================================= PARTNER -->
+  <section id="partner" class="partner">
+    <div class="panel wide reveal">
+      <h2>Partner, collab, cover it</h2>
+      <p>Streamers, YouTubers, creators, server owners, other mod makers — if you want to play this on camera, bundle it, build on it, or make something new together, write. One person answers, and it is the one who made it.</p>
+      <a class="mail" href="mailto:hello@dimora.no">hello@dimora.no</a>
+      <ul class="icons" aria-label="Who this is for">
+        <li title="Email"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 2.4V17h16V7.4l-8 5.3-8-5.3zM5.2 7l6.8 4.5L18.8 7H5.2z"/></svg><span>Email</span></li>
+        <li title="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .6 12a31 31 0 0 0 .4 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 23.4 12 31 31 0 0 0 23 7.2zM9.8 15.1V8.9L15.7 12l-5.9 3.1z"/></svg><span>YouTube</span></li>
+        <li title="Twitch"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.3 2 2 6.6v14h4.8V23h2.7l2.4-2.4h3.8L21 15.3V2H4.3zm14.9 12.4-2.9 2.9h-4.6l-2.4 2.4v-2.4H5.5V3.8h13.7v10.6zM16 7.3h-1.8v5.2H16V7.3zm-4.8 0H9.4v5.2h1.8V7.3z"/></svg><span>Twitch</span></li>
+        <li title="TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 2h-3.2v13.4a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .9.1V9.3a6.1 6.1 0 1 0 5.2 6.1V8.7a7.4 7.4 0 0 0 4.4 1.4V6.9A4.4 4.4 0 0 1 16.6 2z"/></svg><span>TikTok</span></li>
+        <li title="Discord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 5.6A17 17 0 0 0 15.4 4l-.5 1.1a15.8 15.8 0 0 0-5.8 0L8.6 4a17 17 0 0 0-4.2 1.6C1.7 9.6 1 13.5 1.4 17.3A17 17 0 0 0 6.6 20l1.1-1.8a11 11 0 0 1-1.7-.8l.4-.3a12.2 12.2 0 0 0 11.2 0l.4.3a11 11 0 0 1-1.7.8l1.1 1.8a17 17 0 0 0 5.2-2.7c.5-4.4-.7-8.3-3-11.7zM8.7 14.9c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1zm6.6 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1z"/></svg><span>Discord</span></li>
+        <li title="Other mods"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8zM5 5v4h4V5H5zm10 0v4h4V5h-4zM5 15v4h4v-4H5zm10 0v4h4v-4h-4z"/></svg><span>Other mods</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ======================================================= COPYRIGHT -->
+  <section class="rights reveal">
+    <h2>Copyright &amp; fair play</h2>
+    <p><strong>© 2026 Robin Johansen · Dimora. All rights reserved.</strong> The mod, its story, its characters (Herobrine as written here, Addexio, the turned, the infected), its textures, its sounds, its buildings and this website are copyrighted work.</p>
+    <ul>
+      <li><strong>Play it, stream it, review it, make videos of it</strong> — freely, with pleasure. Credit <em>Herobrine by Robin Johansen (dimora.no)</em> and link here.</li>
+      <li><strong>Link, do not re-upload.</strong> The only official downloads are this page and the GitHub releases. Mirrors and re-uploads go stale, break servers, and are not permitted.</li>
+      <li><strong>No bundling, forks, ports or derivative mods without permission.</strong> Ask — the answer is usually yes: <a href="mailto:hello@dimora.no">hello@dimora.no</a>.</li>
+      <li>Minecraft is a trademark of Microsoft. This is an independent work, not affiliated with or endorsed by Mojang or Microsoft.</li>
+    </ul>
   </section>
 
   <section class="closer reveal">
@@ -202,10 +254,12 @@
 </main>
 
 <footer>
-  <span>Herobrine — a Minecraft mod</span>
+  <span>© 2026 Robin Johansen · Dimora</span>
+  <a href="mailto:hello@dimora.no">hello@dimora.no</a>
+  <a href="https://github.com/robinandrejohansen/herobrine-mod" target="_blank" rel="noopener">Source</a>
   <span>Not affiliated with Mojang or Microsoft.</span>
 </footer>
 
-<script src="/app.js"></script>
+<script src="/app.js" defer></script>
 </body>
 </html>
