@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HEROBRINE — a survival-horror mod for Minecraft 26.2</title>
-<meta name="description" content="Herobrine is in your world. Follow the books, find the door, kill him. A survival-horror story mod for Minecraft 26.2 with one very hard boss fight.">
-<meta property="og:title" content="HEROBRINE — a Minecraft mod">
-<meta property="og:description" content="He is in your world. Follow the books. Find the door. Kill him.">
+<title>Herobrine Dimension — a Minecraft mod</title>
+<meta name="description" content="Can you beat the oldest myth in Minecraft? A story mod for 26.2: something is wrong with your world, a trail leads to a door, and behind it is his dimension — and him.">
+<meta property="og:title" content="Herobrine Dimension">
+<meta property="og:description" content="Can you beat the oldest myth in Minecraft?">
 <meta property="og:image" content="https://herobrine-mod.vercel.app/assets/icon.png">
 <meta name="theme-color" content="#0f0f12">
 <link rel="icon" href="/assets/icon.png">
-<link rel="stylesheet" href="/style.css?v=202609040036">
+<link rel="stylesheet" href="/style.css?v=202609040044">
 </head>
 <body>
 
 <header class="nav">
-  <a class="wordmark" href="#top"><img src="/assets/icon.png" alt="" width="20" height="20">HEROBRINE</a>
+  <a class="wordmark" href="#top"><img src="/assets/icon.png" alt="" width="20" height="20">HEROBRINE<span class="word-dim">&nbsp;DIMENSION</span></a>
   <nav>
     <a href="#story">Story</a>
     <a href="#fight">The fight</a>
@@ -29,8 +29,8 @@
 
   <section class="hero">
     <p class="kicker">Minecraft 26.2 · Fabric · free</p>
-    <h1>HE IS IN<br>YOUR WORLD</h1>
-    <p class="lede">A horror story you play. It starts quiet. It ends with the hardest boss fight in Minecraft.</p>
+    <h1>CAN YOU BEAT<br>HEROBRINE?</h1>
+    <p class="lede">The oldest myth in Minecraft, made real and made beatable. Something is wrong with your world. Follow it far enough and you find a door — and on the other side, his dimension, and him.</p>
     <div class="cta">
       <a class="btn mc" id="download" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">
         <span class="btn-label">Download</span>
@@ -45,35 +45,37 @@
   </div>
 
   <section id="story" class="story">
-    <h2 class="section-title reveal">The story</h2>
+    <h2 class="section-title reveal">What it is</h2>
+    <p class="section-sub reveal">Not a quest log. Nothing is marked on your map and nobody tells you what to do — you work it out, the way the myth was always supposed to work.</p>
     <ol class="beats">
-      <li class="reveal"><span>1</span><p><strong>A village went bad.</strong> Doors boarded themselves. People went missing. The ones who came back were not the same people.</p></li>
-      <li class="reveal"><span>2</span><p><strong>One man wrote it down.</strong> Addexio. Ten books, hidden in every place Herobrine touched.</p></li>
-      <li class="reveal"><span>3</span><p><strong>The village fought him. They lost.</strong> Almost everyone died. Addexio came home alone.</p></li>
-      <li class="reveal"><span>4</span><p><strong>Then you show up.</strong> Addexio finds you. You follow his books: town, tower, prison, church, last house.</p></li>
-      <li class="reveal"><span>5</span><p><strong>The last house has a door.</strong> It goes to his world. Once you step through, it shuts behind you.</p></li>
-      <li class="reveal danger"><span>6</span><p><strong>Kill him, or stay there.</strong> Win and the rain stops, the taken are people again, and the sun comes up for the first time in years.</p></li>
+      <li class="reveal"><span>1</span><p><strong>Your world starts going wrong.</strong> Small things first. You will talk yourself out of most of them.</p></li>
+      <li class="reveal"><span>2</span><p><strong>Somebody left a trail.</strong> Maps, books, places to find. Follow it and it gets worse, and clearer.</p></li>
+      <li class="reveal"><span>3</span><p><strong>At the end of the trail is a door.</strong> It goes to his dimension. It shuts behind you.</p></li>
+      <li class="reveal danger"><span>4</span><p><strong>Beat him there and your world comes back.</strong> Lose, and you go again — he remembers.</p></li>
     </ol>
 
-    <div class="cast reveal">
-      <figure>
-        <canvas class="sprite" data-skin="/assets/addexio.png" width="1" height="1" aria-label="Addexio"></canvas>
-        <figcaption><strong>Addexio</strong><span>Your companion. Fights, follows you anywhere, and only Herobrine can kill him.</span></figcaption>
-      </figure>
-      <figure>
-        <canvas class="sprite" data-skin="/assets/turned.png" data-kind="villager" width="1" height="1" aria-label="One of the turned"></canvas>
-        <figcaption><strong>The turned</strong><span>A villager with a dot in each eye. Never sleeps. Comes for you after dark.</span></figcaption>
-      </figure>
-      <figure>
-        <canvas class="sprite" data-skin="/assets/herobrine.png" data-eyes="/assets/herobrine_eyes.png" width="1" height="1" aria-label="Herobrine"></canvas>
-        <figcaption><strong>Herobrine</strong><span>A man, until you hit him. Then he grows, goes dark, and does not stop.</span></figcaption>
-      </figure>
-    </div>
+    <details class="spoiler reveal">
+      <summary>Who you'll meet <span>spoilers</span></summary>
+      <div class="cast">
+        <figure>
+          <canvas class="sprite" data-skin="/assets/addexio.png" width="1" height="1" aria-label="A companion"></canvas>
+          <figcaption><strong>A companion</strong><span>You do not walk it alone. He fights, he follows you anywhere, and only one thing in the world can kill him.</span></figcaption>
+        </figure>
+        <figure>
+          <canvas class="sprite" data-skin="/assets/turned.png" data-kind="villager" width="1" height="1" aria-label="Somebody who came back wrong"></canvas>
+          <figcaption><strong>What comes back</strong><span>People go missing. Some of them return. Look at the eyes before you trade.</span></figcaption>
+        </figure>
+        <figure>
+          <canvas class="sprite" data-skin="/assets/herobrine.png" data-eyes="/assets/herobrine_eyes.png" width="1" height="1" aria-label="Herobrine"></canvas>
+          <figcaption><strong>Him</strong><span>A man, until you hit him. Then he grows, goes dark, and does not stop.</span></figcaption>
+        </figure>
+      </div>
+    </details>
   </section>
 
   <section id="fight" class="fight">
     <h2 class="section-title reveal">The fight</h2>
-    <p class="section-sub reveal">100 hits. Three levels. Try it — click him.</p>
+    <p class="section-sub reveal">100 hits. Three levels. He gets bigger every time. Try it — click him.</p>
 
     <div class="arena reveal">
       <div class="bossbar" aria-live="polite">
@@ -147,6 +149,6 @@
   <a href="https://github.com/robinandrejohansen/herobrine-mod" target="_blank" rel="noopener">Source</a>
 </footer>
 
-<script src="/app.js?v=202609040036" defer></script>
+<script src="/app.js?v=202609040044" defer></script>
 </body>
 </html>
