@@ -3068,6 +3068,7 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 		size.setBaseValue(want);
+		this.setAttached(SHADOW, this.act() >= 3);      // the last form is the dark one
 		if (this.level() instanceof ServerLevel here) {
 			// He grows where you can hear it.
 			here.playSound(null, this.getX(), this.getY(), this.getZ(),
@@ -3116,6 +3117,23 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final double RING = 4.5;
 
 	/** Ticks left of the pause. Nothing he does runs while this is above zero. */
+	/**
+	 * THE THIRD ACT KEEPS THE DARK. The rise between acts puts his light out; at
+	 * act three it does not come back. He walks the rest of the fight as the
+	 * shape he was against the sky — unlit, smoking, the eyes the only thing on
+	 * him that renders — and the client reads it off this flag. Synced, not saved:
+	 * wearTheAct sets it again whenever he is rebuilt from the count.
+	 */
+	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> SHADOW =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.<Boolean>builder()
+			.syncWith(net.minecraft.network.codec.ByteBufCodecs.BOOL.cast(),
+				net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
+			.buildAndRegister(HerobrineMod.id("shadow"));
+
+	public boolean isShadow() {
+		return Boolean.TRUE.equals(this.getAttached(SHADOW));
+	}
+
 	private int ascending;
 	private boolean dropping;
 	private int droppingFor;
@@ -3508,6 +3526,17 @@ public class HerobrineEntity extends PathfinderMob {
 			if (this.onGround() || this.verticalCollision || this.getY() <= this.roseFrom + 0.1
 				|| this.droppingFor > DROP_MOST) {
 				this.slam(stage);
+			}
+		} else if (this.isShadow() && !this.isDying() && this.tickCount % 2 == 0
+			&& this.level() instanceof ServerLevel stage) {
+			// THE DARK COMES OFF HIM. Act three: the smoke of the rise, all the time,
+			// and now and then the ink — the same two things, so it reads as the same
+			// state and not a new effect.
+			stage.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+				this.getX(), this.getY() + 1.1, this.getZ(), 2, 0.35, 0.75, 0.35, 0.01);
+			if (this.random.nextInt(4) == 0) {
+				stage.sendParticles(net.minecraft.core.particles.ParticleTypes.SQUID_INK,
+					this.getX(), this.getY() + 1.3, this.getZ(), 1, 0.3, 0.6, 0.3, 0.02);
 			}
 		}
 

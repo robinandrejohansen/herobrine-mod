@@ -87,6 +87,12 @@ public class HerobrineRenderer
 			state.lightCoords = (Math.round(sky * (1.0F - dark)) << 20)
 				| (Math.round(block * (1.0F - dark)) << 4);
 		}
+		// ACT THREE IS UNLIT FOR GOOD. The rise's darkness, kept: no light on him at
+		// all, so in a torch-lit hall he is a hole in the room with two white eyes.
+		// Not while he is leaving — the white of the ending needs him lit to read.
+		if (entity.isShadow() && dying == null) {
+			state.lightCoords = 0;
+		}
 		Long hit = entity.getAttached(HerobrineEntity.WOUNDED);
 		long since = hit == null ? Long.MAX_VALUE : entity.level().getGameTime() - hit;
 		// Vanilla's own field, so the body is tinted by the same code that tints
