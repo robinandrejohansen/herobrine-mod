@@ -507,14 +507,6 @@ document.querySelectorAll('.copy').forEach((btn) => {
       }
       if (pack) set('pack', pack.browser_download_url, `${rel.tag_name} · .mrpack`);
       document.querySelectorAll('.ver').forEach((n) => { n.textContent = ver; });
-      const code = document.getElementById('agent-code');
-      if (code && jar) {
-        code.textContent = `# ${rel.tag_name} — the current files (these URLs change with every release;\n# the API call below always returns the newest):\n` +
-          `${jar.browser_download_url}\n${pack ? pack.browser_download_url + '\n' : ''}\n` +
-          `curl -sL https://api.github.com/repos/${REPO}/releases/latest | grep browser_download_url\n\n` +
-          `# requirements: Minecraft 26.2 · Fabric Loader · Fabric API 0.156.0+26.2 · Java 25+\n` +
-          `# solo:   mods/fabric-api-*.jar + mods/herobrine-*.jar\n# server: same two jars in the server's mods/; players import the .mrpack`;
-      }
     })
     .catch(() => { /* the static links are already correct */ });
 })();

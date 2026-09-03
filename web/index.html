@@ -22,6 +22,7 @@
     <a href="#story">Story</a>
     <a href="#fight">The fight</a>
     <a href="#download">Download</a>
+    <a href="/docs">Docs</a>
     <a href="#partner">Partner</a>
     <a class="ghost" href="https://github.com/robinandrejohansen/herobrine-mod" target="_blank" rel="noopener">Source</a>
   </nav>
@@ -45,7 +46,7 @@
           <span class="btn-label">Download the mod</span>
           <span class="btn-meta" id="dl-meta">latest release · .jar</span>
         </a>
-        <a class="btn slate" href="#download">Solo · server · agents</a>
+        <a class="btn slate" href="/docs">Setup guide</a>
       </div>
       <p class="fineprint">Free to play · single-player and servers · Java 25+ · not affiliated with Mojang or Microsoft</p>
     </div>
@@ -167,7 +168,7 @@
   <!-- ======================================================== DOWNLOAD -->
   <section id="download" class="download">
     <h2 class="section-title reveal">Download</h2>
-    <p class="section-sub reveal">Three ways in. Pick the one that is you.</p>
+    <p class="section-sub reveal">Alone, or on a server. The <a href="/docs">setup guide</a> has every step, the config and what to do when something is wrong.</p>
 
     <div class="ways">
       <article class="panel way reveal">
@@ -197,25 +198,9 @@
         <a class="btn mc" id="pack" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download .mrpack</span><span class="btn-meta" id="pack-meta">latest</span></a>
       </article>
 
-      <article class="panel way agents reveal">
-        <h3>For LLMs and agents</h3>
-        <p>Installing this for someone? Everything you need is machine-readable and stable. Read <a href="/llms.txt">/llms.txt</a> for the full instructions in plain text, or <a href="/install.json">/install.json</a> for the manifest.</p>
-        <pre><code id="agent-code"># latest jar and modpack, always:
-curl -sL https://api.github.com/repos/robinandrejohansen/herobrine-mod/releases/latest \
-  | grep browser_download_url
-
-# requirements
-Minecraft 26.2 · Fabric Loader · Fabric API 0.156.0+26.2 · Java 25+
-# solo:   mods/fabric-api-*.jar + mods/herobrine-*.jar
-# server: same two jars in the server's mods/; players import the .mrpack</code></pre>
-        <div class="row">
-          <a class="btn slate" href="/llms.txt">llms.txt</a>
-          <a class="btn slate" href="/install.json">install.json</a>
-          <a class="btn slate" href="https://github.com/robinandrejohansen/herobrine-mod/blob/main/README.md" target="_blank" rel="noopener">README</a>
-        </div>
-      </article>
     </div>
 
+    <p class="updates reveal"><a class="btn slate" href="/docs">Read the setup guide</a></p>
     <p class="updates reveal">Every fix ships as a new release. <a href="https://github.com/robinandrejohansen/herobrine-mod/releases" target="_blank" rel="noopener">All releases</a> · <a href="https://github.com/robinandrejohansen/herobrine-mod/subscription" target="_blank" rel="noopener">Watch for updates</a>. Your world and your config carry over.</p>
   </section>
 
@@ -256,6 +241,7 @@ Minecraft 26.2 · Fabric Loader · Fabric API 0.156.0+26.2 · Java 25+
 <footer>
   <span>© 2026 Robin Johansen · Dimora</span>
   <a href="mailto:hello@dimora.no">hello@dimora.no</a>
+  <a href="/docs">Docs</a>
   <a href="https://github.com/robinandrejohansen/herobrine-mod" target="_blank" rel="noopener">Source</a>
   <span>Not affiliated with Mojang or Microsoft.</span>
 </footer>
