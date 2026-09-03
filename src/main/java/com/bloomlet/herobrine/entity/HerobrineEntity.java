@@ -5726,7 +5726,12 @@ public class HerobrineEntity extends PathfinderMob {
 	 * The fire it leaves is the threat. The rain is already taking it back out.
 	 */
 	/** How wide he misses by, per act. He gets better. */
-	private static final double[] AIM_OFF = { 5.5, 3.5, 1.5 };
+	private static final double[] AIM_OFF = { 3.0, 2.0, 1.0 };
+	/** What the strike does to anybody within BOLT_REACH of it, on top of vanilla's five. Per act. */
+	private static final float[] BOLT_DAMAGE = { 6.0F, 9.0F, 12.0F };
+	private static final double BOLT_REACH = 3.5;
+	/** The crater. Same rule as the fireballs: anything breakable, chests and the way excepted. */
+	private static final double[] BOLT_CRATER = { 1.2, 1.5, 1.9 };
 
 	/** How much of your own speed he throws ahead of you. He learns. */
 	private static final double[] LEADS_BY = { 0.0, 0.5, 1.0 };
@@ -5781,9 +5786,14 @@ public class HerobrineEntity extends PathfinderMob {
 		double slip = Math.sqrt(this.random.nextDouble()) * off;
 		final double ax = target.getX() + going.x + Math.cos(angle) * slip;
 		final double az = target.getZ() + going.z + Math.sin(angle) * slip;
-		final int ay = here.getHeight(
+		int roof = here.getHeight(
 			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
 			net.minecraft.util.Mth.floor(ax), net.minecraft.util.Mth.floor(az));
+		// INDOORS THE HEIGHTMAP IS THE ROOF. The bolt was put at the heightmap, so in
+		// the castle it hit the roof three floors over your head and you felt
+		// nothing — the whole move did no damage in the one place the fight happens.
+		// With a ceiling over the target it lands on the floor they stand on.
+		final int ay = roof > target.getBlockY() + 3 ? target.getBlockY() : roof;
 
 		this.getLookControl().setLookAt(target, 60.0F, 60.0F);
 		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
@@ -5811,6 +5821,33 @@ public class HerobrineEntity extends PathfinderMob {
 			bolt.setVisualOnly(!real);
 			bolt.snapTo(ax, ay, az, 0.0F, 0.0F);
 			here.addFreshEntity(bolt);
+			// AND IT HURTS LIKE HIS. Vanilla's bolt is five and a fire; the fireball
+			// is twenty at the centre. This is the difference, scaled by act, to
+			// everything of theirs within reach of the strike — Addexio is clamped by
+			// his own rule, his own mobs are skipped.
+			float extra = BOLT_DAMAGE[Math.min(BOLT_DAMAGE.length - 1, this.act() - 1)];
+			for (net.minecraft.world.entity.LivingEntity hit : here.getEntitiesOfClass(
+					net.minecraft.world.entity.LivingEntity.class,
+					new net.minecraft.world.phys.AABB(ax - BOLT_REACH, ay - 1.0, az - BOLT_REACH,
+						ax + BOLT_REACH, ay + 4.0, az + BOLT_REACH),
+					e -> e.isAlive() && !(e instanceof HerobrineEntity)
+						&& !com.bloomlet.herobrine.manifest.TheHunt.isHis(e))) {
+				hit.hurtServer(here, here.damageSources().lightningBolt(), extra);
+				hit.igniteForSeconds(4.0F);
+			}
+			// AND THE FLOOR GOES. The shots learnt to break stone; the bolt had not —
+			// it scorched a block and left the wall you were hiding behind standing.
+			// Now it takes a crater where it lands, wider each act.
+			if (Config.get().breakIn
+				&& here.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
+				int gone = com.bloomlet.herobrine.manifest.HisHost.punch(here,
+					BlockPos.containing(ax, ay - 1, az),
+					BOLT_CRATER[Math.min(BOLT_CRATER.length - 1, this.act() - 1)]);
+				if (gone > 0) {
+					HerobrineMod.LOGGER.info("duel: the bolt at [{}, {}, {}] took {} blocks",
+						(int) Math.floor(ax), ay, (int) Math.floor(az), gone);
+				}
+			}
 		});
 
 		// ---- AND THE SHOW, well out of the way and harmless.
