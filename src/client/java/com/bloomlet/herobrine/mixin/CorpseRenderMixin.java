@@ -4,6 +4,7 @@ import com.bloomlet.herobrine.entity.Corpses;
 import com.bloomlet.herobrine.entity.PlayerCorpseEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import com.bloomlet.herobrine.client.CorpseState;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.world.entity.LivingEntity;

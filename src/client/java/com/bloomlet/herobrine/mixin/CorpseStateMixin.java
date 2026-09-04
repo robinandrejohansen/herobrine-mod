@@ -1,5 +1,6 @@
 package com.bloomlet.herobrine.mixin;
 
+import com.bloomlet.herobrine.client.CorpseState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
