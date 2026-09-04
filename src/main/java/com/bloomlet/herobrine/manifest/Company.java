@@ -357,7 +357,34 @@ public final class Company {
 				settled(where, her, with);
 			}
 		}
+		fetch(server);
 		fish(server);
+	}
+
+	/** Further behind the person he is with than this, whatever he is doing, and he is brought up. Follow's own limit is forty. */
+	private static final double FETCHES_FROM = 48.0;
+
+	/**
+	 * A man stuck in a fight he cannot leave — the melee goal outranks Follow — is
+	 * a man the player walks out of loaded range of, and that is the end of him
+	 * until they happen back. This runs from the server side every two seconds and
+	 * does not care what his goals are doing. One flat pass over the level's
+	 * entities, a class check each; there is only ever one of him.
+	 */
+	private static void fetch(MinecraftServer server) {
+		for (ServerLevel here : server.getAllLevels()) {
+			if (here.players().isEmpty()) {
+				continue;
+			}
+			for (CompanionEntity her : here.getEntities(
+					net.minecraft.world.level.entity.EntityTypeTest.forClass(CompanionEntity.class),
+					h -> !h.isFallen() && h.companion() != null)) {
+				Player with = her.companion();
+				if (with != null && with.level() == here && her.distanceTo(with) > FETCHES_FROM) {
+					her.comeUp(here, with);
+				}
+			}
+		}
 	}
 
 	/**

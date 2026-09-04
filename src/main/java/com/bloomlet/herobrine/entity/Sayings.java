@@ -157,8 +157,7 @@ public final class Sayings {
 		}
 		her.lastSpoke = now;
 		String line = pool[here.getRandom().nextInt(pool.length)];
-		heard.sendSystemMessage(Component.literal("§c" + her.getName().getString()
-			+ "§7: " + line));
+		voice(here, her, line);
 		// NO SOUND. It was VILLAGER_AMBIENT — the hum — left over from when he was
 		// Vera in a red coat, and it made a man with a name and a diamond sword go
 		// "hrmm" like a trader every time you spoke to him. There is no vanilla
@@ -277,9 +276,7 @@ public final class Sayings {
 			final String said = line;
 			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), at, () -> {
 				if (her.isAlive() && !her.isFallen() && to.isAlive()) {
-					to.sendSystemMessage(Component.literal("§c" + her.getName().getString()
-						+ "§7: " + said));
-					her.lastSpoke = here.getGameTime();
+					voice(here, her, said);
 				}
 			});
 			at += beatFor(line);
@@ -310,6 +307,20 @@ public final class Sayings {
 		return Math.max(60, 30 + 9 * words);
 	}
 
+	/**
+	 * HIS VOICE IS THE CHAT LINE, AND EVERYONE ON THAT SIDE OF THE DOOR HEARS IT.
+	 * It went to the one player he happened to be talking to, and on a server that
+	 * meant the story reached one person and everybody else saw them nod at
+	 * nothing. The whole level now: the same words at the same moment.
+	 */
+	static void voice(ServerLevel here, CompanionEntity her, String line) {
+		Component said = Component.literal("§c" + her.getName().getString() + "§7: " + line);
+		for (ServerPlayer hearing : here.players()) {
+			hearing.sendSystemMessage(said);
+		}
+		her.lastSpoke = here.getGameTime();
+	}
+
 	static int introductionLength() {
 		int total = 0;
 		for (String line : INTRODUCTION) {
@@ -324,9 +335,7 @@ public final class Sayings {
 			final String said = line;
 			com.bloomlet.herobrine.manifest.Cadence.in(here.getServer(), at, () -> {
 				if (her.isAlive() && to.isAlive()) {
-					to.sendSystemMessage(Component.literal("§c" + her.getName().getString()
-						+ "§7: " + said));
-					her.lastSpoke = here.getGameTime();
+					voice(here, her, said);
 				}
 			});
 			at += beatFor(line);

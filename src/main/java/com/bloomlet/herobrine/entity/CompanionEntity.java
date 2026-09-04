@@ -406,26 +406,82 @@ public class CompanionEntity extends PathfinderMob {
 	 * off is not his problem. One at his heels, or one at yours, is.
 	 */
 	boolean worthAFight(LivingEntity what) {
-		if (!this.isLeading()) {
+		Player who = this.isLeading() ? this.leading() : this.companion();
+		if (who == null) {
 			return true;
 		}
 		if (this.distanceToSqr(what) <= FIGHTS_WHILE_LEADING * FIGHTS_WHILE_LEADING) {
-			return true;
+			return true;      // at his heels. no choice
 		}
-		Player who = this.leading();
-		return who != null && what instanceof Mob it && it.getTarget() == who
-			&& what.distanceToSqr(who) <= DEFENDS_WHILE_LEADING * DEFENDS_WHILE_LEADING;
+		if (this.isLeading()) {
+			return what instanceof Mob it && it.getTarget() == who
+				&& what.distanceToSqr(who) <= DEFENDS_WHILE_LEADING * DEFENDS_WHILE_LEADING;
+		}
+		// FOLLOWING: HE FIGHTS BESIDE YOU, NOT INSTEAD OF YOU. Once you have gone on
+		// past FIGHTS_APART he breaks off and comes. Without this the melee goal,
+		// which outranks Follow, kept him at the town swinging at a posted guard
+		// while you walked out of loaded range, and that was the last you saw of him.
+		return this.distanceTo(who) <= FIGHTS_APART;
 	}
 
-	/** Twice a second while leading: a target no longer worth the stop is let go, and the melee goal yields the road back. */
+	/** Twice a second while leading or following: a target no longer worth the stop is let go, and the melee goal yields the road back. */
 	private void keepToTheRoad() {
-		if ((this.tickCount % 10) != 0 || !this.isLeading()) {
+		if ((this.tickCount % 10) != 0 || (!this.isLeading() && this.companion() == null)) {
 			return;
 		}
 		LivingEntity at = this.getTarget();
 		if (at != null && !this.worthAFight(at)) {
 			this.setTarget(null);
 		}
+	}
+
+	/**
+	 * Eight to thirteen blocks from them, on something solid, facing the way he
+	 * was. A WIDER LOOK THAN THREE BLOCKS, because somebody moving fast is not
+	 * over solid ground in a seven-block box. AND IF THERE IS NO FLOOR AT ALL, GO
+	 * ANYWAY: a player flying in creative has no floor within reach, every try
+	 * failed, and the one mechanism that stops him being lost never fired. He
+	 * lands in the air and falls; he cannot die, and Company fishes him out from
+	 * under the world.
+	 */
+	public void appearBeside(ServerLevel here, Player with) {
+		net.minecraft.util.RandomSource roll = this.getRandom();
+		for (int tries = 0; tries < 24; tries++) {
+			double angle = roll.nextDouble() * Math.PI * 2.0;
+			double off = 8.0 + roll.nextDouble() * 5.0;
+			BlockPos at = with.blockPosition().offset(
+				(int) Math.round(Math.cos(angle) * off), roll.nextInt(7) - 3,
+				(int) Math.round(Math.sin(angle) * off));
+			if (!here.getBlockState(at).isAir()
+				|| !here.getBlockState(at.above()).isAir()
+				|| !here.getBlockState(at.below()).isSolid()) {
+				continue;
+			}
+			this.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, this.getYRot(), this.getXRot());
+			this.getNavigation().stop();
+			return;
+		}
+		this.snapTo(with.getX(), with.getY(), with.getZ(), this.getYRot(), this.getXRot());
+		this.setDeltaMovement(Vec3.ZERO);
+		this.getNavigation().stop();
+	}
+
+	/**
+	 * THE SERVER'S OWN HAND ON HIS SHOULDER. Follow teleports him at forty blocks,
+	 * but Follow only runs when nothing above it holds the reins, and a fight
+	 * does. Company calls this every two seconds for anyone far behind the person
+	 * he is with, whatever his goals are doing: he lets go of the fight and is
+	 * beside you. Not while leading (he has his own step) or walking in.
+	 */
+	public void comeUp(ServerLevel here, Player with) {
+		if (this.isLeading() || this.walkingIn() || this.isFallen()) {
+			return;
+		}
+		this.setTarget(null);
+		this.fleeing = false;
+		this.appearBeside(here, with);
+		HerobrineMod.LOGGER.info("addexio was {} blocks behind {} and was brought up",
+			(int)this.distanceTo(with), with.getName().getString());
 	}
 
 	// ---- WHO SHE IS WITH ---------------------------------------------------
@@ -1364,45 +1420,7 @@ public class CompanionEntity extends PathfinderMob {
 		 * her and starts managing her.
 		 */
 		private void appearNear(ServerLevel here, Player with) {
-			net.minecraft.util.RandomSource roll = this.her.getRandom();
-			// A WIDER LOOK THAN THREE BLOCKS. Somebody moving fast is not going to
-			// have solid ground in the seven-block box they happen to be over.
-			for (int tries = 0; tries < 24; tries++) {
-				// INTO THE AREA, NOT ONTO YOU. Eight to thirteen blocks off, any side:
-				// you turn round and he is coming through the trees, not standing in
-				// your face.
-				double angle = roll.nextDouble() * Math.PI * 2.0;
-				double off = 8.0 + roll.nextDouble() * 5.0;
-				BlockPos at = with.blockPosition().offset(
-					(int) Math.round(Math.cos(angle) * off), roll.nextInt(7) - 3,
-					(int) Math.round(Math.sin(angle) * off));
-				if (!here.getBlockState(at).isAir()
-					|| !here.getBlockState(at.above()).isAir()
-					|| !here.getBlockState(at.below()).isSolid()) {
-					continue;
-				}
-				this.her.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5,
-					this.her.getYRot(), this.her.getXRot());
-				this.her.getNavigation().stop();
-				return;
-			}
-			// AND IF THERE IS NO FLOOR AT ALL, GO ANYWAY.
-			//
-			// Reported as her not keeping up with a player FLYING IN CREATIVE, and
-			// this was the whole of it: every candidate had to have a solid block
-			// under it, and a player two hundred blocks up over open air has none
-			// within reach. All twenty-four tries failed, every tick, so the one
-			// mechanism that exists to stop her being lost never fired — and the
-			// faster you went the further behind she stayed.
-			//
-			// Landing her in mid-air and letting her fall is not elegant. It is also
-			// unambiguously better than the alternative, which is losing her: she
-			// cannot die, Company fishes her out from under the world, and Follow
-			// will simply do this again on the way down.
-			this.her.snapTo(with.getX(), with.getY(), with.getZ(),
-				this.her.getYRot(), this.her.getXRot());
-			this.her.setDeltaMovement(Vec3.ZERO);
-			this.her.getNavigation().stop();
+			this.her.appearBeside(here, with);
 		}
 	}
 

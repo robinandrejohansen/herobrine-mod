@@ -960,6 +960,11 @@ public class TurnedEntity extends PathfinderMob {
 			this.snap(striker, true);
 			return super.hurtServer(level, source, damage);
 		}
+		if (source.getEntity() instanceof CompanionEntity) {
+			// Addexio's sword counts. He fights beside you, not for show — and a man
+			// swinging forever at something he cannot dent is a man who never leaves.
+			return super.hurtServer(level, source, damage);
+		}
 		// The escape hatch every invulnerable thing in the game keeps: /kill,
 		// the void, and anything else tagged as bypassing invulnerability. A mob
 		// an operator cannot remove is a bug report, and one that sits at the

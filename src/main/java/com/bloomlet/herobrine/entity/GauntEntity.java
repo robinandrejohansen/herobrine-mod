@@ -250,6 +250,7 @@ public class GauntEntity extends PathfinderMob {
 		}
 		this.setHealth(this.getMaxHealth());
 		this.setPersistenceRequired();
+		this.met = HOLDS_OFF;      // a posted one has been waiting for you already. no free ten seconds
 	}
 
 	public boolean isGuard() {
@@ -556,10 +557,15 @@ public class GauntEntity extends PathfinderMob {
 			return;
 		}
 		this.watchedFor++;
+		if (this.frozen()) {
+			// Beyond reach it does not move while you watch. Within REACHES it does —
+			// that is what REACHES is for — or a thing you could keep off forever by
+			// facing it never lands a hand on anybody, which is what happened.
+			this.getNavigation().stop();
+		}
 		// Squared up, so being watched is being LOOKED BACK AT. A head turned to
 		// you on a body facing the trees reads as a mob mid-pathfind; the whole
 		// body turned reads as attention, and attention is the entire performance.
-		this.getNavigation().stop();
 		float yaw = (float)(Mth.atan2(seen.getZ() - this.getZ(),
 			seen.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
 		this.setYRot(yaw);
