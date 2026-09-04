@@ -436,9 +436,12 @@ document.querySelectorAll('canvas.sprite').forEach(async (c) => {
   const embers = [];
 
   function throwFire(fromX, fromY, toX, toY) {
-    const dx = toX - fromX, dy = toY - fromY;
-    const time = 46;
-    fires.push({ x: fromX, y: fromY, vx: dx / time, vy: dy / time - 0.13 * time * 0.5 / time * 6, life: time + 20, g: 0.035 * (H / 300) });
+    const time = 46;                                   // frames in the air
+    const grav = 0.035 * (H / 300);
+    // A lob: with this launch speed and this gravity it is at (toX, toY) after
+    // exactly `time` frames, whatever the canvas size.
+    fires.push({ x: fromX, y: fromY, vx: (toX - fromX) / time,
+      vy: (toY - fromY) / time - grav * time / 2, life: time + 20, g: grav });
   }
 
   /* ----------------------------------------------------------- the frame -- */
@@ -459,13 +462,16 @@ document.querySelectorAll('canvas.sprite').forEach(async (c) => {
   }
   new IntersectionObserver((es) => {
     visible = es[0].isIntersecting;
-    if (visible) { if (c.clientWidth > 80 && Math.abs(c.width / DPR - c.clientWidth) > 2) size(); requestAnimationFrame(frame); }
+    if (visible) { if (c.clientWidth > 80 && Math.abs(c.width / DPR - c.clientWidth) > 2) size(); next(); }
   }).observe(c);
 
   const CYCLE = 46000;         // a day and a night, in ms
+  let queued = 0;              // one loop, however often the canvas scrolls in and out of view
+  const next = () => { if (!queued) queued = requestAnimationFrame(frame); };
   function frame(now) {
+    queued = 0;
     if (!visible) return;
-    if (now - last < 32) { requestAnimationFrame(frame); return; }       // 30 fps
+    if (now - last < 32) { next(); return; }       // 30 fps
     if (!t0) t0 = now;
     last = now;
     const t = ((now - t0) % CYCLE) / CYCLE;
@@ -526,7 +532,7 @@ document.querySelectorAll('canvas.sprite').forEach(async (c) => {
     shadow(W * 0.24, unit * 3); shadow(W * 0.40, unit * 3);
     const you = runner(figures.you, W * 0.24, ground + unit * 1.2, stride, -1, 0.09);
     const add = runner(figures.addexio, W * 0.40, ground + unit * 1.2, stride + 1.9, -1, 0.08);
-    layer(near, 1.0, Math.round(H * 0.16) - Math.round(H * 0.16));
+    layer(near, 1.0, 0);       // the layer is taller than the sky; its trunks stand in the foreground dirt
     shadow(W * 0.78, unit * 4.6);
     const him = runner(figures.him, W * 0.78, ground + unit * 2.0, stride * 0.86 + 0.7, -1, 0.17, true);
 
@@ -594,9 +600,9 @@ document.querySelectorAll('canvas.sprite').forEach(async (c) => {
     vig.addColorStop(0.35, 'rgba(15,15,18,0)');
     vig.addColorStop(1, 'rgba(15,15,18,.75)');
     g.fillStyle = vig; g.fillRect(0, 0, W, H);
-    requestAnimationFrame(frame);
+    next();
   }
-  requestAnimationFrame(frame);
+  next();
 })();
 
 /* -------------------------------------------------------- the arena ------ */

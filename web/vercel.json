@@ -16,7 +16,7 @@
       ]
     },
     {
-      "source": "/(style.css|app.js|llms.txt|install.json)",
+      "source": "/(style.css|app.js)",
       "headers": [
         {
           "key": "Cache-Control",

@@ -738,6 +738,9 @@ public class TurnedEntity extends PathfinderMob {
 		this.discard();
 	}
 
+	/** Who had his eye at the last look; see tick(). */
+	private @org.jspecify.annotations.Nullable Player watcher;
+
 	@Override
 	public void tick() {
 		super.tick();
@@ -753,11 +756,15 @@ public class TurnedEntity extends PathfinderMob {
 		if (this.getTarget() != null) {
 			return;      // he is busy
 		}
-		if ((this.tickCount & 3) != 0) {
-			return;          // a village holds many of these; a look every fourth tick is the same look
+		if ((this.tickCount & 3) == 0) {
+			// A village holds many of these. The look, nearest player then a raycast,
+			// is taken every fourth tick and remembered. The freeze below runs every
+			// tick, or he would creep three ticks in four while being watched.
+			Player near = this.level().getNearestPlayer(this, NOTICES);
+			this.watcher = near != null && this.hasLineOfSight(near) ? near : null;
 		}
-		Player watching = this.level().getNearestPlayer(this, NOTICES);
-		if (watching == null || !this.hasLineOfSight(watching)) {
+		Player watching = this.watcher;
+		if (watching == null || watching.isRemoved()) {
 			return;
 		}
 		this.getNavigation().stop();

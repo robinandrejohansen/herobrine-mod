@@ -1,8 +1,10 @@
 package com.bloomlet.herobrine.manifest;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -14,6 +16,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,6 +24,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -88,7 +92,17 @@ public final class Breach {
 	 * Three rather than four, because this drives door-chewing and a player can
 	 * feel the difference between a door coming apart at 7Hz and at 5Hz.
 	 */
-	private static final int CHEWS_EVERY = 8;   // two zombie scans and up to four raycasts each; 2.5 Hz is plenty for a chew
+	private static final int CHEWS_EVERY = 3;
+	/**
+	 * THE LOOK IS DEARER THAN THE CHEW. Each chew is a map lookup and a block
+	 * update; each look is two entity boxes per player and up to four raycasts per
+	 * zombie. So the look runs every third chew and its answer is kept in between:
+	 * a zombie that arrives mid-window starts chewing under half a second late,
+	 * which nobody can tell, while the chew itself keeps its 7 Hz and a pane still
+	 * takes CHEW_TICKS chews, thirty seconds, not eighty.
+	 */
+	private static final int LOOKS_EVERY = CHEWS_EVERY * 3;
+	private static final Map<ResourceKey<Level>, List<Zombie>> hunting = new HashMap<>();
 
 	private static void onTick(MinecraftServer server) {
 		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
@@ -101,26 +115,38 @@ public final class Breach {
 			if (!chewing.isEmpty()) {
 				chewing.clear();
 			}
+			hunting.clear();
 			return;
 		}
 
+		boolean look = server.getTickCount() % LOOKS_EVERY == 0;
 		for (ServerLevel level : server.getAllLevels()) {
-			// Gathered into a set first: a zombie stood between two players
-			// would otherwise be advanced twice in one tick and chew at double
-			// speed, which is exactly the kind of thing nobody would ever
-			// reproduce deliberately.
-			Set<Zombie> hunting = new HashSet<>();
-			for (ServerPlayer player : level.players()) {
-				notice(level, player);
-				AABB around = player.getBoundingBox().inflate(WITNESS_RANGE);
-				for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, around)) {
-					if (zombie.getTarget() instanceof Player) {
-						hunting.add(zombie);
+			List<Zombie> found;
+			if (look) {
+				// Gathered into a set first: a zombie stood between two players
+				// would otherwise be advanced twice in one tick and chew at double
+				// speed, which is exactly the kind of thing nobody would ever
+				// reproduce deliberately.
+				Set<Zombie> seen = new HashSet<>();
+				for (ServerPlayer player : level.players()) {
+					notice(level, player);
+					AABB around = player.getBoundingBox().inflate(WITNESS_RANGE);
+					for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, around)) {
+						if (zombie.getTarget() instanceof Player) {
+							seen.add(zombie);
+						}
 					}
 				}
+				found = new ArrayList<>(seen);
+				hunting.put(level.dimension(), found);
+			} else {
+				found = hunting.getOrDefault(level.dimension(), List.of());
 			}
 			Set<UUID> touched = new HashSet<>();
-			for (Zombie zombie : hunting) {
+			for (Zombie zombie : found) {
+				if (zombie.isRemoved() || zombie.level() != level || !(zombie.getTarget() instanceof Player)) {
+					continue;      // gone, moved on, or lost interest since the last look
+				}
 				advance(level, zombie);
 				touched.add(zombie.getUUID());
 			}

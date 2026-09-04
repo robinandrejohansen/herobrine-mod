@@ -133,11 +133,12 @@ public final class Feral {
 	 * player is six hundred ray traces a second, sixty is twelve hundred, and this
 	 * mod has a phase whose entire point is a lot of mobs near a player.
 	 *
-	 * Every fourth tick is five looks a second, which is far finer than anything it
+	 * Every fifth tick is four looks a second, which is far finer than anything it
 	 * drives: hunt() sets a target and watch() turns a head. Neither is perceptible
-	 * at 20Hz and neither is missed at 5Hz.
+	 * at 20Hz and neither is missed at 4Hz; at 2.5Hz a turned head starts to lag
+	 * a running player, so it stops here.
 	 */
-	private static final int LOOKS_EVERY = 8;
+	private static final int LOOKS_EVERY = 5;
 
 	private static void onTick(MinecraftServer server) {
 		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {

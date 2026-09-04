@@ -498,11 +498,12 @@ public final class Company {
 	 * and there is nothing else down there for the query to find.
 	 */
 	private static List<? extends CompanionEntity> hers(ServerLevel here, Player with) {
-		// OFF THE TYPE INDEX, NOT A 128 x 1024 x 128 BOX. That box spans four
-		// thousand entity sections and was walked twice per player every two
-		// seconds to find, at most, one man. There are never more than a few of him
-		// in a level; the index hands them over for the price of counting them. The
-		// reach is kept as the same plain distances, so the answer does not change.
+		// ONE PASS OVER THE LEVEL'S ENTITY LIST, NOT A 128 x 1024 x 128 BOX. That
+		// box spans four thousand entity sections and was walked twice per player
+		// every two seconds to find, at most, one man. getEntities with a class test
+		// is a flat walk of every loaded entity with an instanceof each: a few
+		// thousand cheap checks, no section walk. The reach is kept as the same plain
+		// distances, so the answer does not change.
 		return here.getEntities(
 			net.minecraft.world.level.entity.EntityTypeTest.forClass(CompanionEntity.class),
 			her -> !her.isFallen() && her.companion() == with
