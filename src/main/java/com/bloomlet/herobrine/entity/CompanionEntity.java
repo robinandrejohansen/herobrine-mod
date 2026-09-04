@@ -196,6 +196,11 @@ public class CompanionEntity extends PathfinderMob {
 		// not, they are all built on the same villager mesh, and the difference
 		// at thirty blocks in fog is a name floating over her head.
 		this.setCustomNameVisible(true);
+		// THE ROAD IS LONG AND WET. Two and a half times the usual search depth, so
+		// a river bend or a ravine gets a way round rather than a shrug; and he
+		// floats, so a current carries him along the top and not along the bottom.
+		this.getNavigation().setCanFloat(true);
+		this.getNavigation().setMaxVisitedNodesMultiplier(2.5F);
 	}
 
 	/**
@@ -377,12 +382,50 @@ public class CompanionEntity extends PathfinderMob {
 		this.targetSelector.addGoal(3,
 			new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(
 				this, Mob.class, 10, true, false,
-				(candidate, level) -> candidate instanceof Mob m && Sayings.isHis(m)));
+				(candidate, level) -> candidate instanceof Mob m && Sayings.isHis(m)
+					&& this.worthAFight(m)));
 		this.targetSelector.addGoal(1,
 			new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this));
 		this.targetSelector.addGoal(2,
 			new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(
-				this, net.minecraft.world.entity.monster.Monster.class, true));
+				this, net.minecraft.world.entity.monster.Monster.class, 10, true, false,
+				(candidate, level) -> this.worthAFight(candidate)));
+	}
+
+	// ---- THE ROAD COMES FIRST ----------------------------------------------
+
+	/** While leading: a thing this close to him is a fight whether he likes it or not. */
+	private static final double FIGHTS_WHILE_LEADING = 5.0;
+	/** And a thing this close to the person he is leading, and going for them, is his job. */
+	private static final double DEFENDS_WHILE_LEADING = 7.0;
+
+	/**
+	 * WHILE HE IS LEADING, THE ROAD COMES FIRST. The melee goal outranks the
+	 * lead, so without this a man taking you somewhere stopped for every skeleton
+	 * in the trees and you stood there watching him fence. A zombie forty blocks
+	 * off is not his problem. One at his heels, or one at yours, is.
+	 */
+	boolean worthAFight(LivingEntity what) {
+		if (!this.isLeading()) {
+			return true;
+		}
+		if (this.distanceToSqr(what) <= FIGHTS_WHILE_LEADING * FIGHTS_WHILE_LEADING) {
+			return true;
+		}
+		Player who = this.leading();
+		return who != null && what instanceof Mob it && it.getTarget() == who
+			&& what.distanceToSqr(who) <= DEFENDS_WHILE_LEADING * DEFENDS_WHILE_LEADING;
+	}
+
+	/** Twice a second while leading: a target no longer worth the stop is let go, and the melee goal yields the road back. */
+	private void keepToTheRoad() {
+		if ((this.tickCount % 10) != 0 || !this.isLeading()) {
+			return;
+		}
+		LivingEntity at = this.getTarget();
+		if (at != null && !this.worthAFight(at)) {
+			this.setTarget(null);
+		}
 	}
 
 	// ---- WHO SHE IS WITH ---------------------------------------------------
@@ -560,6 +603,7 @@ public class CompanionEntity extends PathfinderMob {
 					this.kit(this.getRandom());
 				}
 			}
+			this.keepToTheRoad();
 			this.theWalkIn();
 			this.hop();
 			this.theIntroduction();
@@ -1004,15 +1048,34 @@ public class CompanionEntity extends PathfinderMob {
 		private static final double ARRIVES_AT = 9.0;
 		private static final int NAGS_EVERY = 600;
 		private static final int GIVES_UP_AFTER = 2400;
+		/** Nearer the farm than he is by this much and they are AHEAD: he hurries and overtakes, he does not wait. */
+		private static final double AHEAD_BY = 3.0;
+		/** Ahead of him by this much and he stops arguing with the ground and simply is ahead of them again. */
+		private static final double CATCHES_UP_FROM = 24.0;
+		/** Two paces: a man walking ahead of you, and a man who has just watched you sprint past him. */
+		private static final double STROLL = 1.12;
+		private static final double HURRY = 1.35;
+		private static final double HURRIES_PAST = 9.0;
+		/** Looks are ten ticks. Not moved and no nearer for five of them, and the terrain has won; he steps ahead. */
+		private static final int STUCK_AT = 5;
+		private static final double MOVED = 1.5;
+		private static final double PROGRESS = 0.6;
+		/** In water and no nearer for three looks is a current; five below the player and no nearer is a hole. Same answer, sooner. */
+		private static final int HELD_AT = 3;
+		private static final double FELL = 5.0;
+
 		private final CompanionEntity her;
 		private int repath;
 		private int waited;
 		private int ignored;
-		private int checks;
+		private int looks;
 		private int stuck;
+		private int wet;
+		private int fell;
 		private boolean greeted;
 		private double wasX;
 		private double wasZ;
+		private double wasLeft = -1.0;
 
 		Lead(CompanionEntity her) {
 			this.her = her;
@@ -1036,6 +1099,7 @@ public class CompanionEntity extends PathfinderMob {
 		@Override
 		public void stop() {
 			this.her.getNavigation().stop();
+			this.her.setSprinting(false);
 		}
 
 		@Override
@@ -1053,10 +1117,9 @@ public class CompanionEntity extends PathfinderMob {
 			}
 			this.repath = 10;
 			double away = this.her.distanceTo(who);
-
 			if (!this.greeted) {
 				if (away > GREETS_AT) {
-					this.her.getNavigation().moveTo(who, 1.05);
+					this.her.getNavigation().moveTo(who, 1.3);
 					this.her.getLookControl().setLookAt(who, 30.0F, 30.0F);
 					return;
 				}
@@ -1065,15 +1128,20 @@ public class CompanionEntity extends PathfinderMob {
 				HerobrineMod.LOGGER.info("addexio met {} and is leading them to [{}, {}]",
 					who.getName().getString(), to.getX(), to.getZ());
 			}
-
-			double dx = this.her.getX() - (to.getX() + 0.5);
-			double dz = this.her.getZ() - (to.getZ() + 0.5);
-			if (dx * dx + dz * dz < ARRIVES_AT * ARRIVES_AT) {
+			double hisLeft = flat(this.her.getX(), this.her.getZ(), to);
+			double theirLeft = flat(who.getX(), who.getZ(), to);
+			if (hisLeft < ARRIVES_AT) {
 				this.arrive(here, who);
 				return;
 			}
-
-			if (away > TOO_FAR) {
+			// THEY ARE BEHIND, OR THEY ARE AHEAD, and those are different jobs.
+			// Behind: he waits past fourteen blocks and nags. Ahead — they have run
+			// past him toward the farm — he never waits: he hurries, and if they are
+			// well clear he is simply ahead of them again. The old code waited either
+			// way, which is why he "walked slowly" when you ran: he was standing
+			// still behind you, being patient.
+			boolean theyAreAhead = theirLeft < hisLeft - AHEAD_BY;
+			if (away > TOO_FAR && !theyAreAhead) {
 				this.ignored += 10;
 				if (this.ignored >= GIVES_UP_AFTER) {
 					this.handTheMap(here, who, to);
@@ -1082,42 +1150,77 @@ public class CompanionEntity extends PathfinderMob {
 			} else {
 				this.ignored = Math.max(0, this.ignored - 10);
 			}
-
-			if (away > WAITS_AT) {
+			if (!theyAreAhead && away > WAITS_AT) {
 				this.her.getNavigation().stop();
+				this.her.setSprinting(false);
 				this.her.getLookControl().setLookAt(who, 30.0F, 30.0F);
 				this.waited += 10;
 				if (this.waited % NAGS_EVERY == 0) {
 					Sayings.say(here, this.her, who, Sayings.LEAD_WAITING);
 				}
+				this.rested();
 				return;
 			}
 			this.waited = 0;
-
-			// a leg toward the farm, from where HE stands
-			double lx = to.getX() + 0.5 - this.her.getX();
-			double lz = to.getZ() + 0.5 - this.her.getZ();
+			if (theyAreAhead && away > CATCHES_UP_FROM) {
+				this.stepAhead(here, who, to);
+				this.rested();
+				return;
+			}
+			// The next leg: eighteen blocks toward the farm — from him, or from
+			// them when they are ahead, so the leg ends in front of them and not
+			// somewhere behind their back.
+			double fromX = theyAreAhead ? who.getX() : this.her.getX();
+			double fromZ = theyAreAhead ? who.getZ() : this.her.getZ();
+			double lx = to.getX() + 0.5 - fromX;
+			double lz = to.getZ() + 0.5 - fromZ;
 			double len = Math.sqrt(lx * lx + lz * lz);
-			double gx = len > LEG ? this.her.getX() + lx / len * LEG : to.getX() + 0.5;
-			double gz = len > LEG ? this.her.getZ() + lz / len * LEG : to.getZ() + 0.5;
+			double gx = len > LEG ? fromX + lx / len * LEG : to.getX() + 0.5;
+			double gz = len > LEG ? fromZ + lz / len * LEG : to.getZ() + 0.5;
 			int bx = net.minecraft.util.Mth.floor(gx);
 			int bz = net.minecraft.util.Mth.floor(gz);
 			int gy = com.bloomlet.herobrine.structure.Ground.topOf(here, bx, bz) + 1;
-			this.her.setSprinting(false);
-			this.her.getNavigation().moveTo(bx + 0.5, gy, bz + 0.5, 1.05);
-
-			// stuck? every sixty ticks, has he actually moved
-			if (++this.checks % 6 == 0) {
-				double moved = Math.abs(this.her.getX() - this.wasX) + Math.abs(this.her.getZ() - this.wasZ);
-				this.wasX = this.her.getX();
-				this.wasZ = this.her.getZ();
-				if (moved < 1.5 && ++this.stuck >= 3) {
-					this.stuck = 0;
-					this.stepAhead(here, who, to);
-				} else if (moved >= 1.5) {
-					this.stuck = 0;
-				}
+			double pace = theyAreAhead || away > HURRIES_PAST ? HURRY : STROLL;
+			this.her.setSprinting(pace >= HURRY);
+			if (this.her.getNavigation().isDone() || ++this.looks % 3 == 0) {
+				this.her.getNavigation().moveTo(bx + 0.5, gy, bz + 0.5, pace);
 			}
+			// IS HE GETTING ANYWHERE. He has not moved and the farm is no nearer;
+			// he is in water and no nearer (a current has him); he is five below
+			// the player and no nearer (a hole has him). Walking a detour still
+			// moves him, and walking downhill ahead of you still gains ground, so
+			// neither of those trips it. When one does, he stops arguing with the
+			// terrain and is ten blocks ahead of you instead. He knows the way; how
+			// he got there is his business.
+			double moved = Math.abs(this.her.getX() - this.wasX) + Math.abs(this.her.getZ() - this.wasZ);
+			double progress = this.wasLeft < 0 ? PROGRESS : this.wasLeft - hisLeft;
+			this.wasX = this.her.getX();
+			this.wasZ = this.her.getZ();
+			this.wasLeft = hisLeft;
+			boolean noNearer = progress < PROGRESS;
+			this.stuck = noNearer && moved < MOVED ? this.stuck + 1 : 0;
+			this.wet = noNearer && this.her.isInWater() ? this.wet + 1 : 0;
+			this.fell = noNearer && this.her.getY() < who.getY() - FELL && away > 6.0 ? this.fell + 1 : 0;
+			if (this.stuck >= STUCK_AT || this.wet >= HELD_AT || this.fell >= HELD_AT) {
+				this.stepAhead(here, who, to);
+				this.rested();
+			}
+		}
+
+		private static double flat(double x, double z, BlockPos to) {
+			double dx = x - (to.getX() + 0.5);
+			double dz = z - (to.getZ() + 0.5);
+			return Math.sqrt(dx * dx + dz * dz);
+		}
+
+		/** Forget the run-up: after a wait or a step there is nothing to be stuck on. */
+		private void rested() {
+			this.stuck = 0;
+			this.wet = 0;
+			this.fell = 0;
+			this.wasLeft = -1.0;
+			this.wasX = this.her.getX();
+			this.wasZ = this.her.getZ();
 		}
 
 		private void arrive(ServerLevel here, Player who) {
