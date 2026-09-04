@@ -27,8 +27,8 @@ import net.minecraft.world.entity.Mob;
  * close enough to see it happen. They do not despawn, they do not wander off,
  * and they do not follow you home: their post is the house.
  *
- * NUMBERS BY CHAPTER, DELIBERATELY SMALL. Two Turned and a Gaunt at the town;
- * four and two at the threshold. A guard is a fight you are meant to win, at a
+ * NUMBERS BY CHAPTER. Three Turned and a Gaunt at the town; six and three at
+ * the threshold. A guard is a fight you are meant to win, at a
  * cost, and the cost is what makes the book in the chest feel earned. What
  * makes them hard is not the count: a posted Turned has twice the health, iron
  * on him, and no daylight rule, and the Gaunt cannot be watched and fought at
@@ -50,8 +50,8 @@ public final class Watch {
 	public static final double LETS_GO = 36.0;
 
 	/** The Turned and the Gaunts posted, by chapter: homestead, town, tower, gaol, church, threshold. */
-	private static final int[] TURNED = {0, 2, 2, 3, 3, 4};
-	private static final int[] GAUNTS = {0, 1, 1, 1, 2, 2};
+	private static final int[] TURNED = {0, 3, 3, 4, 5, 6};
+	private static final int[] GAUNTS = {0, 1, 2, 2, 3, 3};
 
 	/** Posted once somebody is this close — and nobody is closer than TOO_CLOSE, or they would see it. */
 	private static final int POSTS_AT = 96;
@@ -147,7 +147,7 @@ public final class Watch {
 			if (it == null) {
 				break;
 			}
-			if (stand(level, it, site, random, 3)) {
+			if (stand(level, it, site, random, 2)) {      // its box is 1.95; the model stoops. See GauntEntity.stooped
 				it.guard(site);
 				level.addFreshEntity(it);
 				stood++;

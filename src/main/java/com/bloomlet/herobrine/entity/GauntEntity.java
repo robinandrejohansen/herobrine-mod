@@ -424,6 +424,18 @@ public class GauntEntity extends PathfinderMob {
 	 */
 	public static final float TALL = 1.95F;
 
+	/**
+	 * AND UNDER A TWO-BLOCK CEILING IT STOOPS. The box fits (1.95); the drawing
+	 * did not, and in the prison the head stood through the floor above like a
+	 * rendering bug. The renderer asks this and sinks the mesh a block, so the
+	 * head is under the ceiling and the legs are in the floor, where the floor
+	 * hides them. Client and server both have the blocks; nothing is synced.
+	 */
+	public boolean stooped() {
+		BlockPos over = this.blockPosition().above(2);
+		return !this.level().getBlockState(over).getCollisionShape(this.level(), over).isEmpty();
+	}
+
 	// No getDimensions override: LivingEntity marks it final, and it does not need
 	// one. EntityType.Builder.sized in ModEntities is fed these same two constants,
 	// so the box and the drawing already come from one place.

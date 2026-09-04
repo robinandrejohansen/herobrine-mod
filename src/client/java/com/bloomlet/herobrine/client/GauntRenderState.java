@@ -21,4 +21,7 @@ public class GauntRenderState
 
 	/** 1 on the tick it made a noise, falling to 0 over twelve. */
 	public float voice;
+
+	/** Under a two-block ceiling; the mesh is sunk a block so the head is beneath it. */
+	public boolean stooped;
 }

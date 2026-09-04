@@ -75,7 +75,7 @@ shows the current wrath and phase.
 
 **Every place after the farm is held.** His watch is posted the first time
 anyone comes within sight of a place, before they are close enough to see it
-happen: two of the turned and a gaunt at the town, growing to four and two at
+happen: three of the turned and a gaunt at the town, growing to six and three at
 the last house. A posted turned has twice the health, iron on him and no
 daylight rule; he stands his ground rather than stalks, comes for anyone within
 twenty blocks of the door, and lets go of anyone who gets thirty-six away. They

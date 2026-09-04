@@ -420,6 +420,21 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		state.isCreepy = entity.getTarget() != null;
 		state.staring = entity.staring();
 		state.voice = entity.voice();
+		state.stooped = entity.stooped();
+	}
+
+	/** How far the mesh sinks under a low ceiling: three blocks of drawing into a two-block room. */
+	private static final float STOOPS_BY = 1.0F;
+
+	@Override
+	protected void scale(GauntRenderState state, com.mojang.blaze3d.vertex.PoseStack poseStack) {
+		super.scale(state, poseStack);
+		// The stack is already flipped (scale -1,-1,1) when this runs, so local +Y
+		// is world DOWN: vanilla's own translate(0, -1.501, 0) here lifts the model.
+		// Not for a body on the floor, which the corpse roll has already laid flat.
+		if (state.stooped && !((com.bloomlet.herobrine.client.CorpseState) state).herobrine$isCorpse()) {
+			poseStack.translate(0.0F, STOOPS_BY, 0.0F);
+		}
 	}
 
 	@Override
