@@ -82,10 +82,10 @@ public final class Corpses {
 
 	public static void register() {
 		ServerLivingEntityEvents.ALLOW_DEATH.register(Corpses::onDeath);
+		// The right button only, like a chest. A swing at a body is a swing, not a
+		// search: it was on both for a while and a fight over a corpse kept opening
+		// pockets nobody had asked for.
 		UseEntityCallback.EVENT.register(Corpses::onUse);
-		// A body opens on either button. Chests open on the right; a sword swung at
-		// a corpse should not be a miss — it should be the pockets.
-		net.fabricmc.fabric.api.event.player.AttackEntityCallback.EVENT.register(Corpses::onUse);
 	}
 
 	private static boolean onDeath(LivingEntity died, DamageSource source, float amount) {
