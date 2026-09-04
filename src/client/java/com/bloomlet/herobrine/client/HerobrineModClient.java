@@ -11,7 +11,6 @@ public class HerobrineModClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		EntityRenderers.register(ModEntities.HEROBRINE, HerobrineRenderer::new);
 		EntityRenderers.register(ModEntities.INFECTED, InfectedRenderer::new);
-		EntityRenderers.register(ModEntities.MIMIC, MimicRenderer::new);
 		EntityRenderers.register(ModEntities.TURNED, TurnedRenderer::new);
 		EntityRenderers.register(ModEntities.GAUNT, GauntRenderer::new);
 		EntityRenderers.register(ModEntities.COMPANION, CompanionRenderer::new);

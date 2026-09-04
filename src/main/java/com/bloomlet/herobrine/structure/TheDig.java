@@ -452,7 +452,7 @@ public final class TheDig {
 			// worth keeping and a separate volume was not: it is the HOW TO TELL
 			// section of book 6, in the building that was built to answer exactly
 			// that question and answered it the worst possible way. Every tell is
-			// still read off MimicEntity.TheFriend in the order that goal runs them.
+			// now one of the Turned's — the eyes, the sleep, the stop — since the stranger left the mod.
 			chest.setItem(2, new ItemStack(Items.IRON_INGOT, 6));
 			// LARDER was a dead farmer's pantry, at the bottom of sixteen blocks of
 			// stair and thirty-four of hall. A chest speaks one language and that

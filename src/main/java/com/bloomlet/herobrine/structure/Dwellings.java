@@ -816,6 +816,7 @@ public final class Dwellings {
 	}
 
 	public static void register() {
+		com.bloomlet.herobrine.manifest.Watch.register();
 		ServerTickEvents.END_SERVER_TICK.register(Dwellings::onTick);
 	}
 
@@ -840,6 +841,10 @@ public final class Dwellings {
 				continue;
 			}
 			if (Boolean.TRUE.equals(overworld.getAttached(place.up))) {
+				Long held = overworld.getAttached(place.site);
+				if (held != null) {
+					com.bloomlet.herobrine.manifest.Watch.post(overworld, place.name(), BlockPos.of(held), place.ordinal());
+				}
 				arriving(overworld, place);
 				Long where = overworld.getAttached(place.site);
 				if (where != null) {

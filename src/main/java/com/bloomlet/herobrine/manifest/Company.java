@@ -427,6 +427,23 @@ public final class Company {
 		}
 	}
 
+	/** His watch has just been posted at a place somebody is walking toward. Addexio, if he is with them, says so. */
+	public static void watched(ServerLevel level, BlockPos site) {
+		for (ServerPlayer with : level.players()) {
+			if (with.distanceToSqr(site.getX() + 0.5, site.getY(), site.getZ() + 0.5) > 128.0 * 128.0) {
+				continue;
+			}
+			for (CompanionEntity her : hers(level, with)) {
+				if (her.distanceTo(with) > 32.0) {
+					continue;
+				}
+				com.bloomlet.herobrine.entity.Sayings.tell(level, her, with,
+					com.bloomlet.herobrine.entity.Sayings.WATCHED, 40);
+				return;
+			}
+		}
+	}
+
 	private static boolean settled(ServerLevel here, CompanionEntity her, Player with) {
 		Long since = WAITING.get(her.getUUID());
 		if (since == null) {

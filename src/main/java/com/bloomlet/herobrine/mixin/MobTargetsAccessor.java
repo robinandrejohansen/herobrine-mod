@@ -20,7 +20,7 @@ import net.minecraft.world.entity.ai.goal.GoalSelector;
  * him nobody would believe.
  *
  * AN ACCESSOR RATHER THAN AN INJECTION, for the same reason as
- * PlayerInfoEntriesAccessor: nothing about vanilla's behaviour is altered here.
+ * the other accessors: nothing about vanilla's behaviour is altered here.
  * Every goal a mob already has still runs, in the order it was registered, under
  * vanilla's own selector. One more entry is added to a list the mob itself adds
  * entries to during construction — which is all registerGoals is doing.

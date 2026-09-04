@@ -158,7 +158,6 @@ public final class HisHost {
 			if (player.isSpectator() || player.isCreative() || !player.isAlive()) {
 				continue;
 			}
-			theVisit(his, player);
 			for (Mob spotter : his.getEntitiesOfClass(Mob.class,
 					player.getBoundingBox().inflate(HIVE_SEARCH),
 					mob -> mob.getTarget() == player)) {
@@ -172,57 +171,7 @@ public final class HisHost {
 		}
 	}
 
-	/** How long between visits, at the very least. Twelve minutes. */
-	private static final int VISITS_EVERY = 12 * 60 * 20;
-	/** And how far apart the group has to be for one to be possible. */
-	private static final double SEPARATED = 80.0;
-	private static long lastVisit = Long.MIN_VALUE;
 
-	/**
-	 * SOMEBODY COMES OVER, ONCE IN A WHILE, WHEN NOBODY CAN CHECK.
-	 *
-	 * Mimicry already knows how to put a figure wearing somebody's skin and name
-	 * into the world and a seventh row into a six-player tab list, and MimicEntity
-	 * now knows how to behave like a person for a minute and then stop. What was
-	 * missing is the one place it belongs most: his world, where the group is
-	 * spread across a forest in permanent rain and the only way to check who that
-	 * is would be to walk to them.
-	 *
-	 * TWO PLAYERS MINIMUM, EIGHTY BLOCKS APART. Both halves are load-bearing.
-	 * With one player online the figure has nobody to be — copying the person
-	 * looking at it is a famous image that resolves in one second, because you know
-	 * where you are. And within shouting distance the whole thing dies to a glance.
-	 *
-	 * Twelve minutes at the very least, and even then only one roll in four, so
-	 * this stays something that happened once on a Tuesday rather than a mechanic.
-	 * The scare is entirely in nobody expecting it, and a scheduled visitor is a
-	 * feature.
-	 */
-	private static void theVisit(ServerLevel his,
-	                             net.minecraft.server.level.ServerPlayer player) {
-		if (his.players().size() < 2) {
-			return;
-		}
-		long now = his.getGameTime();
-		if (now - lastVisit < VISITS_EVERY) {
-			return;
-		}
-		boolean alone = true;
-		for (net.minecraft.server.level.ServerPlayer other : his.players()) {
-			if (other != player && other.distanceTo(player) < SEPARATED) {
-				alone = false;
-				break;
-			}
-		}
-		if (!alone || his.getRandom().nextInt(4) != 0) {
-			return;
-		}
-		if (com.bloomlet.herobrine.manifest.Mimicry.appear(his, player)) {
-			lastVisit = now;
-			HerobrineMod.LOGGER.info("somebody walked over to {} in his world",
-				player.getName().getString());
-		}
-	}
 
 	private static void call(ServerLevel his, Mob spotter,
 	                         net.minecraft.server.level.ServerPlayer player) {

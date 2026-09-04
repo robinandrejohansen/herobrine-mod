@@ -44,28 +44,13 @@ public final class ModEntities {
 			.clientTrackingRange(8)
 	);
 
-	/**
-	 * Somebody who is not on the server.
-	 *
-	 * Tracked as far out as the game will comfortably allow, because unlike him
-	 * this one is meant to be watched for a long time from a long way off —
-	 * followed, lost, and argued about. A figure that blinks out at sixteen
-	 * blocks is a rendering bug; the whole event is somebody trailing him over a
-	 * hill.
-	 */
-	public static final EntityType<MimicEntity> MIMIC = register(
-		"mimic",
-		EntityType.Builder.of(MimicEntity::new, MobCategory.MONSTER)
-			.sized(0.6F, 1.8F)
-			.clientTrackingRange(10)
-	);
 
 	/**
 	 * The villager who does not sleep.
 	 *
 	 * Villager-sized to the pixel, because everything about him depends on his
-	 * being indistinguishable from the people standing next to him. Tracked as
-	 * far out as the mimic: he is meant to be noticed across a square, watched,
+	 * being indistinguishable from the people standing next to him. Tracked ten
+	 * chunks out: he is meant to be noticed across a square, watched,
 	 * and argued about before anybody gets close enough to see his eyes.
 	 */
 	public static final EntityType<TurnedEntity> TURNED = register(
@@ -128,7 +113,6 @@ public final class ModEntities {
 		FabricDefaultAttributeRegistry.register(HEROBRINE, HerobrineEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(PLAYER_CORPSE, PlayerCorpseEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(INFECTED, InfectedEntity.createAttributes());
-		FabricDefaultAttributeRegistry.register(MIMIC, MimicEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(TURNED, TurnedEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(GAUNT, GauntEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(COMPANION, CompanionEntity.createAttributes());

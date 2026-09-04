@@ -71,16 +71,6 @@ public final class HerobrineCommand {
 					return 1;
 				}))
 
-				.then(Commands.literal("stranger").executes(ctx -> {
-					ServerPlayer p = ctx.getSource().getPlayerOrException();
-					boolean ok = com.bloomlet.herobrine.manifest.Mimicry
-						.appear((ServerLevel)p.level(), p);
-					ctx.getSource().sendSuccess(() -> Component.literal(ok
-						? "someone else is here" + where(p)
-						: "nowhere in sight to stand"), false);
-					return 1;
-				}))
-
 				.then(Commands.literal("glimpse").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
 					var outcome = com.bloomlet.herobrine.entity.HauntingSpawner
@@ -317,6 +307,16 @@ public final class HerobrineCommand {
 			// cannot be looked at into existence any other way. Its whole rule is
 			// that it does not move while observed, so a debug spawn in front of
 			// the player is the ONLY way to watch it do nothing on purpose.
+			.then(Commands.literal("watch").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					int stood = com.bloomlet.herobrine.manifest.Watch.raise(
+						(ServerLevel)p.level(), p.blockPosition(), 3);
+					ctx.getSource().sendSuccess(() -> Component.literal(stood > 0
+						? stood + " posted around you — the gaol's watch. they hold this ground"
+						: "nowhere level here for them to stand"), false);
+					return stood > 0 ? 1 : 0;
+				}))
+
 			.then(Commands.literal("gaunt").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
 					ServerLevel level = (ServerLevel)p.level();

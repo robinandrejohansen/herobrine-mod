@@ -790,38 +790,35 @@ public final class HouseBooks {
 			there.""",
 
 			"""
-			It comes to you. A
-			person waits to be
-			spoken to. It closes
-			the last six paces
-			itself.
+			The eyes. A dot in the
+			middle of each one,
+			black, where a man has
+			nothing. He does not
+			blink it away.
 
-			It copies you. Crouch,
-			and it crouches. Do it
-			twice and you will see
-			the delay.""",
-
-			"""
-			It goes through your
-			things. Chests,
-			barrels, anything with
-			a lid. It never takes
-			anything.
-
-			It changes its coat.
-			Look away for a
-			minute and the colour
-			is not the same.""",
+			If you are close
+			enough to see it you
+			are already too close.""",
 
 			"""
-			And it only ever does
-			any of this when you
-			are on your own. Stay
-			in sight of somebody
-			else and it will stand
-			there being ordinary
-			for as long as you
-			like.
+			He does not sleep.
+			The doors shut, the
+			lights go, and one of
+			them is still on the
+			square, facing your
+			house.
+
+			Count the beds against
+			the men. Every village
+			has one now.""",
+
+			"""
+			He stops when you look
+			at him. Not like a man
+			caught out. Like a
+			clock with a hand laid
+			on it. Turn your back
+			and he is nearer.
 
 			WHERE TO GO.
 

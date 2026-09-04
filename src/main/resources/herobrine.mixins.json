@@ -8,7 +8,6 @@
     "HisFireballMixin",
     "HisSkeletonMixin",
     "MobTargetsAccessor",
-    "PlayerInfoEntriesAccessor",
     "QuietDeathsMixin"
   ],
   "client": [

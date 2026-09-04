@@ -237,6 +237,11 @@ public final class Sayings {
 	 * something that is about to happen. They do the work the books do, out loud,
 	 * for the player who has not opened the chest yet.
 	 */
+	/** His watch, seen from the road. Told once, when it is posted and Addexio is walking with you. */
+	public static final String[] WATCHED = {
+		"He's left a watch on it. Not villagers — look at how they stand. They don't fidget.",
+		"They won't come past the fence. They don't have to. What you came for is inside.",
+	};
 	public static final String[] FOUND_TOWN = {
 		"The town. Don't go down the well first. I'll tell you why when we're out.",
 		"He got into people here. Not their houses — them. The baker held his own daughter under the water until she stopped. He was smiling. It was not his smile.",
@@ -342,7 +347,6 @@ public final class Sayings {
 		return what instanceof HerobrineEntity
 			|| what instanceof GauntEntity
 			|| what instanceof TurnedEntity
-			|| what instanceof MimicEntity
 			|| what instanceof InfectedEntity;
 	}
 }

@@ -60,7 +60,7 @@ its own events and one **place** the players are led to.
 | RUMOUR | 0 | a glimpse, footsteps, a torch that goes out, breathing | **the farm** — where Addexio lived; the first book and the first map |
 | WATCHER | 60 | the stare, the passages, the one who does not sleep | **the town** — boarded, an undercity beneath it, the mapmaker's house |
 | TRESPASSER | 200 | signs, ruins, journal pages, the sealed shaft | **his tower** — over lava, lit every night for a month |
-| MIMIC | 500 | possessed animals, something wearing your friends | **the prison** — cell nine |
+| MIMIC | 500 | possessed animals, the herd | **the prison** — cell nine |
 | HUNTER | 1000 | the hunt, the dark | **the church** — he lived under the altar |
 | SIEGE | 1800 | the night stops, the storm never ends, the animals turn | **the last house** — and the way through |
 
@@ -72,6 +72,15 @@ falls in behind you instead. At the farm he turns, introduces himself, and from
 then on he follows. Every place after that is found by a map left in the one
 before it, and he tells you about each one when you arrive. `/herobrine status`
 shows the current wrath and phase.
+
+**Every place after the farm is held.** His watch is posted the first time
+anyone comes within sight of a place, before they are close enough to see it
+happen: two of the turned and a gaunt at the town, growing to four and two at
+the last house. A posted turned has twice the health, iron on him and no
+daylight rule; he stands his ground rather than stalks, comes for anyone within
+twenty blocks of the door, and lets go of anyone who gets thirty-six away. They
+do not despawn and they will not follow you home. The book is inside. You go
+through them.
 
 ### The ten books
 
@@ -243,9 +252,10 @@ play.
 | `boss [fresh]` | straight to the fight: SIEGE, his city and keep raised, you put down 70 blocks from the keep in full diamond with his sword and twenty golden apples, Addexio with you if he is near. Resumes a bound fight unless `fresh` |
 | `resite` | forget where the places were going to go; choose again near whoever is online. Leaves what is built |
 | `turned` | put one of the turned in the nearest village |
+| `watch` | post the prison's watch around where you stand: three of the turned and a gaunt, who hold that ground |
 | `locate` · `here` · `speed` | find him, bring him here, change his pace |
 | `house` · `town` · `castle` · `recastle` · `chamber` · `passage` · `threshold` · `theway` · `aftermath` · `blueprint` | raise a place, or the ending's aftermath, where you stand |
-| `glimpse` · `stranger` · `sign` · `warning` · `dark` · `hunt` · `force` · `provoke` · `gaunt` | fire one event |
+| `glimpse` · `sign` · `warning` · `dark` · `hunt` · `force` · `provoke` · `gaunt` | fire one event |
 
 ---
 

@@ -261,6 +261,128 @@ public class TurnedEntity extends PathfinderMob {
 			.add(Attributes.STEP_HEIGHT, 1.0);
 	}
 
+	// ---- THE WATCH ---------------------------------------------------------
+	// A posted one; see manifest.Watch for why and how many. Everything below is
+	// the whole difference between a guard and a stalker, and it is deliberately
+	// small: he does not freeze, he does not stalk, he does not force his way
+	// through the house he was posted on, he comes for anyone near the door and
+	// lets go of anyone who leaves. The rest of him is unchanged.
+
+	private static final double GUARD_HEALTH = 48.0;
+	private static final double GUARD_ARMOR = 8.0;
+	private static final double GUARD_DAMAGE = 7.0;
+	private static final double GUARD_KNOCKBACK_RESISTANCE = 0.5;
+	/** Anyone this close to the post is his business. */
+	private static final double GUARDS = 20.0;
+
+	public void guard(net.minecraft.core.BlockPos post) {
+		this.setAttached(com.bloomlet.herobrine.manifest.Watch.POST, post.asLong());
+		this.setHomeTo(post, com.bloomlet.herobrine.manifest.Watch.HOLDS);
+		this.committed = true;      // daylight is no protection from a guard
+		this.raise(Attributes.MAX_HEALTH, GUARD_HEALTH);
+		this.raise(Attributes.ARMOR, GUARD_ARMOR);
+		this.raise(Attributes.ATTACK_DAMAGE, GUARD_DAMAGE);
+		this.raise(Attributes.KNOCKBACK_RESISTANCE, GUARD_KNOCKBACK_RESISTANCE);
+		this.setHealth(this.getMaxHealth());
+		this.setPersistenceRequired();
+	}
+
+	private void raise(net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> which, double to) {
+		net.minecraft.world.entity.ai.attributes.AttributeInstance it = this.getAttribute(which);
+		if (it != null) {
+			it.setBaseValue(to);
+		}
+	}
+
+	public boolean isGuard() {
+		return this.hasAttached(com.bloomlet.herobrine.manifest.Watch.POST);
+	}
+
+	private net.minecraft.core.@org.jspecify.annotations.Nullable BlockPos post() {
+		Long at = this.getAttached(com.bloomlet.herobrine.manifest.Watch.POST);
+		return at == null ? null : net.minecraft.core.BlockPos.of(at);
+	}
+
+	/** The post holds him: home set again after a reload, and a target let go once it is out past the fence. */
+	private void hold() {
+		net.minecraft.core.BlockPos post = this.post();
+		if (post == null) {
+			return;
+		}
+		if (!this.hasHome()) {
+			this.setHomeTo(post, com.bloomlet.herobrine.manifest.Watch.HOLDS);
+		}
+		LivingEntity at = this.getTarget();
+		if (at != null && at.distanceToSqr(post.getX() + 0.5, post.getY(), post.getZ() + 0.5)
+				> com.bloomlet.herobrine.manifest.Watch.LETS_GO * com.bloomlet.herobrine.manifest.Watch.LETS_GO) {
+			this.setTarget(null);
+		}
+	}
+
+	/**
+	 * Anyone near the door. A countdown rather than a tickCount test, because the
+	 * target selector only asks on every other tick and which parity depends on
+	 * the entity id — a tickCount gate would never fire for half of them.
+	 */
+	private static final class Guarding extends net.minecraft.world.entity.ai.goal.Goal {
+		private final TurnedEntity him;
+		private int looksIn;
+
+		Guarding(TurnedEntity him) {
+			this.him = him;
+			this.setFlags(java.util.EnumSet.of(Flag.TARGET));
+		}
+
+		@Override
+		public boolean canUse() {
+			if (!this.him.isGuard()) {
+				return false;
+			}
+			LivingEntity at = this.him.getTarget();
+			if (at != null && at.isAlive()) {
+				return false;
+			}
+			if (--this.looksIn > 0) {
+				return false;
+			}
+			this.looksIn = 10;
+			return this.pick() != null;
+		}
+
+		@Override
+		public void start() {
+			Player who = this.pick();
+			if (who != null) {
+				this.him.setTarget(who);
+			}
+		}
+
+		@Override
+		public boolean canContinueToUse() {
+			return false;
+		}
+
+		private @org.jspecify.annotations.Nullable Player pick() {
+			net.minecraft.core.BlockPos post = this.him.post();
+			if (post == null) {
+				return null;
+			}
+			Player best = null;
+			double nearest = GUARDS * GUARDS;
+			for (Player who : this.him.level().players()) {
+				if (who.isSpectator() || who.isCreative() || !who.isAlive()) {
+					continue;
+				}
+				double d = who.distanceToSqr(post.getX() + 0.5, post.getY(), post.getZ() + 0.5);
+				if (d <= nearest) {
+					best = who;
+					nearest = d;
+				}
+			}
+			return best;
+		}
+	}
+
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new FloatGoal(this));
@@ -289,7 +411,9 @@ public class TurnedEntity extends PathfinderMob {
 		// has a target the melee wins, if he has a mark this wins, and otherwise he
 		// wanders. Three states, one line.
 		this.goalSelector.addGoal(2, new Stalk(this));
+		this.goalSelector.addGoal(3, new net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal(this, 0.8));
 		this.goalSelector.addGoal(4, new RandomStrollGoal(this, 0.6));
+		this.targetSelector.addGoal(0, new Guarding(this));
 		this.targetSelector.addGoal(1, new NightWatch(this));
 		this.carry();
 	}
@@ -364,6 +488,9 @@ public class TurnedEntity extends PathfinderMob {
 
 		@Override
 		public boolean canUse() {
+			if (this.him.isGuard()) {
+				return false;      // he does not break the house he was posted on
+			}
 			net.minecraft.world.entity.LivingEntity at = this.him.getTarget();
 			if (at == null || this.him.distanceTo(at) < 2.0) {
 				return false;      // he can reach them. nothing is in the way.
@@ -475,7 +602,7 @@ public class TurnedEntity extends PathfinderMob {
 
 		@Override
 		public boolean canUse() {
-			return this.him.getTarget() == null && this.him.marked() != null;
+			return !this.him.isGuard() && this.him.getTarget() == null && this.him.marked() != null;
 		}
 
 		@Override
@@ -582,6 +709,9 @@ public class TurnedEntity extends PathfinderMob {
 
 		@Override
 		public boolean canUse() {
+			if (this.him.isGuard()) {
+				return false;      // Guarding picks for a posted one, and only near the door
+			}
 			if (this.him.getTarget() != null && this.him.getTarget().isAlive()) {
 				return false;
 			}
@@ -753,6 +883,10 @@ public class TurnedEntity extends PathfinderMob {
 			return;
 		}
 		this.talk();
+		if (this.isGuard()) {
+			this.hold();
+			return;      // a guard does not play the game below. See Watch
+		}
 		if (this.getTarget() != null) {
 			return;      // he is busy
 		}

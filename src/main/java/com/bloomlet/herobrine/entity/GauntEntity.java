@@ -229,6 +229,98 @@ public class GauntEntity extends PathfinderMob {
 		this.cell = null;
 	}
 
+	// ---- THE WATCH ---------------------------------------------------------
+	// A posted one: more of it, and a post it walks back to. Nothing about how it
+	// moves is changed — it still does not move while you watch it — which at a
+	// door you also have to get through is the whole point. See manifest.Watch.
+
+	private static final double GUARD_HEALTH = 60.0;
+	private static final double GUARD_ARMOR = 4.0;
+
+	public void guard(BlockPos post) {
+		this.setAttached(com.bloomlet.herobrine.manifest.Watch.POST, post.asLong());
+		this.setHomeTo(post, com.bloomlet.herobrine.manifest.Watch.HOLDS);
+		net.minecraft.world.entity.ai.attributes.AttributeInstance health = this.getAttribute(Attributes.MAX_HEALTH);
+		if (health != null) {
+			health.setBaseValue(GUARD_HEALTH);
+		}
+		net.minecraft.world.entity.ai.attributes.AttributeInstance armor = this.getAttribute(Attributes.ARMOR);
+		if (armor != null) {
+			armor.setBaseValue(GUARD_ARMOR);
+		}
+		this.setHealth(this.getMaxHealth());
+		this.setPersistenceRequired();
+	}
+
+	public boolean isGuard() {
+		return this.hasAttached(com.bloomlet.herobrine.manifest.Watch.POST);
+	}
+
+	private @org.jspecify.annotations.Nullable BlockPos post() {
+		Long at = this.getAttached(com.bloomlet.herobrine.manifest.Watch.POST);
+		return at == null ? null : BlockPos.of(at);
+	}
+
+	/** The post holds it: home set again after a reload, and a target let go once it is out past the fence. */
+	private void hold() {
+		BlockPos post = this.post();
+		if (post == null) {
+			return;
+		}
+		if (!this.hasHome()) {
+			this.setHomeTo(post, com.bloomlet.herobrine.manifest.Watch.HOLDS);
+		}
+		LivingEntity at = this.getTarget();
+		if (at != null && at.distanceToSqr(post.getX() + 0.5, post.getY(), post.getZ() + 0.5)
+				> com.bloomlet.herobrine.manifest.Watch.LETS_GO * com.bloomlet.herobrine.manifest.Watch.LETS_GO) {
+			this.setTarget(null);
+		}
+	}
+
+	/** Back to the post — only when nobody is watching and nobody is near, because the rule comes first. */
+	private static final class Return extends Goal {
+		private final GauntEntity it;
+		private int repathIn;
+
+		Return(GauntEntity it) {
+			this.it = it;
+			this.setFlags(java.util.EnumSet.of(Flag.MOVE));
+		}
+
+		@Override
+		public boolean canUse() {
+			return this.it.isGuard() && this.it.getTarget() == null && !this.it.frozen()
+				&& !this.it.isWithinHome();
+		}
+
+		@Override
+		public boolean canContinueToUse() {
+			return this.canUse();
+		}
+
+		@Override
+		public void start() {
+			this.repathIn = 0;
+		}
+
+		@Override
+		public void tick() {
+			if (--this.repathIn > 0) {
+				return;
+			}
+			this.repathIn = 20;
+			BlockPos post = this.it.post();
+			if (post != null) {
+				this.it.getNavigation().moveTo(post.getX() + 0.5, post.getY(), post.getZ() + 0.5, 1.0);
+			}
+		}
+
+		@Override
+		public void stop() {
+			this.it.getNavigation().stop();
+		}
+	}
+
 	public GauntEntity(EntityType<? extends PathfinderMob> type, Level level) {
 		super(type, level);
 		// Rare and solitary. One of these is an event; two is a queue.
@@ -343,6 +435,7 @@ public class GauntEntity extends PathfinderMob {
 		// not politely wait for you to look away.
 		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0, true));
 		this.goalSelector.addGoal(2, new Close(this));
+		this.goalSelector.addGoal(3, new Return(this));
 		// AND IT LOOKS FOR HER TOO, which is what makes her mortal enough to matter.
 		//
 		// This asked for Player.class, and so does everything else in the mod. Addexio
@@ -419,6 +512,9 @@ public class GauntEntity extends PathfinderMob {
 		super.tick();
 		if (this.level().isClientSide()) {
 			return;
+		}
+		if (this.isGuard()) {
+			this.hold();
 		}
 		this.speak();
 		this.echo();

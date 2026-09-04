@@ -57,7 +57,6 @@ public class HerobrineMod implements ModInitializer {
 		Signs.register();
 		Journal.register();
 		Possession.register();
-		com.bloomlet.herobrine.manifest.Mimicry.register();
 		Breach.register();
 		// Before Dwellings, which now asks TheHunt whether the church may be
 		// sited — and asking a class that has not initialised is what silently
