@@ -2,6 +2,11 @@ package com.bloomlet.herobrine.structure;
 
 import com.bloomlet.herobrine.HerobrineMod;
 import com.bloomlet.herobrine.block.ModBlocks;
+import com.mojang.serialization.Codec;
+import java.util.ArrayList;
+import java.util.List;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -310,30 +315,68 @@ public final class TheWay {
 	 */
 	public static BlockPos landing(ServerLevel bound, ServerPlayer player) {
 		BlockPos at = new BlockPos(player.getBlockX(), 0, player.getBlockZ());
-		// A sensible height for the nether noise settings: above the lava seas,
-		// below anything that would be inside the rock ceiling.
 		int y = Math.max(bound.getMinY() + 8, Math.min(96, player.getBlockY()));
 		BlockPos site = at.atY(y);
-
+		for (long each : bound.getAttachedOrElse(LANDINGS, List.of())) {
+			BlockPos cut = BlockPos.of(each);
+			if (Math.abs(cut.getX() - site.getX()) <= SAME_DOOR
+				&& Math.abs(cut.getZ() - site.getZ()) <= SAME_DOOR) {
+				return cut.offset(0, 0, 3);      // been through this door before; same room
+			}
+		}
 		if (bound.getBlockState(site).is(ModBlocks.THE_WAY)) {
 			return site;         // already been through; same door
 		}
-		// Look for one nearby before cutting a new one, in case the arrival
-		// drifted by a block between visits.
 		for (BlockPos near : BlockPos.betweenClosed(
 				site.offset(-8, -6, -8), site.offset(8, 6, 8))) {
 			if (bound.getBlockState(near).is(ModBlocks.THE_WAY)) {
 				return near.immutable().offset(0, 0, 2);
 			}
 		}
-		// A vault already cut here has no THE_WAY block to find — its door is dead
-		// by design — so it is known by its floor and its shell.
-		if (bound.getBlockState(site.below()).is(Blocks.POLISHED_DEEPSLATE)
-			&& bound.getBlockState(site.offset(0, -2, 0)).is(Blocks.DEEPSLATE_TILES)) {
-			return site.offset(0, 0, 3);
+		// A room from before the list existed: the floor, looked for in a column
+		// and not at one exact height — see LANDINGS for why that mattered.
+		for (int dy = 0; dy <= FLOOR_SEARCH; dy++) {
+			for (int sign : new int[] {1, -1}) {
+				BlockPos probe = site.offset(0, dy * sign, 0);
+				if (bound.getBlockState(probe.below()).is(Blocks.POLISHED_DEEPSLATE)
+					&& bound.getBlockState(probe.offset(0, -2, 0)).is(Blocks.DEEPSLATE_TILES)) {
+					remember(bound, probe);
+					return probe.offset(0, 0, 3);
+				}
+				if (dy == 0) {
+					break;
+				}
+			}
 		}
 		chamber(bound, site);
+		remember(bound, site);
 		return site.offset(0, 0, 3);
+	}
+
+	/**
+	 * WHERE EACH DOOR LETS OUT, REMEMBERED. The room is cut once, at the spot the
+	 * first person through was standing over, and every walk through after that
+	 * has to land in the same room. It used to be found by looking for the floor
+	 * at ONE exact height — the player's block Y the moment they stepped in — and
+	 * a player who stepped in from the frame's step, or mid-jump, was one block
+	 * higher, the floor was not where it was looked for, and a second room was cut
+	 * on top of the first: sealed exit, iron bars, the lot. Reported as "the way
+	 * out was closed again". Nothing had reset; the room had been rebuilt.
+	 *
+	 * So the site is written down, per door, in the level it opens into, and read
+	 * back by the door's position: within SAME_DOOR blocks flat is the same door.
+	 */
+	private static final AttachmentType<List<Long>> LANDINGS = AttachmentRegistry.createPersistent(
+		HerobrineMod.id("landings"), Codec.LONG.listOf());
+	private static final int SAME_DOOR = 24;
+	private static final int FLOOR_SEARCH = 4;
+
+	private static void remember(ServerLevel bound, BlockPos site) {
+		List<Long> cut = new ArrayList<>(bound.getAttachedOrElse(LANDINGS, List.of()));
+		if (!cut.contains(site.asLong())) {
+			cut.add(site.asLong());
+			bound.setAttached(LANDINGS, List.copyOf(cut));
+		}
 	}
 
 	/**
