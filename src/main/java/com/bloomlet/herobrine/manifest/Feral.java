@@ -95,7 +95,13 @@ public final class Feral {
 	}
 
 	public static boolean isFeral(Mob mob) {
-		return Boolean.TRUE.equals(mob.getAttached(FERAL));
+		// A DEAD ONE IS NOT FERAL, whatever it was. This is the one question the
+		// whole file asks before it hunts, turns a head or strikes, and it used to
+		// answer yes for a body on the ground: the AI was off, but hunt() and the
+		// strike never went through the AI, so the field of dead animals kept
+		// biting. Corpses are laid by Corpses.lay; the mark stays, the answer is no.
+		return Boolean.TRUE.equals(mob.getAttached(FERAL))
+			&& !com.bloomlet.herobrine.entity.Corpses.isCorpse(mob);
 	}
 
 	/**

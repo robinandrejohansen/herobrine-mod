@@ -457,7 +457,10 @@ public final class Possession {
 	}
 
 	public static boolean isPossessed(Mob mob) {
-		return Boolean.TRUE.equals(mob.getAttached(POSSESSED));
+		// A dead one is not possessed either: hold() and strike() move and hurt
+		// without the AI, and a possessed body kept doing both. See Feral.isFeral.
+		return Boolean.TRUE.equals(mob.getAttached(POSSESSED))
+			&& !com.bloomlet.herobrine.entity.Corpses.isCorpse(mob);
 	}
 
 	/** Marks a mob as his. Silent, and it will not wander off or despawn. */
