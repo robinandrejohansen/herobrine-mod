@@ -84,7 +84,7 @@ public class PlayerCorpseEntity extends Mob {
 
 	@Override
 	protected EntityDimensions getDefaultDimensions(Pose pose) {
-		return EntityDimensions.fixed(1.4F, 0.45F);      // a body lying down, clickable
+		return EntityDimensions.fixed(2.2F, 1.0F);      // a body lying down: a metre tall and a body-length wide, so it opens from where you stand
 	}
 
 	@Override

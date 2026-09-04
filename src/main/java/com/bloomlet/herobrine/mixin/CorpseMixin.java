@@ -51,6 +51,26 @@ public abstract class CorpseMixin {
 		// where it stood, in whichever direction it faced — so the box is square,
 		// that wide, and knee-high. Generous on purpose: this is the thing you click.
 		float tall = self.getType().getDimensions().height();
-		cir.setReturnValue(EntityDimensions.fixed(Math.min(3.0F, Math.max(1.0F, tall + 0.4F)), 0.6F));
+		// GENEROUS ON PURPOSE. The box is what the crosshair has to land on, and a
+		// body on the ground is thin: the old 0.6 of height meant looking almost
+		// straight down at it. A metre tall and a body-length plus one wide is a
+		// box you can open from where you are standing.
+		cir.setReturnValue(EntityDimensions.fixed(Math.min(3.5F, Math.max(1.8F, tall + 1.0F)), 1.0F));
+	}
+
+	/** A body does not get shoved about by whoever walks through it. */
+	@Inject(method = "isPushable", at = @At("RETURN"), cancellable = true)
+	private void herobrine$notShoved(CallbackInfoReturnable<Boolean> cir) {
+		if (cir.getReturnValueZ() && Corpses.isCorpse((LivingEntity) (Object) this)) {
+			cir.setReturnValue(false);
+		}
+	}
+
+	/** And it does not shove anybody: with a box this size a yard of bodies would push you off your feet. */
+	@Inject(method = "pushEntities", at = @At("HEAD"), cancellable = true)
+	private void herobrine$noShoving(CallbackInfo ci) {
+		if (Corpses.isCorpse((LivingEntity) (Object) this)) {
+			ci.cancel();
+		}
 	}
 }
