@@ -4,7 +4,9 @@ import com.bloomlet.herobrine.entity.Corpses;
 import com.bloomlet.herobrine.entity.PlayerCorpseEntity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -24,13 +26,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LivingEntity.class)
 public abstract class CorpseMixin {
 
+	/**
+	 * A BODY FALLS, AND THEN IT LIES STILL. NoAi switches a mob's travel off along
+	 * with its brain, so one killed mid-jump hung in the air where it died; this
+	 * is the one piece of physics a corpse keeps. It runs on every living thing
+	 * in every world, so the first line is the cheap one: an attachment read that
+	 * is null for nearly all of them.
+	 */
 	@Inject(method = "tick", at = @At("TAIL"))
 	private void herobrine$lieStill(CallbackInfo ci) {
 		LivingEntity self = (LivingEntity) (Object) this;
-		if ((self.tickCount & 3) != 0) {
-			return;          // this runs on every living thing in every world; three ticks in four it does not
+		if (self.level().isClientSide() || !Corpses.isCorpse(self)) {
+			return;
 		}
-		if (self instanceof PlayerCorpseEntity || !Corpses.isCorpse(self)) {
+		if (!self.onGround()) {
+			Vec3 fall = self.getDeltaMovement();
+			self.setDeltaMovement(0.0, Math.max(-3.0, fall.y - 0.08), 0.0);
+			self.move(MoverType.SELF, self.getDeltaMovement());
+		} else if (self.getDeltaMovement().lengthSqr() > 0.0) {
+			self.setDeltaMovement(Vec3.ZERO);
+		}
+		if (self instanceof PlayerCorpseEntity || (self.tickCount & 3) != 0) {
 			return;
 		}
 		if (self.getRemainingFireTicks() > 0) {

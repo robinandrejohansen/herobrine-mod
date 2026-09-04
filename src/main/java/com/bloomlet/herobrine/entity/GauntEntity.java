@@ -513,6 +513,13 @@ public class GauntEntity extends PathfinderMob {
 		if (this.level().isClientSide()) {
 			return;
 		}
+		if (Corpses.isCorpse(this)) {
+			// A dead one does nothing below: no stare, no step, no turning to face you.
+			if (this.entityData.get(STARING)) {
+				this.entityData.set(STARING, false);
+			}
+			return;
+		}
 		if (this.isGuard()) {
 			this.hold();
 		}

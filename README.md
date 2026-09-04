@@ -114,10 +114,12 @@ follows, fights, and talks.
 
 Nothing that is killed vanishes. A mob killed by somebody — you, Addexio, him,
 another mob — drops where it stands and lies there for good, and what it would
-have dropped is inside it: right-click the body and it opens like a chest. Kill
-a field of them and the field is full of them afterwards. They keep gravity, so
-mine the floor out from under one and it falls. Natural deaths — falls, lava,
-drowning, a mob farm — drop as they always did.
+have dropped is inside it: right-click the body and it opens like a chest. Hit
+it and it clears — a puff, and whatever was still in it on the ground where it
+lay. Kill a field of them and the field is full of them afterwards, until you
+swing. They keep gravity, so one killed mid-jump lands, and mine the floor out
+from under one and it falls. Natural deaths — falls, lava, drowning, a mob farm
+— drop as they always did.
 
 Players too. Where you die your body lies, in your skin, arms out, and
 everything you carried is in it. Nothing drops, so nothing burns and nothing is

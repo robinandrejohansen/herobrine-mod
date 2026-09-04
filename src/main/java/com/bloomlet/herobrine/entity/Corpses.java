@@ -9,11 +9,15 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
@@ -82,10 +86,39 @@ public final class Corpses {
 
 	public static void register() {
 		ServerLivingEntityEvents.ALLOW_DEATH.register(Corpses::onDeath);
-		// The right button only, like a chest. A swing at a body is a swing, not a
-		// search: it was on both for a while and a fight over a corpse kept opening
-		// pockets nobody had asked for.
+		// The right button opens it, like a chest. The left clears it — see onHit.
 		UseEntityCallback.EVENT.register(Corpses::onUse);
+		AttackEntityCallback.EVENT.register(Corpses::onHit);
+	}
+
+	/**
+	 * A SWING CLEARS IT. Hit a body and it is gone: a puff, a soft sound, and
+	 * whatever was still in its pockets on the ground where it lay, so a careless
+	 * swing costs nothing but the tidiness. This is how a field of them gets
+	 * cleaned up without a shovel, and how a body in a doorway stops being in the
+	 * doorway.
+	 */
+	private static InteractionResult onHit(Player player, Level world, InteractionHand hand, Entity entity,
+	                                       @Nullable EntityHitResult hit) {
+		if (!(entity instanceof LivingEntity dead) || !isCorpse(dead)) {
+			return InteractionResult.PASS;
+		}
+		if (!(world instanceof ServerLevel level)) {
+			return InteractionResult.SUCCESS;      // the client swings; the server clears
+		}
+		for (ItemStack stack : dead.getAttachedOrElse(LOOT, List.of())) {
+			if (!stack.isEmpty()) {
+				dead.spawnAtLocation(level, stack.copy());
+			}
+		}
+		level.sendParticles(ParticleTypes.POOF, dead.getX(), dead.getY() + 0.4, dead.getZ(),
+			12, 0.5, 0.2, 0.5, 0.02);
+		level.playSound(null, dead.getX(), dead.getY(), dead.getZ(), SoundEvents.GENERIC_SMALL_FALL,
+			SoundSource.NEUTRAL, 0.8F, 0.7F);
+		dead.discard();
+		HerobrineMod.LOGGER.info("{} cleared a body: {}", player.getName().getString(),
+			dead.getType().toShortString());
+		return InteractionResult.SUCCESS;
 	}
 
 	private static boolean onDeath(LivingEntity died, DamageSource source, float amount) {

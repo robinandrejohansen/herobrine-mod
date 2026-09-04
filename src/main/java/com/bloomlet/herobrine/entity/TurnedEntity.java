@@ -877,6 +877,9 @@ public class TurnedEntity extends PathfinderMob {
 		if (this.level().isClientSide()) {
 			return;
 		}
+		if (Corpses.isCorpse(this)) {
+			return;      // a dead one does not talk, watch, or turn to face you
+		}
 		if (this.tickCount % 20 == 0 && this.level().getServer() != null
 			&& com.bloomlet.herobrine.wrath.Wrath.removed(this.level().getServer())) {
 			this.redeem();
