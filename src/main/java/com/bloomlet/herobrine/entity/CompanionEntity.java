@@ -333,7 +333,11 @@ public class CompanionEntity extends PathfinderMob {
 		// through a bad country actually looks like.
 		this.goalSelector.addGoal(2,
 			new net.minecraft.world.entity.ai.goal.MeleeAttackGoal(this, 1.15, true));
-		this.goalSelector.addGoal(3, new Follow(this));
+		// LEADING SITS ABOVE FOLLOWING. While he is bringing you to the farm he is
+		// nobody's companion yet — Follow has no one to follow — so the two never
+		// compete; Falter and the fight still outrank both.
+		this.goalSelector.addGoal(3, new Lead(this));
+		this.goalSelector.addGoal(4, new Follow(this));
 		// ---- AND WHEN THERE IS NOTHING TO DO HE DOES NOT FREEZE.
 		//
 		// Follow stops inside four blocks and there was nothing under it, so a man
@@ -687,9 +691,9 @@ public class CompanionEntity extends PathfinderMob {
 			}
 			return;
 		}
-		if (this.walkingIn > 0 || this.isSpokenFor()
+		if (this.walkingIn > 0 || this.isSpokenFor() || this.isLeading()
 			|| Boolean.TRUE.equals(here.getServer().overworld().getAttached(INTRODUCED))) {
-			return;
+			return;      // not while he is bringing you somewhere — the introduction is for when you are there
 		}
 		if (!(here.getNearestPlayer(this, COMES_TO_YOU_FROM) instanceof ServerPlayer to)
 			|| !to.isAlive() || to.isSpectator()) {
@@ -938,6 +942,233 @@ public class CompanionEntity extends PathfinderMob {
 	 * looks like a camera on a boom; one that ambles when you amble and breaks
 	 * into a run when you get away from her looks like a person keeping up.
 	 */
+	// ---- LEADING -------------------------------------------------------------
+	/** Where he is taking you, and whom. Persistent, so a restart mid-walk resumes it. */
+	private static final AttachmentType<Long> LEAD_TO =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("lead_to"), Codec.LONG);
+	private static final AttachmentType<String> LEADING =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("leading"), Codec.STRING);
+
+	public void lead(BlockPos to, Player who) {
+		this.setAttached(LEAD_TO, to.asLong());
+		this.setAttached(LEADING, who.getUUID().toString());
+	}
+
+	public boolean isLeading() {
+		return this.getAttached(LEAD_TO) != null;
+	}
+
+	@org.jspecify.annotations.Nullable BlockPos leadingTo() {
+		Long packed = this.getAttached(LEAD_TO);
+		return packed == null ? null : BlockPos.of(packed);
+	}
+
+	@org.jspecify.annotations.Nullable Player leading() {
+		String who = this.getAttached(LEADING);
+		if (who == null) {
+			return null;
+		}
+		try {
+			return this.level().getPlayerByUUID(java.util.UUID.fromString(who));
+		} catch (IllegalArgumentException malformed) {
+			return null;
+		}
+	}
+
+	void stopLeading() {
+		this.removeAttached(LEAD_TO);
+		this.removeAttached(LEADING);
+	}
+
+	/**
+	 * THE WALK TO THE FARM.
+	 *
+	 * He comes up to you first — one sentence at nine blocks — then turns and
+	 * goes, eighteen blocks a leg, and stops and looks back whenever you fall
+	 * more than fourteen behind. Every thirty seconds of standing he says a word.
+	 * Forty blocks behind for two minutes and he gives up on your legs, not on
+	 * you: the map, and he follows at your pace instead. Nine blocks from the
+	 * farm he stops; the introduction, which has been waiting on isLeading(),
+	 * takes it from there.
+	 *
+	 * COST. No scans. A distance and a heightmap read every ten ticks, one
+	 * moveTo. The stuck check is a position compare every sixty. If he cannot
+	 * path — water, a cliff — he steps to a spot ten blocks ahead of you toward
+	 * the farm, the way Follow already does when it loses you.
+	 */
+	private static final class Lead extends Goal {
+		private static final double GREETS_AT = 9.0;
+		private static final double WAITS_AT = 14.0;
+		private static final double TOO_FAR = 40.0;
+		private static final double LEG = 18.0;
+		private static final double ARRIVES_AT = 9.0;
+		private static final int NAGS_EVERY = 600;
+		private static final int GIVES_UP_AFTER = 2400;
+		private final CompanionEntity her;
+		private int repath;
+		private int waited;
+		private int ignored;
+		private int checks;
+		private int stuck;
+		private boolean greeted;
+		private double wasX;
+		private double wasZ;
+
+		Lead(CompanionEntity her) {
+			this.her = her;
+			this.setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK));
+		}
+
+		@Override
+		public boolean canUse() {
+			if (!this.her.isLeading()) {
+				return false;
+			}
+			Player who = this.her.leading();
+			return who != null && who.isAlive() && !who.isSpectator();
+		}
+
+		@Override
+		public boolean canContinueToUse() {
+			return this.canUse();
+		}
+
+		@Override
+		public void stop() {
+			this.her.getNavigation().stop();
+		}
+
+		@Override
+		public void tick() {
+			if (!(this.her.level() instanceof ServerLevel here)) {
+				return;
+			}
+			Player who = this.her.leading();
+			BlockPos to = this.her.leadingTo();
+			if (who == null || to == null) {
+				return;
+			}
+			if (--this.repath > 0) {
+				return;
+			}
+			this.repath = 10;
+			double away = this.her.distanceTo(who);
+
+			if (!this.greeted) {
+				if (away > GREETS_AT) {
+					this.her.getNavigation().moveTo(who, 1.05);
+					this.her.getLookControl().setLookAt(who, 30.0F, 30.0F);
+					return;
+				}
+				this.greeted = true;
+				Sayings.say(here, this.her, who, Sayings.LEAD_FIRST);
+				HerobrineMod.LOGGER.info("addexio met {} and is leading them to [{}, {}]",
+					who.getName().getString(), to.getX(), to.getZ());
+			}
+
+			double dx = this.her.getX() - (to.getX() + 0.5);
+			double dz = this.her.getZ() - (to.getZ() + 0.5);
+			if (dx * dx + dz * dz < ARRIVES_AT * ARRIVES_AT) {
+				this.arrive(here, who);
+				return;
+			}
+
+			if (away > TOO_FAR) {
+				this.ignored += 10;
+				if (this.ignored >= GIVES_UP_AFTER) {
+					this.handTheMap(here, who, to);
+					return;
+				}
+			} else {
+				this.ignored = Math.max(0, this.ignored - 10);
+			}
+
+			if (away > WAITS_AT) {
+				this.her.getNavigation().stop();
+				this.her.getLookControl().setLookAt(who, 30.0F, 30.0F);
+				this.waited += 10;
+				if (this.waited % NAGS_EVERY == 0) {
+					Sayings.say(here, this.her, who, Sayings.LEAD_WAITING);
+				}
+				return;
+			}
+			this.waited = 0;
+
+			// a leg toward the farm, from where HE stands
+			double lx = to.getX() + 0.5 - this.her.getX();
+			double lz = to.getZ() + 0.5 - this.her.getZ();
+			double len = Math.sqrt(lx * lx + lz * lz);
+			double gx = len > LEG ? this.her.getX() + lx / len * LEG : to.getX() + 0.5;
+			double gz = len > LEG ? this.her.getZ() + lz / len * LEG : to.getZ() + 0.5;
+			int bx = net.minecraft.util.Mth.floor(gx);
+			int bz = net.minecraft.util.Mth.floor(gz);
+			int gy = com.bloomlet.herobrine.structure.Ground.topOf(here, bx, bz) + 1;
+			this.her.setSprinting(false);
+			this.her.getNavigation().moveTo(bx + 0.5, gy, bz + 0.5, 1.05);
+
+			// stuck? every sixty ticks, has he actually moved
+			if (++this.checks % 6 == 0) {
+				double moved = Math.abs(this.her.getX() - this.wasX) + Math.abs(this.her.getZ() - this.wasZ);
+				this.wasX = this.her.getX();
+				this.wasZ = this.her.getZ();
+				if (moved < 1.5 && ++this.stuck >= 3) {
+					this.stuck = 0;
+					this.stepAhead(here, who, to);
+				} else if (moved >= 1.5) {
+					this.stuck = 0;
+				}
+			}
+		}
+
+		private void arrive(ServerLevel here, Player who) {
+			this.her.stopLeading();
+			this.her.getNavigation().stop();
+			this.her.getLookControl().setLookAt(who, 30.0F, 30.0F);
+			Sayings.say(here, this.her, who, Sayings.LEAD_ARRIVED);
+			HerobrineMod.LOGGER.info("addexio brought {} to the farm — the introduction is his next word",
+				who.getName().getString());
+		}
+
+		private void handTheMap(ServerLevel here, Player who, BlockPos to) {
+			ItemStack map = com.bloomlet.herobrine.manifest.Whereabouts.theWay(here, to);
+			if (who instanceof ServerPlayer player && !player.getInventory().add(map)) {
+				player.drop(map, false);
+			}
+			Sayings.say(here, this.her, who, Sayings.LEAD_MAP);
+			this.her.stopLeading();
+			this.her.goWith(who);
+			HerobrineMod.LOGGER.info("{} would not follow — addexio handed them the map and fell in behind",
+				who.getName().getString());
+		}
+
+		private void stepAhead(ServerLevel here, Player who, BlockPos to) {
+			double dx = to.getX() + 0.5 - who.getX();
+			double dz = to.getZ() + 0.5 - who.getZ();
+			double len = Math.max(0.01, Math.sqrt(dx * dx + dz * dz));
+			dx /= len;
+			dz /= len;
+			net.minecraft.util.RandomSource roll = this.her.getRandom();
+			for (int tries = 0; tries < 16; tries++) {
+				double off = 10.0 + roll.nextDouble() * 4.0;
+				double turn = (roll.nextDouble() - 0.5) * 0.8;
+				double c = Math.cos(turn);
+				double sn = Math.sin(turn);
+				int x = net.minecraft.util.Mth.floor(who.getX() + (dx * c - dz * sn) * off);
+				int z = net.minecraft.util.Mth.floor(who.getZ() + (dx * sn + dz * c) * off);
+				BlockPos at = new BlockPos(x, com.bloomlet.herobrine.structure.Ground.topOf(here, x, z) + 1, z);
+				if (!here.getBlockState(at).isAir() || !here.getBlockState(at.above()).isAir()
+					|| !here.getBlockState(at.below()).isSolid() || !here.getFluidState(at).isEmpty()) {
+					continue;
+				}
+				this.her.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, this.her.getYRot(), 0.0F);
+				this.her.getNavigation().stop();
+				HerobrineMod.LOGGER.info("addexio could not path the way — he is ten blocks ahead of {} instead",
+					who.getName().getString());
+				return;
+			}
+		}
+	}
+
 	private static final class Follow extends Goal {
 		private final CompanionEntity her;
 		private int repath;

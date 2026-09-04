@@ -736,7 +736,7 @@ public final class Dwellings {
 	// ---- END THE CHAIN -----------------------------------------------------
 
 	private enum Place {
-		HOMESTEAD("homestead", Phase.RUMOUR, 280, 520),
+		HOMESTEAD("homestead", Phase.RUMOUR, 150, 260),   // a walk behind a man, not a march
 		TOWN("town", Phase.WATCHER, 340, 620),
 		TOWER("house_two", Phase.TRESPASSER, 450, 800),
 		// Pulled in. These are measured from where the players are standing when the

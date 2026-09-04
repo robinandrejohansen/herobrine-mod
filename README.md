@@ -64,8 +64,14 @@ its own events and one **place** the players are led to.
 | HUNTER | 1000 | the hunt, the dark | **the church** — he lived under the altar |
 | SIEGE | 1800 | the night stops, the storm never ends, the animals turn | **the last house** — and the way through |
 
-Each place is found by a map left in the one before it; Addexio tells you about
-each one when you arrive. `/herobrine status` shows the current wrath and phase.
+The first place is not on any map. On the first morning after you have lived a
+full day — on the surface, in daylight, not in a fight — Addexio walks out of the
+trees thirty blocks off, says one thing, and leads you to the farm; fall behind
+and he stops and waits, refuse him for two minutes and he hands you a map and
+falls in behind you instead. At the farm he turns, introduces himself, and from
+then on he follows. Every place after that is found by a map left in the one
+before it, and he tells you about each one when you arrive. `/herobrine status`
+shows the current wrath and phase.
 
 ### The ten books
 
@@ -77,8 +83,9 @@ All by Addexio, in the order he wrote them, one or two in every place:
 
 ### Addexio
 
-He comes to you at the farm and introduces himself (seven lines, paced so they
-can be read). From then on he follows, fights, and talks.
+He comes for you at first light and brings you to the farm (see above); there
+he introduces himself (seven lines, paced so they can be read). From then on he
+follows, fights, and talks.
 
 - Enchanted diamond armour, a diamond sword, a shield he raises when something
   swings at him. Twenty hearts.

@@ -182,6 +182,105 @@ public final class Company {
 			"nowhere for addexio to walk in from yet — he will try again");
 	}
 
+	/*
+	 * HE COMES FOR YOU AT FIRST LIGHT.
+	 *
+	 * The first meeting used to be a map in your inventory at world start and a
+	 * man walking up when you reached the farm. Now there is no map: you play,
+	 * and on the first morning after you have lived a full day — on the surface,
+	 * not in water, not being hit — he walks out of the trees thirty blocks off,
+	 * says one thing, and leads you there. Time-based so it cannot be missed;
+	 * daylight so you see him coming; a day so the world has had its first night
+	 * to be wrong in.
+	 *
+	 * Cost: one attachment read and write per online overworld player every forty
+	 * ticks, and one clock read. Nothing is scanned.
+	 */
+	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Integer> LIVED =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.<Integer>builder()
+			.persistent(com.mojang.serialization.Codec.INT)
+			.copyOnDeath()
+			.buildAndRegister(HerobrineMod.id("lived"));
+	private static final int A_DAY = 24000;
+	private static final int MORNING_ENDS = 6000;
+	private static final int COMES_TO_YOU_MIN = 30;
+	private static final int COMES_TO_YOU_MAX = 42;
+
+	private static void firstLight(MinecraftServer server) {
+		ServerLevel over = server.overworld();
+		if (hasCome(over) || !com.bloomlet.herobrine.Config.get().houses) {
+			return;
+		}
+		BlockPos house = Whereabouts.home(over);
+		if (house == null) {
+			return;
+		}
+		var clock = over.registryAccess().get(net.minecraft.world.clock.WorldClocks.OVERWORLD);
+		long timeOfDay = clock.isPresent()
+			? Math.floorMod(server.clockManager().getTotalTicks(clock.get()), (long) A_DAY) : 0L;
+		for (ServerPlayer who : over.players()) {
+			if (who.isSpectator() || !who.isAlive()) {
+				continue;
+			}
+			int lived = who.getAttachedOrElse(LIVED, 0) + LOOKS_EVERY;
+			who.setAttached(LIVED, lived);
+			if (lived < A_DAY || timeOfDay >= MORNING_ENDS) {
+				continue;
+			}
+			if (!over.canSeeSky(who.blockPosition()) || who.isInWater() || who.isPassenger()
+				|| who.hurtTime > 0) {
+				continue;
+			}
+			comeFor(over, who, house);
+			return;
+		}
+	}
+
+	/** Like arrives(), but from the direction of the farm, and leading rather than walking in. */
+	public static void comeFor(ServerLevel level, ServerPlayer near, BlockPos house) {
+		if (hasCome(level)) {
+			return;
+		}
+		double toward = Math.atan2(house.getZ() - near.getZ(), house.getX() - near.getX());
+		for (int attempt = 0; attempt < TRIES; attempt++) {
+			double angle = toward + (level.getRandom().nextDouble() - 0.5) * 1.4;
+			double out = COMES_TO_YOU_MIN
+				+ level.getRandom().nextDouble() * (COMES_TO_YOU_MAX - COMES_TO_YOU_MIN);
+			int x = (int) Math.round(near.getX() + Math.cos(angle) * out);
+			int z = (int) Math.round(near.getZ() + Math.sin(angle) * out);
+			if (!level.hasChunkAt(new BlockPos(x, 0, z))) {
+				continue;
+			}
+			int y = com.bloomlet.herobrine.structure.Ground.topOf(level, x, z);
+			BlockPos feet = new BlockPos(x, y + 1, z);
+			if (!level.getFluidState(feet).isEmpty()
+				|| !level.getBlockState(feet).isAir()
+				|| !level.getBlockState(feet.above()).isAir()
+				|| !level.getBlockState(feet.below()).isSolid()) {
+				continue;
+			}
+			CompanionEntity him = com.bloomlet.herobrine.entity.ModEntities.COMPANION
+				.create(level, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+			if (him == null) {
+				return;
+			}
+			him.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5,
+				(float) Math.toDegrees(Math.atan2(near.getZ() - feet.getZ(),
+					near.getX() - feet.getX())) - 90.0F, 0.0F);
+			him.setPersistenceRequired();
+			him.setTarget(null);
+			him.lead(house, near);
+			level.addFreshEntity(him);
+			came(level);
+			HerobrineMod.LOGGER.info(
+				"addexio comes for {} at first light, from [{}, {}, {}] — the farm is {} blocks off",
+				near.getName().getString(), feet.getX(), feet.getY(), feet.getZ(),
+				(int) Math.sqrt(house.distSqr(near.blockPosition())));
+			return;
+		}
+		HerobrineMod.LOGGER.info("nowhere for addexio to come from yet — he will try again");
+	}
+
 	public static void listen() {
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD
 			.register(Company::hunted);
@@ -227,6 +326,7 @@ public final class Company {
 		if (server.getTickCount() % LOOKS_EVERY != 0) {
 			return;
 		}
+		firstLight(server);
 		for (ServerLevel here : server.getAllLevels()) {
 			for (ServerPlayer with : here.players()) {
 				for (CompanionEntity her : hers(here, with)) {

@@ -52,6 +52,28 @@ public final class Sayings {
 		"Take me with you. I can't sit in this well any longer.",
 	};
 
+	/*
+	 * LEADING. He comes for you at first light and brings you to the farm. One
+	 * sentence when he reaches you, a word when you fall behind, the map if you
+	 * will not follow, and one word when you are there — the introduction says the
+	 * rest, so this says as little as it can.
+	 */
+	static final String[] LEAD_FIRST = {
+		"You need to see something. Come with me — and don't stop for anything.",
+	};
+	static final String[] LEAD_WAITING = {
+		"Keep up.",
+		"It's not far. Don't stop here.",
+		"This way. Please.",
+		"I'm not going without you.",
+	};
+	static final String[] LEAD_MAP = {
+		"Then take this. Follow it, if you won't follow me.",
+	};
+	static final String[] LEAD_ARRIVED = {
+		"Here.",
+	};
+
 	static final String[] NUDGED = {
 		"I'm here.",
 		"Still with you.",

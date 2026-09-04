@@ -332,28 +332,28 @@ public final class Whereabouts {
 		if (over.getAttachedOrElse(INVITED, false)) {
 			return;
 		}
-		ServerPlayer first = server.getPlayerList().getPlayers().stream()
-			.filter(p -> !p.isSpectator()).findFirst().orElse(null);
-		if (first == null) {
-			return;
-		}
 		over.setAttached(INVITED, true);
+		// NO MAP AT THE START ANY MORE. A map in your hand before anything has
+		// happened is a quest marker, and it broke the one promise the mod makes —
+		// nothing is marked, nobody tells you what to do. The address is Addexio's
+		// to bring: he comes for the first player at first light after a day lived
+		// (Company.firstLight) and walks them there. The map is what he hands over
+		// if they will not follow (CompanionEntity.Lead).
+		HerobrineMod.LOGGER.info("the way to [{}, {}] is his to bring — nobody is handed a map",
+			house.getX(), house.getZ());
+	}
+
+	/** The map to his house, drawn the way the first version handed it out. */
+	public static net.minecraft.world.item.ItemStack theWay(ServerLevel over, BlockPos house) {
 		net.minecraft.world.item.ItemStack map = net.minecraft.world.item.MapItem.create(
 			over, house.getX(), house.getZ(), (byte) 4, true, true);
 		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
 			map, house, "+",
 			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
-		// FROM A FRIEND. It used to be named with one of HIS lines — "I would not" —
-		// which nobody could read as anything, least of all as an invitation. It is
-		// Addexio's map: he sent for you, and the intro says so.
 		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
 			net.minecraft.network.chat.Component.literal(
 				"from a fellow friend — " + house.getX() + ", " + house.getZ()));
-		if (!first.getInventory().add(map)) {
-			first.drop(map, false);
-		}
-		HerobrineMod.LOGGER.info("{} was given the way to [{}, {}]",
-			first.getName().getString(), house.getX(), house.getZ());
+		return map;
 	}
 
 	/**
