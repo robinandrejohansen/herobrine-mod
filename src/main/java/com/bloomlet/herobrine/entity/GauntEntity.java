@@ -1032,6 +1032,16 @@ public class GauntEntity extends PathfinderMob {
 		return false;
 	}
 
+	/** Addexio wounds it, down to one heart, and no further. The last blow is yours. See TurnedEntity.hurtServer. */
+	@Override
+	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+		if (source.getEntity() instanceof CompanionEntity) {
+			float room = this.getHealth() - 1.0F;
+			return room > 0.0F && super.hurtServer(level, source, Math.min(damage, room));
+		}
+		return super.hurtServer(level, source, damage);
+	}
+
 	/**
 	 * AND WHEN ONE GOES DOWN, THE NEXT DOOR GOES OVER.
 	 *

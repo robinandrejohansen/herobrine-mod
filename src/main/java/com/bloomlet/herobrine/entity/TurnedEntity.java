@@ -961,9 +961,11 @@ public class TurnedEntity extends PathfinderMob {
 			return super.hurtServer(level, source, damage);
 		}
 		if (source.getEntity() instanceof CompanionEntity) {
-			// Addexio's sword counts. He fights beside you, not for show — and a man
-			// swinging forever at something he cannot dent is a man who never leaves.
-			return super.hurtServer(level, source, damage);
+			// ADDEXIO WOUNDS, YOU FINISH. His sword counts — a man swinging forever
+			// at something he cannot dent is a man who never leaves — but it stops at
+			// one heart. The kill is the player's, every time, or the fight is his.
+			float room = this.getHealth() - 1.0F;
+			return room > 0.0F && super.hurtServer(level, source, Math.min(damage, room));
 		}
 		// The escape hatch every invulnerable thing in the game keeps: /kill,
 		// the void, and anything else tagged as bypassing invulnerability. A mob

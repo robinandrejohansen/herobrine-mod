@@ -996,6 +996,8 @@ public class CompanionEntity extends PathfinderMob {
 
 	/** When she last said anything. Sayings gates on this; see QUIET_FOR. */
 	long lastSpoke;
+	/** The last thing she said; Sayings will not say it twice running. */
+	String lastSaid = "";
 
 	public boolean isFaltering() {
 		return this.getHealth() < FALTERS_UNDER;

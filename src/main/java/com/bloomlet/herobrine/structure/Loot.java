@@ -404,6 +404,16 @@ public final class Loot {
 	 * anticlimax, and the summit is the whole reason anybody is up here.
 	 */
 	private static final Entry[] TOWER_POOL = {
+		// FROM HOUSE TWO ON, THE CHESTS ARE WORTH OPENING. Diamond, arrows, food,
+		// bottles, books: enough, across the road, to build good tools before the
+		// last house. The late pools carry these, and scatter() adds supplies and
+		// a prize on top — see late().
+		new Entry(Items.DIAMOND, 1, 3, 5, false),
+		new Entry(Items.EXPERIENCE_BOTTLE, 4, 12, 7, false),
+		new Entry(Items.COOKED_BEEF, 3, 8, 7, false),
+		new Entry(Items.DIAMOND_BOOTS, 1, 1, 3, true),
+		new Entry(Items.DIAMOND_CHESTPLATE, 1, 1, 2, true),
+		new Entry(Items.IRON_CHESTPLATE, 1, 1, 4, true),
 		new Entry(Items.FIREWORK_ROCKET, 4, 16, 10, false),
 		new Entry(Items.PHANTOM_MEMBRANE, 1, 4, 8, false),
 		new Entry(Items.ENDER_PEARL, 2, 5, 8, false),
@@ -416,7 +426,7 @@ public final class Loot {
 		new Entry(Items.GOLDEN_CARROT, 2, 6, 5, false),
 		new Entry(Items.EMERALD, 2, 7, 5, false),
 		new Entry(Items.IRON_INGOT, 3, 8, 5, false),
-		new Entry(Items.ENCHANTED_BOOK, 1, 1, 4, false),
+		new Entry(Items.ENCHANTED_BOOK, 1, 1, 7, false),
 		new Entry(Items.LEATHER, 2, 6, 4, false),
 		new Entry(Items.STRING, 3, 9, 4, false),
 		new Entry(Items.TORCH, 6, 18, 4, false),
@@ -439,6 +449,15 @@ public final class Loot {
 	 * thing you could cure, and milk is what you reach for when you believe that.
 	 */
 	private static final Entry[] GAOL_POOL = {
+		new Entry(Items.DIAMOND, 1, 3, 5, false),
+		new Entry(Items.ARROW, 12, 32, 8, false),
+		new Entry(Items.EXPERIENCE_BOTTLE, 3, 10, 6, false),
+		new Entry(Items.COOKED_PORKCHOP, 3, 8, 6, false),
+		new Entry(Items.DIAMOND_HELMET, 1, 1, 2, true),
+		new Entry(Items.DIAMOND_LEGGINGS, 1, 1, 2, true),
+		new Entry(Items.IRON_CHESTPLATE, 1, 1, 4, true),
+		new Entry(Items.BOW, 1, 1, 4, true),
+		new Entry(Items.GOLDEN_APPLE, 1, 2, 3, false),
 		new Entry(Items.IRON_INGOT, 3, 9, 10, false),
 		new Entry(Items.IRON_CHAIN, 3, 10, 9, false),
 		new Entry(Items.TORCH, 8, 24, 8, false),
@@ -460,7 +479,7 @@ public final class Loot {
 		new Entry(Items.IRON_BOOTS, 1, 1, 3, true),
 		new Entry(Items.MILK_BUCKET, 1, 1, 3, false),
 		new Entry(Items.EMERALD, 2, 6, 3, false),
-		new Entry(Items.ENCHANTED_BOOK, 1, 1, 3, false),
+		new Entry(Items.ENCHANTED_BOOK, 1, 1, 6, false),
 		new Entry(Items.GOLDEN_APPLE, 1, 1, 2, false),
 	};
 
@@ -663,6 +682,20 @@ public final class Loot {
 			int slot = free.remove(random.nextInt(free.size()));
 			chest.setItem(slot, roll(pool, random, access));
 		}
+		if (late(tier) && access != null) {
+			// SUPPLIES, THEN A PRIZE. One or two stacks of what a party actually
+			// runs out of — arrows, food, bottles, the odd diamond — and six chests
+			// in ten hold one good enchanted piece, worn but whole, no curse: the
+			// thing you open the chest hoping for. Variety in the charms is what
+			// makes the next chest worth opening too.
+			int supplies = 1 + random.nextInt(2);
+			for (int i = 0; i < supplies && !free.isEmpty(); i++) {
+				chest.setItem(free.remove(random.nextInt(free.size())), roll(SUPPLIES, random, access));
+			}
+			if (!free.isEmpty() && random.nextInt(10) < 6) {
+				chest.setItem(free.remove(random.nextInt(free.size())), prize(access, random));
+			}
+		}
 
 		// AND IN THE LAST HOUSES, SOME OF IT IS YOURS.
 		//
@@ -710,6 +743,58 @@ public final class Loot {
 	 * in two it is a loot table. At one in six it is something that happened.
 	 */
 	private static final int CHANCE_IN = 6;
+
+	/** House two and everything after it. */
+	private static boolean late(Tier tier) {
+		return tier == Tier.TOWER || tier == Tier.GAOL || tier == Tier.HIS_CITY || tier == Tier.KEEP;
+	}
+
+	private static final Entry[] SUPPLIES = {
+		new Entry(Items.ARROW, 16, 40, 10, false),
+		new Entry(Items.COOKED_BEEF, 4, 10, 8, false),
+		new Entry(Items.GOLDEN_CARROT, 3, 8, 7, false),
+		new Entry(Items.EXPERIENCE_BOTTLE, 4, 12, 7, false),
+		new Entry(Items.DIAMOND, 1, 4, 5, false),
+		new Entry(Items.BREAD, 4, 10, 5, false),
+		new Entry(Items.GOLDEN_APPLE, 1, 2, 3, false),
+		new Entry(Items.IRON_INGOT, 4, 10, 4, false),
+		new Entry(Items.TORCH, 8, 20, 4, false),
+	};
+
+	private static final Base[] PRIZES = {
+		new Base(Items.DIAMOND_SWORD, Sort.BLADE),
+		new Base(Items.DIAMOND_AXE, Sort.AXE),
+		new Base(Items.DIAMOND_PICKAXE, Sort.AXE),
+		new Base(Items.DIAMOND_HELMET, Sort.ARMOUR),
+		new Base(Items.DIAMOND_CHESTPLATE, Sort.ARMOUR),
+		new Base(Items.DIAMOND_LEGGINGS, Sort.ARMOUR),
+		new Base(Items.DIAMOND_BOOTS, Sort.ARMOUR),
+		new Base(Items.IRON_CHESTPLATE, Sort.ARMOUR),
+		new Base(Items.BOW, Sort.BOW),
+		new Base(Items.CROSSBOW, Sort.BOW),
+	};
+	private static final String[] PRIZE_NAMES = {
+		"somebody's best", "kept back", "for whoever is next", "it did not save him",
+		"Bren's", "from the smithy", "she never got to use it", "still good",
+	};
+
+	/** A good piece with one or two strong charms, worn but whole, no curse. */
+	public static ItemStack prize(RegistryAccess access, RandomSource random) {
+		Registry<Enchantment> book = access.lookupOrThrow(Registries.ENCHANTMENT);
+		Base base = PRIZES[random.nextInt(PRIZES.length)];
+		ItemStack stack = new ItemStack(base.item());
+		Charm[] charms = strong(base.sort());
+		int first = random.nextInt(charms.length);
+		put(stack, book, charms[first], random);
+		if (charms.length > 1 && random.nextBoolean()) {
+			int second = (first + 1 + random.nextInt(charms.length - 1)) % charms.length;
+			put(stack, book, charms[second], random);
+		}
+		wear(stack, random, 0.15, 0.45);
+		stack.set(DataComponents.CUSTOM_NAME,
+			Component.literal(PRIZE_NAMES[random.nextInt(PRIZE_NAMES.length)]));
+		return stack;
+	}
 
 	/**
 	 * What sort of thing it is, which decides what can be put on it.

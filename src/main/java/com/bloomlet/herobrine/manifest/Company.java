@@ -502,34 +502,66 @@ public final class Company {
 	 * The tall one wins, because it is the only one of the three that is standing
 	 * in front of you right now.
 	 */
+	/** Ticks between the ambient pools, so none of them becomes the thing he says. */
+	private static final long RARE = 2400L;
+	private static final long RARER = 4800L;
+	private static long lastNightfall = Long.MIN_VALUE;
+
+	/**
+	 * WHAT HE NOTICES, IN THE ORDER IT MATTERS. A Gaunt in sight; bodies on the
+	 * ground; his world; the dark; you bleeding; the light going; and, when
+	 * nothing else has happened for a long while, a thought out loud. Every pool
+	 * has its own long rest, so a man who used to say the same three things about
+	 * the dark every twenty seconds now says something about the dark once every
+	 * two minutes, from eight lines, never the same one twice running.
+	 */
 	private static void notice(ServerLevel here, CompanionEntity her, Player with) {
 		if (her.isFallen() || her.isFaltering()) {
 			return;               // she has other things on her mind. Falter talks.
 		}
 		AABB round = her.getBoundingBox().inflate(NOTICES);
-
 		List<com.bloomlet.herobrine.entity.GauntEntity> tall = here.getEntitiesOfClass(
 			com.bloomlet.herobrine.entity.GauntEntity.class, round,
-			g -> g.isAlive() && her.hasLineOfSight(g));
+			g -> g.isAlive() && !com.bloomlet.herobrine.entity.Corpses.isCorpse(g) && her.hasLineOfSight(g));
 		if (!tall.isEmpty()) {
-			com.bloomlet.herobrine.entity.Sayings.toldOf(here, her, with,
-				com.bloomlet.herobrine.entity.Sayings.GAUNT_SEEN);
+			com.bloomlet.herobrine.entity.Sayings.toldOfRarely(here, her, with,
+				com.bloomlet.herobrine.entity.Sayings.GAUNT_SEEN, 1800L);
+			return;
+		}
+		List<net.minecraft.world.entity.LivingEntity> dead = here.getEntitiesOfClass(
+			net.minecraft.world.entity.LivingEntity.class, round,
+			com.bloomlet.herobrine.entity.Corpses::isCorpse);
+		if (dead.size() >= 2) {
+			com.bloomlet.herobrine.entity.Sayings.toldOfRarely(here, her, with,
+				com.bloomlet.herobrine.entity.Sayings.CORPSES, RARE);
 			return;
 		}
 		if (here.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
-			// Every four minutes at most. It was every twenty seconds from a pool of
-			// three, which is the same three sentences on a loop for the whole fight.
 			com.bloomlet.herobrine.entity.Sayings.toldOfRarely(here, her, with,
-				com.bloomlet.herobrine.entity.Sayings.HIS_WORLD, 4800L);
+				com.bloomlet.herobrine.entity.Sayings.HIS_WORLD, RARER);
 			return;
 		}
-		// Dark, and underground or at night. Not "dark" alone — a player who
-		// steps into a doorway has not entered the dark.
+		if (with.getHealth() <= 6.0F) {
+			com.bloomlet.herobrine.entity.Sayings.toldOfRarely(here, her, with,
+				com.bloomlet.herobrine.entity.Sayings.HURT, 1200L);
+			return;
+		}
 		if (here.getMaxLocalRawBrightness(her.blockPosition()) <= 3
 			&& (her.getBlockY() < 50 || !here.isBrightOutside())) {
-			com.bloomlet.herobrine.entity.Sayings.toldOf(here, her, with,
-				com.bloomlet.herobrine.entity.Sayings.DARK);
+			com.bloomlet.herobrine.entity.Sayings.toldOfRarely(here, her, with,
+				com.bloomlet.herobrine.entity.Sayings.DARK, RARE);
+			return;
 		}
+		long now = here.getGameTime();
+		if (!here.isBrightOutside() && here.canSeeSky(her.blockPosition())
+			&& now - lastNightfall > 20000L) {
+			lastNightfall = now;
+			com.bloomlet.herobrine.entity.Sayings.toldOf(here, her, with,
+				com.bloomlet.herobrine.entity.Sayings.NIGHTFALL);
+			return;
+		}
+		com.bloomlet.herobrine.entity.Sayings.toldOfRarely(here, her, with,
+			com.bloomlet.herobrine.entity.Sayings.MUSING, 7200L);
 	}
 
 	/**

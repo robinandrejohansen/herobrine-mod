@@ -30,6 +30,17 @@ import net.minecraft.world.level.Level;
  * noon would make the whole cellar a puzzle with a trick answer.
  */
 public class InfectedEntity extends Zombie {
+	/** Addexio wounds it, down to one heart, and no further. The last blow is yours. See TurnedEntity.hurtServer. */
+	@Override
+	public boolean hurtServer(net.minecraft.server.level.ServerLevel level,
+	                          net.minecraft.world.damagesource.DamageSource source, float damage) {
+		if (source.getEntity() instanceof CompanionEntity) {
+			float room = this.getHealth() - 1.0F;
+			return room > 0.0F && super.hurtServer(level, source, Math.min(damage, room));
+		}
+		return super.hurtServer(level, source, damage);
+	}
+
 
 	public InfectedEntity(EntityType<? extends Zombie> type, Level level) {
 		super(type, level);

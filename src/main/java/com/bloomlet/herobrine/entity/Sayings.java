@@ -42,7 +42,7 @@ public final class Sayings {
 	private Sayings() {}
 
 	/** Nothing at all for this long after anything she said. */
-	private static final long QUIET_FOR = 400L;
+	private static final long QUIET_FOR = 600L;      // thirty seconds. twenty made him a metronome
 
 	// ---- WHAT SHE KNOWS ----------------------------------------------------
 
@@ -78,6 +78,9 @@ public final class Sayings {
 		"I'm here.",
 		"Still with you.",
 		"Right behind you.",
+		"Go on. I've got the back.",
+		"What is it? Did you see something?",
+		"Same road. Keep going.",
 	};
 
 	/** Frightened, not leaving. He never says he is going; he is not. */
@@ -85,24 +88,39 @@ public final class Sayings {
 		"Too many — keep moving, I'm right behind you.",
 		"Not like this. Not here.",
 		"Get me a second. One second.",
+		"Where did they all come from?",
+		"Fall back. FALL BACK.",
+		"I can't hold this many. Run.",
 	};
 
 	static final String[] BACK_UP = {
 		"All right. I'm all right.",
 		"I've eaten. Let's go.",
 		"Don't look at me like that. Walk.",
+		"That was close. Too close. Are you hurt?",
+		"I'm up. Where were we.",
+		"Nothing broken. Nothing that matters.",
 	};
 
 	public static final String[] GAUNT_SEEN = {
 		"Don't. That was somebody. Do you understand that?",
 		"It won't move while you're looking. So look at it.",
 		"Corin. That one's called Corin, or it was.",
+		"Why is it so tall? They were never that tall.",
+		"Keep your eyes on it and back away. It cannot be watched and fought.",
+		"It knows you're here. It knew before you did.",
+		"Do you think there is anybody left in there?",
 	};
 
 	public static final String[] DARK = {
 		"Put the torch out. Light is how he finds the room.",
 		"I'd rather be in the dark than be found in the light.",
 		"Forty of them had candles. Every one they had left.",
+		"Do you hear that? No. Neither do I. That's what worries me.",
+		"How long have we been down here?",
+		"Something has been through here. Look at the floor.",
+		"Stay close. If I go quiet, it isn't by choice.",
+		"He likes it down here. I don't know why I know that.",
 	};
 
 	public static final String[] HIS_WORLD = {
@@ -113,18 +131,29 @@ public final class Sayings {
 		"The houses have beds. Nobody has slept in them. Nobody could.",
 		"He can hear us. Not the words. The footsteps.",
 		"Stay where I can see you. Please.",
+		"What did he do to the sky? It hasn't moved since we came through.",
+		"Do you think they knew, the ones he took? That this is where they'd end up?",
+		"Every window in that city is dark. Where are they all?",
+		"Which way is the castle? No — don't answer. I can feel which way.",
+		"If I fall here, don't stop for me. I mean that.",
 	};
 
 	public static final String[] YOU_DIED = {
 		"I'll wait here. Come back for your things.",
 		"I'm staying where you fell. Come and find me.",
 		"Go on. I'll be here. I'm not moving.",
+		"What happened? What did that to you?",
+		"I saw it. I couldn't get there in time.",
+		"Your things are here. All of it. I counted.",
 	};
 
 	public static final String[] WALKED_TO_YOU = {
 		"I waited. Then I walked.",
 		"You didn't come back, so I came to you.",
 		"Took me a while. I'm here now.",
+		"Where did you go? I lost you at the trees.",
+		"Don't do that again. Please.",
+		"Next time say something before you run.",
 	};
 
 	// ---- SAYING IT --------------------------------------------------------
@@ -157,6 +186,10 @@ public final class Sayings {
 		}
 		her.lastSpoke = now;
 		String line = pool[here.getRandom().nextInt(pool.length)];
+		if (pool.length > 1 && line.equals(her.lastSaid)) {
+			line = pool[(java.util.Arrays.asList(pool).indexOf(line) + 1 + here.getRandom().nextInt(pool.length - 1)) % pool.length];
+		}
+		her.lastSaid = line;
 		voice(here, her, line);
 		// NO SOUND. It was VILLAGER_AMBIENT — the hum — left over from when he was
 		// Vera in a red coat, and it made a man with a name and a diamond sword go
@@ -237,6 +270,37 @@ public final class Sayings {
 	 * for the player who has not opened the chest yet.
 	 */
 	/** His watch, seen from the road. Told once, when it is posted and Addexio is walking with you. */
+	/** Bodies on the ground where he walks. A man who notices, and asks. */
+	public static final String[] CORPSES = {
+		"What happened here?",
+		"Who did this? All of them at once?",
+		"Don't touch them. Look at the faces first.",
+		"They didn't run. Why didn't they run?",
+		"I knew that one. I think I knew that one.",
+	};
+	/** The light going, out in the open. Once a night. */
+	public static final String[] NIGHTFALL = {
+		"It's getting dark. He likes the dark. Stay close.",
+		"Night. Walls or a hole before it's full dark, one or the other.",
+		"Don't sleep tonight. I won't either.",
+		"He comes further out at night. Everything does.",
+	};
+	/** The player low on health. */
+	public static final String[] HURT = {
+		"You're bleeding. Eat something. Now.",
+		"Stop. You're hurt worse than you think.",
+		"Sit down a minute. I'll watch.",
+	};
+	/** Long quiet stretches. A man thinking out loud, so you know he's still a man. */
+	public static final String[] MUSING = {
+		"Do you think he remembers them? The ones he took?",
+		"I used to think he was one of us once. I don't think that any more.",
+		"What did you do, before this? Before him?",
+		"The corn was flat in a circle. I still see it when I close my eyes.",
+		"If we finish this — when we finish this — I am going to sleep for a year.",
+		"He never speaks. Have you noticed? Everything else does.",
+		"Why us? Why did he come to my farm and not the next one?",
+	};
 	public static final String[] WATCHED = {
 		"He's left a watch on it. Not villagers — look at how they stand. They don't fidget.",
 		"They won't come past the fence. They don't have to. What you came for is inside.",
