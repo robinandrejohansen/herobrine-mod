@@ -1443,6 +1443,17 @@ public final class Dwellings {
 
 	/** Put the right building on the chosen ground. */
 	private static boolean build(ServerLevel level, Place place, BlockPos site) {
+		long began = System.nanoTime();
+		boolean up = raiseNow(level, place, site);
+		// TIMED, ON PURPOSE. "We lagged on the way to the places" is not a bug
+		// report anyone can act on; "raised the gaol in 2300 ms" is. Whatever this
+		// says over a few hundred milliseconds is a builder that wants staging.
+		HerobrineMod.LOGGER.info("raised the {} in {} ms of this tick (the town's pieces are scheduled, not counted here)",
+			place.name().toLowerCase(java.util.Locale.ROOT), (System.nanoTime() - began) / 1_000_000L);
+		return up;
+	}
+
+	private static boolean raiseNow(ServerLevel level, Place place, BlockPos site) {
 		RandomSource random = level.getRandom();
 		return switch (place) {
 			case TOWN -> {

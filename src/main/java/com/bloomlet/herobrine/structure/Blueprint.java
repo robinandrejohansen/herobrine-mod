@@ -64,9 +64,9 @@ public final class Blueprint {
 	private static final Gson GSON = new Gson();
 
 	/** How many blocks go down per tick. */
-	private static final int PER_TICK = 600;
+	private static final int PER_TICK = 300;
 	/** Chunks force-loaded per tick before a blueprint's rows start. */
-	private static final int CHUNKS_PER_TICK = 3;
+	private static final int CHUNKS_PER_TICK = 2;
 
 	/**
 	 * Make the folder and drop a note in it, once, at startup.
@@ -650,7 +650,7 @@ public final class Blueprint {
 	 * still being emptied.
 	 */
 	/** How many columns are emptied per tick. */
-	private static final int COLUMNS_PER_TICK = 700;
+	private static final int COLUMNS_PER_TICK = 400;
 
 	/**
 	 * BY COLUMN, AND ONLY ABOVE THE GROUND LINE.

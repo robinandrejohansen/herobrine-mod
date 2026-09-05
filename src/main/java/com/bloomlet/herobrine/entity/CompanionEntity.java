@@ -780,6 +780,10 @@ public class CompanionEntity extends PathfinderMob {
 			}
 			if (to != null) {
 				this.getLookControl().setLookAt(to, 60.0F, 60.0F);
+				float yaw = (float)(Math.atan2(to.getZ() - this.getZ(), to.getX() - this.getX())
+					* (180.0 / Math.PI)) - 90.0F;
+				this.setYRot(yaw);
+				this.setYBodyRot(yaw);      // the whole man, not a head on a body facing the road
 			}
 			if (this.introducing == 0) {
 				this.introducingTo = null;
@@ -1129,6 +1133,9 @@ public class CompanionEntity extends PathfinderMob {
 		private int wet;
 		private int fell;
 		private boolean greeted;
+		/** Ticks left standing square to them after the first line. */
+		private int greeting;
+		private static final int GREETS_FOR = 40;
 		private double wasX;
 		private double wasZ;
 		private double wasLeft = -1.0;
@@ -1180,9 +1187,23 @@ public class CompanionEntity extends PathfinderMob {
 					return;
 				}
 				this.greeted = true;
+				this.greeting = GREETS_FOR;
+				this.her.getNavigation().stop();
+				this.face(who);
 				Sayings.say(here, this.her, who, Sayings.LEAD_FIRST);
 				HerobrineMod.LOGGER.info("addexio met {} and is leading them to [{}, {}]",
 					who.getName().getString(), to.getX(), to.getZ());
+				return;
+			}
+			if (this.greeting > 0) {
+				// HE SAYS IT TO YOUR FACE. The line went out and in the same look he
+				// had turned for the farm and started walking, so what you saw was a
+				// man talking to the trees. Two seconds, square to you, then he goes.
+				this.greeting -= 10;
+				this.her.getNavigation().stop();
+				this.her.getLookControl().setLookAt(who, 30.0F, 30.0F);
+				this.face(who);
+				return;
 			}
 			double hisLeft = flat(this.her.getX(), this.her.getZ(), to);
 			double theirLeft = flat(who.getX(), who.getZ(), to);
@@ -1261,6 +1282,15 @@ public class CompanionEntity extends PathfinderMob {
 				this.stepAhead(here, who, to);
 				this.rested();
 			}
+		}
+
+		/** Body and head both, not just the eyes: LookControl alone leaves the body where the walk left it. */
+		private void face(Player who) {
+			float yaw = (float)(Math.atan2(who.getZ() - this.her.getZ(), who.getX() - this.her.getX())
+				* (180.0 / Math.PI)) - 90.0F;
+			this.her.setYRot(yaw);
+			this.her.setYBodyRot(yaw);
+			this.her.yHeadRot = yaw;
 		}
 
 		private static double flat(double x, double z, BlockPos to) {

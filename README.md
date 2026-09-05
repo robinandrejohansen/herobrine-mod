@@ -62,7 +62,7 @@ its own events and one **place** the players are led to.
 | TRESPASSER | 200 | signs, ruins, journal pages, the sealed shaft | **his tower** — over lava, lit every night for a month |
 | MIMIC | 500 | possessed animals, the herd | **the prison** — cell nine |
 | HUNTER | 1000 | the hunt, the dark | **the church** — he lived under the altar |
-| SIEGE | 1800 | the night stops, the storm never ends, the animals turn | **the last house** — and the way through |
+| SIEGE | 1800 | the night stops, the storm never ends, the animals watch | **the last house** — and the way through |
 
 The first place is not on any map. On the first morning after you have lived a
 full day — on the surface, in daylight, not in a fight — Addexio walks out of the

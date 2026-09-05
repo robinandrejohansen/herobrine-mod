@@ -78,6 +78,16 @@ public final class Township {
 	private static final int SQUARE = 7;
 	private static final int WALL_HEIGHT = 4;
 
+	/**
+	 * OVER SECONDS, NOT IN ONE TICK. The whole town — square, lanes, wall, fields,
+	 * every house, the hall, the church and the undercity dug beneath it — used to
+	 * go up in a single server tick when the first player came within raising
+	 * range, and that tick was a long one: "we lagged on the way to the places".
+	 * Each part is its own job now, a few ticks apart, and the plots are built one
+	 * per step. It still all stands before anyone is close enough to see it; the
+	 * server just breathes between the pieces. Order is unchanged, for the reasons
+	 * written on each piece below.
+	 */
 	public static void raise(ServerLevel level, BlockPos site, RandomSource random) {
 		int base = Ground.topOf(level, site.getX(), site.getZ()) + 1;
 		BlockPos centre = new BlockPos(site.getX(), base, site.getZ());
@@ -94,46 +104,67 @@ public final class Township {
 			lanes.add(approach.getOpposite());
 		}
 
-		square(level, centre, random);
+		net.minecraft.server.MinecraftServer server = level.getServer();
+		com.bloomlet.herobrine.manifest.Cadence.in(server, 0, () -> square(level, centre, random));
+		int at = STEP;
 		for (Direction lane : lanes) {
-			lane(level, centre, lane, random);
+			final Direction each = lane;
+			com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> lane(level, centre, each, random));
+			at += STEP;
 		}
-		wall(level, centre, approach, random);
-		fields(level, centre, approach, random);
+		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> wall(level, centre, approach, random));
+		at += STEP;
+		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> fields(level, centre, approach, random));
+		at += STEP;
+		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> plots(level, centre, approach, lanes, random));
+	}
 
+	/** Ticks between the pieces. Two is enough for the server to catch its breath; the whole town is up inside three seconds. */
+	private static final int STEP = 2;
+
+	private static void plots(ServerLevel level, BlockPos centre, Direction approach,
+	                          List<Direction> lanes, RandomSource random) {
+		net.minecraft.server.MinecraftServer server = level.getServer();
 		List<Plot> plots = allot(level, centre, lanes, random);
-		int built = 0;
+		int[] built = {0};
+		int at = STEP;
 		for (Plot plot : plots) {
-			mark(level, plot, random);
-			// Houses go up now; the rest keep their marked ground until their
-			// own building exists, so the town is walkable at every stage
-			// rather than only at the end.
-			boolean up = switch (plot.kind()) {
-				case "house" -> Lodge.build(level, plot.corner(), plot.facing(), random);
-				case "hall" -> Hall.build(level, plot.corner(), plot.facing(), random);
-				case "church" -> {
-					if (Church.build(level, plot.corner(), plot.facing(), random)) {
-						// The undercity is dug from the church's own crypt
-						// stair, so the two always meet — the alternative is
-						// two systems agreeing on a coordinate, which is how
-						// nearly every bug in this repo started.
-						Undercity.dig(level, centre,
-							Church.crypt(plot.corner(), plot.facing()), random);
-						yield true;
+			final Plot each = plot;
+			com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> {
+				mark(level, each, random);
+				// Houses go up now; the rest keep their marked ground until their
+				// own building exists, so the town is walkable at every stage
+				// rather than only at the end.
+				boolean up = switch (each.kind()) {
+					case "house" -> Lodge.build(level, each.corner(), each.facing(), random);
+					case "hall" -> Hall.build(level, each.corner(), each.facing(), random);
+					case "church" -> {
+						if (Church.build(level, each.corner(), each.facing(), random)) {
+							// The undercity is dug from the church's own crypt
+							// stair, so the two always meet — the alternative is
+							// two systems agreeing on a coordinate, which is how
+							// nearly every bug in this repo started. Dug on the
+							// next tick: it is the single biggest piece.
+							com.bloomlet.herobrine.manifest.Cadence.in(server, 1, () -> Undercity.dig(level, centre,
+								Church.crypt(each.corner(), each.facing()), random));
+							yield true;
+						}
+						yield false;
 					}
-					yield false;
+					case "smithy" -> Smithy.build(level, each.corner(), each.facing(), random);
+					case "shop" -> Shop.build(level, each.corner(), each.facing(), random);
+					case "pen" -> Pen.build(level, each.corner(), each.facing(), random);
+					default -> false;
+				};
+				if (up) {
+					built[0]++;
 				}
-				case "smithy" -> Smithy.build(level, plot.corner(), plot.facing(), random);
-				case "shop" -> Shop.build(level, plot.corner(), plot.facing(), random);
-				case "pen" -> Pen.build(level, plot.corner(), plot.facing(), random);
-				default -> false;
-			};
-			if (up) {
-				built++;
-			}
+			});
+			at += STEP;
 		}
-
-		footpaths(level, centre, plots, random);
+		at += STEP;
+		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> footpaths(level, centre, plots, random));
+		at += STEP;
 		// THE TREES BEFORE THE GROUND COVER, and this was the wrong way round.
 		//
 		// grove() requires clear air over the ground, which is correct — a trunk
@@ -146,13 +177,16 @@ public final class Township {
 		// The other order costs nothing, because dress() has the same guard in the
 		// other direction — it skips a column that is not air — so the ground cover
 		// simply fills in around the trunks instead of pre-empting them.
-		grove(level, centre, approach, plots, random);
-		commons(level, centre, random);
-		populate(level, centre, plots, random);
-
-		HerobrineMod.LOGGER.info("township laid out at [{}, {}, {}], gate facing {}, {} plots",
-			centre.getX(), centre.getY(), centre.getZ(), approach.getName(),
-			plots.size() + " (" + built + " houses up)");
+		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> grove(level, centre, approach, plots, random));
+		at += STEP;
+		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> commons(level, centre, random));
+		at += STEP;
+		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> {
+			populate(level, centre, plots, random);
+			HerobrineMod.LOGGER.info("township laid out at [{}, {}, {}], gate facing {}, {} plots",
+				centre.getX(), centre.getY(), centre.getZ(), approach.getName(),
+				plots.size() + " (" + built[0] + " houses up)");
+		});
 	}
 
 	/**

@@ -37,11 +37,9 @@ import net.minecraft.world.phys.AABB;
  * first through the gap in the door, and it is worse than anything it could be
  * doing — a thing that is pacing is a thing that has been waiting.
  *
- * OUT, it comes at you. Head locked, no wandering, no hesitation, and faster
- * than you walk. It is not stronger than a villager because it does not need
- * to be: it is unarmed, ordinary health, and it will not stop, and the player
- * has to decide in about two seconds whether they are fighting it in a
- * corridor.
+ * OUT, it watches you. It stops where it stands, turns its whole body to you,
+ * and does not look away for as long as it can see you. It used to charge and
+ * bite; see stare() for why it no longer does.
  *
  * Iron doors are what keeps them in, and that is deliberate rather than
  * decorative. Villagers cannot open them. Nothing down here gets out unless a
@@ -70,20 +68,7 @@ public final class Feral {
 
 	/** How far it notices somebody. Short — it has been in a small room. */
 	private static final double NOTICE = 22.0;
-	private static final double STRIKE_RANGE = 2.2;
-	private static final int STRIKE_COOLDOWN = 20;
-	private static final float STRIKE_DAMAGE = 3.0F;
-	/**
-	 * Faster than a walking player, slower than a sprint.
-	 *
-	 * Pulled back from 1.35. A thing that closes on you quicker than you can
-	 * think about it is a jump scare, and this is meant to be a decision — you
-	 * see it start, and you have the two or three seconds it takes to arrive to
-	 * choose between the sword and the ladder.
-	 */
-	private static final double CHARGE = 1.08;
 
-	private static final Map<UUID, Long> lastStruck = new HashMap<>();
 	/** Which of them are currently coming, so the turn can be heard once. */
 	private static final Set<UUID> roused = new HashSet<>();
 
@@ -140,7 +125,7 @@ public final class Feral {
 	 * mod has a phase whose entire point is a lot of mobs near a player.
 	 *
 	 * Every fifth tick is four looks a second, which is far finer than anything it
-	 * drives: hunt() sets a target and watch() turns a head. Neither is perceptible
+	 * drives: stare() turns a body and watch() turns a head. Neither is perceptible
 	 * at 20Hz and neither is missed at 4Hz; at 2.5Hz a turned head starts to lag
 	 * a running player, so it stops here.
 	 */
@@ -179,7 +164,7 @@ public final class Feral {
 					// see them, and it comes. Nothing had to be told about the
 					// door — the geometry says it.
 					if (mob.hasLineOfSight(player)) {
-						hunt(level, mob, player);
+						stare(level, mob, player);
 					} else {
 						watch(level, mob, sweep);
 					}
@@ -196,26 +181,26 @@ public final class Feral {
 	 * Head locked the whole way, which is what separates this from an angry
 	 * mob: an angry mob looks where it is going.
 	 */
-	private static void hunt(ServerLevel level, Mob mob, ServerPlayer player) {
-		// The moment it turns, once and loudly. Pitched UP rather than down:
-		// the warden's own register belongs to something enormous, and raising
-		// it puts the same wrongness in a body the size of a man.
+	/**
+	 * OUT, IT WATCHES YOU. It used to come at you — head locked, faster than you
+	 * walk, a bite every second — and in the siege, with the storm and the turned
+	 * and him, a field of charging cows was not frightening, it was in the way.
+	 * Reported as exactly that. So now the one thing it does when it can see you
+	 * is the thing that was already the worst part: it stops, and it looks, and it
+	 * does not look away. Nothing here hurts anybody.
+	 */
+	private static void stare(ServerLevel level, Mob mob, ServerPlayer player) {
 		if (roused.add(mob.getUUID())) {
 			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
-				SoundEvents.WARDEN_ANGRY, SoundSource.HOSTILE, 1.0F, 1.45F);
-		} else if ((level.getGameTime() + Math.floorMod(mob.getUUID().hashCode(), 70)) % 70 == 0) {
-			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
-				SoundEvents.WARDEN_AGITATED, SoundSource.HOSTILE, 0.8F, 1.4F);
+				SoundEvents.WARDEN_ANGRY, SoundSource.HOSTILE, 0.7F, 1.45F);
 		}
 		mob.setTarget(null);
+		mob.getNavigation().stop();
 		mob.getLookControl().setLookAt(player, 90.0F, 90.0F);
-
 		float yaw = (float)(Math.atan2(
 			player.getZ() - mob.getZ(), player.getX() - mob.getX()) * (180.0 / Math.PI)) - 90.0F;
 		mob.yHeadRot = yaw;
-
-		mob.getNavigation().moveTo(player, CHARGE);
-		strike(level, mob, player);
+		mob.setYBodyRot(yaw);
 	}
 
 	/**
@@ -256,16 +241,4 @@ public final class Feral {
 		mob.setYBodyRot(angle * 0.3F);
 	}
 
-	private static void strike(ServerLevel level, Mob mob, ServerPlayer player) {
-		if (mob.distanceTo(player) > STRIKE_RANGE) {
-			return;
-		}
-		long now = level.getGameTime();
-		Long last = lastStruck.get(mob.getUUID());
-		if (last != null && now - last < STRIKE_COOLDOWN) {
-			return;
-		}
-		lastStruck.put(mob.getUUID(), now);
-		player.hurtServer(level, level.damageSources().mobAttack(mob), STRIKE_DAMAGE);
-	}
 }
