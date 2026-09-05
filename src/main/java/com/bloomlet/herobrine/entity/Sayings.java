@@ -306,30 +306,29 @@ public final class Sayings {
 		"They won't come past the fence. They don't have to. What you came for is inside.",
 	};
 	public static final String[] FOUND_TOWN = {
-		"The town. Don't go down the well first. I'll tell you why when we're out.",
-		"He got into people here. Not their houses — them. The baker held his own daughter under the water until she stopped. He was smiling. It was not his smile.",
-		"They went underground to get away from the sky. Some of them are still down there. Do not answer if they call your name.",
+		"The town. He drowned the baker's girl in that trough in front of everyone, wearing the baker.",
+		"Half of them are under the church. They will call you by name. Do not answer.",
+		"The map is in the library down there. Take it and we leave.",
 	};
 	public static final String[] FOUND_TOWER = {
-		"His tower. He built it to look down on us. I stood where you are standing and watched the top light up every night for a month.",
-		"I went up once. There was a table with straps on it. The straps were the right size for a child.",
-		"We are being watched. Don't turn round. Just walk.",
+		"His house is under this hill. He ate at a table set for two. The other chair was my daughter's.",
+		"There are shelves of names in there. Nine hundred with a line through. Lise has no line yet.",
+		"He knows we are here. He always knows. Move.",
 	};
 	public static final String[] FOUND_GAOL = {
-		"The prison. Cell nine. They kept a man in there for eleven weeks and cut something out of him every Sunday.",
-		"He came back. The only one who ever did. He could not stop laughing, and he could not tell us why.",
-		"If you hear something breathing behind a door down there, it is not asleep. It is counting.",
+		"The prison. Fourteen of us went in to check the cells. Six came out. The rest are still in nine.",
+		"Whatever is behind the shut doors does not move while you look at it. So look at it, and keep walking.",
+		"The map is in the warder's chest at the end. Then the tunnel. Not at night.",
 	};
 	public static final String[] FOUND_CHURCH = {
-		"This is where he lived, between the times he was seen. Under the altar. In the dark, with the bells.",
-		"The priest wrote it all down, then nailed his own hands to the door so he could not write any more. It is still in the book.",
-		"We are close now. He knows. He always knows.",
+		"The church. He lived under the altar. The priest fed him people and called it prayer.",
+		"I killed my brother in this yard. Or something wearing him. I still don't know which.",
+		"Our names are on the door. Nineteen of them. We are close now.",
 	};
 	public static final String[] FOUND_THRESHOLD = {
-		"The last house. This is where they lost him — and where I stopped looking, because I was afraid of what finding him would mean.",
-		"If we go through, know this: doors like his open one way. Do not count on coming back the way you went. Whatever we need, we bring.",
-		"The door under this house goes to his side. Everyone who went through and came back, came back wrong.",
-		"I am going through with you this time. Say nothing. Walk.",
+		"The last house. The door is under the floor. Eight went through on ropes. The ropes came back empty.",
+		"Jorunn came back with too many teeth. I put an axe in her here, where you are standing.",
+		"It opens one way. Whatever we need, we bring now. I am going through with you.",
 	};
 
 	/** A short story, one line at a time, at reading pace, past the quiet timer. */

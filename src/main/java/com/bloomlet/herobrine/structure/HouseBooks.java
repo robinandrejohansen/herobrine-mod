@@ -62,412 +62,69 @@ import net.minecraft.world.item.component.WrittenBookContent;
 public final class HouseBooks {
 	private HouseBooks() {}
 
-	// SIX BOOKS, ONE IN EVERY PLACE, SIX PAGES OR FEWER. Each says what happened
-	// where you are standing and where the next one is. They were ten, and two
-	// or three to a house, and the ones that were not the story were noise.
+	// SIX BOOKS, ONE IN EVERY PLACE, FIVE PAGES EACH. Each one says, plainly, what
+	// he did here and to whom, and where the next book is. Plain prose: the book
+	// wraps its own lines. No hints, no "it was not a fox". He killed people, and
+	// the pages say how.
 
 	/** 1. the farm. */
 	public static ItemStack one() {
 		return book("1. the farm", "Addexio",
-			"""
-			1. THE FARM.
-
-			My name is Addexio.
-			This was my home.
-
-			There are six of
-			these books. One at
-			every place it
-			happened. Read them
-			in order.""",
-
-			"""
-			The night it began my
-			daughter Lise came in
-			from the barn white
-			as milk. A man was
-			standing in the corn
-			with no lantern. No
-			face she could
-			describe. Only the
-			eyes.""",
-
-			"""
-			I went out with the
-			axe. The corn was
-			flat in a circle
-			twenty paces wide,
-			as if something had
-			stood there a long
-			time. One set of
-			footprints. They did
-			not lead in. They
-			did not lead out.""",
-
-			"""
-			Three nights later
-			the barn burned with
-			the animals shut in.
-			The bolt was thrown
-			from the OUTSIDE.
-			Lise said he watched
-			from the roof.
-			Smiling. She said he
-			knew her name.""",
-
-			"""
-			Then Lise was gone.
-			Her bed was warm. The
-			door was still
-			barred. On the
-			window, from the
-			inside, one word in
-			something that was
-			not ink:
-
-			MINE.""",
-
-			"""
-			I drew the way to the
-			town and put the map
-			where he would not
-			look: at the top of
-			the tower.
-
-			Do not sleep on the
-			road. He does not.
-
-			- A.""");
+			"My name is Addexio. This was my farm. He came here first. There are six books, one in every place he has been. Read them in order and you will know what he is and how to kill him.",
+			"The first night he stood in my corn and stared at the house until dawn. No lantern. Two white eyes. My daughter Lise waved at him from her window. She was seven. He waved back.",
+			"The third night he came inside. My wife screamed once. He had her by the hair in the kitchen and he put her head through the table. Then he smiled at me and walked out through the wall.",
+			"A week later he tore the door off the frame and carried Lise out over his shoulder while I lay with a broken leg screaming her name. She did not scream. She looked at me and smiled. Like him.",
+			"On her window, in her blood: MINE. Then he burned the barn with the animals shut inside, so I would understand. The map to the town is at the top of the tower. Do not sleep in this house. He comes back to it.");
 	}
 
 	/** 2. the town. */
 	public static ItemStack two() {
 		return book("2. the town", "Addexio",
-			"""
-			2. THE TOWN.
-
-			I came here for help.
-			I got here two days
-			after he did.""",
-
-			"""
-			The baker, Tomas,
-			held his own girl
-			under the trough
-			until she stopped
-			kicking. Then he
-			dried his hands and
-			asked the square who
-			wanted bread. His
-			eyes had a dot in
-			them.""",
-
-			"""
-			They hanged Tomas at
-			noon. At dusk he was
-			back in the bakery
-			with the rope still
-			on. Baking.
-
-			The smell was not
-			bread.""",
-
-			"""
-			Half of them went
-			underground to get
-			away from the sky.
-			They took the
-			children with them.
-			Under the church
-			there is a stair.
-			I have been down
-			once. I will not go
-			again.""",
-
-			"""
-			Some of them still
-			answer if you call.
-			They use the right
-			names. Do not answer
-			back. That is how he
-			learns your voice.""",
-
-			"""
-			The way on is in the
-			library under the
-			church. Take it and
-			leave. Nothing in
-			this town is asking
-			to be saved.
-
-			- A.""");
+			"He reached the town two days before I did. By the time I came through the gate they had already hanged three men for things he had done.",
+			"Tomas the baker drowned his own daughter in the horse trough on the square. Forty people watched. When she stopped moving he dried his hands and asked who wanted bread. His eyes had a black dot in them. That is his mark.",
+			"They hanged Tomas at noon. At dusk he was back in the bakery with the rope still on, kneading dough with the skin coming off his hands. Nobody ate the bread. It smelled of meat.",
+			"He took eleven children in one night, out of locked rooms. The parents dug into the hill under the church to hide the rest. Half the town went down there. None of them came back up.",
+			"They are still down there. Call a name and they answer with yours. Do not answer back. He learns voices. The map onward is in the library under the church. Take it and leave.");
 	}
 
 	/** 3. under the hill. */
 	public static ItemStack three() {
 		return book("3. under the hill", "Addexio",
-			"""
-			3. UNDER THE HILL.
-
-			This is where he
-			lived. Not haunted.
-			LIVED. There is a
-			bed. He slept in it.""",
-
-			"""
-			Look at the table.
-			Set for two. He ate
-			across from an empty
-			chair every night
-			for years, and
-			somebody washed the
-			second plate.""",
-
-			"""
-			In the far room the
-			shelves are full. Not
-			books. Names. Every
-			soul from every farm
-			for forty miles, in
-			the same hand, and a
-			line through most of
-			them.""",
-
-			"""
-			Lise is on the third
-			shelf.
-
-			There is no line
-			through her yet.
-
-			I stood there until
-			the candle went out.""",
-
-			"""
-			He came back while I
-			was here. I heard him
-			on the stair and hid
-			in the pool. He stood
-			over the water a long
-			time. He knew. He let
-			me live so I would
-			write this down.""",
-
-			"""
-			The way to the
-			prison is in the
-			chest by the stair.
-			He wanted me to have
-			it.
-
-			Go anyway.
-
-			- A.""");
+			"This is his house. Not a lair. A house. He built it under the tower and lived in it for years. There is a bed. He slept in it.",
+			"The table is set for two. The second chair was for Lise. Her ribbon is still tied to it. She sat across from him every night for a year and watched him eat. He does not eat food.",
+			"The back room is shelves, and every book on them is a list of names. Every farm for forty miles, every soul, in his hand. A red line through the ones he has finished with. I counted nine hundred lines.",
+			"Lise is on the third shelf. There is no line through her. Under her name he has written: NOT YET. STILL USEFUL.",
+			"He came home while I was reading. I hid in the pool, under the water, with my knife. He stood over it and looked straight down at me, and laughed, and left. He wants me writing. The map to the prison is in the chest by the stair.");
 	}
 
 	/** 4. cell nine. */
 	public static ItemStack four() {
 		return book("4. cell nine", "Addexio",
-			"""
-			4. CELL NINE.
-
-			They built this to
-			keep him out. They
-			ended up keeping
-			each other in.""",
-
-			"""
-			The rule was simple.
-			If you were not
-			yourself, you went in
-			a cell. Anyone could
-			say it of anyone. By
-			the second month the
-			warder was in four,
-			and the man who put
-			him there was in six.""",
-
-			"""
-			Marta from the mill
-			scratched STILL
-			MYSELF on her wall
-			every morning for
-			eleven days. On the
-			twelfth the scratches
-			were on the ceiling
-			and the door was
-			still locked.""",
-
-			"""
-			Cell nine. They put
-			a boy in it on a
-			Tuesday because he
-			would not blink.
-			Wednesday there was
-			blood on the ceiling
-			and nothing on the
-			floor. Nothing.
-
-			Not even the boy.""",
-
-			"""
-			Something is in nine
-			now. It is very tall
-			and it does not move
-			while you look at
-			it.
-
-			Look at it. Keep
-			looking. Walk
-			backwards to the
-			stair.""",
-
-			"""
-			The last of them dug
-			out through the back
-			wall and kept going.
-			The tunnel is still
-			there. So is the
-			map. Take the map.
-
-			Do not take the
-			tunnel at night.
-
-			- A.""");
+			"The prison was our idea. Lock up anyone he had touched before they turned. Iron doors, one warder with the keys. It kept them in. It also kept him in with them.",
+			"By the second month the warder was in cell four, because his wife said his voice had changed. The man who locked him in was in cell six by Friday. Anyone could say it of anyone. Everyone did.",
+			"Marta scratched STILL MYSELF into her wall every morning for eleven days. On the twelfth the words were carved into the ceiling, and Marta was hanging from the bars by her own hair.",
+			"Cell nine. A boy went in on Tuesday because he would not blink. On Wednesday the ceiling was red from wall to wall and the floor was empty. No body. His teeth were pushed into the door frame in a neat row.",
+			"Something lives in nine now. It does not move while you look at it. Do not stop looking. Walk backwards to the stair. The last four of us dug out through the back wall. The map is in the chest. Not the tunnel at night.");
 	}
 
 	/** 5. the church. */
 	public static ItemStack five() {
 		return book("5. the church", "Addexio",
-			"""
-			5. THE CHURCH.
-
-			He lived under the
-			altar. UNDER it. The
-			priest fed him for a
-			year and called it
-			prayer.""",
-
-			"""
-			Eleven of us went
-			down the altar stair
-			to bring him up.
-			Four came back. Not
-			the same four that
-			went down. The faces
-			were right.
-
-			The eyes were his.""",
-
-			"""
-			Father Ambrose
-			walked into the fire
-			he had lit for us and
-			did not scream. He
-			looked at me the
-			whole time.
-
-			That was not Ambrose
-			behind the eyes.""",
-
-			"""
-			I killed one of the
-			four that night. It
-			had my brother's
-			face. I do not know
-			if it was my brother.
-
-			I have not slept
-			since. That is three
-			years.""",
-
-			"""
-			What is left of the
-			village is here. We
-			are going to the last
-			house. There is a way
-			through. We have
-			decided.
-
-			Most of us will not
-			come back. I know.""",
-
-			"""
-			If you are reading
-			this, we failed. The
-			map is in the chest.
-
-			Do what we could
-			not.
-
-			- A.""");
+			"He lived under the altar. Under it. Father Ambrose fed him for a year and called it prayer. Then he began bringing him people, and he called that prayer too.",
+			"Eleven of us went down the altar stair to drag him into daylight and finish it. Four came back up. They wore our friends' faces and walked in their clothes, and the eyes were his.",
+			"Ambrose lit a fire to burn the four. He walked into it himself instead, and stood in the flames staring at me without a sound until his face slid off. Ambrose had been dead a month.",
+			"That night I killed one of the four with my hands. It had my brother's face and it said my name in his voice while I did it. I do not know if it was him. I have not slept since.",
+			"Nineteen of us are left. We are going to the last house and through his door, to end it or die there. Our names are on the church door. If you are reading this, we failed. The map is in the chest.");
 	}
 
 	/** 6. the last house. */
 	public static ItemStack six() {
 		return book("6. the last house", "Addexio",
-			"""
-			6. THE LAST HOUSE.
-
-			Nineteen of us came
-			down these stairs.
-			Eleven came back up.
-
-			I am writing this on
-			the way down again.""",
-
-			"""
-			The door under the
-			floor is not a door.
-			It is a mouth. It
-			breathes. Put your
-			hand near it and
-			your hand is colder
-			for a day.""",
-
-			"""
-			Eight went through.
-			We heard them for
-			about a minute. Then
-			we heard ONE voice
-			speaking with all
-			eight mouths, and it
-			was saying our names.""",
-
-			"""
-			Jorunn came back.
-			Only Jorunn. She
-			stood in the frame
-			and said IT IS
-			BEAUTIFUL and her
-			teeth were wrong.
-
-			I put her down
-			myself. God forgive
-			me.""",
-
-			"""
-			On the other side is
-			a city he built out
-			of the people he
-			took. Over it, a
-			castle. He is in it.
-			He is waiting.
-
-			He has been waiting
-			for YOU.""",
-
-			"""
-			The door does not
-			open twice. Go
-			through and you
-			finish it, or you
-			stay.
-
-			I am going. Come and
-			find me.
-
-			- Addexio.""");
+			"Nineteen of us came down these stairs to the door. Eleven came back up. I am writing this on the way down for the second time. There will be no seventh book.",
+			"The door under the floor is a hole in the world, and it breathes. Hold your hand near it and your hand is cold for a day. Put your hand in it and you lose the hand. Erik did.",
+			"Eight went through with ropes round their waists. For a minute they shouted that it was dark and raining. Then one voice spoke through all eight of them and said our names, one by one, and the ropes went slack.",
+			"Only Jorunn came back. She stood in the frame, dripping, and said IT IS BEAUTIFUL. Her mouth had too many teeth. I killed her with an axe before she finished. It took three strokes. God forgive me.",
+			"On his side is a city built of the people he took, and a castle, and he sits in it waiting. For YOU. The door opens one way. Go through and finish him, or stay. I am going now. Come and find me. Bring everything.");
 	}
 
 	private static final int TITLE_FITS = 32;
