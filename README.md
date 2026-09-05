@@ -278,6 +278,7 @@ play.
 | `resite` | forget where the places were going to go; choose again near whoever is online. Leaves what is built |
 | `turned` | put one of the turned in the nearest village |
 | `watch` | post the prison's watch around where you stand: three of the turned and a gaunt, who hold that ground |
+| `addexio` | bring Addexio now, whatever kept him away (an old save's "has come" mark, the twenty minutes not yet lived, no morning outdoors), and print which it was |
 | `locate` · `here` · `speed` | find him, bring him here, change his pace |
 | `house` · `town` · `castle` · `recastle` · `chamber` · `passage` · `threshold` · `theway` · `aftermath` · `blueprint` | raise a place, or the ending's aftermath, where you stand |
 | `glimpse` · `sign` · `warning` · `dark` · `hunt` · `force` · `provoke` · `gaunt` | fire one event |

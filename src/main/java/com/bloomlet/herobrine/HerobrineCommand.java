@@ -307,6 +307,14 @@ public final class HerobrineCommand {
 			// cannot be looked at into existence any other way. Its whole rule is
 			// that it does not move while observed, so a debug spawn in front of
 			// the player is the ONLY way to watch it do nothing on purpose.
+			.then(Commands.literal("addexio").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					String why = com.bloomlet.herobrine.manifest.Company.summon((ServerLevel)p.level(), p);
+					ctx.getSource().sendSuccess(() -> Component.literal(
+						"Addexio is coming for you now. What kept him: " + why), false);
+					return 1;
+				}))
+
 			.then(Commands.literal("watch").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
 					int stood = com.bloomlet.herobrine.manifest.Watch.raise(

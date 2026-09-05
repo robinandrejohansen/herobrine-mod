@@ -105,6 +105,43 @@ public final class Company {
 			level.getServer().overworld().getAttached(HAS_COME));
 	}
 
+	/**
+	 * /herobrine addexio. HE IS FETCHED, WHATEVER STOPPED HIM. A server that
+	 * predates the first-light opening can be stuck: the "has come" mark set by an
+	 * older version with the man himself long gone, or twenty minutes of the new
+	 * clock not yet lived, or nobody ever standing outside in a morning. This
+	 * clears the mark and brings him now — walking out of the trees toward the
+	 * farm if there is one, else to the player — and says in the log which of
+	 * those it was, so the next server does not need the command.
+	 */
+	public static String summon(ServerLevel level, ServerPlayer player) {
+		ServerLevel over = level.getServer().overworld();
+		String why = why(over, player);
+		over.setAttached(HAS_COME, false);
+		BlockPos house = Whereabouts.home(over);
+		if (house != null) {
+			comeFor(over, player, house);
+		} else {
+			arrives(over, player);
+		}
+		HerobrineMod.LOGGER.info("addexio was summoned by {} ({})", player.getName().getString(), why);
+		return why;
+	}
+
+	/** What, if anything, was keeping him away. */
+	public static String why(ServerLevel over, ServerPlayer player) {
+		int lived = player.getAttachedOrElse(LIVED, 0);
+		var clock = over.registryAccess().get(net.minecraft.world.clock.WorldClocks.OVERWORLD);
+		String when = "unknown time";
+		if (clock.isPresent()) {
+			long day = Math.floorMod(over.getServer().clockManager().getTotalTicks(clock.get()), (long) A_DAY);
+			when = day < MORNING_ENDS ? "morning (" + day + ")" : "not morning (" + day + ")";
+		}
+		return "hasCome=" + hasCome(over) + ", lived=" + lived + "/" + A_DAY + " ticks, " + when
+			+ ", farm=" + (Whereabouts.home(over) != null) + ", houses=" + com.bloomlet.herobrine.Config.get().houses
+			+ ", sky=" + over.canSeeSky(player.blockPosition());
+	}
+
 	/** How far out he first appears, and how far he must be able to see. */
 	private static final int COMES_FROM_MIN = 56;
 	private static final int COMES_FROM_MAX = 84;
