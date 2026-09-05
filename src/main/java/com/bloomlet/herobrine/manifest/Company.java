@@ -454,6 +454,39 @@ public final class Company {
 		}
 	}
 
+	/**
+	 * THE SECOND TELLING. Somebody has gone down into the place — under the church,
+	 * into his house, down the prison stair, under the altar, to the door — and the
+	 * story of what happened down there is told where it happened, a line at a time,
+	 * with a heartbeat under it. This is the scary half; the arrival was the warning.
+	 */
+	public static void placeBelow(ServerLevel level, String place) {
+		String[] story = switch (place) {
+			case "TOWN" -> com.bloomlet.herobrine.entity.Sayings.TOWN_BELOW;
+			case "TOWER" -> com.bloomlet.herobrine.entity.Sayings.TOWER_BELOW;
+			case "GAOL" -> com.bloomlet.herobrine.entity.Sayings.GAOL_BELOW;
+			case "CHURCH" -> com.bloomlet.herobrine.entity.Sayings.CHURCH_BELOW;
+			case "THRESHOLD" -> com.bloomlet.herobrine.entity.Sayings.THRESHOLD_BELOW;
+			default -> null;
+		};
+		if (story == null) {
+			return;
+		}
+		for (ServerPlayer with : level.players()) {
+			for (CompanionEntity her : hers(level, with)) {
+				if (her.distanceTo(with) > 40.0) {
+					continue;
+				}
+				level.playSound(null, with.blockPosition(), net.minecraft.sounds.SoundEvents.WARDEN_HEARTBEAT,
+					net.minecraft.sounds.SoundSource.AMBIENT, 2.0F, 0.6F);
+				com.bloomlet.herobrine.entity.Sayings.tell(level, her, with, story, 40);
+				HerobrineMod.LOGGER.info("addexio tells {} what happened down in the {}", with.getName().getString(),
+					place.toLowerCase(java.util.Locale.ROOT));
+				return;
+			}
+		}
+	}
+
 	/** His watch has just been posted at a place somebody is walking toward. Addexio, if he is with them, says so. */
 	public static void watched(ServerLevel level, BlockPos site) {
 		for (ServerPlayer with : level.players()) {

@@ -866,6 +866,7 @@ public final class Dwellings {
 					com.bloomlet.herobrine.manifest.Watch.post(overworld, place.name(), BlockPos.of(held), place.ordinal());
 				}
 				arriving(overworld, place);
+				wentDown(overworld, place);
 				Long where = overworld.getAttached(place.site);
 				if (where != null) {
 					Approach.heard(overworld, BlockPos.of(where), place.from);
@@ -1168,6 +1169,39 @@ public final class Dwellings {
 	 * for no reason. This wants to land in the same breath as "there it is".
 	 */
 	private static final int ARRIVING = 60;
+
+	/** The second telling: somebody within this of the site, flat, and this far below its surface. */
+	private static final int BELOW_WITHIN = 48;
+	private static final int BELOW_BY = 6;
+	private static final java.util.Map<Place, AttachmentType<Boolean>> BELOW_TOLD =
+		new java.util.EnumMap<>(Place.class);
+	static {
+		for (Place place : Place.values()) {
+			BELOW_TOLD.put(place, AttachmentRegistry.createPersistent(
+				HerobrineMod.id("below_told_" + place.name().toLowerCase(java.util.Locale.ROOT)), Codec.BOOL));
+		}
+	}
+
+	private static void wentDown(ServerLevel level, Place place) {
+		if (place == Place.HOMESTEAD || Boolean.TRUE.equals(level.getAttached(BELOW_TOLD.get(place)))) {
+			return;
+		}
+		Long chosen = level.getAttached(place.site);
+		if (chosen == null) {
+			return;
+		}
+		BlockPos site = BlockPos.of(chosen);
+		for (ServerPlayer player : level.players()) {
+			double dx = player.getX() - site.getX();
+			double dz = player.getZ() - site.getZ();
+			if (dx * dx + dz * dz <= (double) BELOW_WITHIN * BELOW_WITHIN
+				&& player.getBlockY() <= site.getY() - BELOW_BY) {
+				level.setAttached(BELOW_TOLD.get(place), true);
+				com.bloomlet.herobrine.manifest.Company.placeBelow(level, place.name());
+				return;
+			}
+		}
+	}
 
 	/**
 	 * HE COMES HOME, AND THE BUILDING HAS A CLOCK ON IT.

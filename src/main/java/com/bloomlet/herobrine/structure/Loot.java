@@ -696,6 +696,16 @@ public final class Loot {
 				chest.setItem(free.remove(random.nextInt(free.size())), prize(access, random));
 			}
 		}
+		// AND ENCHANTED BOOKS, A LOT MORE OF THEM. Three chests in ten in the town,
+		// seven in ten from house two on: by the last house there is an anvil's
+		// worth to combine.
+		if (!free.isEmpty() && access != null) {
+			int inTen = late(tier) ? 7 : (town ? 3 : 1);
+			if (random.nextInt(10) < inTen) {
+				int quality = tier == Tier.HIS_CITY || tier == Tier.KEEP ? 3 : late(tier) ? 2 : 1;
+				chest.setItem(free.remove(random.nextInt(free.size())), tome(access, random, quality));
+			}
+		}
 
 		// AND IN THE LAST HOUSES, SOME OF IT IS YOURS.
 		//
@@ -743,6 +753,28 @@ public final class Loot {
 	 * in two it is a loot table. At one in six it is something that happened.
 	 */
 	private static final int CHANCE_IN = 6;
+
+	/**
+	 * A GOOD ENCHANTED BOOK. The story books are gone — Addexio tells it — and
+	 * what sits in the chest instead is something you can use: one charm at the
+	 * farm and in the town, two from his house on, two at their top level from the
+	 * church on. Enough of them along the road, on an anvil at the last house,
+	 * make the gear the fight needs. The charms come from the same list the loose
+	 * books draw on, so no two chests hand you the same pair.
+	 */
+	public static ItemStack tome(RegistryAccess access, RandomSource random, int quality) {
+		Registry<Enchantment> book = access.lookupOrThrow(Registries.ENCHANTMENT);
+		ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
+		int first = random.nextInt(BOOKS.length);
+		Charm a = BOOKS[first];
+		put(stack, book, quality >= 3 ? new Charm(a.what(), a.max(), a.max()) : a, random);
+		if (quality >= 2) {
+			int second = (first + 1 + random.nextInt(BOOKS.length - 1)) % BOOKS.length;
+			Charm b = BOOKS[second];
+			put(stack, book, quality >= 3 ? new Charm(b.what(), b.max(), b.max()) : b, random);
+		}
+		return stack;
+	}
 
 	/** House two and everything after it. */
 	private static boolean late(Tier tier) {

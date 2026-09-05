@@ -1294,7 +1294,7 @@ public final class Threshold {
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
 		if (level.getBlockEntity(at)
 				instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
-			chest.setItem(0, HouseBooks.six());
+			chest.setItem(0, Loot.tome(level.registryAccess(), random, 3));
 			HerobrineMod.LOGGER.info("the last word is at [{}, {}, {}]",
 				at.getX(), at.getY(), at.getZ());
 		}

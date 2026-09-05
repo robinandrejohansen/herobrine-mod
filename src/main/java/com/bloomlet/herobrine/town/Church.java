@@ -383,6 +383,7 @@ public final class Church {
 				Blueprint.turned(Direction.SOUTH, facing)));
 		if (level.getBlockEntity(box)
 				instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+			chest.setItem(0, com.bloomlet.herobrine.structure.Loot.tome(level.registryAccess(), random, 1));
 			com.bloomlet.herobrine.structure.Loot.scatter(chest, random,
 				com.bloomlet.herobrine.structure.Loot.Tier.TOWN_TOOLS);
 		}

@@ -255,7 +255,7 @@ public final class Sayings {
 	 */
 	static final String[] INTRODUCTION = {
 		"Don't stop here. Not at this house. He knows this house.",
-		"Addexio. I lived here, before. I wrote six books — one in every place he took. Read them in order.",
+		"Addexio. I lived here, before. I will tell you what he did, at every place he did it. Listen when I talk.",
 		"He has been seen again. Three nights ago. He does not come back for nothing.",
 		"There is a map at the top of the tower. It goes to the town. Climb up and take it — and do not read it out loud.",
 		"Everyone I have ever walked this road with is dead. I am telling you now, while you can still say no.",
@@ -301,34 +301,71 @@ public final class Sayings {
 		"He never speaks. Have you noticed? Everything else does.",
 		"Why us? Why did he come to my farm and not the next one?",
 	};
+	public static final String[] TOWN_BELOW = {
+		"We are under the church now. Keep your voice down.",
+		"They are still down here. They will call your name. They have your voice.",
+		"Do not answer. If you answer, he learns you.",
+		"The map is in the library. Take it. Then we go back up.",
+	};
+	public static final String[] TOWER_BELOW = {
+		"This is his house. He slept here. He ate here.",
+		"The table is set for two. The other chair was my daughter's.",
+		"In the back room the shelves are full of names. Every person for forty miles.",
+		"A red line means he is finished with them. Nine hundred lines.",
+		"Lise is on the third shelf. No line. He wrote: NOT YET.",
+		"The map to the prison is in the chest by the stairs. Take it. I cannot stay in here.",
+	};
+	public static final String[] GAOL_BELOW = {
+		"Stay close. Cell nine is on the left, near the end.",
+		"They put a boy in there because he would not blink.",
+		"The next morning the ceiling was red. The floor was empty. No body. Only his teeth, pushed into the door frame.",
+		"Something lives in there now. It is very tall.",
+		"It does not move while you look at it. So look at it.",
+		"When you have to turn round, walk backwards.",
+		"The map is in the warder's chest at the far end. Then we leave.",
+	};
+	public static final String[] CHURCH_BELOW = {
+		"This is where we found him. Under the altar.",
+		"The priest walked into his own fire here. He did not scream. He watched me the whole time.",
+		"I killed my brother down here. Or the thing wearing him. I still do not know which.",
+		"The map is in the chest. Take it. We are almost at the end.",
+	};
+	public static final String[] THRESHOLD_BELOW = {
+		"There. That is the door. It breathes. Do not touch it yet.",
+		"Jorunn came back through it. She said it was beautiful. Her mouth had too many teeth.",
+		"I killed her with an axe. Right here. It took three swings.",
+		"On the other side is a city made of the people he took, and a castle. He is in the castle. He is waiting for you.",
+		"The door opens one way. Take everything you need. When you go, I go with you.",
+	};
 	public static final String[] WATCHED = {
 		"He's left a watch on it. Not villagers — look at how they stand. They don't fidget.",
 		"They won't come past the fence. They don't have to. What you came for is inside.",
 	};
 	public static final String[] FOUND_TOWN = {
-		"The town. He drowned the baker's girl in that trough in front of everyone, wearing the baker.",
-		"Half of them are under the church. They will call you by name. Do not answer.",
-		"The map is in the library down there. Take it and we leave.",
+		"This is the town. He got here before me.",
+		"The baker drowned his own daughter in that trough. Everyone watched. Nobody stopped him.",
+		"They hanged the baker. That night he was back in his shop, baking, with the rope still on.",
+		"Half the town went under the church to hide. None of them came back up.",
 	};
 	public static final String[] FOUND_TOWER = {
-		"His house is under this hill. He ate at a table set for two. The other chair was my daughter's.",
-		"There are shelves of names in there. Nine hundred with a line through. Lise has no line yet.",
-		"He knows we are here. He always knows. Move.",
+		"His tower. He built it to look down on us.",
+		"But he did not live in the tower. He lived under it.",
+		"There is a well behind the tower. The stairs go down to his house.",
 	};
 	public static final String[] FOUND_GAOL = {
-		"The prison. Fourteen of us went in to check the cells. Six came out. The rest are still in nine.",
-		"Whatever is behind the shut doors does not move while you look at it. So look at it, and keep walking.",
-		"The map is in the warder's chest at the end. Then the tunnel. Not at night.",
+		"This is the prison. They built it to lock up anyone he had touched.",
+		"It did not work. He was already inside. In the people.",
+		"Fourteen of us came here to check the cells. Six of us walked out.",
 	};
 	public static final String[] FOUND_CHURCH = {
-		"The church. He lived under the altar. The priest fed him people and called it prayer.",
-		"I killed my brother in this yard. Or something wearing him. I still don't know which.",
-		"Our names are on the door. Nineteen of them. We are close now.",
+		"The church. He lived under the altar.",
+		"The priest fed him. First food. Then people. He called it prayer.",
+		"Eleven of us went down to drag him out. Four came back up. They were not our friends any more.",
 	};
 	public static final String[] FOUND_THRESHOLD = {
-		"The last house. The door is under the floor. Eight went through on ropes. The ropes came back empty.",
-		"Jorunn came back with too many teeth. I put an axe in her here, where you are standing.",
-		"It opens one way. Whatever we need, we bring now. I am going through with you.",
+		"The last house. The door to his world is under the floor.",
+		"Nineteen of us came here. Eleven left. Eight went through the door on ropes.",
+		"The ropes came back empty.",
 	};
 
 	/** A short story, one line at a time, at reading pace, past the quiet timer. */

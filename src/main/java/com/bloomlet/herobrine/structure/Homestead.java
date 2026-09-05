@@ -406,7 +406,7 @@ public final class Homestead {
 			// chest() is the helper every container in the house goes through, so it
 			// takes null for the other four. Five copies of the introduction is not
 			// generosity, it is noise.
-			case '2' -> chest(level, pos, HouseBooks.one(), random);
+			case '2' -> chest(level, pos, Loot.tome(level.registryAccess(), random, 1), random);
 			case '3' -> chest(level, pos, null, random);
 			case '4' -> chest(level, pos, null, random);
 			case 'c' -> set(level, pos, Blocks.CRAFTING_TABLE.defaultBlockState());
@@ -554,7 +554,7 @@ public final class Homestead {
 			// Deliberate duplication and the only one on the trail. Ten numbered
 			// books are worth nothing to somebody who never found number one, and a
 			// chest is missable in a way an open lectern is not.
-			lectern.setBook(HouseBooks.one());
+			lectern.setChanged();      // the lectern stays; the story is Addexio's now, not a book's
 		}
 	}
 

@@ -82,13 +82,14 @@ twenty blocks of the door, and lets go of anyone who gets thirty-six away. They
 do not despawn and they will not follow you home. The book is inside. You go
 through them.
 
-### The six books
+### The story, told
 
-All by Addexio, one in every place, six pages or fewer, in the order he wrote
-them. Each one says what happened there and where the next one is:
-
-1. the farm · 2. the town · 3. under the hill · 4. cell nine · 5. the church ·
-6. the last house
+There are no story books. Addexio tells it, where it happened, in plain words:
+once when you reach a place, and again, with a heartbeat under it, when you go
+down into it. The chests hold enchanted books instead — one charm at the farm
+and the town, two-charm books from his house on, top-level pairs from the church
+on, in seven chests out of ten — so that by the last house an anvil turns them
+into the gear the fight needs.
 
 ### Addexio
 

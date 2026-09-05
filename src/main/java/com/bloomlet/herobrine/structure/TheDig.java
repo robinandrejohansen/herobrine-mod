@@ -298,7 +298,7 @@ public final class TheDig {
 		level.setBlock(chestAt, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
 		if (level.getBlockEntity(chestAt) instanceof ChestBlockEntity chest) {
-			chest.setItem(0, HouseBooks.four());
+			chest.setItem(0, Loot.tome(level.registryAccess(), random, 2));
 			chest.setItem(2, new ItemStack(Items.IRON_INGOT, 6));
 			Loot.scatter(chest, random, Loot.Tier.GAOL);
 		}

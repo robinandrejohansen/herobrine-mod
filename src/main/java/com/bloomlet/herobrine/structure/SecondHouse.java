@@ -478,7 +478,7 @@ public final class SecondHouse {
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
 		if (level.getBlockEntity(stand.above())
 				instanceof net.minecraft.world.level.block.entity.LecternBlockEntity names) {
-			names.setBook(HouseBooks.three());
+			names.setChanged();      // the shelves of names are the story; Addexio reads them to you
 		}
 		level.setBlock(f.offset(11, 1, 17), Blocks.DARK_OAK_STAIRS.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
@@ -486,7 +486,8 @@ public final class SecondHouse {
 		level.setBlock(chestAt, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH), 2);
 		if (level.getBlockEntity(chestAt) instanceof ChestBlockEntity chest) {
-			chest.setItem(0, new ItemStack(Items.TORCH, 8));
+			chest.setItem(0, Loot.tome(level.registryAccess(), random, 2));
+			chest.setItem(3, new ItemStack(Items.TORCH, 8));
 			chest.setItem(1, new ItemStack(Items.PAPER, 9));
 			Loot.scatter(chest, random, Loot.Tier.TOWER);
 		}
