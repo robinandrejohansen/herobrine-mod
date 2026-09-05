@@ -795,9 +795,24 @@ public class CompanionEntity extends PathfinderMob {
 			}
 			return;
 		}
-		if (this.walkingIn > 0 || this.isSpokenFor() || this.isLeading()
-			|| Boolean.TRUE.equals(here.getServer().overworld().getAttached(INTRODUCED))) {
+		if (this.walkingIn > 0 || this.isSpokenFor() || this.isLeading()) {
 			return;      // not while he is bringing you somewhere — the introduction is for when you are there
+		}
+		if (Boolean.TRUE.equals(here.getServer().overworld().getAttached(INTRODUCED))) {
+			// HE HAS SAID IT ALL BEFORE. A later Addexio — sent again after the first
+			// was lost, or fetched by the command at house three — skips the speech
+			// about the farm and simply joins: the nearest player within reach is his,
+			// and he says so in one line. The places still get their lines, because
+			// those are remembered by the world, not by him.
+			if (here.getNearestPlayer(this, COMES_TO_YOU_FROM) instanceof ServerPlayer to
+				&& to.isAlive() && !to.isSpectator()) {
+				this.goWith(to);
+				this.lastSpoke = -100000L;
+				Sayings.say(here, this, to, Sayings.WALKED_TO_YOU);
+				HerobrineMod.LOGGER.info("addexio rejoined {} without the introduction — it has been given before",
+					to.getName().getString());
+			}
+			return;
 		}
 		if (!(here.getNearestPlayer(this, COMES_TO_YOU_FROM) instanceof ServerPlayer to)
 			|| !to.isAlive() || to.isSpectator()) {

@@ -138,7 +138,11 @@ public final class Company {
 		String why = why(over, player);
 		over.setAttached(HAS_COME, false);
 		BlockPos house = Whereabouts.home(over);
-		if (house != null) {
+		if (house == null) {
+			house = com.bloomlet.herobrine.structure.Dwellings.homesteadSite(over);
+		}
+		// Only lead to the farm if nobody has been there yet; past that he joins where you are.
+		if (house != null && !com.bloomlet.herobrine.structure.Dwellings.homesteadFound(over)) {
 			comeFor(over, player, house);
 		} else {
 			arrives(over, player);
