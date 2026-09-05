@@ -1619,6 +1619,38 @@ public final class Dwellings {
 	 *
 	 * @return how many places were forgotten
 	 */
+	/**
+	 * /herobrine refresh. A SERVER OLDER THAN THE FEATURE. Everything laid at build
+	 * time — the battlefield round each place — never happened for places that
+	 * were standing before the feature did. This lays it now for every raised
+	 * place that has not had it, and says which places stand at all. What it
+	 * cannot do is rebuild a house to a newer plan without rebuilding it on top of
+	 * itself, so the gaol, the manor under the tower and the undercity keep the
+	 * shape they were built with.
+	 */
+	public static String refresh(ServerLevel level) {
+		ServerLevel over = level.getServer().overworld();
+		java.util.List<String> standing = new java.util.ArrayList<>();
+		java.util.List<String> dressed = new java.util.ArrayList<>();
+		for (Place place : Place.values()) {
+			if (!Boolean.TRUE.equals(over.getAttached(place.up))) {
+				continue;
+			}
+			String name = place.name().toLowerCase(java.util.Locale.ROOT);
+			standing.add(name);
+			Long site = over.getAttached(place.site);
+			if (site == null || Ruins.laid(over, place.name())) {
+				continue;
+			}
+			Ruins.around(over, place.name(), BlockPos.of(site));
+			dressed.add(name);
+		}
+		HerobrineMod.LOGGER.info("refresh: standing {}, battlefields laid now for {}", standing, dressed);
+		return "standing: " + (standing.isEmpty() ? "nothing yet" : String.join(", ", standing))
+			+ ". battlefields laid now: " + (dressed.isEmpty() ? "none needed" : String.join(", ", dressed))
+			+ ". Places not yet built will get every new thing when they are.";
+	}
+
 	public static int forget(ServerLevel level) {
 		ServerLevel overworld = level.getServer().overworld();
 		int cleared = 0;

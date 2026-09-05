@@ -48,8 +48,30 @@ public final class Ruins {
 		};
 	}
 
-	/** Called by Dwellings once a place stands. Everything is scheduled; nothing runs now. */
+	/** Once per place per world: the battlefield is laid a single time, whether by the build or by /herobrine refresh. */
+	private static final java.util.Map<String, net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean>> LAID =
+		new java.util.HashMap<>();
+	static {
+		for (String place : new String[] {"HOMESTEAD", "TOWN", "TOWER", "GAOL", "CHURCH", "THRESHOLD"}) {
+			LAID.put(place, net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.createPersistent(
+				HerobrineMod.id("battlefield_" + place.toLowerCase(java.util.Locale.ROOT)),
+				com.mojang.serialization.Codec.BOOL));
+		}
+	}
+
+	/** Has this place had its battlefield. */
+	public static boolean laid(ServerLevel level, String place) {
+		net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> flag = LAID.get(place);
+		return flag != null && Boolean.TRUE.equals(level.getServer().overworld().getAttached(flag));
+	}
+
+	/** Called by Dwellings once a place stands, and by refresh for places that stood before this existed. Everything is scheduled; nothing runs now. */
 	public static void around(ServerLevel level, String place, BlockPos site) {
+		net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> flag = LAID.get(place);
+		if (flag == null || laid(level, place)) {
+			return;
+		}
+		level.getServer().overworld().setAttached(flag, true);
 		Toll toll = tollFor(place);
 		RandomSource random = level.getRandom();
 		int at = 100;      // the town's own pieces are still going up for the first three seconds

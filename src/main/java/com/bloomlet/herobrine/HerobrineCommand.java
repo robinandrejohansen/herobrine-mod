@@ -315,6 +315,13 @@ public final class HerobrineCommand {
 					return 1;
 				}))
 
+			.then(Commands.literal("refresh").executes(ctx -> {
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					String report = Dwellings.refresh((ServerLevel)p.level());
+					ctx.getSource().sendSuccess(() -> Component.literal(report), false);
+					return 1;
+				}))
+
 			.then(Commands.literal("watch").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
 					int stood = com.bloomlet.herobrine.manifest.Watch.raise(
