@@ -122,16 +122,15 @@ public final class Signs {
 
 	public static boolean write(ServerLevel level, ServerPlayer player) {
 		List<Placement> options = findWalls(level, player);
-		if (options.isEmpty()) {
-			return false;
-		}
-
 		Phase phase = Wrath.phase(level.getServer());
-		Placement spot = options.get(level.getRandom().nextInt(options.size()));
 		String[] lines = SignLines.pick(phase, player, level.getRandom());
 		if (lines == null) {
 			return false;   // everything written lately; say nothing
 		}
+		if (options.isEmpty()) {
+			return post(level, player, lines);      // no wall: a sign on a post, in the open, facing you
+		}
+		Placement spot = options.get(level.getRandom().nextInt(options.size()));
 
 		// HE PUTS IT UP, and it takes him about a second.
 		//
@@ -174,6 +173,49 @@ public final class Signs {
 	 * Air blocks with a solid block behind them — somewhere a wall sign can
 	 * legally hang — that are behind the player and unlit enough to be his.
 	 */
+	/**
+	 * A STANDING SIGN IN THE OPEN. Twelve to twenty-four blocks off, behind you or
+	 * to the side, never where you are looking, turned to face you, on ground
+	 * with nothing built on it. Half the signs used to fail for want of a wall.
+	 */
+	private static boolean post(ServerLevel level, ServerPlayer player, String[] lines) {
+		net.minecraft.util.RandomSource random = level.getRandom();
+		Vec3 look = player.getViewVector(1.0F).normalize();
+		for (int attempt = 0; attempt < 30; attempt++) {
+			double angle = random.nextDouble() * Math.PI * 2.0;
+			double range = 12.0 + random.nextDouble() * 12.0;
+			int x = (int) Math.round(player.getX() + Math.cos(angle) * range);
+			int z = (int) Math.round(player.getZ() + Math.sin(angle) * range);
+			int y = com.bloomlet.herobrine.structure.Ground.topOf(level, x, z);
+			BlockPos ground = new BlockPos(x, y, z);
+			BlockPos at = ground.above();
+			if (!level.getBlockState(ground).isSolid() || !level.getBlockState(at).isAir()
+				|| !level.getFluidState(at).isEmpty() || isInFrontOf(player, look, at)
+				|| DwellTracker.isBuilt(level, ground)
+				|| com.bloomlet.herobrine.structure.Dwellings.nearAPlace(level, at, 24.0)) {
+				continue;
+			}
+			double toYou = Math.toDegrees(Math.atan2(player.getZ() - (x + 0.5), player.getX() - (x + 0.5))) - 90.0;
+			int rotation = Math.floorMod((int) Math.round(toYou / 22.5), 16);
+			level.setBlockAndUpdate(at, Blocks.OAK_SIGN.defaultBlockState()
+				.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.ROTATION_16, rotation));
+			if (!(level.getBlockEntity(at) instanceof SignBlockEntity entity)) {
+				return false;
+			}
+			ManifestationDirector.noteLocation(at);
+			entity.setAttached(HIS, true);
+			entity.updateText(text -> {
+				net.minecraft.world.level.block.entity.SignText updated = text;
+				for (int i = 0; i < lines.length && i < 4; i++) {
+					updated = updated.setMessage(i, Component.literal(lines[i]));
+				}
+				return updated;
+			}, true);
+			return true;
+		}
+		return false;
+	}
+
 	private static List<Placement> findWalls(ServerLevel level, ServerPlayer player) {
 		List<Placement> found = new ArrayList<>();
 		BlockPos origin = player.blockPosition();

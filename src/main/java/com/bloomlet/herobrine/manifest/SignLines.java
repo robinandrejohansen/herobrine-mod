@@ -154,12 +154,32 @@ public final class SignLines {
 		{"%s", "stop"},
 	};
 
-	/** He knows the name. Only from MIMIC. */
+	/**
+	 * HE KNOWS THE NAME, AND HE USES IT. From TRESPASSER, when the signs begin,
+	 * and weighted double. Three kinds, mixed: he sees you, he threatens you, he
+	 * calls you somewhere. Every line is short enough for a sign row.
+	 */
 	private static final String[][] NAMED = {
 		{"%s"},
-		{"i can see", "the light"},
 		{"%s", "i see you"},
 		{"%s", "i have been", "inside your", "house"},
+		{"i watched", "you sleep", "%s"},
+		{"%s", "your door", "was open"},
+		{"%s", "look behind", "you"},
+		{"%s", "i counted", "your torches"},
+		{"%s", "i am under", "your floor"},
+		{"%s", "the light", "does not", "help"},
+		{"%s", "run"},
+		{"%s", "you left", "i did not"},
+		{"i know where", "you live", "%s"},
+		{"%s", "come to", "the water"},
+		{"come down", "%s", "it is warm", "here"},
+		{"%s", "your friends", "are with me"},
+		{"%s", "this is", "the last", "sign"},
+		{"i am not", "behind you", "%s", "yet"},
+		{"%s", "stop", "building"},
+		{"they said", "your name", "%s", "before"},
+		{"%s", "dig here"},
 	};
 
 	/**
@@ -348,7 +368,7 @@ public final class SignLines {
 		if (com.bloomlet.herobrine.wrath.Heat.of(player) > 60) {
 			groups.add(DEFIANT);
 		}
-		if (phase.atLeast(Phase.MIMIC)) {
+		if (phase.atLeast(Phase.TRESPASSER)) {
 			groups.add(NAMED);
 		}
 		// FOURTH_WALL is deliberately NOT here. Everything returned from this

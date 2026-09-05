@@ -55,12 +55,12 @@ public final class Signature {
 	public static boolean grove(ServerLevel level, ServerPlayer player) {
 		RandomSource random = level.getRandom();
 		BlockPos middle = around(level, player, random);
-		if (middle == null) {
+		if (middle == null || !Marks.clearOf(level, middle)) {
 			return false;
 		}
 
 		int stripped = 0;
-		int radius = 7 + random.nextInt(5);
+		int radius = 9 + random.nextInt(6);
 		for (BlockPos at : BlockPos.betweenClosed(
 				middle.offset(-radius, -4, -radius), middle.offset(radius, 14, radius))) {
 			if (!level.getBlockState(at).is(net.minecraft.tags.BlockTags.LEAVES)) {
@@ -77,6 +77,27 @@ public final class Signature {
 		}
 		if (stripped < 20) {
 			return false;   // no wood here worth the name
+		}
+		// AND THE GROUND UNDER IT IS DEAD. Grass to coarse dirt and podzol in
+		// patches, a dead bush here and there: the trees did not lose their leaves
+		// to the season.
+		for (int i = 0; i < radius * 3; i++) {
+			int x = middle.getX() + random.nextInt(radius * 2 + 1) - radius;
+			int z = middle.getZ() + random.nextInt(radius * 2 + 1) - radius;
+			BlockPos ground = new BlockPos(x, Ground.topOf(level, x, z), z);
+			BlockState was = level.getBlockState(ground);
+			if (!was.is(Blocks.GRASS_BLOCK) && !was.is(Blocks.DIRT)) {
+				continue;
+			}
+			level.setBlock(ground, random.nextInt(3) == 0
+				? Blocks.PODZOL.defaultBlockState()
+				: Blocks.COARSE_DIRT.defaultBlockState(), 2);
+			BlockPos over = ground.above();
+			if (random.nextInt(4) == 0 && level.getBlockState(over).isAir()) {
+				level.setBlock(over, Blocks.DEAD_BUSH.defaultBlockState(), 2);
+			} else if (!level.getBlockState(over).isAir() && !level.getBlockState(over).isSolid()) {
+				level.setBlock(over, Blocks.AIR.defaultBlockState(), 2);
+			}
 		}
 		HerobrineMod.LOGGER.info("a grove was stripped at [{}, {}]: {} leaves",
 			middle.getX(), middle.getZ(), stripped);

@@ -272,6 +272,22 @@ public enum Manifestation {
 	 * light gate had even been consulted. A player can meet nine traces and
 	 * still not have met HIM, which is the wrong way round.
 	 */
+	/** A small perfect room in a hillside; a bed slept in, a furnace still lit. */
+	THE_CAMP(Phase.WATCHER, 13) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Marks.camp(level, player);
+		}
+	},
+
+	/** A cross cut straight down into the ground, a red torch at the bottom. */
+	THE_CROSS(Phase.WATCHER, 12) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Marks.cross(level, player);
+		}
+	},
+
 	THE_STARE(Phase.WATCHER, 18) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
@@ -300,7 +316,7 @@ public enum Manifestation {
 		return switch (this) {
 			case FOOTSTEPS, WRONG_SOUND, SNUFFED_TORCH, THE_FUSE -> config.traces;
 			case THE_GROVE, THE_TORCH, THE_PYRAMID, THE_TUNNEL, THE_SEAL,
-			     THE_CHAMBER -> config.signs;
+			     THE_CHAMBER, THE_CAMP, THE_CROSS -> config.signs;
 			case THE_BREATHING -> config.theBreathing;
 			case POSSESSED_MOB -> config.possession;
 			case THE_TAKING -> config.theTaking;

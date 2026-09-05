@@ -1379,6 +1379,24 @@ public final class Dwellings {
 	 * it. Rounded up in every case, because being generous here costs a tenth of a
 	 * rejected candidate per world and being mean costs a village inside a town.
 	 */
+	/** Within this of any place's site (plus the place's own spread): the houses stay clear of everything he leaves. */
+	public static boolean nearAPlace(ServerLevel level, BlockPos pos, double within) {
+		for (Place place : Place.values()) {
+			Long site = level.getAttached(place.site);
+			if (site == null) {
+				continue;
+			}
+			BlockPos at = BlockPos.of(site);
+			double keep = within + spread(place);
+			double dx = at.getX() - pos.getX();
+			double dz = at.getZ() - pos.getZ();
+			if (dx * dx + dz * dz < keep * keep) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private static int spread(Place place) {
 		return switch (place) {
 			case TOWN -> 88;
