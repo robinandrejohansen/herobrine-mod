@@ -382,33 +382,37 @@ public final class Undercity {
 		HerobrineMod.LOGGER.info("they have been feeding themselves down here");
 	}
 
+	/**
+	 * THE FIELD, ON THE GROUND. It used to be laid at the walking level — a raised
+	 * bed of farmland one block above the floor, posts one above that — and where
+	 * the roof was higher than three blocks nothing was laid at all, so what stood
+	 * there was fence posts and lanterns in the air over bare rock. Then anybody
+	 * who walked across the bed trampled it to dirt and the crops popped.
+	 *
+	 * Now the farmland IS the floor (the floor block is replaced), the crops stand
+	 * at the walking level like every field in the game, water runs down the
+	 * middle at floor level, and the posts stand on the floor. Only where the
+	 * chamber is actually open above.
+	 */
 	private static void field(ServerLevel level, BlockPos middle, RandomSource random) {
 		for (int dx = -6; dx <= 6; dx++) {
 			for (int dz = -4; dz <= 4; dz++) {
-				BlockPos at = middle.offset(dx, 0, dz);
-				if (!level.getBlockState(at.above(2)).isSolid()
-					&& !level.getBlockState(at.above(3)).isSolid()) {
-					continue;      // outside the cut chamber
+				BlockPos at = middle.offset(dx, 0, dz);          // the walking level
+				BlockPos soil = at.below();                       // the floor block
+				if (!level.getBlockState(at).isAir() || !level.getBlockState(soil).isSolid()) {
+					continue;
 				}
-				// A channel down the middle so every row is within four of water,
-				// which is the actual rule farmland obeys and reads as competence.
 				if (dz == 0) {
-					level.setBlock(at, Blocks.WATER.defaultBlockState(), 2);
+					level.setBlock(soil, Blocks.WATER.defaultBlockState(), 2);
 					continue;
 				}
-				level.setBlock(at, Blocks.FARMLAND.defaultBlockState()
+				level.setBlock(soil, Blocks.FARMLAND.defaultBlockState()
 					.setValue(BlockStateProperties.MOISTURE, 7), 2);
-				BlockPos crop = at.above();
-				if (!level.getBlockState(crop).isAir()) {
-					continue;
-				}
-				// STAGGERED. Every row a different age, and one row in five bare,
-				// because a rota has gaps in it and a decoration does not.
 				int age = random.nextInt(8);
 				if (age == 0 && random.nextBoolean()) {
 					continue;
 				}
-				level.setBlock(crop, switch (Math.abs(dz) % 4) {
+				level.setBlock(at, switch (Math.abs(dz) % 4) {
 					case 0, 1 -> Blocks.WHEAT.defaultBlockState()
 						.setValue(BlockStateProperties.AGE_7, age % 8);
 					case 2 -> Blocks.CARROTS.defaultBlockState()
@@ -418,11 +422,12 @@ public final class Undercity {
 				}, 2);
 			}
 		}
-		// The light it lives under, on posts, because farmland underground is a
-		// claim and the lanterns are the receipt.
-		for (int dx = -5; dx <= 5; dx += 5) {
-			for (int dz = -3; dz <= 3; dz += 6) {
-				BlockPos post = middle.offset(dx, 1, dz);
+		for (int dx = -7; dx <= 7; dx += 7) {
+			for (int dz = -4; dz <= 4; dz += 8) {
+				BlockPos post = middle.offset(dx, 0, dz);
+				if (!level.getBlockState(post.below()).isSolid()) {
+					continue;
+				}
 				level.setBlock(post, Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
 				level.setBlock(post.above(), Blocks.SPRUCE_FENCE.defaultBlockState(), 2);
 				level.setBlock(post.above(2), Blocks.LANTERN.defaultBlockState(), 2);
@@ -434,7 +439,7 @@ public final class Undercity {
 		for (int i = 0; i < 7; i++) {
 			int dx = random.nextInt(11) - 5;
 			int dz = random.nextInt(9) - 4;
-			BlockPos root = middle.offset(dx, 0, dz);
+			BlockPos root = middle.offset(dx, -1, dz);      // the floor block; the walking level above it is air, so the old 0 never planted
 			if (!level.getBlockState(root.above()).isAir()
 				|| !level.getBlockState(root).isSolid()) {
 				continue;
@@ -487,7 +492,7 @@ public final class Undercity {
 	private static void pens(ServerLevel level, BlockPos middle, RandomSource random) {
 		for (int dx = -4; dx <= 4; dx++) {
 			for (int dz = -3; dz <= 3; dz++) {
-				BlockPos at = middle.offset(dx, 1, dz);
+				BlockPos at = middle.offset(dx, 0, dz);      // the walking level: a fence stands ON the floor, not a block over it
 				if (!level.getBlockState(at).isAir()) {
 					continue;
 				}
@@ -608,25 +613,28 @@ public final class Undercity {
 	 *
 	 * @param out how far toward the wall this column is, nought at the middle
 	 */
-	private static BlockState ground(RandomSource random, double out) {
-		if (out < 0.45) {
-			return paving(random);
+	/**
+	 * GRASS UNDERFOOT. It was stone and gravel, and a town that has been living
+	 * down here for years does not walk on gravel: things grow where people are,
+	 * and the wild() pass then has something to put its moss and ferns into.
+	 * Grass keeps without sky as long as nothing solid sits on it, which is what
+	 * a cavern is. Stonier toward the rim, where the roof comes down.
+	 */
+	private static BlockState ground(RandomSource random, double t) {
+		int roll = random.nextInt(20);
+		if (t > 0.86 && roll < 9) {
+			return roll < 5 ? Blocks.STONE.defaultBlockState() : Blocks.COBBLESTONE.defaultBlockState();
 		}
-		// A ragged margin rather than a ring: the further out, the likelier it
-		// has gone back to earth, so the boundary frays instead of drawing a line.
-		if (random.nextDouble() > (out - 0.35) * 1.6) {
-			return paving(random);
+		if (roll < 13) {
+			return Blocks.GRASS_BLOCK.defaultBlockState();
 		}
-		int roll = random.nextInt(10);
-		if (roll < 4) {
+		if (roll < 16) {
 			return Blocks.MOSS_BLOCK.defaultBlockState();
 		}
-		if (roll < 7) {
-			return Blocks.COARSE_DIRT.defaultBlockState();
+		if (roll < 18) {
+			return Blocks.DIRT.defaultBlockState();
 		}
-		return roll < 9
-			? Blocks.GRAVEL.defaultBlockState()
-			: Blocks.PODZOL.defaultBlockState();
+		return Blocks.PODZOL.defaultBlockState();
 	}
 
 	/**

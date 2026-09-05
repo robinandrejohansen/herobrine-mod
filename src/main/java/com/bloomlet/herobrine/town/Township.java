@@ -179,6 +179,8 @@ public final class Township {
 		// simply fills in around the trunks instead of pre-empting them.
 		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> grove(level, centre, approach, plots, random));
 		at += STEP;
+		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> yards(level, plots, random));
+		at += STEP;
 		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> commons(level, centre, random));
 		at += STEP;
 		com.bloomlet.herobrine.manifest.Cadence.in(server, at, () -> {
@@ -346,6 +348,61 @@ public final class Township {
 	}
 
 	/** Whether a spot is inside any plot's footprint, plus a margin. */
+	/**
+	 * YARDS. The grove stands behind the town; the houses stood on bare ground.
+	 * Every plot now gets up to three things at its edges, two to five blocks
+	 * out: a tree, an azalea, or flowers, never on a path and never on the next
+	 * plot. Ground cover fills in around them afterwards (commons).
+	 */
+	private static void yards(ServerLevel level, List<Plot> plots, RandomSource random) {
+		int planted = 0;
+		for (Plot plot : plots) {
+			BlockPos c = plot.corner();
+			int here = 0;
+			for (int tries = 0; tries < 12 && here < 3; tries++) {
+				int margin = 2 + random.nextInt(4);
+				int x;
+				int z;
+				switch (random.nextInt(4)) {
+					case 0 -> { x = c.getX() - margin; z = c.getZ() + random.nextInt(plot.depth() + 1); }
+					case 1 -> { x = c.getX() + plot.width() + margin; z = c.getZ() + random.nextInt(plot.depth() + 1); }
+					case 2 -> { z = c.getZ() - margin; x = c.getX() + random.nextInt(plot.width() + 1); }
+					default -> { z = c.getZ() + plot.depth() + margin; x = c.getX() + random.nextInt(plot.width() + 1); }
+				}
+				if (!level.isLoaded(new BlockPos(x, c.getY(), z)) || !Ground.dry(level, x, z)
+					|| onAPlot(plots, x, z, 1)) {
+					continue;
+				}
+				int y = Ground.topOf(level, x, z);
+				BlockPos on = new BlockPos(x, y, z);
+				BlockState ground = level.getBlockState(on);
+				if (!level.getBlockState(on.above()).isAir() || !ground.isSolid()
+					|| ground.is(Blocks.DIRT_PATH) || ground.is(Blocks.POLISHED_ANDESITE)
+					|| ground.is(Blocks.COBBLESTONE) || ground.is(Blocks.STONE_BRICKS)) {
+					continue;
+				}
+				int roll = random.nextInt(10);
+				if (roll < 4) {
+					tree(level, on.above(), random);
+				} else if (roll < 7) {
+					level.setBlock(on.above(), (random.nextBoolean() ? Blocks.AZALEA : Blocks.FLOWERING_AZALEA)
+						.defaultBlockState(), 2);
+				} else {
+					level.setBlock(on.above(), switch (random.nextInt(5)) {
+						case 0 -> Blocks.POPPY.defaultBlockState();
+						case 1 -> Blocks.DANDELION.defaultBlockState();
+						case 2 -> Blocks.OXEYE_DAISY.defaultBlockState();
+						case 3 -> Blocks.CORNFLOWER.defaultBlockState();
+						default -> Blocks.AZURE_BLUET.defaultBlockState();
+					}, 2);
+				}
+				here++;
+				planted++;
+			}
+		}
+		HerobrineMod.LOGGER.info("{} trees, bushes and flowers put in around the houses", planted);
+	}
+
 	private static boolean onAPlot(List<Plot> plots, int x, int z, int margin) {
 		for (Plot plot : plots) {
 			BlockPos c = plot.corner();

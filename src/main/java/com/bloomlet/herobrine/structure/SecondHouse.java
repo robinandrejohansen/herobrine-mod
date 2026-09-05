@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -243,74 +244,293 @@ public final class SecondHouse {
 	 * before they have crossed it, and knowing it is what makes the absence of
 	 * windows land.
 	 */
+	// ---- UNDER THE HILL: THE HOUSE HE LIVED IN ---------------------------------
+	//
+	// There was a buried room and a surveyed cave off it, and the cave meant
+	// nothing: a hole for the sake of a hole. What is under the tower now is the
+	// place book three describes. Not haunted — LIVED IN. An entry hall with a
+	// table set for two. A long vaulted gallery under soul light. His chamber to
+	// one side, with the bed. The study to the other, where the shelves are full
+	// of names, and the lectern with the book. At the end, the room with the
+	// pool he stood over.
+	//
+	// All of it is cut from deepslate with dark oak bones, because the imported
+	// houses at the end of the road are deepslate and dark oak, and this should
+	// read as the same hand. The entry hall keeps the old room's exact footprint
+	// so the stair from the well still arrives at its north door, and the chest
+	// by that door is the one Dwellings.inTheCellar finds for the map.
+
+	private static final int HALL_H = 5;
+	private static final int ROOM_H = 5;
+	private static final int GALLERY_H = 6;
+	private static final int POOL_H = 7;
+
 	private static void buried(ServerLevel level, BlockPos floor, RandomSource random) {
-		int w = 11;
-		int d = 9;
-		BlockPos corner = floor.offset(-w / 2, 0, -1);
+		manor(level, floor, random);
+	}
 
-		for (int x = 0; x < w; x++) {
-			for (int z = 0; z < d; z++) {
-				for (int y = 0; y <= 5; y++) {
-					BlockPos at = corner.offset(x, y, z);
-					boolean wall = x == 0 || x == w - 1 || z == 0 || z == d - 1;
-					boolean post = (x == 0 || x == w - 1) && (z == 0 || z == d - 1);
+	private static void manor(ServerLevel level, BlockPos f, RandomSource random) {
+		// Boxes are interior spans (inclusive) relative to f, whose Y is the floor block.
+		room(level, f, -4, 4, 0, 6, HALL_H, random);              // the entry hall
+		room(level, f, -3, 3, 8, 27, GALLERY_H, random);          // the gallery
+		room(level, f, -15, -5, 13, 21, ROOM_H, random);          // his chamber (west)
+		room(level, f, 5, 15, 13, 21, ROOM_H, random);            // the study (east)
+		room(level, f, -6, 6, 29, 41, POOL_H, random);            // the pool room
+		doorway(level, f, 0, -1, Direction.NORTH);                // in from the stair
+		doorway(level, f, 0, 7, Direction.SOUTH);                 // hall -> gallery
+		doorway(level, f, -4, 17, Direction.WEST);                // gallery -> chamber
+		doorway(level, f, 4, 17, Direction.EAST);                 // gallery -> study
+		doorway(level, f, 0, 28, Direction.SOUTH);                // gallery -> pool
+		hall(level, f, random);
+		gallery(level, f, random);
+		chamber(level, f, random);
+		study(level, f, random);
+		pool(level, f, random);
+		HerobrineMod.LOGGER.info("under the hill: five rooms cut from [{}, {}, {}]", f.getX(), f.getY(), f.getZ());
+	}
 
+	/** Cuts a room: floor of polished deepslate, brick walls with dark oak posts at the corners, a tiled ceiling. */
+	private static void room(ServerLevel level, BlockPos f, int x0, int x1, int z0, int z1, int h, RandomSource random) {
+		for (int x = x0 - 1; x <= x1 + 1; x++) {
+			for (int z = z0 - 1; z <= z1 + 1; z++) {
+				boolean wall = x == x0 - 1 || x == x1 + 1 || z == z0 - 1 || z == z1 + 1;
+				boolean corner = (x == x0 - 1 || x == x1 + 1) && (z == z0 - 1 || z == z1 + 1);
+				for (int y = 0; y <= h + 1; y++) {
+					BlockPos at = f.offset(x, y, z);
 					if (y == 0) {
-						level.setBlock(at, Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
-					} else if (y == 5) {
+						level.setBlock(at, wall ? Blocks.DEEPSLATE_BRICKS.defaultBlockState()
+							: Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 2);
+					} else if (y == h + 1) {
 						level.setBlock(at, Blocks.DEEPSLATE_TILES.defaultBlockState(), 2);
-					} else if (post) {
-						level.setBlock(at, Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState()
+					} else if (corner) {
+						level.setBlock(at, Blocks.DARK_OAK_LOG.defaultBlockState()
 							.setValue(BlockStateProperties.AXIS, Direction.Axis.Y), 2);
 					} else if (wall) {
-						// Where a window would have been, and is not.
-						boolean blinded = y == 2 && (x % 4 == 2 || z % 4 == 2);
-						level.setBlock(at, blinded
-							? Blocks.COBBLESTONE.defaultBlockState()
-							: Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
+						level.setBlock(at, random.nextInt(6) == 0
+							? Blocks.CRACKED_DEEPSLATE_BRICKS.defaultBlockState()
+							: Blocks.DEEPSLATE_BRICKS.defaultBlockState(), 2);
 					} else {
 						level.setBlock(at, Blocks.CAVE_AIR.defaultBlockState(), 2);
 					}
 				}
 			}
 		}
-		// The way in from the stair well.
-		for (int up = 1; up <= 2; up++) {
-			level.setBlock(corner.offset(w / 2, up, 0), Blocks.CAVE_AIR.defaultBlockState(), 2);
+	}
+
+	/** A two-high opening in a wall column, framed in dark oak, with an open door hung in it. */
+	private static void doorway(ServerLevel level, BlockPos f, int x, int z, Direction facing) {
+		BlockPos at = f.offset(x, 1, z);
+		BlockState door = Blocks.DARK_OAK_DOOR.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, facing)
+			.setValue(BlockStateProperties.OPEN, true);
+		level.setBlock(at, door.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER), 2);
+		level.setBlock(at.above(), door.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER), 2);
+		level.setBlock(at.above(2), Blocks.DARK_OAK_PLANKS.defaultBlockState(), 2);
+		Direction side = facing.getClockWise();
+		for (int sgn = -1; sgn <= 1; sgn += 2) {
+			BlockPos post = at.relative(side, sgn);
+			for (int up = 0; up <= 2; up++) {
+				level.setBlock(post.above(up), Blocks.DARK_OAK_LOG.defaultBlockState()
+					.setValue(BlockStateProperties.AXIS, Direction.Axis.Y), 2);
+			}
 		}
+	}
 
-		BlockPos in = corner.above();
-		BlockState bed = Blocks.BED.pick(DyeColor.RED).defaultBlockState()
-			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH);
-		level.setBlock(in.offset(2, 0, 2),
-			bed.setValue(BlockStateProperties.BED_PART, BedPart.HEAD), 2);
-		level.setBlock(in.offset(2, 0, 3),
-			bed.setValue(BlockStateProperties.BED_PART, BedPart.FOOT), 2);
-
-		level.setBlock(in.offset(7, 0, 3), Blocks.CRAFTING_TABLE.defaultBlockState(), 2);
-		level.setBlock(in.offset(8, 0, 3), Blocks.FURNACE.defaultBlockState()
-			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
-		level.setBlock(in.offset(5, 3, 4), Blocks.LANTERN.defaultBlockState()
+	private static void hang(ServerLevel level, BlockPos ceiling, int chain, boolean soul) {
+		BlockPos at = ceiling.below();
+		for (int i = 0; i < chain; i++, at = at.below()) {
+			level.setBlock(at, Blocks.IRON_CHAIN.defaultBlockState(), 2);
+		}
+		level.setBlock(at, (soul ? Blocks.SOUL_LANTERN : Blocks.LANTERN).defaultBlockState()
 			.setValue(BlockStateProperties.HANGING, true), 2);
+	}
 
-		BlockPos chestAt = in.offset(7, 0, 6);
+	private static void candle(ServerLevel level, BlockPos on, int count) {
+		level.setBlock(on.above(), Blocks.CANDLE.defaultBlockState()
+			.setValue(BlockStateProperties.CANDLES, Math.max(1, Math.min(4, count)))
+			.setValue(BlockStateProperties.LIT, true), 2);
+	}
+
+	/** The entry hall: a table set for two, the chest by the stair, a lantern. */
+	private static void hall(ServerLevel level, BlockPos f, RandomSource random) {
+		BlockPos table = f.offset(0, 1, 3);
+		level.setBlock(table, Blocks.DARK_OAK_PLANKS.defaultBlockState(), 2);
+		candle(level, table, 2);
+		level.setBlock(table.west(), Blocks.DARK_OAK_STAIRS.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
+		level.setBlock(table.east(), Blocks.DARK_OAK_STAIRS.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
+		level.setBlock(table.west().north(), Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE.defaultBlockState(), 2);
+		level.setBlock(table.east().north(), Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE.defaultBlockState(), 2);
+		hang(level, f.offset(0, HALL_H + 1, 3), 1, false);
+		for (int x = -4; x <= 4; x += 8) {
+			for (int z = 0; z <= 6; z += 3) {
+				if (random.nextInt(3) == 0) {
+					level.setBlock(f.offset(x, 1, z), Blocks.COBWEB.defaultBlockState(), 2);
+				}
+			}
+		}
+		// THE CHEST BY THE STAIR. The book says the map is in it; Dwellings.inTheCellar
+		// takes the nearest container to the well's foot, and this is it.
+		BlockPos chestAt = f.offset(3, 1, 0);
 		level.setBlock(chestAt, Blocks.CHEST.defaultBlockState()
-			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH), 2);
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
 		if (level.getBlockEntity(chestAt) instanceof ChestBlockEntity chest) {
 			chest.setItem(2, new ItemStack(Items.TORCH, 12));
 			Loot.scatter(chest, random, Loot.Tier.LARDER);
 		}
+		level.setBlock(f.offset(-3, 1, 0), Blocks.BARREL.defaultBlockState(), 2);
+	}
 
-		// And a system under the buried house, rather than one passage out of
-		// it. SURVEYED, because at this point he still had a plan: the trunk is
-		// paved and lit, every junction is marked, and it is possible to find
-		// the way back without having counted.
-		BlockPos out = in.offset(w - 2, 1, d / 2);
-		Warren.warn(level, in.offset(w - 3, 1, d / 2),
-			new String[] { "KEEP", "TO THE", "LIT ONE", "" });
-		BlockPos far = Warren.dig(level, out, Warren.Manner.SURVEYED, random);
-		// And at the far end of the plan, the thing the plan was for.
-		TheSurvey.build(level, far, random);
+	/** The gallery: a vault, dark oak pillars every five blocks, soul lanterns on chains, a red runner. */
+	private static void gallery(ServerLevel level, BlockPos f, RandomSource random) {
+		for (int z = 8; z <= 27; z++) {
+			level.setBlock(f.offset(-3, GALLERY_H, z), Blocks.DEEPSLATE_TILES.defaultBlockState(), 2);
+			level.setBlock(f.offset(3, GALLERY_H, z), Blocks.DEEPSLATE_TILES.defaultBlockState(), 2);
+			level.setBlock(f.offset(-3, GALLERY_H - 1, z), Blocks.DEEPSLATE_BRICK_STAIRS.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST)
+				.setValue(BlockStateProperties.HALF, net.minecraft.world.level.block.state.properties.Half.TOP), 2);
+			level.setBlock(f.offset(3, GALLERY_H - 1, z), Blocks.DEEPSLATE_BRICK_STAIRS.defaultBlockState()
+				.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
+				.setValue(BlockStateProperties.HALF, net.minecraft.world.level.block.state.properties.Half.TOP), 2);
+			level.setBlock(f.offset(0, 1, z), Blocks.CARPET.pick(DyeColor.RED).defaultBlockState(), 2);
+			if (z % 5 == 4) {
+				for (int up = 1; up <= GALLERY_H - 2; up++) {
+					level.setBlock(f.offset(-3, up, z), Blocks.DARK_OAK_LOG.defaultBlockState()
+						.setValue(BlockStateProperties.AXIS, Direction.Axis.Y), 2);
+					level.setBlock(f.offset(3, up, z), Blocks.DARK_OAK_LOG.defaultBlockState()
+						.setValue(BlockStateProperties.AXIS, Direction.Axis.Y), 2);
+				}
+				hang(level, f.offset(0, GALLERY_H + 1, z), 1, true);
+			}
+			if (random.nextInt(7) == 0) {
+				level.setBlock(f.offset(random.nextBoolean() ? -2 : 2, GALLERY_H - 1, z), Blocks.COBWEB.defaultBlockState(), 2);
+			}
+		}
+		for (int x = -2; x <= 2; x += 4) {
+			level.setBlock(f.offset(x, 1, 12), Blocks.SKELETON_SKULL.defaultBlockState()
+				.setValue(BlockStateProperties.ROTATION_16, random.nextInt(16)), 2);
+		}
+	}
+
+	/** His chamber: the bed he slept in, a desk with one candle, a dark glass in the wall, a skull by the bed. */
+	private static void chamber(ServerLevel level, BlockPos f, RandomSource random) {
+		BlockState bed = Blocks.BED.pick(DyeColor.BLACK).defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH);
+		level.setBlock(f.offset(-12, 1, 15), bed.setValue(BlockStateProperties.BED_PART, BedPart.HEAD), 2);
+		level.setBlock(f.offset(-12, 1, 16), bed.setValue(BlockStateProperties.BED_PART, BedPart.FOOT), 2);
+		level.setBlock(f.offset(-11, 1, 15), Blocks.SKELETON_SKULL.defaultBlockState()
+			.setValue(BlockStateProperties.ROTATION_16, 4), 2);
+		BlockPos desk = f.offset(-7, 1, 20);
+		level.setBlock(desk, Blocks.DARK_OAK_PLANKS.defaultBlockState(), 2);
+		level.setBlock(desk.west(), Blocks.DARK_OAK_PLANKS.defaultBlockState(), 2);
+		candle(level, desk, 1);
+		level.setBlock(desk.north(), Blocks.DARK_OAK_STAIRS.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
+		for (int up = 2; up <= 3; up++) {
+			level.setBlock(f.offset(-16, up, 17), Blocks.TINTED_GLASS.defaultBlockState(), 2);
+		}
+		level.setBlock(f.offset(-14, 1, 20), Blocks.CAULDRON.defaultBlockState(), 2);
+		level.setBlock(f.offset(-6, 1, 14), Blocks.CARPET.pick(DyeColor.RED).defaultBlockState(), 2);
+		level.setBlock(f.offset(-12, 1, 18), Blocks.CARPET.pick(DyeColor.RED).defaultBlockState(), 2);
+		hang(level, f.offset(-10, ROOM_H + 1, 17), 1, true);
+		for (int i = 0; i < 4; i++) {
+			BlockPos web = f.offset(-15 + random.nextInt(11), 1 + random.nextInt(ROOM_H), 13 + random.nextInt(9));
+			if (level.getBlockState(web).isAir() && random.nextBoolean()) {
+				level.setBlock(web, Blocks.COBWEB.defaultBlockState(), 2);
+			}
+		}
+	}
+
+	/** The study: the shelves full of names, the lectern with the book, a table, skulls on the shelf-tops, a chest. */
+	private static void study(ServerLevel level, BlockPos f, RandomSource random) {
+		for (int z = 13; z <= 21; z++) {
+			for (int up = 1; up <= 3; up++) {
+				level.setBlock(f.offset(15, up, z), random.nextInt(4) == 0
+					? Blocks.CHISELED_BOOKSHELF.defaultBlockState()
+						.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST)
+					: Blocks.BOOKSHELF.defaultBlockState(), 2);
+			}
+		}
+		for (int x = 6; x <= 14; x++) {
+			for (int up = 1; up <= 3; up++) {
+				level.setBlock(f.offset(x, up, 21), random.nextInt(4) == 0
+					? Blocks.CHISELED_BOOKSHELF.defaultBlockState()
+						.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH)
+					: Blocks.BOOKSHELF.defaultBlockState(), 2);
+				level.setBlock(f.offset(x, up, 13), Blocks.BOOKSHELF.defaultBlockState(), 2);
+			}
+		}
+		level.setBlock(f.offset(15, 4, 15), Blocks.SKELETON_SKULL.defaultBlockState()
+			.setValue(BlockStateProperties.ROTATION_16, 12), 2);
+		level.setBlock(f.offset(15, 4, 19), Blocks.SKELETON_SKULL.defaultBlockState()
+			.setValue(BlockStateProperties.ROTATION_16, 12), 2);
+		level.setBlock(f.offset(9, 4, 21), Blocks.SKELETON_SKULL.defaultBlockState()
+			.setValue(BlockStateProperties.ROTATION_16, 0), 2);
+		BlockPos table = f.offset(10, 1, 16);
+		level.setBlock(table, Blocks.DARK_OAK_PLANKS.defaultBlockState(), 2);
+		level.setBlock(table.south(), Blocks.DARK_OAK_PLANKS.defaultBlockState(), 2);
+		candle(level, table, 3);
+		candle(level, table.south(), 1);
+		BlockPos stand = f.offset(12, 1, 17);
+		level.setBlock(stand, Blocks.DARK_OAK_PLANKS.defaultBlockState(), 2);
+		level.setBlock(stand.above(), Blocks.LECTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
+		if (level.getBlockEntity(stand.above())
+				instanceof net.minecraft.world.level.block.entity.LecternBlockEntity names) {
+			names.setBook(HouseBooks.three());
+		}
+		level.setBlock(f.offset(11, 1, 17), Blocks.DARK_OAK_STAIRS.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
+		BlockPos chestAt = f.offset(6, 1, 20);
+		level.setBlock(chestAt, Blocks.CHEST.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH), 2);
+		if (level.getBlockEntity(chestAt) instanceof ChestBlockEntity chest) {
+			chest.setItem(0, new ItemStack(Items.TORCH, 8));
+			chest.setItem(1, new ItemStack(Items.PAPER, 9));
+			Loot.scatter(chest, random, Loot.Tier.TOWER);
+		}
+		hang(level, f.offset(10, ROOM_H + 1, 17), 1, true);
+	}
+
+	/** The pool room: dark water two deep, a lodestone in the middle under a soul lantern, and a chair facing it. */
+	private static void pool(ServerLevel level, BlockPos f, RandomSource random) {
+		BlockPos mid = f.offset(0, 0, 35);
+		for (int dx = -4; dx <= 4; dx++) {
+			for (int dz = -4; dz <= 4; dz++) {
+				double r = Math.hypot(dx, dz);
+				BlockPos at = mid.offset(dx, 0, dz);
+				if (r <= 3.2) {
+					level.setBlock(at.below(), Blocks.DEEPSLATE_TILES.defaultBlockState(), 2);
+					level.setBlock(at, Blocks.WATER.defaultBlockState(), 2);
+				} else if (r <= 4.4) {
+					level.setBlock(at, Blocks.POLISHED_DEEPSLATE.defaultBlockState(), 2);
+					level.setBlock(at.above(), Blocks.DEEPSLATE_BRICK_STAIRS.defaultBlockState()
+						.setValue(BlockStateProperties.HORIZONTAL_FACING,
+							Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? Direction.WEST : Direction.EAST)
+								: (dz > 0 ? Direction.NORTH : Direction.SOUTH)), 2);
+				}
+			}
+		}
+		level.setBlock(mid, Blocks.LODESTONE.defaultBlockState(), 2);
+		level.setBlock(mid.above(), Blocks.SOUL_LANTERN.defaultBlockState(), 2);
+		for (int dx = -5; dx <= 5; dx += 10) {
+			for (int dz = 31; dz <= 39; dz += 8) {
+				for (int up = 1; up <= POOL_H; up++) {
+					level.setBlock(f.offset(dx, up, dz), Blocks.DEEPSLATE_TILES.defaultBlockState(), 2);
+				}
+			}
+		}
+		hang(level, f.offset(-3, POOL_H + 1, 31), 2, true);
+		hang(level, f.offset(3, POOL_H + 1, 31), 2, true);
+		hang(level, f.offset(-3, POOL_H + 1, 39), 2, true);
+		hang(level, f.offset(3, POOL_H + 1, 39), 2, true);
+		level.setBlock(f.offset(0, 1, 40), Blocks.DARK_OAK_STAIRS.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
+		for (int i = 0; i < 3; i++) {
+			level.setBlock(f.offset(-5 + random.nextInt(11), 1, 29 + random.nextInt(3)), Blocks.SKELETON_SKULL.defaultBlockState()
+				.setValue(BlockStateProperties.ROTATION_16, random.nextInt(16)), 2);
+		}
 	}
 
 	/**
@@ -380,10 +600,6 @@ public final class SecondHouse {
 		level.setBlock(desk, Blocks.SPRUCE_PLANKS.defaultBlockState(), 2);
 		level.setBlock(desk.above(), Blocks.LECTERN.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
-		if (level.getBlockEntity(desk.above())
-				instanceof net.minecraft.world.level.block.entity.LecternBlockEntity read) {
-			read.setBook(HouseBooks.three());
-		}
 		BlockPos glass = new BlockPos(base.getX() + 2, room + 1, base.getZ());
 		level.setBlock(glass, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST), 2);
