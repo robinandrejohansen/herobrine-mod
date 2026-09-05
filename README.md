@@ -59,8 +59,8 @@ its own events and one **place** the players are led to.
 |---|---|---|---|
 | RUMOUR | 0 | a glimpse, footsteps, a torch that goes out, breathing | **the farm** — where Addexio lived; the first book and the first map |
 | WATCHER | 60 | the stare, the passages, the one who does not sleep | **the town** — boarded, an undercity beneath it, the mapmaker's house |
-| TRESPASSER | 200 | signs, ruins, journal pages, the sealed shaft | **his tower** — over lava, lit every night for a month |
-| MIMIC | 500 | possessed animals, the herd | **the prison** — cell nine |
+| TRESPASSER | 200 | signs, ruins, journal pages, the sealed shaft | **his tower** — and under the hill beneath it, the house he lived in: a table set for two, a gallery, his bed, the shelves of names, the pool |
+| MIMIC | 500 | possessed animals, the herd | **the prison** — eighty blocks of hall, eighteen cells, six of them still shut with something tall inside; cell nine; and the tunnel the last of them dug out through the back wall |
 | HUNTER | 1000 | the hunt, the dark | **the church** — he lived under the altar |
 | SIEGE | 1800 | the night stops, the storm never ends, the animals watch | **the last house** — and the way through |
 
