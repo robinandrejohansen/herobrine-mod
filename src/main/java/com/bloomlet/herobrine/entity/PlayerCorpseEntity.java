@@ -32,6 +32,23 @@ public class PlayerCorpseEntity extends Mob {
 		.persistent(UUIDUtil.CODEC)
 		.syncWith(UUIDUtil.STREAM_CODEC.cast(), AttachmentSyncPredicate.all())
 		.buildAndRegister(HerobrineMod.id("body_of"));
+	/**
+	 * THE SKIN TRAVELS WITH THE BODY. A profile with only a name and an id gets the
+	 * default skin — the client never fetches textures for it — which is why your
+	 * friend's body was Steve while yours (already cached by your own client) was
+	 * you. The server has the texture property on the player's profile at the
+	 * moment they die; it is written onto the body, synced, and the renderer
+	 * builds a full profile from it. Works after they log off, and on servers
+	 * where the skin was never in the tab list.
+	 */
+	public static final AttachmentType<String> WHO_SKIN = AttachmentRegistry.<String>builder()
+		.persistent(Codec.STRING)
+		.syncWith(ByteBufCodecs.STRING_UTF8.cast(), AttachmentSyncPredicate.all())
+		.buildAndRegister(HerobrineMod.id("body_of_skin"));
+	public static final AttachmentType<String> WHO_SIG = AttachmentRegistry.<String>builder()
+		.persistent(Codec.STRING)
+		.syncWith(ByteBufCodecs.STRING_UTF8.cast(), AttachmentSyncPredicate.all())
+		.buildAndRegister(HerobrineMod.id("body_of_sig"));
 
 	public PlayerCorpseEntity(EntityType<? extends PlayerCorpseEntity> type, Level level) {
 		super(type, level);
@@ -47,9 +64,22 @@ public class PlayerCorpseEntity extends Mob {
 			.add(Attributes.MOVEMENT_SPEED, 0.0);
 	}
 
-	void setWho(UUID id, String name) {
+	void setWho(UUID id, String name, @org.jspecify.annotations.Nullable String skin,
+	            @org.jspecify.annotations.Nullable String signature) {
 		this.setAttached(WHO_ID, id);
 		this.setAttached(WHO_NAME, name);
+		if (skin != null && !skin.isEmpty()) {
+			this.setAttached(WHO_SKIN, skin);
+			this.setAttached(WHO_SIG, signature == null ? "" : signature);
+		}
+	}
+
+	public String whoSkin() {
+		return this.getAttachedOrElse(WHO_SKIN, "");
+	}
+
+	public String whoSig() {
+		return this.getAttachedOrElse(WHO_SIG, "");
 	}
 
 	public String whoName() {

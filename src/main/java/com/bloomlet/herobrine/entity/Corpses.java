@@ -200,7 +200,14 @@ public final class Corpses {
 			return;
 		}
 		body.snapTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0F);
-		body.setWho(player.getUUID(), player.getName().getString());
+		String skin = null;
+		String sig = null;
+		for (com.mojang.authlib.properties.Property textures : player.getGameProfile().properties().get("textures")) {
+			skin = textures.value();
+			sig = textures.signature();
+			break;
+		}
+		body.setWho(player.getUUID(), player.getName().getString(), skin, sig);
 		body.setAttached(LOOT, carried);
 		body.lay();
 		level.addFreshEntity(body);

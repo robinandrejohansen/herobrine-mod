@@ -44,7 +44,7 @@ public class PlayerCorpseRenderer extends HumanoidMobRenderer<
 		}
 	}
 
-	private final Map<UUID, Supplier<PlayerSkin>> skins = new HashMap<>();
+	private final Map<String, Supplier<PlayerSkin>> skins = new HashMap<>();
 
 	public PlayerCorpseRenderer(EntityRendererProvider.Context context) {
 		super(context, new Body(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5F);
@@ -69,9 +69,32 @@ public class PlayerCorpseRenderer extends HumanoidMobRenderer<
 			state.skin = DefaultPlayerSkin.getDefaultTexture();
 			return;
 		}
-		Supplier<PlayerSkin> lookup = this.skins.computeIfAbsent(who, id -> Minecraft.getInstance()
-			.getSkinManager().createLookup(new GameProfile(id, entity.whoName()), false));
+		// ONLINE: the tab list already has the skin loaded. Use it.
+		net.minecraft.client.multiplayer.ClientPacketListener connection = Minecraft.getInstance().getConnection();
+		net.minecraft.client.multiplayer.PlayerInfo online = connection == null ? null : connection.getPlayerInfo(who);
+		if (online != null) {
+			state.skin = online.getSkin().body().texturePath();
+			return;
+		}
+		// GONE: build the profile the way the server saw it, textures and all, and
+		// let the skin manager resolve it. Keyed by id and texture so a body seen
+		// before its attachments arrived does not pin the default skin forever.
+		String textures = entity.whoSkin();
+		String key = who + "/" + textures.hashCode();
+		Supplier<PlayerSkin> lookup = this.skins.computeIfAbsent(key, k -> Minecraft.getInstance()
+			.getSkinManager().createLookup(profileFor(who, entity.whoName(), textures, entity.whoSig()), false));
 		PlayerSkin skin = lookup.get();
 		state.skin = skin != null ? skin.body().texturePath() : DefaultPlayerSkin.get(who).body().texturePath();
+	}
+
+	private static GameProfile profileFor(UUID id, String name, String textures, String signature) {
+		if (textures.isEmpty()) {
+			return new GameProfile(id, name);
+		}
+		com.mojang.authlib.properties.Property property = signature.isEmpty()
+			? new com.mojang.authlib.properties.Property("textures", textures)
+			: new com.mojang.authlib.properties.Property("textures", textures, signature);
+		return new GameProfile(id, name, new com.mojang.authlib.properties.PropertyMap(
+			com.google.common.collect.ImmutableMultimap.of("textures", property)));
 	}
 }
