@@ -166,6 +166,11 @@ public final class Corpses {
 	}
 
 	/** The mob, kept, and put down. */
+	/** A body a builder puts down: the dead in the streets, where he left them. It lies like every other. */
+	public static void body(Mob mob, List<ItemStack> loot) {
+		lay(mob, loot);
+	}
+
 	private static void lay(Mob mob, List<ItemStack> loot) {
 		mob.setHealth(1.0F);
 		mob.setAttached(CORPSE, true);

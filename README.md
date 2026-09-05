@@ -82,6 +82,15 @@ twenty blocks of the door, and lets go of anyone who gets thirty-six away. They
 do not despawn and they will not follow you home. The book is inside. You go
 through them.
 
+### Every place is a battlefield
+
+He came down out of the sky, stood in the street and stared, then killed everyone
+he could reach and burned and blew up the rest. Every place on the road shows
+it: burned-out cottages with their roofs gone, craters lined with black stone
+and still smouldering, scorched ground, fires that never go out, and the dead
+where they fell — villagers in the yards and streets, an iron golem on its face
+at the town — all of them bodies you can search like any other.
+
 ### The story, told
 
 There are no story books. Addexio tells it, where it happened, in plain words:

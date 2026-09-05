@@ -1528,6 +1528,9 @@ public final class Dwellings {
 		// says over a few hundred milliseconds is a builder that wants staging.
 		HerobrineMod.LOGGER.info("raised the {} in {} ms of this tick (the town's pieces are scheduled, not counted here)",
 			place.name().toLowerCase(java.util.Locale.ROOT), (System.nanoTime() - began) / 1_000_000L);
+		if (up) {
+			Ruins.around(level, place.name(), site);      // what he did here, a few seconds after the walls stand
+		}
 		return up;
 	}
 

@@ -302,69 +302,62 @@ public final class Sayings {
 		"Why us? Why did he come to my farm and not the next one?",
 	};
 	public static final String[] TOWN_BELOW = {
-		"We are under the church now. Keep your voice down.",
-		"They are still down here. They will call your name. They have your voice.",
-		"Do not answer. If you answer, he learns you.",
-		"The map is in the library. Take it. Then we go back up.",
+		"The rest of them hid down here. He found the stairs.",
+		"Stand still and you can still hear them. Do not answer.",
+		"The map is in the library. Take it. We go.",
 	};
 	public static final String[] TOWER_BELOW = {
-		"This is his house. He slept here. He ate here.",
-		"The table is set for two. The other chair was my daughter's.",
-		"In the back room the shelves are full of names. Every person for forty miles.",
-		"A red line means he is finished with them. Nine hundred lines.",
-		"Lise is on the third shelf. No line. He wrote: NOT YET.",
-		"The map to the prison is in the chest by the stairs. Take it. I cannot stay in here.",
+		"This is where he slept. After.",
+		"The table is set for two. He never sat alone.",
+		"The shelves are full of names. A red line through the dead ones. Nine hundred lines.",
+		"The map to the prison is in the chest by the stairs. Take it. Out.",
 	};
 	public static final String[] GAOL_BELOW = {
 		"Stay close. Cell nine is on the left, near the end.",
-		"They put a boy in there because he would not blink.",
-		"The next morning the ceiling was red. The floor was empty. No body. Only his teeth, pushed into the door frame.",
-		"Something lives in there now. It is very tall.",
-		"It does not move while you look at it. So look at it.",
-		"When you have to turn round, walk backwards.",
-		"The map is in the warder's chest at the far end. Then we leave.",
+		"He stood in there with a boy for one night. In the morning the ceiling was red and the floor was empty.",
+		"Something lives in there now. Very tall. It does not move while you look at it.",
+		"Look at it. Walk backwards. The map is in the chest at the far end.",
 	};
 	public static final String[] CHURCH_BELOW = {
-		"This is where we found him. Under the altar.",
-		"The priest walked into his own fire here. He did not scream. He watched me the whole time.",
-		"I killed my brother down here. Or the thing wearing him. I still do not know which.",
-		"The map is in the chest. Take it. We are almost at the end.",
+		"The priest hid him down here for a year. Fed him. Prayed to him.",
+		"We came down to drag him out. Eleven of us. Four came back up, and they were his.",
+		"I killed my brother in this room. Or the thing wearing him.",
+		"The map is in the chest. We are almost there.",
 	};
 	public static final String[] THRESHOLD_BELOW = {
-		"There. That is the door. It breathes. Do not touch it yet.",
-		"Jorunn came back through it. She said it was beautiful. Her mouth had too many teeth.",
-		"I killed her with an axe. Right here. It took three swings.",
-		"On the other side is a city made of the people he took, and a castle. He is in the castle. He is waiting for you.",
-		"The door opens one way. Take everything you need. When you go, I go with you.",
+		"That is the door. It breathes. Do not touch it yet.",
+		"Jorunn came back through it. She said it was beautiful. Her teeth were wrong. I put an axe in her. Right here.",
+		"On the other side is his city, built from the people he took, and his castle. He is in it. He is waiting for you.",
+		"The door opens one way. Take everything. When you go, I go.",
 	};
 	public static final String[] WATCHED = {
-		"He's left a watch on it. Not villagers — look at how they stand. They don't fidget.",
-		"They won't come past the fence. They don't have to. What you came for is inside.",
+		"He left guards. Look how they stand. They do not move.",
+		"They will not chase you past the fence. What you came for is inside.",
 	};
 	public static final String[] FOUND_TOWN = {
-		"This is the town. He got here before me.",
-		"The baker drowned his own daughter in that trough. Everyone watched. Nobody stopped him.",
-		"They hanged the baker. That night he was back in his shop, baking, with the rope still on.",
-		"Half the town went under the church to hide. None of them came back up.",
+		"This is the town. He came here at night.",
+		"He came down out of the sky. Slowly. Then he was standing in the square.",
+		"He killed the guards first. Then everyone who ran. Then everyone who did not.",
+		"Look at the ground. Those holes are his fire. Those are his people, in the street.",
 	};
 	public static final String[] FOUND_TOWER = {
-		"His tower. He built it to look down on us.",
-		"But he did not live in the tower. He lived under it.",
-		"There is a well behind the tower. The stairs go down to his house.",
+		"His tower. He stood on top of it and watched the farms burn.",
+		"He lived under it. He went out at night and came back before morning.",
+		"The well behind it goes down to his house.",
 	};
 	public static final String[] FOUND_GAOL = {
-		"This is the prison. They built it to lock up anyone he had touched.",
-		"It did not work. He was already inside. In the people.",
-		"Fourteen of us came here to check the cells. Six of us walked out.",
+		"The prison. They locked up everyone he had touched. It did not help.",
+		"He came in through the wall. Not the door. The wall.",
+		"Fourteen went in to check the cells. Six came out.",
 	};
 	public static final String[] FOUND_CHURCH = {
-		"The church. He lived under the altar.",
-		"The priest fed him. First food. Then people. He called it prayer.",
-		"Eleven of us went down to drag him out. Four came back up. They were not our friends any more.",
+		"The church. Everyone left alive ran in here and barred the door.",
+		"He did not open the door. He set the roof on fire and stood outside and watched.",
+		"The ones who ran out, he cut down on the steps. You are standing on the steps.",
 	};
 	public static final String[] FOUND_THRESHOLD = {
 		"The last house. The door to his world is under the floor.",
-		"Nineteen of us came here. Eleven left. Eight went through the door on ropes.",
+		"Nineteen of us came here to end it. Eight went through on ropes.",
 		"The ropes came back empty.",
 	};
 
