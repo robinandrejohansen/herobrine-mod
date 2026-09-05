@@ -152,6 +152,35 @@ final class Duel {
 	private @Nullable List<Room> rooms;
 	private long saidAt;
 
+	// ---- THE SIEGE ---------------------------------------------------------
+	//
+	// STRUCK FROM RANGE, HE HOLDS THE WALLS. The first blow used to start the same
+	// fight whatever it was: an arrow from the treeline bound him, toARoom put him
+	// within fourteen blocks of the archer and far() blinked him the rest of the
+	// way, and a party in diamond that had opened with one shot was on the floor
+	// inside ten seconds. Reported, fairly, as "he went into full attack mode".
+	//
+	// Now a first blow from further than SIEGE_FROM is a provocation from range,
+	// and he answers it in kind, from where he stands: a fireball, a volley, a
+	// bolt under their feet, rarely the whole salvo, and every shot they land
+	// draws a volley back. He does not come down until they are inside
+	// SIEGE_HOLDS, or SIEGE_LASTS runs out — he is confident, not patient — or he
+	// loses sight of them for long enough. Once per fight. Reach him unseen and
+	// strike first at arm's length and none of this happens: the sneak is still
+	// the sneak, and now there is a reason to stay out of his line of sight.
+	private static final double SIEGE_FROM = 16.0;
+	private static final double SIEGE_HOLDS = MID;
+	private static final int SIEGE_LASTS = 900;             // forty-five seconds
+	private static final int SIEGE_CAST_MIN = 40;
+	private static final int SIEGE_CAST_SPREAD = 40;
+	private static final int SIEGE_ANSWER_REST = 30;
+	private static final int SIEGE_BLIND_TOO_LONG = 80;
+	private long siegeUntil = Long.MIN_VALUE;
+	private boolean sieged;
+	private int siegeCastIn;
+	private long siegeAnsweredAt = Long.MIN_VALUE;
+	private int siegeBlind;
+
 	/** A place to stand indoors, and how much air is over it. */
 	record Room(BlockPos at, int headroom) {}
 
@@ -280,6 +309,14 @@ final class Duel {
 		// FIRST TICK BACK. A save reloaded, or a fresh one of him after the last was
 		// unloaded, arrives on the keep with the count intact and nowhere in
 		// particular. Put him in a room near whoever is here.
+		if (this.besieging(here)) {
+			if (this.him.distanceTo(target) > SIEGE_HOLDS) {
+				this.siege(here, target);
+				return;
+			}
+			this.siegeUntil = Long.MIN_VALUE;
+			this.say(here, "they came in under the walls — the siege is over");
+		}
 		if (!this.placed) {
 			this.placed = true;
 			if (this.toARoom(here, target, 14.0, "back for the rest of it")) {
@@ -1042,8 +1079,78 @@ final class Duel {
 			this.seenHits = hits;
 			this.tookRecently++;
 			this.lastBlowAt = now;
+			this.struckFrom(here, hits);
 		} else if (now - this.lastBlowAt > WOUND_WINDOW) {
 			this.tookRecently = 0;
+		}
+	}
+
+	/** Where the blow came from. The first one from range opens the siege; later ones during it are answered. */
+	private void struckFrom(ServerLevel here, int hits) {
+		java.util.UUID who = this.him.lastStruckBy();
+		if (who == null || !(here.getPlayerByUUID(who) instanceof ServerPlayer striker)) {
+			return;
+		}
+		double d = this.him.distanceTo(striker);
+		if (hits == 1 && !this.sieged && d > SIEGE_FROM) {
+			this.sieged = true;
+			this.siegeUntil = here.getGameTime() + SIEGE_LASTS;
+			this.siegeCastIn = 10;
+			this.siegeBlind = 0;
+			this.say(here, "struck from " + (int) d + " blocks — he holds the walls");
+			return;
+		}
+		long now = here.getGameTime();
+		if (this.besieging(here) && d > SIEGE_HOLDS && now - this.siegeAnsweredAt >= SIEGE_ANSWER_REST
+			&& this.him.hasLineOfSight(striker)) {
+			this.siegeAnsweredAt = now;
+			this.him.volley(here, striker, this.him.actNow());
+			this.say(here, "answered a shot from " + (int) d + " blocks");
+		}
+	}
+
+	private boolean besieging(ServerLevel here) {
+		if (this.siegeUntil == Long.MIN_VALUE) {
+			return false;
+		}
+		if (here.getGameTime() >= this.siegeUntil) {
+			this.siegeUntil = Long.MIN_VALUE;
+			this.say(here, "the siege ran its course — coming down");
+			return false;
+		}
+		return true;
+	}
+
+	/** From the walls: fire, a volley, a bolt, rarely the salvo — rolled, on a two-to-four second beat. */
+	private void siege(ServerLevel here, ServerPlayer target) {
+		this.him.getNavigation().stop();
+		this.him.face(target);
+		if (!this.him.hasLineOfSight(target)) {
+			if (++this.siegeBlind > SIEGE_BLIND_TOO_LONG) {
+				this.siegeUntil = Long.MIN_VALUE;
+				this.say(here, "lost them from the walls — coming down");
+			}
+			return;
+		}
+		this.siegeBlind = 0;
+		if (--this.siegeCastIn > 0) {
+			return;
+		}
+		this.siegeCastIn = SIEGE_CAST_MIN + this.him.getRandom().nextInt(SIEGE_CAST_SPREAD);
+		int act = this.him.actNow();
+		int roll = this.him.getRandom().nextInt(100);
+		if (roll < 50) {
+			this.him.fire(here, target, act);
+		} else if (roll < 83) {
+			this.him.volley(here, target, act);
+		} else if (roll < 95) {
+			this.him.bolt(here, target);
+		} else if (this.barrageIn <= 0) {
+			this.barrageIn = SALVO_REST;
+			this.holdFor = this.him.salvo(here, target);
+			this.say(here, "the salvo, from the walls");
+		} else {
+			this.him.fire(here, target, act);
 		}
 	}
 

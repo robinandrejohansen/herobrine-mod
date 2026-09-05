@@ -158,6 +158,14 @@ of the fight, and the level remembers it — a save, a respawn, a reload all fin
 him bound, at the right act, in the right form. Come back after leaving and he
 says so (*i kept your place*) and resumes.
 
+**Struck from range, he holds the walls.** If the first blow comes from further
+than sixteen blocks — an arrow from the treeline — he does not come down. For up
+to forty-five seconds he answers from where he stands: a fireball, a volley of
+three, lightning under your feet, rarely the whole salvo, and every shot you land
+draws a volley back. Get within twelve blocks and it is a fight; stay out and he
+comes anyway when the time is up. Once per fight. Reach him unseen and strike
+first at arm's length, and none of this happens.
+
 **A hundred blows** to put him down (`blowsToKill`), in three acts of a third
 each. The count shows on his boss bar. A blow only counts if it lands ten ticks
 after the last one in act one, thirteen in act two, sixteen in act three: he gets
