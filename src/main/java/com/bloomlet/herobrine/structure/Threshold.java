@@ -653,9 +653,9 @@ public final class Threshold {
 				}
 			}
 		}
-		lectern(level, origin.offset(3, 1, 3), LabBooks.intake());
-		lectern(level, origin.offset(7, 1, 9), LabBooks.theDoor());
-		crate(level, origin.offset(2, 1, 10), LabBooks.whatIWas(), random);
+		desk(level, origin.offset(3, 1, 3));
+		desk(level, origin.offset(7, 1, 9));
+		crate(level, origin.offset(2, 1, 10), Loot.tome(level.registryAccess(), random, 3), random);
 		level.setBlock(origin.offset(8, 1, 2), Blocks.BARREL.defaultBlockState(), 2);
 		level.setBlock(origin.offset(9, 1, 3), Blocks.BARREL.defaultBlockState(), 2);
 		mess(level, origin, WING_W, random);
@@ -707,8 +707,8 @@ public final class Threshold {
 		level.setBlock(origin.offset(4, 1, 6), Blocks.SPRUCE_STAIRS.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
 
-		lectern(level, origin.offset(5, 1, 8), LabBooks.subjectNine());
-		crate(level, origin.offset(8, 1, 9), LabBooks.lastDay(), random);
+		desk(level, origin.offset(5, 1, 8));
+		crate(level, origin.offset(8, 1, 9), Loot.tome(level.registryAccess(), random, 3), random);
 		level.setBlock(origin.offset(2, 1, 10), Blocks.BARREL.defaultBlockState(), 2);
 		mess(level, origin, WING_W, random);
 		for (int x = 3; x < WING_W; x += 4) {
@@ -740,6 +740,12 @@ public final class Threshold {
 				level.setBlock(at.below(), Blocks.CRACKED_STONE_BRICKS.defaultBlockState(), 2);
 			}
 		}
+	}
+
+	/** An empty reading desk. The register that stood on it is gone; Addexio tells you what it said. */
+	private static void desk(ServerLevel level, BlockPos at) {
+		level.setBlock(at, Blocks.LECTERN.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH), 2);
 	}
 
 	private static void lectern(ServerLevel level, BlockPos at,

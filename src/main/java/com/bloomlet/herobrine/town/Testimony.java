@@ -324,7 +324,7 @@ public final class Testimony {
 				continue;
 			}
 			// Slot 4, the middle of the top row, so it is the first thing seen.
-			barrel.setItem(4, book(ACCOUNTS[i]));
+			barrel.setItem(4, com.bloomlet.herobrine.structure.Loot.tome(level.registryAccess(), level.getRandom(), 1));      // the accounts were read to nobody; a book you can use instead
 			// AND THE BREAD GOES IN WITH IT. Not beside it in a different
 			// container and not instead of it — in the same barrel, which is the
 			// entire sentence this is trying to say: whoever wrote this kept it

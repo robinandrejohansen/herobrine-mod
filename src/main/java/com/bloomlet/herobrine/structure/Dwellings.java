@@ -671,19 +671,7 @@ public final class Dwellings {
 		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
 			net.minecraft.network.chat.Component.literal("back to the first house"));
 
-		net.minecraft.world.item.ItemStack book =
-			new net.minecraft.world.item.ItemStack(
-				net.minecraft.world.item.Items.WRITTEN_BOOK);
-		book.set(net.minecraft.core.component.DataComponents.WRITTEN_BOOK_CONTENT,
-			new net.minecraft.world.item.component.WrittenBookContent(
-				net.minecraft.server.network.Filterable.passThrough("under the floor"),
-				"", 0,
-				java.util.List.of(
-					net.minecraft.server.network.Filterable.passThrough(
-						net.minecraft.network.chat.Component.literal(LAST_PAGE)),
-					net.minecraft.server.network.Filterable.passThrough(
-						net.minecraft.network.chat.Component.literal(LAST_PAGE_TWO))),
-				true));
+		net.minecraft.world.item.ItemStack book = Loot.tome(over.registryAccess(), over.getRandom(), 3);
 
 		// THREE THINGS, AND BOOK NINE IS THE ONE THAT DECIDES.
 		//
@@ -711,8 +699,8 @@ public final class Dwellings {
 			return false;
 		}
 		HerobrineMod.LOGGER.info(
-			"{} of 2 left in the threshold at [{}, {}, {}] — the note under the"
-				+ " floor, and the map home", put,
+			"{} of 2 left in the threshold at [{}, {}, {}] — a top-level enchanted"
+				+ " book, and the map home", put,
 			holder.getBlockPos().getX(), holder.getBlockPos().getY(),
 			holder.getBlockPos().getZ());
 		return true;
