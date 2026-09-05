@@ -176,6 +176,11 @@ draws a volley back. Get within twelve blocks and it is a fight; stay out and he
 comes anyway when the time is up. Once per fight. Reach him unseen and strike
 first at arm's length, and none of this happens.
 
+**Act one is the one you can stand in.** He hits for less (a blow is eight, not
+nine and a half), his fire bursts softer, his lightning is a point weaker, and
+when you run he lands behind you, never ahead. From act two nothing is held
+back: that is when you respect him.
+
 **A hundred blows** to put him down (`blowsToKill`), in three acts of a third
 each. The count shows on his boss bar. A blow only counts if it lands ten ticks
 after the last one in act one, thirteen in act two, sixteen in act three: he gets

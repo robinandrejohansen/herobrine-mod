@@ -151,6 +151,9 @@ final class Duel {
 	private boolean placed;
 	private @Nullable List<Room> rooms;
 	private long saidAt;
+	/** Where the target stood last tick, and the step they took since: the direction they are running. */
+	private Vec3 targetWas = Vec3.ZERO;
+	private Vec3 targetRun = Vec3.ZERO;
 
 	// ---- THE SIEGE ---------------------------------------------------------
 	//
@@ -263,6 +266,9 @@ final class Duel {
 			this.say(here, "they came back after " + (this.withoutFor / 20) + " s — resuming");
 		}
 		this.withoutFor = 0;
+		Vec3 standing = target.position();
+		this.targetRun = standing.subtract(this.targetWas);      // which way they are going, this tick
+		this.targetWas = standing;
 		this.him.getLookControl().setLookAt(target, 90.0F, 90.0F);
 
 		// THE PAUSE. He is up there on fire and the bolts are coming down round
@@ -867,8 +873,9 @@ final class Duel {
 		}
 		this.cast(here, target);
 		if (this.blinkIn <= 0) {
-			if (this.appear(here, target, 6.0, 9.0, true)
-				|| this.appear(here, target, 6.0, 9.0, false)) {
+			boolean behindFirst = this.him.actNow() == 1;      // act one: behind them first, in view only if there is nowhere else
+			if (this.appear(here, target, 6.0, 9.0, !behindFirst)
+				|| this.appear(here, target, 6.0, 9.0, behindFirst)) {
 				this.blinkIn = BLINK_REST;
 				this.decideIn = 0;
 				this.say(here, "closed " + (int) d + " blocks without crossing them");
@@ -1015,6 +1022,14 @@ final class Duel {
 		}
 		int need = this.needs();
 		Vec3 look = target.getViewVector(1.0F).normalize();
+		// ACT ONE: NEVER IN FRONT OF SOMEBODY RUNNING. He lands behind the way they
+		// are going, so a player who runs from him in the first act gets away, and
+		// turns to find him where they came from. From act two he appears where he
+		// likes. This is the one thing that makes act one feel fightable.
+		if (this.him.actNow() == 1 && this.targetRun.horizontalDistanceSqr() > 0.02) {
+			look = new Vec3(this.targetRun.x, 0.0, this.targetRun.z).normalize();
+			wantSeen = false;
+		}
 		List<Room> fit = new ArrayList<>();
 		for (Room room : all) {
 			if (room.headroom() < need) {

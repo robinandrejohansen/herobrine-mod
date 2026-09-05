@@ -399,6 +399,13 @@ public class HerobrineEntity extends PathfinderMob {
 	/** Two hearts, and not oftener than once a second. */
 	private static final float STRIKE_DAMAGE = 4.0F;
 	/**
+	 * ACT ONE HITS FOR LESS. The sword's Sharpness 10 adds five and a half on top
+	 * of the base, so the base is what moves: 2.5 makes a blow 8.0 instead of 9.5.
+	 * From act two the base goes back to STRIKE_DAMAGE (wearTheAct). The first act
+	 * is the one a party is meant to be able to stand in; the other two are not.
+	 */
+	private static final float STRIKE_DAMAGE_ACT_ONE = 2.5F;
+	/**
 	 * WHAT A BLOW OF HIS IS WORTH IN THE LAST FIGHT — AND IT GOES THROUGH NOTHING.
 	 *
 	 * It used to. herobrine:reckoning sat in bypasses_armor and
@@ -3068,6 +3075,10 @@ public class HerobrineEntity extends PathfinderMob {
 			return;
 		}
 		size.setBaseValue(want);
+		net.minecraft.world.entity.ai.attributes.AttributeInstance blow = this.getAttribute(Attributes.ATTACK_DAMAGE);
+		if (blow != null) {
+			blow.setBaseValue(this.act() >= 2 ? STRIKE_DAMAGE : STRIKE_DAMAGE_ACT_ONE);      // act one held back; see STRIKE_DAMAGE_ACT_ONE
+		}
 		this.setAttached(SHADOW, this.act() >= 3);      // the last form is the dark one
 		if (this.level() instanceof ServerLevel here) {
 			// He grows where you can hear it.
@@ -3339,7 +3350,7 @@ public class HerobrineEntity extends PathfinderMob {
 			// doHurtTarget would have read the bare default and swung for
 			// nothing. Monsters get this from createMonsterAttributes; he does
 			// not extend Monster, so he has to ask for it.
-			.add(Attributes.ATTACK_DAMAGE, STRIKE_DAMAGE)
+			.add(Attributes.ATTACK_DAMAGE, STRIKE_DAMAGE_ACT_ONE)
 			// Registered so wearTheAct has something to set. Starts at a man's size.
 			.add(Attributes.SCALE, 1.0)
 			.add(Attributes.ATTACK_KNOCKBACK, 0.6)
@@ -5775,7 +5786,7 @@ public class HerobrineEntity extends PathfinderMob {
 	/** How wide he misses by, per act. He gets better. */
 	private static final double[] AIM_OFF = { 3.0, 2.0, 1.0 };
 	/** What the strike does to anybody within BOLT_REACH of it, on top of vanilla's five. Per act. */
-	private static final float[] BOLT_DAMAGE = { 6.0F, 9.0F, 12.0F };
+	private static final float[] BOLT_DAMAGE = { 5.0F, 9.0F, 12.0F };      // act one a point softer
 	private static final double BOLT_REACH = 3.5;
 	/** The crater. Same rule as the fireballs: anything breakable, chests and the way excepted. */
 	private static final double[] BOLT_CRATER = { 1.2, 1.5, 1.9 };

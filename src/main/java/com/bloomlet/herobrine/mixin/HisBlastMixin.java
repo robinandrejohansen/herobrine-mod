@@ -50,7 +50,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class HisBlastMixin {
 
 	/** A shade over the ghast's 1.0, and a very long way under TNT's 4.0. */
-	private static final float BLAST = 1.2F;
+	/** Act one's fire. Small fireballs are only thrown in act one, so this is act one's number: down from 1.2 so the first act can be stood in. */
+	private static final float BLAST = 0.95F;
 
 	@Inject(method = "onHit", at = @At("TAIL"))
 	private void herobrine$blast(HitResult hit, CallbackInfo info) {
