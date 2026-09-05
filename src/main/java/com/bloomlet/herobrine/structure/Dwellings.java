@@ -1767,6 +1767,11 @@ public final class Dwellings {
 	 * start, walking around a house that has not been built yet — which is also
 	 * the honest reading, since he is the reason it is there.
 	 */
+	/** Somebody has stood at the farm. */
+	public static boolean homesteadFound(ServerLevel level) {
+		return Boolean.TRUE.equals(level.getServer().overworld().getAttached(Place.HOMESTEAD.met));
+	}
+
 	public static @org.jspecify.annotations.Nullable BlockPos homesteadSite(ServerLevel level) {
 		Long packed = level.getServer().overworld().getAttached(Place.HOMESTEAD.site);
 		return packed == null ? null : BlockPos.of(packed);

@@ -69,7 +69,9 @@ full day — on the surface, in daylight, not in a fight — Addexio walks out o
 trees thirty blocks off, says one thing, and leads you to the farm; fall behind
 and he stops and waits, refuse him for two minutes and he hands you a map and
 falls in behind you instead. At the farm he turns, introduces himself, and from
-then on he follows. Every place after that is found by a map left in the one
+then on he follows. If he is ever lost — an unloaded chunk, an old save — he comes
+again within three minutes, and any older one that turns up is retired, so there is
+never two of him and never none. Every place after that is found by a map left in the one
 before it, and he tells you about each one when you arrive. `/herobrine status`
 shows the current wrath and phase.
 

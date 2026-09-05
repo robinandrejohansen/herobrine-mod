@@ -71,6 +71,15 @@ public final class Company {
 	 */
 	private static void hunted(net.minecraft.world.entity.Entity entity,
 	                           net.minecraft.server.level.ServerLevel level) {
+		if (entity instanceof CompanionEntity her) {
+			java.util.UUID current = level.getServer().overworld().getAttached(CURRENT);
+			if (current != null && !current.equals(her.getUUID())) {
+				her.discard();
+				HerobrineMod.LOGGER.warn("an older addexio loaded at [{}, {}, {}] and was retired; the one that counts is elsewhere",
+					her.getBlockX(), her.getBlockY(), her.getBlockZ());
+			}
+			return;
+		}
 		if (!(entity instanceof net.minecraft.world.entity.monster.Monster mob)) {
 			return;
 		}
@@ -94,6 +103,16 @@ public final class Company {
 		HAS_COME = net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
 			.createPersistent(HerobrineMod.id("addexio_has_come"),
 				com.mojang.serialization.Codec.BOOL);
+
+	/**
+	 * WHICH ADDEXIO IS THE ONE. Set every time one is spawned. A companion that
+	 * loads with a different id is an older one — left in a chunk nobody came back
+	 * to while a new one was sent — and is retired on the spot, so there is never
+	 * two of him.
+	 */
+	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<java.util.UUID>
+		CURRENT = net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry
+			.createPersistent(HerobrineMod.id("addexio_current"), net.minecraft.core.UUIDUtil.CODEC);
 
 	/** Says he has turned up, whichever of the two places did it. */
 	public static void came(ServerLevel level) {
@@ -208,6 +227,7 @@ public final class Company {
 			// you. See CompanionEntity.beginTheWalkIn.
 			him.beginTheWalkIn();
 			level.addFreshEntity(him);
+			level.getServer().overworld().setAttached(CURRENT, him.getUUID());
 			came(level);
 			HerobrineMod.LOGGER.info(
 				"addexio is coming in from [{}, {}, {}], {} blocks off {}",
@@ -243,15 +263,75 @@ public final class Company {
 	private static final int COMES_TO_YOU_MIN = 30;
 	private static final int COMES_TO_YOU_MAX = 42;
 
+	/** Checks (two seconds each) with players online and no Addexio loaded anywhere, before he is sent again. Three minutes. */
+	private static final int LOST_AFTER = 3600;
+	private static int unseenFor;
+
+	/**
+	 * HE CANNOT BE LOST FOR GOOD. "Has come" used to be the end of the matter: if
+	 * the man himself was in a chunk nobody went back to, or gone, that mark kept
+	 * a second one from ever being sent, and a server could go on for weeks with
+	 * no Addexio. Now: players online, nobody of him loaded in any level for three
+	 * minutes straight, and he comes again — to the farm if it is still unfound,
+	 * to the player if not. The old one, if it ever loads, is retired (hunted).
+	 */
+	private static void lost(MinecraftServer server) {
+		ServerLevel over = server.overworld();
+		if (!hasCome(over)) {
+			unseenFor = 0;
+			return;
+		}
+		boolean anyone = false;
+		boolean loaded = false;
+		for (ServerLevel here : server.getAllLevels()) {
+			if (!here.players().isEmpty()) {
+				anyone = true;
+			}
+			if (!here.getEntities(net.minecraft.world.level.entity.EntityTypeTest.forClass(CompanionEntity.class),
+					h -> true).isEmpty()) {
+				loaded = true;
+			}
+		}
+		if (!anyone || loaded) {
+			unseenFor = 0;
+			return;
+		}
+		unseenFor += LOOKS_EVERY;
+		if (unseenFor < LOST_AFTER || over.players().isEmpty()) {
+			return;
+		}
+		unseenFor = 0;
+		ServerPlayer who = over.players().get(0);
+		HerobrineMod.LOGGER.warn("addexio has been loaded nowhere for three minutes with players online — he comes again, to {}",
+			who.getName().getString());
+		over.setAttached(HAS_COME, false);
+		BlockPos house = Whereabouts.home(over);
+		if (house == null) {
+			house = com.bloomlet.herobrine.structure.Dwellings.homesteadSite(over);
+		}
+		if (house != null && !com.bloomlet.herobrine.structure.Dwellings.homesteadFound(over)) {
+			comeFor(over, who, house);
+		} else {
+			arrives(over, who);
+		}
+	}
+
 	private static void firstLight(MinecraftServer server) {
 		ServerLevel over = server.overworld();
 		if (hasCome(over) || !com.bloomlet.herobrine.Config.get().houses) {
 			return;
 		}
+		// THE FARM'S POSITION, FROM WHEREVER IT IS WRITTEN. Worlds older than this
+		// opening never wrote Whereabouts.home, and he never came to them at all:
+		// the check below returned for good. The homestead's own site is the
+		// fallback, and with neither he still comes — to the player, with no farm to
+		// lead to. And a farm somebody has already stood at needs no day lived and
+		// no morning: he comes the moment one of them is outside.
 		BlockPos house = Whereabouts.home(over);
 		if (house == null) {
-			return;
+			house = com.bloomlet.herobrine.structure.Dwellings.homesteadSite(over);
 		}
+		boolean farmFound = com.bloomlet.herobrine.structure.Dwellings.homesteadFound(over);
 		var clock = over.registryAccess().get(net.minecraft.world.clock.WorldClocks.OVERWORLD);
 		long timeOfDay = clock.isPresent()
 			? Math.floorMod(server.clockManager().getTotalTicks(clock.get()), (long) A_DAY) : 0L;
@@ -261,14 +341,18 @@ public final class Company {
 			}
 			int lived = who.getAttachedOrElse(LIVED, 0) + LOOKS_EVERY;
 			who.setAttached(LIVED, lived);
-			if (lived < A_DAY || timeOfDay >= MORNING_ENDS) {
+			if (!farmFound && (lived < A_DAY || timeOfDay >= MORNING_ENDS)) {
 				continue;
 			}
 			if (!over.canSeeSky(who.blockPosition()) || who.isInWater() || who.isPassenger()
 				|| who.hurtTime > 0) {
 				continue;
 			}
-			comeFor(over, who, house);
+			if (house != null && !farmFound) {
+				comeFor(over, who, house);
+			} else {
+				arrives(over, who);
+			}
 			return;
 		}
 	}
@@ -308,6 +392,7 @@ public final class Company {
 			him.setTarget(null);
 			him.lead(house, near);
 			level.addFreshEntity(him);
+			level.getServer().overworld().setAttached(CURRENT, him.getUUID());
 			came(level);
 			HerobrineMod.LOGGER.info(
 				"addexio comes for {} at first light, from [{}, {}, {}] — the farm is {} blocks off",
@@ -364,6 +449,7 @@ public final class Company {
 			return;
 		}
 		firstLight(server);
+		lost(server);
 		for (ServerLevel here : server.getAllLevels()) {
 			for (ServerPlayer with : here.players()) {
 				for (CompanionEntity her : hers(here, with)) {
