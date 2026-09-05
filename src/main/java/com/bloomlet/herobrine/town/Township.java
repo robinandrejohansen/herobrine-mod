@@ -674,7 +674,7 @@ public final class Township {
 				net.minecraft.core.Direction.SOUTH));
 		if (level.getBlockEntity(desk)
 				instanceof net.minecraft.world.level.block.entity.LecternBlockEntity read) {
-			read.setBook(com.bloomlet.herobrine.structure.HouseBooks.three());
+			read.setBook(com.bloomlet.herobrine.structure.HouseBooks.two());
 		}
 		for (int side = -1; side <= 1; side += 2) {
 			fill(level, centre.offset(side, 3, 0), Blocks.SPRUCE_SLAB.defaultBlockState());

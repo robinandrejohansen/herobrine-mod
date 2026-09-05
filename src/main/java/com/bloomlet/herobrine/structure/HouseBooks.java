@@ -62,1414 +62,412 @@ import net.minecraft.world.item.component.WrittenBookContent;
 public final class HouseBooks {
 	private HouseBooks() {}
 
-	// ---- 1. THE FARM --------------------------------------------------
+	// SIX BOOKS, ONE IN EVERY PLACE, SIX PAGES OR FEWER. Each says what happened
+	// where you are standing and where the next one is. They were ten, and two
+	// or three to a house, and the ones that were not the story were noise.
 
-	/**
-	 * 1. THE FARM. Who he is, who Herobrine is, and the first small wrong things —
-	 * torches out in a line, a door open and still, prints going one way. Ends by
-	 * sending you down the passage under the outbuilding, which is where book 2 is.
-	 */
+	/** 1. the farm. */
 	public static ItemStack one() {
 		return book("1. the farm", "Addexio",
 			"""
 			1. THE FARM.
 
-			My name is Addexio. I
-			lived here.
+			My name is Addexio.
+			This was my home.
 
-			I am leaving ten of
-			these. One at every
-			place it happened.
-			Read them in order
-			and you will know what
-			I know.""",
-
-			"""
-			There is a map in this
-			chest. I drew it. It
-			shows the next place.
-
-			I grew wheat in the
-			north field for eleven
-			years. I had a wife. We
-			had no children, and I
-			was glad of that later.
-
-			WHO WAS HERE BEFORE
-			ME.""",
+			There are six of
+			these books. One at
+			every place it
+			happened. Read them
+			in order.""",
 
 			"""
-			A man called Steve
-			farmed this valley
-			first. He had a friend.
-			The two of them went
-			under the hill behind
-			my north field looking
-			for iron, and they
-			found a door down
-			there.
-
-			Steve did not touch it.
-
-			His friend did.""",
+			The night it began my
+			daughter Lise came in
+			from the barn white
+			as milk. A man was
+			standing in the corn
+			with no lantern. No
+			face she could
+			describe. Only the
+			eyes.""",
 
 			"""
-			His friend is called
-			Herobrine. Write the
-			name down. Everyone
-			here learned to say
-			\"him\" instead, and
-			saying \"him\" is how a
-			thing grows.
-
-			WHAT I SAW FIRST.""",
-
-			"""
-			Small things. My
-			torches went out in a
-			line, one after
-			another, from the
-			barn to the house.
-
-			A door I had shut
-			standing open. Not
-			swinging. Open, and
-			still.""",
+			I went out with the
+			axe. The corn was
+			flat in a circle
+			twenty paces wide,
+			as if something had
+			stood there a long
+			time. One set of
+			footprints. They did
+			not lead in. They
+			did not lead out.""",
 
 			"""
-			Boot prints in the wet
-			field going one way
-			only. Out, and never
-			back.
-
-			I told myself it was
-			foxes. I told my wife it
-			was foxes. She
-			stopped asking after
-			a while, and that was
-			worse.
-
-			WHERE TO GO.""",
+			Three nights later
+			the barn burned with
+			the animals shut in.
+			The bolt was thrown
+			from the OUTSIDE.
+			Lise said he watched
+			from the roof.
+			Smiling. She said he
+			knew her name.""",
 
 			"""
-			Under my outbuilding
-			there is a passage. I
-			dug it myself. The next
-			book is in a crate at
-			the end of it.
+			Then Lise was gone.
+			Her bed was warm. The
+			door was still
+			barred. On the
+			window, from the
+			inside, one word in
+			something that was
+			not ink:
 
-			Go down there first. It
-			says why I dug it.""");
-	}
-
-	/**
-	 * 2. WHAT I SAW. The thing standing in his wheat that does not breathe, and the
-	 * only chapter where he does something right: he boards his neighbours' windows
-	 * and carries Marek's children to the town. Then the rider arrives.
-	 */
-	public static ItemStack two() {
-		return book("2. what I saw", "Addexio",
-			"""
-			2. WHAT I SAW.
-
-			I dug this passage to
-			hide my wife in.
-
-			That is the truth and
-			it took me a year to
-			write it down.""",
+			MINE.""",
 
 			"""
-			Eleven feet down and
-			thirty long, at night, in
-			the spring, so that
-			nobody would ask. I
-			told the neighbours it
-			was for roots.
-
-			WHAT MADE ME DIG.
-
-			I was walking the
-			fence line at dusk.""",
-
-			"""
-			There was a man
-			standing in my wheat,
-			forty paces off. Grey
-			shirt. Arms down.
-			Facing me.
-
-			I raised my hand to
-			him.""",
-
-			"""
-			He did not move. I
-			counted to a hundred
-			and he did not move,
-			and he did not
-			breathe, and the
-			wheat did not move
-			around him either.
-
-			Then I looked at his
-			face. There was
-			nothing in it. Just
-			white, where eyes go.""",
-
-			"""
-			I ran. I am not
-			ashamed of the
-			running.
-
-			WHAT I DID NEXT.
-
-			I went to my
-			neighbours. Otto, and
-			Marek, and old Bren
-			who could not walk
-			far.""",
-
-			"""
-			I helped them board
-			their windows. I
-			carried Marek's
-			children to the town
-			myself, two at a time,
-			because he had four
-			and one horse.
-
-			And I told all of them
-			it would pass.""",
-
-			"""
-			I was wrong. I have
-			been wrong about
-			nearly every single
-			thing in these ten
-			books. Read them
-			anyway. Being wrong in
-			order is still a map.
-
-			WHERE TO GO.""",
-
-			"""
-			On the eleventh day a
-			rider came down the
-			valley road with blood
-			on his coat and could
-			not finish a sentence.
-
-			Ashfold. The walled
-			town, north of here. It
-			had already started
-			there.
-
-			The map from the
-			farmhouse points at it.
-			Go.""");
-	}
-
-	// ---- 2. THE TOWN --------------------------------------------------
-
-	/**
-	 * 3. THE TOWN. Ashfold on the twelfth day — every dog facing one way, nine people
-	 * wearing other people's faces, and the tall one walking down the main street
-	 * with its mouth open. Bren shoots it twice and it keeps walking.
-	 */
-	public static ItemStack three() {
-		return book("3. the town", "Addexio",
-			"""
-			3. THE TOWN.
-
-			Ashfold had four
-			hundred people and a
-			wall, and the wall is
-			why nobody was
-			afraid.
-
-			I got here on the
-			twelfth day. Not the
-			first day. The twelfth.
-			I want that written
-			down.""",
-
-			"""
-			WHAT WAS ALREADY
-			WRONG.
-
-			The animals. Every
-			dog in the town was
-			facing the same way
-			and not one of them
-			was barking.""",
-
-			"""
-			The bell in the church
-			rang once, at nothing.
-			I climbed up to see
-			who had pulled it.
-			There was nobody in
+			I drew the way to the
+			town and put the map
+			where he would not
+			look: at the top of
 			the tower.
 
-			And the people in the
-			street were talking
-			about ordinary things,
-			and it took me an hour
-			to work out why that
-			felt so bad.""",
+			Do not sleep on the
+			road. He does not.
 
-			"""
-			They were all saying
-			the same ordinary
-			things.
-
-			THE ONES WEARING
-			FACES.
-
-			A woman I knew called
-			my name from a
-			doorway.""",
-
-			"""
-			She had my name right
-			and her mouth was
-			wrong. It moved a
-			moment after the
-			sound came out.
-
-			I said her husband's
-			name back to her. She
-			smiled and did not
-			answer. She did not
-			know it.""",
-
-			"""
-			There were nine of
-			them in the town by
-			then. Nine people who
-			were not those people
-			any more. You could
-			stand a foot away and
-			still not be sure.
-
-			THE TALL ONE.""",
-
-			"""
-			Then something came
-			down the main street
-			that was not
-			pretending to be
-			anybody.
-
-			Three of us watched
-			it from the smithy
-			roof. It had the shape
-			of a villager and it
-			was as tall as the
-			doorframes, and its
-			mouth was open, and it
-			stayed open.""",
-
-			"""
-			It did not run. It
-			walked. It did not stop
-			walking, and
-			everything in front of
-			it moved aside or
-			stopped being able to.
-
-			Bren shot it twice. It
-			turned its head,
-			looked at him, and kept
-			walking.
-
-			WHERE TO GO.""",
-
-			"""
-			The next book is in
-			this same chest.
-
-			I wrote it four years
-			later in a cellar and I
-			could not finish it in
-			one sitting. Read it
-			anyway.
-
-			You need to know what
-			he actually came here
-			for.""");
+			- A.""");
 	}
 
-	/**
-	 * 4. WHAT HE DID HERE. The worst book in the mod and the one the rest hangs off.
-	 *
-	 * The door in the square, forty-one people walked through it, and then the
-	 * church roof and Marek's four children. Addexio was thirty feet away with an
-	 * iron sword and stayed behind the cart. He says so in one sentence and does
-	 * not soften it, which is the whole character in one line.
-	 */
-	public static ItemStack four() {
-		return book("4. what he did here", "Addexio",
+	/** 2. the town. */
+	public static ItemStack two() {
+		return book("2. the town", "Addexio",
 			"""
-			4. WHAT HE DID HERE.
+			2. THE TOWN.
 
-			I have started this
-			book nine times.
-
-			WHAT HE CAME FOR.
-
-			He did not come to kill
-			the town. Killing the
-			town was tidying up
-			afterwards.""",
+			I came here for help.
+			I got here two days
+			after he did.""",
 
 			"""
-			He came for the ones
-			who would fit through
-			the door.
-
-			THE DOOR.
-
-			On the third night
-			there was a door
-			standing in the square
-			with nothing around it.""",
-
-			"""
-			Not a doorway. A
-			frame of black stone,
-			and inside it a purple
-			light that moved like
-			water standing on its
-			end.""",
-
-			"""
-			They walked people
-			through it. The nine
-			wearing faces took
-			them by the arms, and
-			the tall one came
-			behind, and the people
-			went, because the
-			things holding them
-			had their sisters'
-			faces on.""",
-
-			"""
-			Forty-one people
-			went through. I
-			counted the ones who
-			never came out and
-			forty-one is the
-			number.
-
-			I do not know where it
-			goes. The air that
-			came out of it was
-			cold and smelled like a
-			struck match. Nobody
-			has ever come back
-			through it.""",
-
-			"""
-			WHAT HE DID TO THE
-			REST.
-
-			The rest he did
-			himself, in the open, in
-			the middle of the day,
-			so that we would
-			watch.
-
-			He started with the
-			ones who could not
-			run.""",
-
-			"""
-			Marek's four children
-			were in the church
-			with the cleric and
-			eleven women. He came
-			in through the roof.
-			He did not use a
-			sword. There was
-			almost no noise and it
-			took him less than a
-			minute.
-
-			I was thirty feet away,
-			behind a cart, with an
-			iron sword in my hand.""",
-
-			"""
-			I did not move.
-
-			That is the sentence. I
-			have written nine
-			versions of this book
-			to get around it. I had
-			a weapon, I was close
-			enough, and I stayed
-			behind the cart.
-
-			When he came out he
-			looked straight at me.
-			He knew exactly where
-			I was.""",
-
-			"""
-			He let me live. I have
-			thought about why for
-			sixty years. I think
-			somebody had to tell
-			it.
-
-			AND THEN HE WAS GONE.""",
-
-			"""
-			Two hundred and six
-			dead. Forty-one
-			through the door. He
-			walked out of the
-			north gate at dawn
-			and the valley did not
-			see him again for nine
-			years.
-
-			Some of what we
-			buried we could not
-			tell apart, so we
-			buried it together and
-			put up one stone.""",
-
-			"""
-			WHERE TO GO.
-
-			Nine years is a long
-			time to feel safe and
-			we used it badly.
-
-			We built a tower north
-			of here to watch for
-			him. It is still standing.
-			The next book is at
-			the top of it.
-
-			Watching was not the
-			problem.""");
-	}
-
-	// ---- 3. THE TOWER -------------------------------------------------
-
-	/**
-	 * 5. THE TOWER. Nine years of watching the wrong direction. Pip comes up the
-	 * ladder shaking, nobody believes him, four go down and two come back — and
-	 * what is under the tower turns out to be ours, not his.
-	 */
-	public static ItemStack five() {
-		return book("5. the tower", "Addexio",
-			"""
-			5. THE TOWER.
-
-			We built this to watch
-			the horizon.
-
-			Three of us put it up
-			in one summer. Otto, a
-			lad called Pip who was
-			seventeen, and me.
-			Ninety feet of stone, a
-			room at the top, and a
-			bell.""",
-
-			"""
-			Somebody stood in it
-			every night for nine
-			years. I took the
-			winter watches. I do
-			not sleep well anyway.
-
-			WHAT WAS WRONG WITH
-			IT.
-
-			Everything. It is a
-			good tower and it is
-			the most stupid thing I
-			have ever helped
-			build.""",
-
-			"""
-			We watched the
-			horizon because we
-			thought he would come
-			from somewhere.
-
-			He does not come
-			from somewhere. He is
-			already where you
-			are, and the reason
-			you cannot see him is
-			not distance.
-
-			WHAT PIP FOUND.""",
-
-			"""
-			In the ninth summer
-			Pip went down to the
-			spring below the
-			tower to clear the
-			pipe.
-
-			He came back up the
-			ladder shaking so
-			hard he could not
-			hold the rungs.""",
-
-			"""
-			He said there was a
-			hole in the rock that
-			had not been there
-			yesterday, with steps
-			going down it, cut
-			square.
-
-			He said there was a
-			light at the bottom the
-			colour of a bruise.
-
-			He said he could hear
-			somebody counting.""",
-
-			"""
-			We did not believe him.
-			Write that down too.
-
-			Four of us went down
-			the next morning to
-			prove there was
-			nothing.
-
-			Two of us came back
-			up.
-
-			WHERE TO GO.""",
-
-			"""
-			Here is the part
-			nobody is ready for,
-			and it is worse than
-			the other way round.
-
-			What was under this
-			tower was not his.""",
-
-			"""
-			It was ours. Men from
-			the town cut those
-			steps, and they had
-			been cutting them the
-			whole nine years we
-			spent up here looking
-			at the sky.
-
-			The map points at it. It
-			is a prison. Fourteen
-			cells, iron on every
-			door, and a desk at
-			the end with a ledger
-			on it.""",
-
-			"""
-			Read the ledger. Then
-			read the book beside
-			it.""");
-	}
-
-	// ---- 4. THE GAOL --------------------------------------------------
-
-	/**
-	 * 6. THE PRISON. What the gaol was for, and Joren's ledger with two columns where
-	 * the out column is shorter.
-	 *
-	 * Also the only place in the mod that tells you how to beat the mimic, and
-	 * every tell is real: it closes the last paces itself, copies your crouch,
-	 * ransacks containers without taking anything, changes its coat, and only ever
-	 * does any of it while you are alone.
-	 */
-	public static ItemStack six() {
-		return book("6. the prison", "Addexio",
-			"""
-			6. THE PRISON.
-
-			Fourteen cells cut
-			into rock. Iron on
-			every door. A desk at
-			the far end with a
-			lamp.
-
-			The men who dug this
-			were not monsters.
-			That goes at the top,
-			because it is the only
-			part that is actually
-			frightening.""",
-
-			"""
-			WHAT IT WAS FOR.
-
-			Some people came
-			back.""",
-
-			"""
-			Not through the door
-			in the square. From
-			smaller things. A night
-			lost in the woods. A
-			shaft that went too
-			deep. A face at a
-			window. They would be
-			gone a day or a week,
-			and then they would
-			walk home.
-
-			And they would be
-			almost right.""",
-
-			"""
-			They knew their own
-			names. They knew
-			their children. They
-			would sit at their own
-			table and eat with
-			their own hands, and
-			then one evening they
-			would say a sentence
-			that only a dead man
-			could know.
-
-			So the town built
-			somewhere to put
+			The baker, Tomas,
+			held his own girl
+			under the trough
+			until she stopped
+			kicking. Then he
+			dried his hands and
+			asked the square who
+			wanted bread. His
+			eyes had a dot in
 			them.""",
 
 			"""
-			HOW IT WORKED.
+			They hanged Tomas at
+			noon. At dusk he was
+			back in the bakery
+			with the rope still
+			on. Baking.
 
-			You brought them in
-			and you counted them
-			in. It is painted on the
-			wall by the gate.
-			COUNT THEM IN. COUNT
-			THEM OUT.""",
-
-			"""
-			The warder was a fair
-			man called Joren and
-			he kept a careful
-			ledger, and that
-			ledger is the worst
-			object in this valley.
-
-			It has two columns. In,
-			and out.
-
-			The out column is
-			shorter. The missing
-			names are not marked
-			dead.""",
+			The smell was not
+			bread.""",
 
 			"""
-			HOW TO TELL, AFTER
-			ALL THAT.
-
-			They did work it out in
-			the end. Not from the
-			cutting. From watching.
-			Learn this properly,
-			because you will need
-			it and I will not be
-			there.""",
-
-			"""
-			The eyes. A dot in the
-			middle of each one,
-			black, where a man has
-			nothing. He does not
-			blink it away.
-
-			If you are close
-			enough to see it you
-			are already too close.""",
+			Half of them went
+			underground to get
+			away from the sky.
+			They took the
+			children with them.
+			Under the church
+			there is a stair.
+			I have been down
+			once. I will not go
+			again.""",
 
 			"""
-			He does not sleep.
-			The doors shut, the
-			lights go, and one of
-			them is still on the
-			square, facing your
-			house.
-
-			Count the beds against
-			the men. Every village
-			has one now.""",
+			Some of them still
+			answer if you call.
+			They use the right
+			names. Do not answer
+			back. That is how he
+			learns your voice.""",
 
 			"""
-			He stops when you look
-			at him. Not like a man
-			caught out. Like a
-			clock with a hand laid
-			on it. Turn your back
-			and he is nearer.
+			The way on is in the
+			library under the
+			church. Take it and
+			leave. Nothing in
+			this town is asking
+			to be saved.
 
-			WHERE TO GO.
-
-			There is a second
-			book in this chest and
-			it is not mine.""",
-
-			"""
-			It is what one man said
-			out loud, in a room
-			with me and two
-			others, over about
-			four hours, after we
-			got him out of cell
-			nine.
-
-			I wrote it down as he
-			said it. I did not tidy it.""",
-
-			"""
-			If you would rather
-			not, close the chest.
-			It does not change
-			what you have to do.""");
+			- A.""");
 	}
 
-	/**
-	 * 7. THE ONE WHO CAME BACK. A survivor's account, transcribed and untidied.
-	 *
-	 * Eleven weeks in cell nine, and the men doing it were the town's own. The
-	 * point is stated by the man it was done to: the ordinary ones had to be cut
-	 * too, or the numbers mean nothing. The man with the book was Steve, and he
-	 * was only ever testing himself.
-	 */
-	public static ItemStack seven() {
-		return book("7. the one who came back", "Addexio",
+	/** 3. under the hill. */
+	public static ItemStack three() {
+		return book("3. under the hill", "Addexio",
 			"""
-			7. THE ONE WHO CAME
-			BACK.
+			3. UNDER THE HILL.
 
-			Taken down as spoken.
-			Cell nine. Eleven weeks
-			inside.
-
-			I have not tidied his
-			words. Where he
-			stopped, I have left
-			the gap.""",
+			This is where he
+			lived. Not haunted.
+			LIVED. There is a
+			bed. He slept in it.""",
 
 			"""
-			\"They put me in on a
-			Tuesday. Joren wrote
-			my name in the book.
-			He said sorry. He did
-			say sorry.\"
-
-			\"The first week was
-			only questions. What is
-			your wife called. What
-			did you eat. Say the
-			alphabet backwards.
-			Easy things. I got
-			every one of them
-			right.\"""",
+			Look at the table.
+			Set for two. He ate
+			across from an empty
+			chair every night
+			for years, and
+			somebody washed the
+			second plate.""",
 
 			"""
-			\"Then a man came who
-			was not from the
-			town.\"
-
-			\"He had a book and he
-			asked the same
-			questions and he did
-			not listen to the
-			answers. He was
-			watching my hands. He
-			said the answers do
-			not matter. Only the
-			hands.\"""",
+			In the far room the
+			shelves are full. Not
+			books. Names. Every
+			soul from every farm
+			for forty miles, in
+			the same hand, and a
+			line through most of
+			them.""",
 
 			"""
-			\"They took the door
-			off cell four and put
-			a lamp in and left it
-			burning nine days, and
-			the man in there
-			never slept, and on
-			the ninth day he was
-			still not wrong. So
-			they wrote down that
-			the lamp does not
-			work.\"""",
+			Lise is on the third
+			shelf.
+
+			There is no line
+			through her yet.
+
+			I stood there until
+			the candle went out.""",
 
 			"""
-			\"They tried cold. They
-			tried keeping us
-			awake. Then they tried
-			cutting, to see if we
-			healed the way a man
-			heals.\"
-
-			\"I healed the way a
-			man heals. So they cut
-			deeper, because the
-			shallow ones only
-			proved the shallow
-			ones.\"""",
+			He came back while I
+			was here. I heard him
+			on the stair and hid
+			in the pool. He stood
+			over the water a long
+			time. He knew. He let
+			me live so I would
+			write this down.""",
 
 			"""
-			\"There was a woman in
-			six. I will not give her
-			name. Her daughter is
-			still alive.\"
+			The way to the
+			prison is in the
+			chest by the stair.
+			He wanted me to have
+			it.
 
-			\"They opened her arm
-			from the elbow down
-			and held it open with
-			pins and asked her to
-			name her mother, and
-			she did, all the way
-			through, and she was
-			right every time.\"""",
+			Go anyway.
 
-			"""
-			\"She was still right
-			when she died.\"
-
-			\"Here is what you
-			have to understand.
-			She was not one of
-			them. Nobody in this
-			hole was one of them.\"""",
-
-			"""
-			\"We were the ordinary
-			ones. That is the point
-			of us. You cannot tell
-			them apart, so you
-			have to do it to the
-			ordinary ones as well,
-			or the numbers mean
-			nothing.\"
-
-			\"He wrote that in his
-			book. He said it just
-			like that. The numbers
-			mean nothing.\"""",
-
-			"""
-			\"Eleven of us went in.
-			I came out.\"
-
-			WHO THE MAN WITH THE
-			BOOK WAS.
-
-			He was Steve.
-
-			The same Steve who
-			farmed my valley
-			before me. The same
-			Steve who went under
-			the hill and did not
-			touch the door.""",
-
-			"""
-			Herobrine's friend.
-
-			He was not trying to
-			save anybody. He was
-			trying to find out
-			whether he himself
-			would have come up
-			out of that hole the
-			same way.
-
-			He found out that he
-			would.
-
-			WHERE TO GO.""",
-
-			"""
-			We closed the prison.
-			We hanged nobody. I
-			think about that.
-
-			Then in the eleventh
-			year two boys found
-			where he lives.
-
-			The church is south
-			of here. Everyone
-			who was left went
-			there first, and there
-			is a book on the altar.""");
+			- A.""");
 	}
 
-	// ---- 5. THE CHURCH ------------------------------------------------
-
-	/**
-	 * 8. WHERE HE LIVES. Two boys and a dog find the second door. The church is where
-	 * two hundred people decided whether to walk into it, and where Wendel wrote
-	 * down the question nobody would let him ask out loud. Four of nine came back,
-	 * and what they saw was a paved road and lit windows: he built a house.
-	 */
-	public static ItemStack eight() {
-		return book("8. where he lives", "Addexio",
+	/** 4. cell nine. */
+	public static ItemStack four() {
+		return book("4. cell nine", "Addexio",
 			"""
-			8. WHERE HE LIVES.
+			4. CELL NINE.
 
-			He does not live in a
-			house.
-
-			Two boys following a
-			dog found it in the
-			eleventh year. A
-			frame of black stone
-			standing in a hollow,
-			with the same purple
-			light standing up
-			inside it like water.""",
+			They built this to
+			keep him out. They
+			ended up keeping
+			each other in.""",
 
 			"""
-			The same door as the
-			one in the square at
-			Ashfold. He had one
-			out here the whole
-			time.
-
-			WHAT THIS CHURCH WAS
-			FOR.
-
-			Everything left of us
-			came here first.""",
+			The rule was simple.
+			If you were not
+			yourself, you went in
+			a cell. Anyone could
+			say it of anyone. By
+			the second month the
+			warder was in four,
+			and the man who put
+			him there was in six.""",
 
 			"""
-			Not to pray, although
-			we did that too. To
-			decide. Two hundred
-			people in one room,
-			deciding whether to
-			walk into a door.
-
-			The cleric here was
-			called Wendel. He was
-			old, he was not brave,
-			and he was the only
-			one of us who said
-			the true thing out
-			loud.""",
+			Marta from the mill
+			scratched STILL
+			MYSELF on her wall
+			every morning for
+			eleven days. On the
+			twelfth the scratches
+			were on the ceiling
+			and the door was
+			still locked.""",
 
 			"""
-			He said: before you
-			let that man near you,
-			ask Steve what he did
-			to Herobrine under
-			the hill.
+			Cell nine. They put
+			a boy in it on a
+			Tuesday because he
+			would not blink.
+			Wednesday there was
+			blood on the ceiling
+			and nothing on the
+			floor. Nothing.
 
-			We told him it was not
-			the time.
-
-			So he wrote it down
-			instead, which is why
-			you can still read it.""",
+			Not even the boy.""",
 
 			"""
-			He was dead inside the
-			month. Steve was four
-			days' ride away, knew
-			which night it was, and
-			did not come.
+			Something is in nine
+			now. It is very tall
+			and it does not move
+			while you look at
+			it.
 
-			WHAT IS THROUGH IT.
-
-			I went through. Nine
-			of us went and four
-			came back. I am one of
-			the four and I will not
-			write down most of it.""",
+			Look at it. Keep
+			looking. Walk
+			backwards to the
+			stair.""",
 
 			"""
-			I will write down this
-			much, because you will
-			need it.
+			The last of them dug
+			out through the back
+			wall and kept going.
+			The tunnel is still
+			there. So is the
+			map. Take the map.
 
-			It is not a cave.
-			Somebody built it.
+			Do not take the
+			tunnel at night.
 
-			There is a castle
-			over there with lights
-			in the windows, and a
-			road going up to it,
-			and the road is paved,
-			and the paving is laid
-			in a pattern.""",
-
-			"""
-			He did not find a hole
-			and crawl into it. He
-			went somewhere and
-			built a house.
-
-			WHERE TO GO.
-
-			Follow the map west.
-			There is a small
-			village at the end of it
-			with a hall in the
-			middle and a flag on
-			the hall.""",
-
-			"""
-			That is where it
-			stopped. That is where
-			I nearly stopped with
-			it.""");
+			- A.""");
 	}
 
-	// ---- 6. THE LAST HOUSE --------------------------------------------
-
-	/**
-	 * 9. THE LAST HOUSE. The one fight Addexio is not ashamed of, and it lasts a
-	 * sentence. He reaches Herobrine, swings, connects, and wakes against the far
-	 * wall with a hand that never works again. Sixty-one dead in one room. They
-	 * wall the door up and tell the valley it is over.
-	 */
-	public static ItemStack nine() {
-		return book("9. the last house", "Addexio",
+	/** 5. the church. */
+	public static ItemStack five() {
+		return book("5. the church", "Addexio",
 			"""
-			9. THE LAST HOUSE.
+			5. THE CHURCH.
 
-			Sixty people lived in
-			this village.
-
-			We came here in the
-			twelfth year with
-			everything we had
-			left, because we had
-			finally worked out how
-			to make him come to
-			us.""",
+			He lived under the
+			altar. UNDER it. The
+			priest fed him for a
+			year and called it
+			prayer.""",
 
 			"""
-			You make him come by
-			taking his door.
+			Eleven of us went
+			down the altar stair
+			to bring him up.
+			Four came back. Not
+			the same four that
+			went down. The faces
+			were right.
 
-			HOW IT WENT.""",
-
-			"""
-			We drove him out of
-			Ashfold first. Two
-			hundred of us with
-			iron and fire, in the
-			streets where we had
-			buried our own
-			families, and it worked,
-			and I have never
-			been so certain of
-			anything in my life.""",
+			The eyes were his.""",
 
 			"""
-			Then out of the fields.
-			Then along the valley
-			road for two days,
-			losing four and five
-			and six of us a night,
-			and every one of
-			them was somebody I
-			had eaten with.
+			Father Ambrose
+			walked into the fire
+			he had lit for us and
+			did not scream. He
+			looked at me the
+			whole time.
 
-			Then here. To the hall
-			with the flag on it,
-			because his last door
-			was underneath it.""",
+			That was not Ambrose
+			behind the eyes.""",
 
 			"""
-			WHAT HAPPENED IN THE
-			HALL.
+			I killed one of the
+			four that night. It
+			had my brother's
+			face. I do not know
+			if it was my brother.
 
-			He was waiting in the
-			hall.""",
-
-			"""
-			He had let us drive
-			him. Twelve days of us
-			thinking we were
-			pushing, and he had
-			been walking
-			backwards to the one
-			place where all of us
-			would be standing in
-			one room.""",
+			I have not slept
+			since. That is three
+			years.""",
 
 			"""
-			I got to him. That is
-			the only thing in ten
-			books I am not
-			ashamed of. I got
-			close enough to swing,
-			and I swung, and I hit
-			him, and it was like
-			hitting a doorframe.""",
+			What is left of the
+			village is here. We
+			are going to the last
+			house. There is a way
+			through. We have
+			decided.
+
+			Most of us will not
+			come back. I know.""",
 
 			"""
-			Then I was against the
-			far wall with a great
-			deal of my own blood
-			on the boards and my
-			left hand would not
-			work.
+			If you are reading
+			this, we failed. The
+			map is in the chest.
 
-			It has never worked
-			properly since.
+			Do what we could
+			not.
 
-			Sixty-one of us died
-			in this village. In one
-			room. In about the time
-			it takes to boil a pot.""",
-
-			"""
-			WHAT WE DID INSTEAD.
-
-			We could not kill him,
-			so we did the only
-			other thing we could
-			think of.""",
-
-			"""
-			We went down the stair
-			under the hall and we
-			walled his door up.
-			Stone, then more
-			stone, then earth. We
-			cut warnings into it in
-			three different hands
-			so that nobody would
-			ever mistake it for a
-			cellar.
-
-			Then we came up and
-			told the valley it was
-			finished.""",
-
-			"""
-			That was a lie. All of
-			us knew it was a lie. We
-			told it because people
-			needed to plant wheat.
-
-			WHERE TO GO.
-
-			Down.""",
-
-			"""
-			There is a stair under
-			this hall. The stone in
-			it has gone black and
-			glassy, and there is
-			heat coming up out of
-			it, and none of that
-			belongs on this side.
-
-			Which means the wall
-			did not hold.
-
-			The last book is at the
-			bottom, next to the
-			door.""");
+			- A.""");
 	}
 
-	/**
-	 * 10. HE HAS BEEN SEEN. Written last spring, at the bottom of the stair, next to
-	 * the hole in his own wall.
-	 *
-	 * The list of what he got wrong is the mod's own advice in order, and the last
-	 * page is why the numbering exists at all: he is still alive, he refuses to say
-	 * where he is because you already know, and he has been walking behind you
-	 * since the first house. He came down here alone to leave this book at the
-	 * door and then went back up to the farm to wait. See Company.arrives.
-	 */
-	public static ItemStack ten() {
-		return book("10. he has been seen", "Addexio",
+	/** 6. the last house. */
+	public static ItemStack six() {
+		return book("6. the last house", "Addexio",
 			"""
-			10. HE HAS BEEN SEEN.
+			6. THE LAST HOUSE.
 
-			I am eighty-one years
-			old and I am writing
-			this at the bottom of a
-			stair I helped wall up
-			sixty years ago,
-			beside a hole in that
-			wall that I did not
-			make.
+			Nineteen of us came
+			down these stairs.
+			Eleven came back up.
 
-			WHAT HAS HAPPENED.
-
-			He has been seen.""",
+			I am writing this on
+			the way down again.""",
 
 			"""
-			Twice this spring in
-			the valley. Once at the
-			old farm where these
-			books start. A man
-			walking his fence line
-			at dusk saw somebody
-			standing in the wheat,
-			not breathing.""",
+			The door under the
+			floor is not a door.
+			It is a mouth. It
+			breathes. Put your
+			hand near it and
+			your hand is colder
+			for a day.""",
 
 			"""
-			It is beginning again in
-			the same order it
-			came in the first time.
-			Small things first.
-			Torches out in a line.
-			A door open and still.
-			Prints going one way.
-
-			You have been
-			reading these in that
-			order because that is
-			the order it happens
-			in.""",
+			Eight went through.
+			We heard them for
+			about a minute. Then
+			we heard ONE voice
+			speaking with all
+			eight mouths, and it
+			was saying our names.""",
 
 			"""
-			WHAT I GOT WRONG.
+			Jorunn came back.
+			Only Jorunn. She
+			stood in the frame
+			and said IT IS
+			BEAUTIFUL and her
+			teeth were wrong.
 
-			All of it. Let me be
-			useful and be exact.
-
-			I did not believe Pip.
-			Believe the one who
-			comes up the ladder
-			shaking.
-
-			We watched the
-			horizon. He is not on
-			the horizon.""",
+			I put her down
+			myself. God forgive
+			me.""",
 
 			"""
-			We built a prison and
-			let a man with a book
-			into it, and in eleven
-			weeks we did worse to
-			ourselves than he did
-			to Ashfold in three
-			days. We did it
-			because we were
-			frightened and it felt
-			like doing something.
+			On the other side is
+			a city he built out
+			of the people he
+			took. Over it, a
+			castle. He is in it.
+			He is waiting.
 
-			I stayed behind the
-			cart.""",
+			He has been waiting
+			for YOU.""",
 
 			"""
-			And when we could not
-			kill him we hid him, and
-			told everyone it was
-			over, and left it for a
-			stranger to find sixty
-			years later.
+			The door does not
+			open twice. Go
+			through and you
+			finish it, or you
+			stay.
 
-			That is you.
+			I am going. Come and
+			find me.
 
-			WHAT YOU HAVE TO DO.
-
-			Not what we did.""",
-
-			"""
-			Do not wall it up. Go
-			through it.
-
-			He built a house over
-			there with lights in the
-			windows. A thing that
-			builds a house can be
-			found in it. A thing
-			that can be found can
-			be finished.""",
-
-			"""
-			Take iron, and take
-			more than you think
-			you need. Do not go
-			alone.
-
-			And do not trust a
-			face because it knows
-			your name. Ask it
-			something only a
-			friend would know, and
-			watch the hands.
-
-			WHERE I AM.""",
-
-			"""
-			I am still alive. That
-			surprises me more
-			than anything else in
-			these ten books.
-
-			And I am not going to
-			tell you where I am,
-			because you already
-			know.""",
-
-			"""
-			I came down here on
-			my own to leave this
-			book at the door, and
-			then I walked back up
-			and went to the farm,
-			because the farm is
-			where anybody who
-			picks up this trail
-			starts. I sat on the
-			wall and I waited.""",
-
-			"""
-			If you have read
-			these in the order
-			they are numbered,
-			then I saw you at the
-			first house and I
-			have been behind you
-			ever since.""",
-
-			"""
-			I am not much use. I
-			am eighty-one and my
-			left hand has not
-			worked since the hall.
-			But I have kept the
-			good armour all these
-			years for exactly one
-			day, and I can still get
-			in front of you once.
-
-			That is all I have. It is
-			more than anyone did
-			for me.""",
-
-			"""
-			WHAT IS LEFT.
-
-			Do not wall it up. Go
-			through.
-
-			My name is Addexio. I
-			failed at this for sixty
-			years.
-
-			Let us go and finish it.""");
+			- Addexio.""");
 	}
 
 	private static final int TITLE_FITS = 32;

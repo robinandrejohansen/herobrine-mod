@@ -222,7 +222,7 @@ public final class Sayings {
 	 */
 	static final String[] INTRODUCTION = {
 		"Don't stop here. Not at this house. He knows this house.",
-		"Addexio. I lived here, before. I wrote the ten books you will find — one in every place he took.",
+		"Addexio. I lived here, before. I wrote six books — one in every place he took. Read them in order.",
 		"He has been seen again. Three nights ago. He does not come back for nothing.",
 		"There is a map at the top of the tower. It goes to the town. Climb up and take it — and do not read it out loud.",
 		"Everyone I have ever walked this road with is dead. I am telling you now, while you can still say no.",

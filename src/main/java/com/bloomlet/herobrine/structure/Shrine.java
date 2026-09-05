@@ -254,7 +254,7 @@ public final class Shrine {
 		if (!(level.getBlockEntity(at) instanceof ChestBlockEntity chest)) {
 			return;
 		}
-		chest.setItem(0, HouseBooks.eight());
+		chest.setItem(0, HouseBooks.five());
 		chest.setItem(2, new ItemStack(net.minecraft.world.item.Items.DIAMOND_PICKAXE));
 		chest.setItem(3, new ItemStack(net.minecraft.world.item.Items.FLINT_AND_STEEL));
 		chest.setItem(4, new ItemStack(net.minecraft.world.item.Items.BREAD, 9));

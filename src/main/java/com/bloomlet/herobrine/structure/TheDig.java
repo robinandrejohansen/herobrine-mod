@@ -443,8 +443,7 @@ public final class TheDig {
 		level.setBlock(chestAt, Blocks.CHEST.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), 2);
 		if (level.getBlockEntity(chestAt) instanceof ChestBlockEntity chest) {
-			chest.setItem(0, HouseBooks.six());
-			chest.setItem(1, HouseBooks.seven());
+			chest.setItem(0, HouseBooks.four());
 			// THE THING YOU CAME DOWN HERE FOR IS INSIDE BOOK SIX NOW.
 			//
 			// It used to be a third book, theProtocol, and it was the only place in

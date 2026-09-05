@@ -91,7 +91,7 @@ public final class Undercroft {
 		cell(level, left, Direction.EAST, random);
 		cell(level, right, Direction.SOUTH, random);
 
-		crate(level, chamber.offset(2, 0, 0), HouseBooks.two(), random);
+		crate(level, chamber.offset(2, 0, 0), null, random);      // the farm's one book is upstairs
 		Digging.props(level, chamber, 4, random);
 		unfinished(level, end, random);
 

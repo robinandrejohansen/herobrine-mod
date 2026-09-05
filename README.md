@@ -82,13 +82,13 @@ twenty blocks of the door, and lets go of anyone who gets thirty-six away. They
 do not despawn and they will not follow you home. The book is inside. You go
 through them.
 
-### The ten books
+### The six books
 
-All by Addexio, in the order he wrote them, one or two in every place:
+All by Addexio, one in every place, six pages or fewer, in the order he wrote
+them. Each one says what happened there and where the next one is:
 
-1. the farm · 2. what I saw · 3. the town · 4. what he did here · 5. the tower ·
-6. the prison · 7. the one who came back · 8. where he lives · 9. the last house ·
-10. he has been seen
+1. the farm · 2. the town · 3. under the hill · 4. cell nine · 5. the church ·
+6. the last house
 
 ### Addexio
 

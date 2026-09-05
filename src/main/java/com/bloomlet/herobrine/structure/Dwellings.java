@@ -118,6 +118,13 @@ public final class Dwellings {
 		AttachmentRegistry.createPersistent(HerobrineMod.id("threshold_last_word"),
 			Codec.BOOL);
 	private static final int CHECK_INTERVAL = 40;
+	/** Checks (two seconds each) the town waits for the farm's tower before going ahead without it. */
+	private static final int SPIRE_PATIENCE = 150;
+	private static int spireWaited;
+	/** Refusals of pick() before the ground rules relax; and failed raises before a house is forced onto its site. */
+	private static final int RELAXES_AFTER = 45;
+	private static final int FORCES_AFTER = 5;
+	private static final java.util.Map<Place, Integer> raiseFailed = new java.util.EnumMap<>(Place.class);
 
 	/**
 	 * How far from the players a new building is put.
@@ -192,6 +199,8 @@ public final class Dwellings {
 	/** How far around the last building to look for somewhere to leave it. */
 	private static final int LOOKS_FOR_A_CHEST = 24;
 
+	private static final java.util.Map<Place, Integer> wayRetries = new java.util.EnumMap<>(Place.class);
+
 	private static void leaveTheWay(ServerLevel over, Place next, BlockPos to) {
 		Place[] all = Place.values();
 		if (next.ordinal() == 0) {
@@ -227,7 +236,10 @@ public final class Dwellings {
 		Wayside.lay(over, anchor, to, over.getRandom());
 
 		net.minecraft.world.level.block.entity.BlockEntity holder = switch (from) {
-			case HOMESTEAD -> onTheTower(over);
+			case HOMESTEAD -> {
+				net.minecraft.world.level.block.entity.BlockEntity tower = onTheTower(over);
+				yield tower != null ? tower : nearestHolder(over, anchor);      // no tower: the farmhouse chest
+			}
 			// AND THE TOWN'S GOES DOWN WITH THE PEOPLE WHO ARE STILL ALIVE.
 			//
 			// Two wrong answers before this one. First it was "nearest chest within
@@ -278,12 +290,20 @@ public final class Dwellings {
 			// been sited and there is now no way for anybody to learn where. It sat
 			// at info level among a hundred other info lines and went unread through
 			// a whole playthrough that dead-ended because of it.
-			HerobrineMod.LOGGER.warn("nowhere in the {} to leave the way to the {}"
-					+ " — THE TRAIL ENDS HERE",
+			//
+			// AND NOW IT IS NOT THE END. Usually the chunk was not loaded, or the
+			// container had not been placed yet; ten seconds later it is. Thirty
+			// tries is five minutes, every one of them logged at warn.
+			int tried = wayRetries.merge(next, 1, Integer::sum);
+			HerobrineMod.LOGGER.warn("nowhere in the {} to leave the way to the {} yet — trying again in 10 s ({}/30)",
 				from.name().toLowerCase(java.util.Locale.ROOT),
-				next.name().toLowerCase(java.util.Locale.ROOT));
+				next.name().toLowerCase(java.util.Locale.ROOT), tried);
+			if (tried <= 30) {
+				com.bloomlet.herobrine.manifest.Cadence.in(over.getServer(), 200, () -> leaveTheWay(over, next, to));
+			}
 			return;
 		}
+		wayRetries.remove(next);
 		// SCALE TWO, AND THE COORDINATES IN THE NAME.
 		//
 		// This was scale FOUR — two thousand and forty-eight blocks across, the
@@ -677,7 +697,7 @@ public final class Dwellings {
 		// reports failure and is asked again next pass rather than quietly dropping
 		// the account of the fight in the hall.
 		java.util.List<net.minecraft.world.item.ItemStack> leave = java.util.List.of(
-			com.bloomlet.herobrine.structure.HouseBooks.nine(), book, map);
+			book, map);
 		int put = 0;
 		for (int slot = 0; slot < box.getContainerSize() && put < leave.size(); slot++) {
 			if (!box.getItem(slot).isEmpty()) {
@@ -691,8 +711,8 @@ public final class Dwellings {
 			return false;
 		}
 		HerobrineMod.LOGGER.info(
-			"{} of 3 left in the threshold at [{}, {}, {}] — book nine, the note"
-				+ " under the floor, and the map home", put,
+			"{} of 2 left in the threshold at [{}, {}, {}] — the note under the"
+				+ " floor, and the map home", put,
 			holder.getBlockPos().getX(), holder.getBlockPos().getY(),
 			holder.getBlockPos().getZ());
 		return true;
@@ -949,7 +969,24 @@ public final class Dwellings {
 			// One tick of patience costs nothing and removes the race.
 			if (place == Place.TOWN
 				&& com.bloomlet.herobrine.structure.Spire.site(overworld) == null) {
-				return;
+				// THE TOWN WAITS ON THE TOWER, BUT NOT FOREVER. The map to the town
+				// goes on the tower, so the tower should stand first — and if its
+				// ground was never found, the whole chain used to stop here for good.
+				// Every thirty seconds the tower is asked to try again at the farm;
+				// after five minutes of that the town goes ahead without it and the
+				// map falls back to the farmhouse chest (leaveTheWay).
+				spireWaited++;
+				Long farm = overworld.getAttached(Place.HOMESTEAD.site);
+				if (farm != null && spireWaited % 15 == 0) {
+					com.bloomlet.herobrine.structure.Spire.raise(overworld, BlockPos.of(farm), overworld.getRandom());
+					HerobrineMod.LOGGER.warn("no tower at the farm yet — asked for it again ({} s)", spireWaited * 2);
+				}
+				if (spireWaited < SPIRE_PATIENCE) {
+					return;
+				}
+				if (spireWaited == SPIRE_PATIENCE) {
+					HerobrineMod.LOGGER.warn("the tower never stood; the town goes ahead without it");
+				}
 			}
 
 			Long chosen = overworld.getAttached(place.site);
@@ -1406,7 +1443,12 @@ public final class Dwellings {
 
 			// Judged straight off the noise, with nothing loaded and nothing
 			// generated — see buildable(), which is where the four evenings went.
-			if (!ready(level, x, z)) {
+			// RELAXED AFTER A MINUTE AND A HALF OF REFUSALS. Flat, dry ground in the
+			// ring is the wish; land above the sea is the requirement. A chain that
+			// can stall on terrain is a mod that is broken for that world, so it does
+			// not get to.
+			boolean relaxed = refused.getOrDefault(place, 0) >= RELAXES_AFTER;
+			if (relaxed ? !landAbove(level, x, z) : !ready(level, x, z)) {
 				continue;
 			}
 			BlockPos at = new BlockPos(x, Ground.topOf(level, x, z), z);
@@ -1445,12 +1487,59 @@ public final class Dwellings {
 	private static boolean build(ServerLevel level, Place place, BlockPos site) {
 		long began = System.nanoTime();
 		boolean up = raiseNow(level, place, site);
+		if (!up) {
+			int failed = raiseFailed.merge(place, 1, Integer::sum);
+			HerobrineMod.LOGGER.warn("the {} found no ground near its site ({} tries)",
+				place.name().toLowerCase(java.util.Locale.ROOT), failed);
+			if (failed >= FORCES_AFTER) {
+				// FORCED. Five failures is not bad luck, it is terrain the ground
+				// rules will never accept. The house goes onto its site regardless;
+				// every builder cuts its own footing from Ground.topOf, so what it
+				// costs is a hillside, and what it saves is the story.
+				up = force(level, place, site);
+				HerobrineMod.LOGGER.warn("the {} was forced onto [{}, {}]: {}",
+					place.name().toLowerCase(java.util.Locale.ROOT), site.getX(), site.getZ(), up);
+			}
+		}
 		// TIMED, ON PURPOSE. "We lagged on the way to the places" is not a bug
 		// report anyone can act on; "raised the gaol in 2300 ms" is. Whatever this
 		// says over a few hundred milliseconds is a builder that wants staging.
 		HerobrineMod.LOGGER.info("raised the {} in {} ms of this tick (the town's pieces are scheduled, not counted here)",
 			place.name().toLowerCase(java.util.Locale.ROOT), (System.nanoTime() - began) / 1_000_000L);
 		return up;
+	}
+
+	/** The same builders, told to take the site as it is. */
+	private static boolean force(ServerLevel level, Place place, BlockPos site) {
+		RandomSource random = level.getRandom();
+		int x = site.getX();
+		int z = site.getZ();
+		for (int cx = (x - 8) >> 4; cx <= (x + FOOT_X + 8) >> 4; cx++) {
+			for (int cz = (z - 8) >> 4; cz <= (z + FOOT_Z + 8) >> 4; cz++) {
+				level.getChunk(cx, cz);
+			}
+		}
+		BlockPos origin = new BlockPos(x, Ground.topOf(level, x, z) + 1, z);
+		switch (place) {
+			case TOWN -> com.bloomlet.herobrine.town.Township.raise(level, site, random);
+			case HOMESTEAD -> {
+				BlockPos at = new BlockPos(x, Homestead.floorHeightAt(level, x, z), z);
+				Homestead.build(level, at, random);
+				ServerLevel overworld = level.getServer().overworld();
+				overworld.setAttached(ORIGIN, at.asLong());
+				overworld.setAttached(RAISED, true);
+				overworld.setAttached(Place.HOMESTEAD.site, at.asLong());
+				overworld.setAttached(Place.HOMESTEAD.up, true);
+			}
+			case TOWER -> SecondHouse.build(level, origin, random);
+			case GAOL -> TheDig.build(level, origin, random);
+			case CHURCH -> Shrine.build(level, origin, random);
+			case THRESHOLD -> {
+				Threshold.raise(level, origin, random);
+				level.getServer().overworld().setAttached(THRESHOLD_ORIGIN, origin.asLong());
+			}
+		}
+		return true;
 	}
 
 	private static boolean raiseNow(ServerLevel level, Place place, BlockPos site) {
@@ -1604,10 +1693,7 @@ public final class Dwellings {
 		for (int attempt = 0; attempt < 24; attempt++) {
 			int x = near.getX() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
 			int z = near.getZ() + (attempt == 0 ? 0 : level.getRandom().nextInt(96) - 48);
-			BlockPos column = new BlockPos(x, level.getSeaLevel(), z);
-			if (!level.isLoaded(column)) {
-				continue;
-			}
+			level.getChunk(x >> 4, z >> 4);      // at raising range the column is rarely loaded; load it
 			int ground = Ground.topOf(level, x, z);
 			if (ground <= level.getSeaLevel()
 				|| !level.getFluidState(new BlockPos(x, ground, z)).isEmpty()) {
@@ -1798,6 +1884,18 @@ public final class Dwellings {
 	 * disagree the read is not to be trusted whatever the reason — a cave, a
 	 * feature, a chunk that did not generate — and the candidate is dropped.
 	 */
+	/** The relaxed rule: loaded, and the ground stands above the sea. */
+	private static boolean landAbove(ServerLevel level, int x, int z) {
+		for (int cx = x >> 4; cx <= (x + FOOT_X) >> 4; cx++) {
+			for (int cz = z >> 4; cz <= (z + FOOT_Z) >> 4; cz++) {
+				level.getChunk(cx, cz);
+			}
+		}
+		int top = Ground.topOf(level, x, z);
+		return top > level.getSeaLevel()
+			&& level.getFluidState(new BlockPos(x, top, z)).isEmpty();
+	}
+
 	private static boolean ready(ServerLevel level, int x, int z) {
 		if (!buildable(level, x, z)) {
 			return false;
