@@ -41,6 +41,25 @@ import net.minecraft.world.level.block.state.properties.Half;
  * is a sentence, and the player assembles it themselves — which is the only
  * way it ever lands.
  *
+ * ABANDONED, AND SHUT. Nobody has been here for years and the house has to say
+ * so before the furniture does. It shipped with the lights on — torches in the
+ * walls, lanterns lit on the porch and in the yard — ripe wheat in the field,
+ * clean glass in every window and the front door swinging free: a house
+ * somebody had stepped out of. Now: every window is boarded with planks nailed
+ * across it, or a dirty pane, or a hole with a web in it; the front door has
+ * boards across it too (right-click to pry them off — the trapdoors swing);
+ * no light anywhere, the lantern hooks hanging empty; the field gone to coarse
+ * dirt and dead bushes with a few stunted stalks; boards missing from the
+ * walls, moss on the roof and through the floor, cobwebs in the ceiling
+ * corners, vines on all four sides, empty bookshelves, a chipped anvil. The
+ * techniques are the ones builders use for this — board windows with
+ * trapdoors, swap glass for brown stained glass, cobwebs in corners, dirt and
+ * grass leaking in near openings, dead bushes for ferns, mossy and cracked
+ * stone, holes in walls — see planetminecraft's "Tips for building abandoned
+ * places" and Mojang's own "Building Blocks: Abandoned Village". The story
+ * pieces (beds, graves, the wrong-stone wall, the notes, the way down) are
+ * untouched; they read better in the dark. See abandon.
+ *
  * Four blocks of interior height under a roof, which is low enough to read as
  * somewhere people ate rather than as a landmark or a dungeon, and tall enough
  * that walking through it does not feel like crouching in a crawlspace. The
@@ -302,6 +321,7 @@ public final class Homestead {
 		Grounds.dress(level, middle, Math.max(wide, deep) / 2 + 2,
 			Math.max(wide, deep) / 2 + 14, random);
 		Grounds.yard(level, origin.offset(wide / 2, 0, -4), Direction.NORTH, random);
+		abandon(level, origin, random);
 		HerobrineMod.LOGGER.info("homestead raised at [{}, {}, {}]",
 			origin.getX(), origin.getY(), origin.getZ());
 	}
@@ -384,12 +404,13 @@ public final class Homestead {
 			// plains grass stamped over it.
 			case '~' -> { }
 			case '-' -> field(level, pos, random);
-			case 'O' -> set(level, pos, Blocks.COBBLESTONE.defaultBlockState());
+			case 'O' -> set(level, pos, random.nextBoolean()
+				? Blocks.MOSSY_COBBLESTONE.defaultBlockState() : Blocks.COBBLESTONE.defaultBlockState());
 			case 'o' -> set(level, pos, Blocks.WATER.defaultBlockState());
 			case '*' -> set(level, pos, Blocks.PODZOL.defaultBlockState());
 			case 'f' -> set(level, pos, Blocks.SPRUCE_FENCE.defaultBlockState());
 			case 'G' -> set(level, pos, Blocks.SPRUCE_FENCE_GATE.defaultBlockState());
-			case 'g' -> set(level, pos, Blocks.GLASS.defaultBlockState());
+			case 'g' -> window(level, pos, outward(x, z), random);
 			case 'b' -> set(level, pos, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
 				.setValue(BlockStateProperties.HALF, Half.BOTTOM));
 			case 'D' -> door(level, pos, layer);
@@ -412,13 +433,17 @@ public final class Homestead {
 			case 'c' -> set(level, pos, Blocks.CRAFTING_TABLE.defaultBlockState());
 			case 'F' -> set(level, pos, Blocks.FURNACE.defaultBlockState());
 			case 'A' -> set(level, pos, Blocks.BARREL.defaultBlockState());
-			case 'S' -> set(level, pos, Blocks.BOOKSHELF.defaultBlockState());
+			case 'S' -> set(level, pos, Blocks.CHISELED_BOOKSHELF.defaultBlockState());      // the shelves; not the books
 			case 'L' -> lectern(level, pos);
 			case 'T' -> table(level, pos);
 			case 'h' -> set(level, pos, Blocks.SPRUCE_STAIRS.defaultBlockState()
 				.setValue(BlockStateProperties.HORIZONTAL_FACING, seatFacing(x, z)));
 			case 'P' -> set(level, pos, Blocks.POTTED_DEAD_BUSH.defaultBlockState());
-			case 't' -> torch(level, pos, Blocks.WALL_TORCH, Blocks.TORCH);
+			case 't' -> {      // where the torches were. Nothing burns here now
+				if (random.nextInt(3) == 0) {
+					set(level, pos, Blocks.COBWEB.defaultBlockState());
+				}
+			}
 			case 'r' -> torch(level, pos, Blocks.REDSTONE_WALL_TORCH, Blocks.REDSTONE_TORCH);
 			case 'l' -> set(level, pos, Blocks.AIR.defaultBlockState());   // the way down
 			case 'x' -> set(level, pos, Blocks.COBWEB.defaultBlockState());
@@ -484,11 +509,66 @@ public final class Homestead {
 	}
 
 	/** A field nobody harvested and nobody replanted. */
+	/** The field, years on: mostly gone back to dirt, a few stalks that never came to anything. */
 	private static void field(ServerLevel level, BlockPos pos, RandomSource random) {
-		set(level, pos, Blocks.FARMLAND.defaultBlockState());
-		if (random.nextInt(3) > 0) {
+		int ground = random.nextInt(10);
+		set(level, pos, ground < 5 ? Blocks.COARSE_DIRT.defaultBlockState()
+			: ground < 8 ? Blocks.DIRT.defaultBlockState()
+			: Blocks.FARMLAND.defaultBlockState());
+		int over = random.nextInt(10);
+		if (over < 3) {
+			set(level, pos.above(), Blocks.DEAD_BUSH.defaultBlockState());
+		} else if (over < 5) {
+			set(level, pos.above(), Blocks.SHORT_GRASS.defaultBlockState());
+		} else if (over < 7 && ground >= 8) {
 			set(level, pos.above(), Blocks.WHEAT.defaultBlockState()
-				.setValue(BlockStateProperties.AGE_7, 7));
+				.setValue(BlockStateProperties.AGE_7, 1 + random.nextInt(3)));
+		}
+	}
+
+	/** Which way is out, for a block in an outer wall. */
+	private static Direction outward(int x, int z) {
+		if (x == HOUSE_X0) {
+			return Direction.WEST;
+		}
+		if (x == HOUSE_X1 || x == WING_X1) {
+			return Direction.EAST;
+		}
+		if (z == HOUSE_Z0 || z == WING_Z0) {
+			return Direction.NORTH;
+		}
+		return Direction.SOUTH;
+	}
+
+	/**
+	 * PLANKS NAILED ACROSS. An open trapdoor stands flat against the face of its
+	 * block on the side opposite its facing (see TrapDoorBlock's *_OPEN_AABB), so a
+	 * board flush with the outer face of a wall block faces INWARD, and one nailed
+	 * over a doorway from the porch faces away from the door.
+	 */
+	private static BlockState boards(Direction facing) {
+		return Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
+			.setValue(BlockStateProperties.HORIZONTAL_FACING, facing)
+			.setValue(BlockStateProperties.OPEN, true)
+			.setValue(BlockStateProperties.HALF, Half.BOTTOM);
+	}
+
+	/** A window, years on: boarded, or a pane brown with dirt, or just a hole with a web in it. */
+	private static void window(ServerLevel level, BlockPos pos, Direction outward, RandomSource random) {
+		int roll = random.nextInt(20);
+		if (roll < 12) {
+			set(level, pos, boards(outward.getOpposite()));
+		} else if (roll < 16) {
+			boolean eastWest = outward.getAxis() == Direction.Axis.Z;      // the wall runs across the way out
+			set(level, pos, Blocks.STAINED_GLASS_PANE.pick(DyeColor.BROWN).defaultBlockState()
+				.setValue(BlockStateProperties.EAST, eastWest)
+				.setValue(BlockStateProperties.WEST, eastWest)
+				.setValue(BlockStateProperties.NORTH, !eastWest)
+				.setValue(BlockStateProperties.SOUTH, !eastWest));
+		} else if (roll < 18) {
+			set(level, pos, Blocks.COBWEB.defaultBlockState());
+		} else {
+			set(level, pos, Blocks.AIR.defaultBlockState());
 		}
 	}
 
@@ -500,6 +580,11 @@ public final class Homestead {
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
 		set(level, pos, door.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.LOWER));
 		set(level, pos.above(), door.setValue(BlockStateProperties.DOUBLE_BLOCK_HALF, DoubleBlockHalf.UPPER));
+		// And boards across it from outside. They swing on a right-click, which is
+		// as close as blocks get to prying them off.
+		BlockPos over = pos.south();
+		set(level, over, boards(Direction.SOUTH));
+		set(level, over.above(), boards(Direction.SOUTH));
 	}
 
 	/**
@@ -547,7 +632,7 @@ public final class Homestead {
 	private static void lectern(ServerLevel level, BlockPos pos) {
 		set(level, pos, Blocks.LECTERN.defaultBlockState()
 			.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
-			.setValue(BlockStateProperties.HAS_BOOK, true));
+			.setValue(BlockStateProperties.HAS_BOOK, false));      // there is no book in this house
 		if (level.getBlockEntity(pos) instanceof LecternBlockEntity lectern) {
 			// AND A SECOND COPY OF BOOK ONE, OPEN, ON A STAND, IN THE MAIN ROOM.
 			//
@@ -728,14 +813,13 @@ public final class Homestead {
 
 		// WINDOWS, and shutters on the ones that still have them.
 		for (int z : new int[] { WING_Z0 + 2, WING_Z1 - 2 }) {
-			hole(level, origin.offset(WING_X1, 2, z), Blocks.GLASS.defaultBlockState());
+			window(level, origin.offset(WING_X1, 2, z), Direction.EAST, random);
 			set(level, origin.offset(WING_X1 + 1, 2, z),
 				Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
 					.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST)
 					.setValue(BlockStateProperties.OPEN, true));
 		}
-		hole(level, origin.offset(WING_X0 + 3, 2, WING_Z0),
-			Blocks.GLASS.defaultBlockState());
+		window(level, origin.offset(WING_X0 + 3, 2, WING_Z0), Direction.NORTH, random);
 
 		// THE DOOR THROUGH WHAT USED TO BE AN OUTSIDE WALL.
 		for (int y = 1; y <= 2; y++) {
@@ -760,7 +844,7 @@ public final class Homestead {
 		set(level, origin.offset(WING_X0 + 1, 1, WING_Z0 + 1),
 			Blocks.SMITHING_TABLE.defaultBlockState());
 		set(level, origin.offset(WING_X0 + 2, 1, WING_Z0 + 1),
-			Blocks.ANVIL.defaultBlockState());
+			Blocks.CHIPPED_ANVIL.defaultBlockState());
 		set(level, origin.offset(WING_X0 + 1, 1, WING_Z0 + 2),
 			Blocks.GRINDSTONE.defaultBlockState());
 		set(level, origin.offset(WING_X1 - 1, 1, WING_Z0 + 1),
@@ -793,8 +877,7 @@ public final class Homestead {
 		for (int z : new int[] { WING_Z0 + 2, WING_Z1 - 2 }) {
 			BlockPos hook = origin.offset(WING_X0 + 4, 3, z);
 			set(level, hook, Blocks.SPRUCE_FENCE.defaultBlockState());
-			set(level, hook.below(), Blocks.LANTERN.defaultBlockState()
-				.setValue(BlockStateProperties.HANGING, true));
+			set(level, hook.below(), Blocks.IRON_CHAIN.defaultBlockState());      // the hook; the lamp is long gone
 		}
 
 		// AND ITS OWN ROOF, crossing the main one rather than continuing it.
@@ -896,8 +979,7 @@ public final class Homestead {
 		// And a light either side of the door.
 		for (int side = -1; side <= 1; side += 2) {
 			BlockPos post = origin.offset(DOOR_X + side * 2, 4, HOUSE_Z1 + 2);
-			set(level, post, Blocks.LANTERN.defaultBlockState()
-				.setValue(BlockStateProperties.HANGING, true));
+			set(level, post, Blocks.IRON_CHAIN.defaultBlockState());      // where the lanterns hung
 		}
 	}
 
@@ -948,8 +1030,104 @@ public final class Homestead {
 		// A worn step, because the ground in front of a door always is.
 		for (int dx = -1; dx <= 1; dx++) {
 			BlockPos step = origin.offset(DOOR_X + dx, 0, z);
-			set(level, step, Blocks.COBBLESTONE_SLAB.defaultBlockState());
+			set(level, step, dx == 0 ? Blocks.MOSSY_COBBLESTONE_SLAB.defaultBlockState()
+				: Blocks.COBBLESTONE_SLAB.defaultBlockState());
 		}
+		// One rail out of the porch post, on whichever side.
+		int side = random.nextBoolean() ? -2 : 2;
+		set(level, origin.offset(DOOR_X + side, 2, z + 1), Blocks.AIR.defaultBlockState());
+	}
+
+	/**
+	 * THE YEARS. Run last, over everything the other passes put down and the
+	 * yard Grounds dressed: no light left anywhere; boards gone from the walls;
+	 * moss on the roof and up through the floor, with dead grass where the dirt
+	 * shows; cobwebs in the ceiling corners; vines on all four sides. One pass
+	 * over the footprint, once, at build time.
+	 */
+	private static void abandon(ServerLevel level, BlockPos origin, RandomSource random) {
+		BlockPos.MutableBlockPos at = new BlockPos.MutableBlockPos();
+		for (int x = -6; x <= width() + 6; x++) {
+			for (int z = -8; z <= depth() + 2; z++) {
+				for (int y = -1; y <= EAVE + 6; y++) {
+					at.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
+					BlockState state = level.getBlockState(at);
+					if (state.is(Blocks.LANTERN) || state.is(Blocks.TORCH) || state.is(Blocks.WALL_TORCH)) {
+						set(level, at.immutable(), Blocks.AIR.defaultBlockState());
+						continue;
+					}
+					boolean inHouse = x >= HOUSE_X0 && x <= WING_X1 && z >= HOUSE_Z0 && z <= HOUSE_Z1;
+					if (!inHouse) {
+						continue;
+					}
+					boolean interior = x > HOUSE_X0 && x < HOUSE_X1 && z > HOUSE_Z0 && z < HOUSE_Z1;
+					BlockPos here = at.immutable();
+					if (state.is(Blocks.SPRUCE_PLANKS)) {
+						if (y == 0 && interior && random.nextInt(9) == 0) {
+							set(level, here, random.nextBoolean()
+								? Blocks.ROOTED_DIRT.defaultBlockState() : Blocks.COARSE_DIRT.defaultBlockState());
+							if (level.getBlockState(here.above()).isAir() && random.nextBoolean()) {
+								set(level, here.above(), random.nextBoolean()
+									? Blocks.DEAD_BUSH.defaultBlockState() : Blocks.SHORT_GRASS.defaultBlockState());
+							}
+							continue;
+						}
+						if (y >= EAVE) {
+							if (level.getBlockState(here.above()).isAir()) {
+								int moss = random.nextInt(20);
+								if (moss < 3) {
+									set(level, here.above(), Blocks.MOSS_CARPET.defaultBlockState());
+								} else if (moss == 3) {
+									set(level, here, Blocks.MOSS_BLOCK.defaultBlockState());
+								}
+							}
+							continue;
+						}
+						if ((y == 2 || y == 3) && !interior && random.nextInt(18) == 0) {
+							set(level, here, Blocks.AIR.defaultBlockState());      // a board gone from the wall
+							continue;
+						}
+					}
+					if (state.is(Blocks.SPRUCE_STAIRS) && y >= EAVE
+						&& level.getBlockState(here.above()).isAir() && random.nextInt(8) == 0) {
+						set(level, here.above(), Blocks.MOSS_CARPET.defaultBlockState());
+					}
+					if (state.isAir() && y == 4 && interior && random.nextInt(3) == 0) {
+						int against = 0;
+						for (Direction side : Direction.Plane.HORIZONTAL) {
+							if (level.getBlockState(here.relative(side)).isSolid()) {
+								against++;
+							}
+						}
+						if (against >= 2) {
+							set(level, here, Blocks.COBWEB.defaultBlockState());      // a ceiling corner
+						}
+					}
+				}
+			}
+		}
+		for (int x = HOUSE_X0; x <= HOUSE_X1; x++) {
+			for (int y = 1; y <= 4; y++) {
+				vine(level, origin.offset(x, y, HOUSE_Z1 + 1), Direction.NORTH, random);
+			}
+		}
+		for (int z = HOUSE_Z0; z <= HOUSE_Z1; z++) {
+			int east = (z >= WING_Z0 && z <= WING_Z1 ? WING_X1 : HOUSE_X1) + 1;
+			for (int y = 1; y <= 4; y++) {
+				vine(level, origin.offset(HOUSE_X0 - 1, y, z), Direction.EAST, random);
+				vine(level, origin.offset(east, y, z), Direction.WEST, random);
+			}
+		}
+	}
+
+	/** A vine on an outside face, where there is a wall to hang it on and nothing already there. One in four. */
+	private static void vine(ServerLevel level, BlockPos at, Direction toWall, RandomSource random) {
+		if (random.nextInt(4) != 0 || !level.getBlockState(at).isAir()
+			|| !level.getBlockState(at.relative(toWall)).isSolid()) {
+			return;
+		}
+		set(level, at, Blocks.VINE.defaultBlockState().setValue(
+			net.minecraft.world.level.block.VineBlock.PROPERTY_BY_DIRECTION.get(toWall), true));
 	}
 
 	/**

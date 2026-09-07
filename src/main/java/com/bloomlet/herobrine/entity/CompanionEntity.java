@@ -1043,6 +1043,7 @@ public class CompanionEntity extends PathfinderMob {
 		if (source.getEntity() instanceof Player who && !who.isSpectator()) {
 			this.grudgeUntil = this.tickCount + GRUDGE_FOR;      // HurtByTargetGoal sets the target; this is how long he keeps it
 			this.getLookControl().setLookAt(who, 90.0F, 90.0F);
+			this.lastSpoke = -100000L;      // a hit gets an answer, whatever he said thirty seconds ago
 			Sayings.say(level, this, who, Sayings.STRUCK);
 		}
 		if (source.getEntity() instanceof Mob attacker && attacker != this) {

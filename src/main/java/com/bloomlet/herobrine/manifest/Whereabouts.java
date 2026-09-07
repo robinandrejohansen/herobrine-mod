@@ -466,6 +466,56 @@ public final class Whereabouts {
 		com.bloomlet.herobrine.structure.Sanctum.raise(over, landing.above(2), random);
 	}
 
+	/**
+	 * THE GROUND UNDER HIS HOUSE IS GENERATED IN THE BACKGROUND FIRST.
+	 *
+	 * The farm is raised at the first join, before anybody has been near it, and
+	 * since it stands three to five hundred blocks out nothing there exists yet.
+	 * Raising it used to generate every chunk it touched on the server thread —
+	 * house, warren, outbuilding, passage, tower — in one go: ten seconds of
+	 * "Can't keep up", two hundred ticks behind, on the first morning of every
+	 * world.
+	 *
+	 * So the chunks are asked for first, through a loading ticket with a radius,
+	 * which the chunk system fills on its worker threads while the game runs.
+	 * The build waits for the future and then finds everything already on disk.
+	 * PREPARES_RADIUS covers where the house can move to (Dwellings.raise tries
+	 * within forty-eight blocks) and where the outbuilding and tower stand (forty
+	 * to seventy out). Anything past the edge still generates the old way, a
+	 * chunk or two at a time, which is nothing. If the ground is not ready inside
+	 * PREPARES_PATIENCE it builds on what there is rather than hold the story.
+	 */
+	private static final int PREPARES_RADIUS = 6;
+	private static final int PREPARES_PATIENCE = 20 * 120;
+	private static final net.minecraft.server.level.TicketType PREPARING =
+		new net.minecraft.server.level.TicketType(20L * 120L, net.minecraft.server.level.TicketType.FLAG_LOADING);
+	private static java.util.concurrent.@org.jspecify.annotations.Nullable CompletableFuture<?> preparing;
+	private static @org.jspecify.annotations.Nullable ServerLevel preparingIn;
+	private static long preparingSince;
+
+	private static boolean groundReady(ServerLevel over, BlockPos raised) {
+		if (preparing == null || preparingIn != over) {
+			preparing = over.getChunkSource().addTicketAndLoadWithRadius(
+				PREPARING, new net.minecraft.world.level.ChunkPos(raised.getX() >> 4, raised.getZ() >> 4), PREPARES_RADIUS);
+			preparingIn = over;
+			preparingSince = over.getGameTime();
+			int side = PREPARES_RADIUS * 2 + 1;
+			HerobrineMod.LOGGER.info("generating the ground under his house — {} chunks around [{}, {}], in the background",
+				side * side, raised.getX(), raised.getZ());
+			return false;
+		}
+		long waited = over.getGameTime() - preparingSince;
+		if (preparing.isDone()) {
+			HerobrineMod.LOGGER.info("the ground under his house is ready — {} s", waited / 20);
+			return true;
+		}
+		if (waited > PREPARES_PATIENCE) {
+			HerobrineMod.LOGGER.warn("the ground under his house took over {} s — building on what there is", PREPARES_PATIENCE / 20);
+			return true;
+		}
+		return false;
+	}
+
 	private static void onTick(MinecraftServer server) {
 		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
 			return;      // Removed Herobrine. See Wrath.removed.
@@ -511,6 +561,9 @@ public final class Whereabouts {
 			// creation — four chunks generated once, before anybody is near enough
 			// for the hitch to matter, and from then on it is simply somewhere that
 			// exists.
+			if (!Dwellings.raised(over) && !groundReady(over, raised)) {
+				return;      // the ground is still being generated, in the background. See groundReady
+			}
 			if (!Dwellings.raised(over)) {
 				over.getChunk(raised.getX() >> 4, raised.getZ() >> 4);
 				if (Dwellings.raise(over, raised)) {

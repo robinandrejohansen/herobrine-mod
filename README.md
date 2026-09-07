@@ -62,7 +62,7 @@ every phase.
 
 | Phase | Begins when | What happens | The place |
 |---|---|---|---|
-| RUMOUR | the world starts | a glimpse, footsteps, a torch that goes out, breathing | **the farm** — where Addexio lived; the first book and the first map |
+| RUMOUR | the world starts | a glimpse, footsteps, a torch that goes out, breathing | **the farm** — where Addexio lived: boarded up, dark, gone to moss and cobweb, the furniture still in it |
 | WATCHER | the farm is found | the stare, the passages, the one who does not sleep, a camp somebody slept in with the furnace still lit, a cross cut deep into the ground, groves stripped bare over dead earth | **the town** — boarded, an undercity beneath it, the mapmaker's house |
 | TRESPASSER | the town is found | signs — many with your name on them, on walls or on posts in the open —, ruins, the sealed shaft | **his tower** — and under the hill beneath it, the house he lived in: a table set for two, a gallery, his bed, the shelves of names, the pool |
 | MIMIC | his house is found | possessed animals, the herd | **the prison** — eighty blocks of hall, eighteen cells, eleven of them still shut with something tall inside that knows where you are through the door and comes out for you the moment you look away; cell nine; and the tunnel the last of them dug out through the back wall |
@@ -301,6 +301,11 @@ even if it works.
   queue entry per batch. `Cadence` warns if it is ever asked to drop work.
 - **First-join buildings are staggered.** The homestead's outbuilding,
   passage, tower and tracks go down a few ticks apart, in dependency order.
+- **The ground under the farm is generated in the background first.** The farm
+  stands three to five hundred blocks out, where nothing exists yet; a loading
+  ticket asks the chunk system for a thirteen-by-thirteen-chunk patch on its
+  worker threads, and the build waits for it. Raising it synchronously cost ten
+  seconds of "Can't keep up" on the first morning of every world.
 - **Mixins on hot vanilla paths have a fast path.** The corpse mixin on
   `LivingEntity.tick` returns three ticks in four before it touches anything.
 
