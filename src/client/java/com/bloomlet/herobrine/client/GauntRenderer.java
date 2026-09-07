@@ -99,11 +99,25 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		// The mouth's back wall. Negative deformation, so it is SMALLER than the
 		// head and sits half a unit inside it — that recess is the whole reason
 		// this creature is built on an enderman. See gen_gaunt.py.
+		// THE MOUTH IS ON THE HAT LAYER. The head's own lower face is transparent;
+		// what shows there is the hat, half a pixel inside it, whose bottom four
+		// rows are a black band with a ragged top edge — the gape. It was one rigid
+		// box. Now the hat is only its upper half and the lower half is a JAW on a
+		// hinge at row 28, so the black can drop, swing and widen. Both boxes keep
+		// the exact pixels the one box had: a (8,4,8) box at texOffs(0,16) puts its
+		// sides on rows 24–27 and its top where the old top was; a (8,4,8) box at
+		// texOffs(0,20) puts its sides on rows 28–31. Their top and bottom faces
+		// sample transparent or hidden rows. See mouth.
 		head.addOrReplaceChild("hat",
 			net.minecraft.client.model.geom.builders.CubeListBuilder.create()
-				.texOffs(0, 16).addBox(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F,
+				.texOffs(0, 16).addBox(-4.0F, -8.0F, -4.0F, 8.0F, 4.0F, 8.0F,
 					new net.minecraft.client.model.geom.builders.CubeDeformation(-0.5F)),
 			net.minecraft.client.model.geom.PartPose.ZERO);
+		head.addOrReplaceChild("jaw",
+			net.minecraft.client.model.geom.builders.CubeListBuilder.create()
+				.texOffs(0, 20).addBox(-4.0F, 0.0F, -4.0F, 8.0F, 4.0F, 8.0F,
+					new net.minecraft.client.model.geom.builders.CubeDeformation(-0.5F)),
+			net.minecraft.client.model.geom.PartPose.offset(0.0F, -4.0F, 0.0F));
 
 		// AND THE NOSE, which is the only thing here vanilla does not have.
 		head.addOrReplaceChild("nose",
@@ -171,18 +185,90 @@ public class GauntRenderer extends HumanoidMobRenderer<
 	 * you.
 	 */
 	private static final class Stretched extends EndermanModel<GauntRenderState> {
+		private final net.minecraft.client.model.geom.ModelPart jaw;
+
 		Stretched(net.minecraft.client.model.geom.ModelPart root) {
 			super(root);
+			this.jaw = root.getChild("head").getChild("jaw");
 		}
 
 		@Override
 		public void setupAnim(GauntRenderState state) {
 			super.setupAnim(state);
 			reshape(this);
-			slam(this, state.attackTime);
+			hands(this, state);
+			slam(this, state.attackTime);      // a swing overrides whatever the hands were doing
 			tilt(this, state.staring);
 			swell(this, state.voice);
+			mouth(this.jaw, state);
 		}
+	}
+
+	/**
+	 * THE HANDS. They did nothing: the enderman model halves the walk swing and
+	 * clamps it, and a thing that stands still whenever it is looked at was
+	 * never seen walking anyway, so it stood there with its arms at its sides
+	 * like a coat on a hook. Three states now, all of them trembling a little:
+	 *
+	 *   it has somebody  — both hands out in front, for them
+	 *   it is watched    — the hands come up slowly and shake, spread a little
+	 *   unseen, walking  — the swing, let out to the length of the arms
+	 *
+	 * Right-arm zRot positive is outward, left negative; the vanilla idle sway
+	 * uses the same signs.
+	 */
+	private static void hands(EndermanModel<GauntRenderState> model, GauntRenderState state) {
+		float age = state.ageInTicks;
+		float tremor = 0.05F * net.minecraft.util.Mth.sin(age * 2.3F);
+		if (state.isCreepy) {
+			float reach = -1.35F + 0.1F * net.minecraft.util.Mth.sin(age * 0.9F) + tremor;
+			model.rightArm.xRot = reach;
+			model.leftArm.xRot = reach;
+			model.rightArm.zRot = -0.12F;      // hands drawn in toward each other
+			model.leftArm.zRot = 0.12F;
+		} else if (state.staring) {
+			float lift = -0.55F + 0.06F * net.minecraft.util.Mth.sin(age * 0.6F) + tremor;
+			model.rightArm.xRot = lift;
+			model.leftArm.xRot = lift;
+			model.rightArm.zRot = 0.25F;       // spread
+			model.leftArm.zRot = -0.25F;
+		} else {
+			model.rightArm.xRot = model.rightArm.xRot * 2.2F - 0.25F + tremor;
+			model.leftArm.xRot = model.leftArm.xRot * 2.2F - 0.25F - tremor;
+			model.rightArm.zRot = 0.06F;
+			model.leftArm.zRot = -0.06F;
+		}
+		model.rightArm.yRot = 0.0F;
+		model.leftArm.yRot = 0.0F;
+	}
+
+	/**
+	 * THE MOUTH. The jaw hangs on a hinge at the top of the black band and
+	 * swings out and down (negative xRot: the hinge is above it), and it does not
+	 * just drop — it widens and lengthens as it opens, so the gape grows past the
+	 * face. Breathing when idle; open a third when it is watched; over half when
+	 * it has somebody; wide when it speaks (voice) or strikes (attackTime). The
+	 * head's own lower face is transparent, so the opening shows the dark inside.
+	 */
+	private static void mouth(net.minecraft.client.model.geom.ModelPart jaw, GauntRenderState state) {
+		float age = state.ageInTicks;
+		float open = 0.04F + 0.03F * net.minecraft.util.Mth.sin(age * 0.35F);
+		if (state.staring) {
+			open = Math.max(open, 0.30F + 0.12F * net.minecraft.util.Mth.sin(age * 0.25F));
+		}
+		if (state.isCreepy) {
+			open = Math.max(open, 0.55F + 0.08F * net.minecraft.util.Mth.sin(age * 1.7F));
+		}
+		if (state.voice > 0.0F) {
+			open = Math.max(open, 0.6F + 0.4F * state.voice);
+		}
+		if (state.attackTime > 0.0F) {
+			open = Math.max(open, 0.7F + 0.3F * net.minecraft.util.Mth.sin(state.attackTime * (float) Math.PI));
+		}
+		jaw.xRot = -open;
+		jaw.xScale = 1.0F + 0.35F * open;
+		jaw.yScale = 1.0F + 0.5F * open;
+		jaw.zScale = 1.0F + 0.15F * open;
 	}
 
 	@Override

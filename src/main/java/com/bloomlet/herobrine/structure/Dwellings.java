@@ -1455,7 +1455,73 @@ public final class Dwellings {
 	private static final java.util.Map<Place, Integer> refused =
 		new java.util.EnumMap<>(Place.class);
 
+	/**
+	 * THE GROUND FOR THE NEXT PLACE IS LOADED IN THE BACKGROUND, NOT ON THE TICK.
+	 *
+	 * ready() and landAbove() used to call getChunk on the footprint of every
+	 * candidate — four chunks, five hundred to a thousand blocks out, that nothing
+	 * had generated yet — on the server thread, up to TRIES times a pass. The
+	 * moment a place was found and the next one was sited, the server stopped
+	 * for two seconds: "Can't keep up, 41 ticks behind", at the gaol and again at
+	 * the church, exactly on the "will stand near" line.
+	 *
+	 * Now a candidate that passes the checks that need no chunks (crowded, the
+	 * noise-only buildable) has its footprint ASKED FOR with a loading ticket and
+	 * is remembered in waitingOn; the pass ends there. CHECK_INTERVAL ticks later
+	 * the chunk system has generated it on its worker threads, hasChunk says so,
+	 * and the ground checks run against loaded chunks in microseconds. A
+	 * candidate that then fails counts as a miss like any other, so the relaxing
+	 * and the grumbling work as before. The ticket lapses on its own.
+	 */
+	private static final java.util.Map<Place, BlockPos> waitingOn =
+		new java.util.EnumMap<>(Place.class);
+	private static final net.minecraft.server.level.TicketType SITING =
+		new net.minecraft.server.level.TicketType(20L * 90L, net.minecraft.server.level.TicketType.FLAG_LOADING);
+
+	private static boolean footprintLoaded(ServerLevel level, int x, int z) {
+		for (int cx = x >> 4; cx <= (x + FOOT_X) >> 4; cx++) {
+			for (int cz = z >> 4; cz <= (z + FOOT_Z) >> 4; cz++) {
+				if (!level.hasChunk(cx, cz)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private static void askFor(ServerLevel level, int x, int z) {
+		level.getChunkSource().addTicketWithRadius(SITING,
+			new net.minecraft.world.level.ChunkPos((x + FOOT_X / 2) >> 4, (z + FOOT_Z / 2) >> 4), 1);
+	}
+
+	/** The checks that need the ground under them: sea level, fluid, and nobody already standing there. */
+	private static @org.jspecify.annotations.Nullable BlockPos settle(ServerLevel level, Place place, int x, int z) {
+		boolean relaxed = refused.getOrDefault(place, 0) >= RELAXES_AFTER;
+		if (relaxed ? !landAbove(level, x, z) : !ready(level, x, z)) {
+			return null;
+		}
+		BlockPos at = new BlockPos(x, Ground.topOf(level, x, z), z);
+		for (ServerPlayer player : level.players()) {
+			if (player.blockPosition().closerThan(at, place.near)) {
+				return null;
+			}
+		}
+		return at;
+	}
+
 	private static @org.jspecify.annotations.Nullable BlockPos pick(ServerLevel level, Place place) {
+		BlockPos waiting = waitingOn.get(place);
+		if (waiting != null) {
+			if (!footprintLoaded(level, waiting.getX(), waiting.getZ())) {
+				return null;      // the ground is still coming in
+			}
+			waitingOn.remove(place);
+			BlockPos at = settle(level, place, waiting.getX(), waiting.getZ());
+			if (at != null) {
+				return at;
+			}
+			refused.merge(place, 1, Integer::sum);      // a miss, like any other. Look again
+		}
 		double cx = 0;
 		double cz = 0;
 		for (ServerPlayer player : level.players()) {
@@ -1489,18 +1555,16 @@ public final class Dwellings {
 			// can stall on terrain is a mod that is broken for that world, so it does
 			// not get to.
 			boolean relaxed = refused.getOrDefault(place, 0) >= RELAXES_AFTER;
-			if (relaxed ? !landAbove(level, x, z) : !ready(level, x, z)) {
-				continue;
+			if (!relaxed && !buildable(level, x, z)) {
+				continue;      // noise only; no chunk touched
 			}
-			BlockPos at = new BlockPos(x, Ground.topOf(level, x, z), z);
-			boolean tooNear = false;
-			for (ServerPlayer player : level.players()) {
-				if (player.blockPosition().closerThan(at, place.near)) {
-					tooNear = true;
-					break;
-				}
+			if (!footprintLoaded(level, x, z)) {
+				askFor(level, x, z);
+				waitingOn.put(place, new BlockPos(x, 0, z));
+				return null;      // picked up again next pass, with the ground there
 			}
-			if (!tooNear) {
+			BlockPos at = settle(level, place, x, z);
+			if (at != null) {
 				return at;
 			}
 		}
@@ -2040,10 +2104,8 @@ public final class Dwellings {
 	 */
 	/** The relaxed rule: loaded, and the ground stands above the sea. */
 	private static boolean landAbove(ServerLevel level, int x, int z) {
-		for (int cx = x >> 4; cx <= (x + FOOT_X) >> 4; cx++) {
-			for (int cz = z >> 4; cz <= (z + FOOT_Z) >> 4; cz++) {
-				level.getChunk(cx, cz);
-			}
+		if (!footprintLoaded(level, x, z)) {
+			return false;      // never on the tick. See pick
 		}
 		int top = Ground.topOf(level, x, z);
 		return top > level.getSeaLevel()
@@ -2054,10 +2116,8 @@ public final class Dwellings {
 		if (!buildable(level, x, z)) {
 			return false;
 		}
-		for (int cx = x >> 4; cx <= (x + FOOT_X) >> 4; cx++) {
-			for (int cz = z >> 4; cz <= (z + FOOT_Z) >> 4; cz++) {
-				level.getChunk(cx, cz);
-			}
+		if (!footprintLoaded(level, x, z)) {
+			return false;      // never on the tick. See pick
 		}
 		return Ground.topOf(level, x, z) > level.getSeaLevel();
 	}

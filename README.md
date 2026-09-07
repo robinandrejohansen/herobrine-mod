@@ -107,7 +107,9 @@ blow is yours.
 
 **A gaunt holds still while you look at it** — for a second and a half. Then the
 dark comes down on you, it is nearer every time the dark lifts, and inside six
-blocks it does not care who is looking.
+blocks it does not care who is looking. Its hands come up and shake while you
+watch, reach out when it has you, and its jaw hangs open and works when it
+speaks or strikes.
 
 ### Every place is a battlefield
 
@@ -142,8 +144,9 @@ follows, fights, and talks.
   nearest. He speaks when he reaches you; if you are up a tree or on a roof he
   calls out first, then gives the introduction from where he stands once he can
   see you.
-- Hit him and he hits back once, an open hand, and lets it go. He does not
-  fight the people he walks with.
+- Hit him and he hits back once, an open hand for a heart, and lets it go —
+  once every ten seconds at most, however many times you swing, and never when
+  you are down to three hearts. He does not kill the people he walks with.
 - Follows like a person: keeps five blocks off you, jogs only when you are well
   ahead, and in a fight lets you range while he has his own. Lose him entirely
   and he comes back through the trees eight to thirteen blocks off — never onto
@@ -301,6 +304,10 @@ even if it works.
   queue entry per batch. `Cadence` warns if it is ever asked to drop work.
 - **First-join buildings are staggered.** The homestead's outbuilding,
   passage, tower and tracks go down a few ticks apart, in dependency order.
+- **The next place's ground is loaded in the background too.** Siting a place
+  used to generate the candidate's chunks on the tick, up to a thousand blocks
+  out — two seconds of "Can't keep up" every time a place was found. Now a
+  candidate is asked for with a loading ticket and checked on the next pass.
 - **The ground under the farm is generated in the background first.** The farm
   stands three to five hundred blocks out, where nothing exists yet; a loading
   ticket asks the chunk system for a thirteen-by-thirteen-chunk patch on its

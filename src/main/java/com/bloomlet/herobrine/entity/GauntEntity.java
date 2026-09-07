@@ -419,7 +419,15 @@ public class GauntEntity extends PathfinderMob {
 	 * being the oldest bug in modded Minecraft, so it is not going to be left
 	 * disagreeing here.
 	 */
-	public static final float WIDE = 0.7F;
+	//
+	// AND THEN IT COULD NOT GET THROUGH A DOOR. An open door leaf is three
+	// sixteenths thick and stands in its own block, so the gap through a doorway
+	// is thirteen sixteenths — 0.8125. A 0.7 box pathed to the centre of that
+	// block spans 0.15 to 0.85 and catches the leaf. Vanilla's mobs are 0.6 for
+	// exactly this reason, and 0.6 is what the gaol's cell doors were built for:
+	// eleven of them opened on their own and nothing came out. The drawing is
+	// now a twentieth of a block wider than the box on each side. Live with it.
+	public static final float WIDE = 0.6F;
 	/**
 	 * IT HAS TO GET THROUGH A DOOR, AND AT 2.9 IT COULD NOT.
 	 *

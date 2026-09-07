@@ -787,7 +787,19 @@ public class CompanionEntity extends PathfinderMob {
 	 */
 	private static final int GRUDGE_FOR = 40;
 	private static final float SLAPS_FOR = 2.0F;
+	/**
+	 * ONE ANSWER, NOT ONE PER PUNCH. Somebody hit him six times in seven seconds
+	 * and got six slaps back — a heart each, a heart and a half on hard — and
+	 * died of it, which is the thing this was written to stop. Now one slap, and
+	 * then nothing for SLAPS_REST however many times you hit him; and never at
+	 * all when you are down to SPARES_BELOW. He says his line and lets it go.
+	 */
+	private static final int SLAPS_REST = 200;
+	private static final float SPARES_BELOW = 6.0F;
+	private static final int SAYS_STRUCK_EVERY = 100;
 	private int grudgeUntil;
+	private int slappedAt = -100000;
+	private int saidStruckAt = -100000;
 
 	private void grudge() {
 		if (this.getTarget() instanceof Player && this.tickCount >= this.grudgeUntil) {
@@ -802,10 +814,16 @@ public class CompanionEntity extends PathfinderMob {
 		if (!(target instanceof Player who)) {
 			return super.doHurtTarget(level, target);
 		}
-		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
-		boolean landed = who.hurtServer(level, this.damageSources().mobAttack(this), SLAPS_FOR);
 		this.grudgeUntil = 0;
 		this.setTarget(null);
+		if (this.tickCount - this.slappedAt < SLAPS_REST || who.getHealth() <= SPARES_BELOW) {
+			return false;      // answered already, or they are nearly done. He does not kill the people he walks with
+		}
+		this.slappedAt = this.tickCount;
+		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+		boolean landed = who.hurtServer(level, this.damageSources().mobAttack(this), SLAPS_FOR);
+		HerobrineMod.LOGGER.info("addexio slapped {} — {} damage, once, and no more for {} s",
+			who.getName().getString(), SLAPS_FOR, SLAPS_REST / 20);
 		return landed;
 	}
 	private static final double GUARDS_WITHIN = 3.5;
@@ -1041,10 +1059,15 @@ public class CompanionEntity extends PathfinderMob {
 		// with the sandwich down. He was finishing his bread with his back to a
 		// zombie because the zombie was not one of Herobrine's and so did not count.
 		if (source.getEntity() instanceof Player who && !who.isSpectator()) {
-			this.grudgeUntil = this.tickCount + GRUDGE_FOR;      // HurtByTargetGoal sets the target; this is how long he keeps it
 			this.getLookControl().setLookAt(who, 90.0F, 90.0F);
-			this.lastSpoke = -100000L;      // a hit gets an answer, whatever he said thirty seconds ago
-			Sayings.say(level, this, who, Sayings.STRUCK);
+			if (this.tickCount - this.saidStruckAt >= SAYS_STRUCK_EVERY) {
+				this.saidStruckAt = this.tickCount;
+				this.lastSpoke = -100000L;      // a hit gets an answer, whatever he said thirty seconds ago
+				Sayings.say(level, this, who, Sayings.STRUCK);
+			}
+			if (this.tickCount - this.slappedAt >= SLAPS_REST) {
+				this.grudgeUntil = this.tickCount + GRUDGE_FOR;      // HurtByTargetGoal sets the target; this is how long he keeps it
+			}
 		}
 		if (source.getEntity() instanceof Mob attacker && attacker != this) {
 			this.lastAttacker = attacker;
