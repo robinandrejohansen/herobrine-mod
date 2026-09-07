@@ -183,8 +183,8 @@ public final class Nights {
 			case RUMOUR -> 1.0F;
 			case WATCHER -> 0.9F;
 			case TRESPASSER -> 0.8F;
-			case MIMIC -> 0.7F;
-			case HUNTER -> 0.6F;
+			case MIMIC -> 0.8F;
+			case HUNTER -> 0.7F;
 			case SIEGE -> 0.5F;
 		};
 	}

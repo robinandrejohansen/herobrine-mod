@@ -183,8 +183,6 @@ public final class Wayside {
 		BlockPos marker = at.relative(way.getOpposite());
 		ground(level, marker);
 		level.setBlock(marker, Blocks.OAK_FENCE.defaultBlockState(), 2);
-		writ(level, marker.above(), new String[] {
-			"", "WE COULD NOT", "CARRY HIM", "ANY FURTHER" });
 		// The shovel, left standing in the heap. An item frame is the only way to
 		// leave a TOOL lying in the world that does not despawn and cannot be
 		// walked into and picked up by accident.
@@ -311,11 +309,6 @@ public final class Wayside {
 					: Blocks.MOSSY_COBBLESTONE.defaultBlockState()), 2);
 		}
 		level.setBlock(at.above(tall), Blocks.LANTERN.defaultBlockState(), 2);
-		BlockPos board = at.relative(way.getOpposite());
-		ground(level, board);
-		level.setBlock(board, Blocks.OAK_FENCE.defaultBlockState(), 2);
-		writ(level, board.above(), new String[] {
-			"KEEP GOING", "", "DO NOT SLEEP", "ON THIS ROAD" });
 	}
 
 	/** How far into the rock, and how much light. */

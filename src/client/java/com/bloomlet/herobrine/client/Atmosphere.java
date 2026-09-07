@@ -207,9 +207,9 @@ public final class Atmosphere {
 	private static float gloom(ClientLevel level) {
 		float base = switch (phase()) {
 			case RUMOUR, WATCHER -> 0.0F;
-			case TRESPASSER -> 0.10F;
-			case MIMIC -> 0.24F;
-			case HUNTER -> 0.40F;
+			case TRESPASSER -> 0.06F;
+			case MIMIC -> 0.14F;
+			case HUNTER -> 0.28F;
 			case SIEGE -> 0.56F;
 		};
 		// AND HIS GROUND IS DARK WHATEVER CHAPTER IT IS.
@@ -240,7 +240,7 @@ public final class Atmosphere {
 				com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)) {
 			base *= HIS_SIDE;
 		}
-		float weather = level.isThundering() ? 1.55F : level.isRaining() ? 1.2F : 1.0F;
+		float weather = level.isThundering() ? 1.35F : level.isRaining() ? 1.15F : 1.0F;
 		return Math.min(0.82F, base * weather);
 	}
 
@@ -256,9 +256,9 @@ public final class Atmosphere {
 	private static float pall() {
 		float base = switch (phase()) {
 			case RUMOUR, WATCHER -> 0.0F;
-			case TRESPASSER -> 0.15F;
-			case MIMIC -> 0.32F;
-			case HUNTER -> 0.5F;
+			case TRESPASSER -> 0.08F;
+			case MIMIC -> 0.18F;
+			case HUNTER -> 0.36F;
 			case SIEGE -> 0.68F;
 		};
 		// Capped short of full grey even at his door in a SIEGE storm. Past about

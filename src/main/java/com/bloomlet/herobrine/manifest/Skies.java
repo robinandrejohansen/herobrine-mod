@@ -181,8 +181,8 @@ public final class Skies {
 			case RUMOUR -> 0.00F;     // the world is still normal
 			case WATCHER -> 0.08F;
 			case TRESPASSER -> 0.13F;
-			case MIMIC -> 0.20F;
-			case HUNTER -> 0.28F;
+			case MIMIC -> 0.16F;
+			case HUNTER -> 0.22F;
 			case SIEGE -> 0.75F;      // handled separately, above
 		};
 	}

@@ -1222,6 +1222,7 @@ public final class Dwellings {
 	private static final double STILL_THERE = 48.0;
 
 	/** Set when somebody arrives; counted down while anybody is still inside. */
+	private static final java.util.EnumSet<Place> skyTurned = java.util.EnumSet.noneOf(Place.class);
 	private static final java.util.Map<Place, Integer> homeIn =
 		new java.util.EnumMap<>(Place.class);
 
@@ -1260,7 +1261,12 @@ public final class Dwellings {
 		// world now, so what you get for finding a building is the building and him
 		// standing in it, which is what the beat was originally for.
 		boolean hunting = false;
-		com.bloomlet.herobrine.manifest.Skies.turn(level);
+		// ONCE PER PLACE. This re-armed every two to four minutes for as long as
+		// anybody stood inside, and each time it called down another storm: an hour
+		// in the town was an hour of thunder. The sky turns the first time only.
+		if (skyTurned.add(place)) {
+			com.bloomlet.herobrine.manifest.Skies.turn(level);
+		}
 		// THE ARGUMENTS WERE THE WRONG WAY ROUND, AND HE HAS NEVER ONCE HUNTED
 		// HERE. place() takes (ignoreLight, hunting) and this passed
 		// (hunting, false) — so from MIMIC the flag went into the LIGHT check

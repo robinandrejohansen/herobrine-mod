@@ -213,17 +213,9 @@ public final class Approach {
 			}
 			// Unlit torches from HUNTER on: the lights are there and they are out,
 			// which says more about the place than any amount of darkness does.
-			if (manner.soulSmoke() && step % 17 == 9) {
-				BlockPos post = on.above();
-				if (level.getBlockState(post).canBeReplaced()) {
-					level.setBlock(post, Blocks.REDSTONE_TORCH.defaultBlockState()
-						.setValue(BlockStateProperties.LIT, false), 2);
-				}
-			}
-			// And at the far end, a sign, so whoever finds the road knows it is one.
-			if (step == RUN - 4) {
-				sign(level, on.above(), manner, random);
-			}
+			// No torch posts and no signs on the roads any more. They were read as his,
+			// and they were noise: the only words left in the world are the signs he
+			// writes himself (Signs), and what Addexio says.
 		}
 	}
 
