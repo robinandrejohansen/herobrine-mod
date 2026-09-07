@@ -423,7 +423,14 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		state.stooped = entity.stooped();
 	}
 
-	/** How far the mesh sinks under a low ceiling: three blocks of drawing into a two-block room. */
+	/**
+	 * FEET ON THE GROUND. The legs are scaled to six tenths about their pivot at
+	 * -5, so they end at +13 in model units where the ground is at +24: eleven
+	 * units, seven tenths of a block, of air under every one of them. Everything
+	 * is brought down by that. The head, which was at 3.6 blocks, is at 2.9.
+	 */
+	private static final float FEET_DOWN = 11.0F / 16.0F;
+	/** How far the mesh sinks further under a low ceiling, so the head is under two blocks. */
 	private static final float STOOPS_BY = 1.0F;
 
 	@Override
@@ -432,8 +439,9 @@ public class GauntRenderer extends HumanoidMobRenderer<
 		// The stack is already flipped (scale -1,-1,1) when this runs, so local +Y
 		// is world DOWN: vanilla's own translate(0, -1.501, 0) here lifts the model.
 		// Not for a body on the floor, which the corpse roll has already laid flat.
-		if (state.stooped && !((com.bloomlet.herobrine.client.CorpseState) state).herobrine$isCorpse()) {
-			poseStack.translate(0.0F, STOOPS_BY, 0.0F);
+		boolean corpse = ((com.bloomlet.herobrine.client.CorpseState) state).herobrine$isCorpse();
+		if (!corpse) {
+			poseStack.translate(0.0F, FEET_DOWN + (state.stooped ? STOOPS_BY : 0.0F), 0.0F);
 		}
 	}
 

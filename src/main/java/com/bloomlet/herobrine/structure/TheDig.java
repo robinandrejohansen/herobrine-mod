@@ -31,7 +31,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
  * five high, a hay bed, a cauldron, a chain from the ceiling, and the scratched
  * sign on the back wall that says who was in it.
  *
- * SIX OF THEM ARE STILL SHUT, AND SOMETHING IS IN EACH. Four on the west, two
+ * ELEVEN OF THEM ARE STILL SHUT, AND SOMETHING IS IN EACH. Seven on the west, four
  * on the east, a Gaunt behind every closed door, kept there by its latch until
  * you are near (GauntEntity.keptBehind). Cell nine is one of them.
  *
@@ -150,8 +150,8 @@ public final class TheDig {
 		java.util.List<Cell> found = new java.util.ArrayList<>();
 		for (int i = 1; i <= CELLS_PER_SIDE; i++) {
 			int out = i * SPACING;
-			boolean shutWest = i >= 4 && i <= 7;
-			boolean shutEast = i == 6 || i == 8;
+			boolean shutWest = i >= 2 && i <= 8;
+			boolean shutEast = i == 3 || i == 5 || i == 7 || i == 9;
 			found.add(new Cell(start.offset(-3, 0, out), Direction.WEST, shutWest));
 			found.add(new Cell(start.offset(3, 0, out), Direction.EAST, shutEast));
 		}
@@ -161,10 +161,10 @@ public final class TheDig {
 	private static int shutCount() {
 		int n = 0;
 		for (int i = 1; i <= CELLS_PER_SIDE; i++) {
-			if (i >= 4 && i <= 7) {
+			if (i >= 2 && i <= 8) {
 				n++;
 			}
-			if (i == 6 || i == 8) {
+			if (i == 3 || i == 5 || i == 7 || i == 9) {
 				n++;
 			}
 		}

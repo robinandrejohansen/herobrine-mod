@@ -208,15 +208,10 @@ public class GauntEntity extends PathfinderMob {
 		if (this.cell == null || !(this.level() instanceof ServerLevel here)) {
 			return;
 		}
-		// `regardless` is the one that is let out because somebody killed its
-		// neighbour. Nobody has to be standing at ITS door for that — the point is
-		// that it happens somewhere up the hall behind you.
-		if (!regardless) {
-			Player near = here.getNearestPlayer(this.cell.getX() + 0.5,
-				this.cell.getY() + 0.5, this.cell.getZ() + 0.5, LETS_ITSELF_OUT, false);
-			if (near == null) {
-				return;
-			}
+		Player near = here.getNearestPlayer(this.cell.getX() + 0.5,
+			this.cell.getY() + 0.5, this.cell.getZ() + 0.5, LETS_ITSELF_OUT, false);
+		if (!regardless && near == null) {
+			return;
 		}
 		net.minecraft.world.level.block.state.BlockState was =
 			here.getBlockState(this.cell);
@@ -225,6 +220,13 @@ public class GauntEntity extends PathfinderMob {
 			door.setOpen(this, here, was, this.cell, true);
 			HerobrineMod.LOGGER.info("the cell door at [{}, {}, {}] opened on its own",
 				this.cell.getX(), this.cell.getY(), this.cell.getZ());
+		}
+		// AND IT KNOWS WHO IS OUT THERE. The target goal needs a line of sight, and
+		// from inside a cell there is none to a hall — so a door that opened on its
+		// own led nowhere: it stood in the cell with nobody to go to. The one who
+		// tripped the latch is the one it comes out for, the moment they look away.
+		if (near != null && this.getTarget() == null) {
+			this.setTarget(near);
 		}
 		this.cell = null;
 	}
@@ -374,7 +376,7 @@ public class GauntEntity extends PathfinderMob {
 			//
 			// Well under a player's walk. It never catches anybody who is moving.
 			// It catches people who stopped.
-			.add(Attributes.MOVEMENT_SPEED, 0.25)
+			.add(Attributes.MOVEMENT_SPEED, 0.30)      // it covers ground when you are not looking; 0.25 read as a shuffle
 			.add(Attributes.FOLLOW_RANGE, 64.0)
 			.add(Attributes.STEP_HEIGHT, 1.0);
 	}
@@ -446,7 +448,7 @@ public class GauntEntity extends PathfinderMob {
 		// Melee stays, and it is deliberately allowed to run while frozen. isImmobile
 		// stops the body; the goal still swings. Something that has reached you does
 		// not politely wait for you to look away.
-		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0, true));
+		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.15, true));
 		this.goalSelector.addGoal(2, new Close(this));
 		this.goalSelector.addGoal(3, new Return(this));
 		// AND IT LOOKS FOR HER TOO, which is what makes her mortal enough to matter.
@@ -461,6 +463,10 @@ public class GauntEntity extends PathfinderMob {
 		// beside you is not frightening, it is scenery, and the moment she is the one
 		// being chased is the moment she stops being a follower and becomes a person
 		// you are standing between.
+		// WHOEVER HITS IT IS ITS BUSINESS NOW. It used to keep staring at the one
+		// watching it while somebody else put a sword in its back; the stare was
+		// the whole creature and it had no answer for the second person.
+		this.targetSelector.addGoal(0, new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this));
 		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(
 			this, LivingEntity.class, 10, true, false,
 			(who, level) -> CompanionEntity.canBeHurtBy(who)));
@@ -513,9 +519,18 @@ public class GauntEntity extends PathfinderMob {
 		return super.isImmobile() || this.frozen();
 	}
 
+	/** Ticks after a blow during which being watched does not hold it: it goes for whoever struck. */
+	private static final int PROVOKED_FOR = 80;
+	private int provokedUntil;
+
 	private boolean frozen() {
 		// Not once it is on top of you. At that range the game is up and pretending
 		// otherwise would mean a mob that can never land the hit it walked over for.
+		// And not for four seconds after somebody has hit it: the stare is for the
+		// watcher, the swing is for the striker, and the striker wins.
+		if (this.tickCount < this.provokedUntil && this.getTarget() != null) {
+			return false;
+		}
 		return this.watchedFor > 0 && (this.getTarget() == null
 			|| this.distanceTo(this.getTarget()) > REACHES);
 	}
@@ -564,9 +579,9 @@ public class GauntEntity extends PathfinderMob {
 		if (this.met < HOLDS_OFF && (seen != null || this.getTarget() != null)) {
 			this.met++;
 		}
-		if (seen == null) {
+		if (seen == null || (this.tickCount < this.provokedUntil && this.getTarget() != null)) {
 			this.watchedFor = 0;
-			return;
+			return;      // nobody watching — or somebody hit it, and it has stopped caring who watches
 		}
 		this.watchedFor++;
 		if (this.frozen()) {
@@ -714,7 +729,7 @@ public class GauntEntity extends PathfinderMob {
 				return;
 			}
 			this.him.getLookControl().setLookAt(at, 30.0F, 30.0F);
-			this.him.getNavigation().moveTo(at, 1.0);
+			this.him.getNavigation().moveTo(at, 1.15);
 		}
 	}
 
@@ -1035,6 +1050,12 @@ public class GauntEntity extends PathfinderMob {
 	/** Addexio wounds it, down to one heart, and no further. The last blow is yours. See TurnedEntity.hurtServer. */
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
+		if (source.getEntity() instanceof LivingEntity striker && CompanionEntity.canBeHurtBy(striker)) {
+			this.provokedUntil = this.tickCount + PROVOKED_FOR;
+			if (this.getTarget() == null || this.getTarget() != striker) {
+				this.setTarget(striker);
+			}
+		}
 		if (source.getEntity() instanceof CompanionEntity) {
 			float room = this.getHealth() - 1.0F;
 			return room > 0.0F && super.hurtServer(level, source, Math.min(damage, room));
