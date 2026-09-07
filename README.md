@@ -76,9 +76,16 @@ and he stops and waits, refuse him for two minutes and he hands you a map and
 falls in behind you instead. At the farm he turns, introduces himself, and from
 then on he follows. If he is ever lost — an unloaded chunk, an old save — he comes
 again within three minutes, and any older one that turns up is retired, so there is
-never two of him and never none. Every place after that is found by a map left in the one
-before it, and he tells you about each one when you arrive. `/herobrine status`
-shows the current wrath and phase.
+never two of him and never none. The farm is three to five hundred blocks out — a
+walk you make behind him, not one you find on your own. Every place after that is
+found by a map left in the one before it, and he tells you about each one when you
+arrive. `/herobrine status` shows the current wrath and phase.
+
+**Every map is drawn between where you find it and where it points**, at the
+smallest scale that puts both on the sheet, so your arrow and the red cross are
+always on the same map — no guessing at the edge. That goes for the map to every
+house, the map home, the one in the grave, the one Addexio hands over, and the
+one to the castle in his world. The coordinates are in the name as well.
 
 **Every place after the farm is held.** His watch is posted the first time
 anyone comes within sight of a place, before they are close enough to see it

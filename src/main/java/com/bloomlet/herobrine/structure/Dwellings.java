@@ -316,17 +316,12 @@ public final class Dwellings {
 		//
 		// The name is the part that cannot fail, and it reads in the tooltip before
 		// the map is ever opened.
-		net.minecraft.world.item.ItemStack map =
-			net.minecraft.world.item.MapItem.create(over, to.getX(), to.getZ(),
-				(byte) 2, true, true);
-		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
-			map, to, "+",
-			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
+		// Drawn between the chest it is left in and the place it points at, so both
+		// are on the sheet. See Charts.
+		net.minecraft.world.item.ItemStack map = Charts.between(over, holder.getBlockPos(), to,
+			WAY_TO[next.ordinal()] + " — " + to.getX() + ", " + to.getZ());
 		// Named for the place it points at, in his register rather than his voice —
 		// these are not messages to the player, they are somebody's papers.
-		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-			net.minecraft.network.chat.Component.literal(
-				WAY_TO[next.ordinal()] + " — " + to.getX() + ", " + to.getZ()));
 		if (!(holder instanceof net.minecraft.world.Container box)) {
 			return;
 		}
@@ -662,14 +657,8 @@ public final class Dwellings {
 
 		// Scale two and the coordinates in the name, same as every other map on the
 		// trail. Four is two thousand blocks across and the arrow falls off it.
-		net.minecraft.world.item.ItemStack map =
-			net.minecraft.world.item.MapItem.create(over, house.getX(), house.getZ(),
-				(byte) 2, true, true);
-		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
-			map, house, "+",
-			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
-		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-			net.minecraft.network.chat.Component.literal("back to the first house"));
+		net.minecraft.world.item.ItemStack map = Charts.between(over, holder.getBlockPos(), house,
+			"back to the first house — " + house.getX() + ", " + house.getZ());
 
 		net.minecraft.world.item.ItemStack book = Loot.tome(over.registryAccess(), over.getRandom(), 3);
 
@@ -744,7 +733,7 @@ public final class Dwellings {
 	// ---- END THE CHAIN -----------------------------------------------------
 
 	private enum Place {
-		HOMESTEAD("homestead", Phase.RUMOUR, 80, 130),    // a walk behind a man, not a march
+		HOMESTEAD("homestead", Phase.RUMOUR, 320, 480),   // a walk behind a man, not a march
 		TOWN("town", Phase.WATCHER, 340, 620),
 		TOWER("house_two", Phase.TRESPASSER, 450, 800),
 		// Pulled in. These are measured from where the players are standing when the

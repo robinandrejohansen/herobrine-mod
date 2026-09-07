@@ -233,22 +233,16 @@ public final class Hoard {
 	 * already looted, and it happily sends them to one that is sited but not yet
 	 * built, because arriving is what builds it.
 	 */
-	private static ItemStack chart(ServerLevel level) {
+	private static ItemStack chart(ServerLevel level, BlockPos from) {
 		BlockPos target = com.bloomlet.herobrine.structure.Dwellings.unfound(level);
 		if (target == null) {
 			return ItemStack.EMPTY;
 		}
-		ItemStack map = net.minecraft.world.item.MapItem.create(
-			level, target.getX(), target.getZ(), (byte)3, true, true);
-		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
-			map, target, "+",
-			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
+		ItemStack map = com.bloomlet.herobrine.structure.Charts.between(level, from, target,
+			INVITATIONS[level.getRandom().nextInt(INVITATIONS.length)]);
 		// Named, because an unnamed filled map is something a player assumes they
 		// made themselves and forgot about. This one has to be unmistakably a
 		// thing that was left for them.
-		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-			net.minecraft.network.chat.Component.literal(
-				INVITATIONS[level.getRandom().nextInt(INVITATIONS.length)]));
 		HerobrineMod.LOGGER.info("a map to [{}, {}] left in the grave",
 			target.getX(), target.getZ());
 		return map;
@@ -322,7 +316,7 @@ public final class Hoard {
 	 * below is a second lock on the same door.
 	 */
 	public static void shelter(ServerLevel level, BlockPos where, ServerPlayer player) {
-		ItemStack map = chart(level);
+		ItemStack map = chart(level, where);
 		RandomSource random = level.getRandom();
 		BlockPos ground = level.getHeightmapPos(
 			net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, where);

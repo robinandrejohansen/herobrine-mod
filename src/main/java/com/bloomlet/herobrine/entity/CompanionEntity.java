@@ -1405,7 +1405,7 @@ public class CompanionEntity extends PathfinderMob {
 		}
 
 		private void handTheMap(ServerLevel here, Player who, BlockPos to) {
-			ItemStack map = com.bloomlet.herobrine.manifest.Whereabouts.theWay(here, to);
+			ItemStack map = com.bloomlet.herobrine.manifest.Whereabouts.theWay(here, who.blockPosition(), to);
 			if (who instanceof ServerPlayer player && !player.getInventory().add(map)) {
 				player.drop(map, false);
 			}

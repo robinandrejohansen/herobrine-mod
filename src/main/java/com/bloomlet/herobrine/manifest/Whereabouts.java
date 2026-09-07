@@ -344,16 +344,9 @@ public final class Whereabouts {
 	}
 
 	/** The map to his house, drawn the way the first version handed it out. */
-	public static net.minecraft.world.item.ItemStack theWay(ServerLevel over, BlockPos house) {
-		net.minecraft.world.item.ItemStack map = net.minecraft.world.item.MapItem.create(
-			over, house.getX(), house.getZ(), (byte) 4, true, true);
-		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
-			map, house, "+",
-			net.minecraft.world.level.saveddata.maps.MapDecorationTypes.RED_MARKER);
-		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-			net.minecraft.network.chat.Component.literal(
-				"from a fellow friend — " + house.getX() + ", " + house.getZ()));
-		return map;
+	public static net.minecraft.world.item.ItemStack theWay(ServerLevel over, BlockPos from, BlockPos house) {
+		return com.bloomlet.herobrine.structure.Charts.between(over, from, house,
+			"from a fellow friend — " + house.getX() + ", " + house.getZ());
 	}
 
 	/**

@@ -381,16 +381,9 @@ public final class Keep {
 	 * still says where to go, and it says it in the tooltip before the map is even
 	 * opened.
 	 */
-	private static net.minecraft.world.item.ItemStack theWay(ServerLevel his, BlockPos keep) {
-		net.minecraft.world.item.ItemStack map = net.minecraft.world.item.MapItem
-			.create(his, keep.getX(), keep.getZ(), (byte) 2, true, true);
-		net.minecraft.world.level.saveddata.maps.MapItemSavedData.addTargetDecoration(
-			map, keep, "+", net.minecraft.world.level.saveddata.maps
-				.MapDecorationTypes.RED_MARKER);
-		map.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME,
-			net.minecraft.network.chat.Component.literal(
-				"he is building something — " + keep.getX() + ", " + keep.getZ()));
-		return map;
+	private static net.minecraft.world.item.ItemStack theWay(ServerLevel his, BlockPos from, BlockPos keep) {
+		return Charts.between(his, from, keep,
+			"he is building something — " + keep.getX() + ", " + keep.getZ());      // centred between the chest and the keep. See Charts
 	}
 
 	/**
@@ -466,7 +459,7 @@ public final class Keep {
 		}
 		for (int slot = 0; slot < best.getContainerSize(); slot++) {
 			if (best.getItem(slot).isEmpty()) {
-				best.setItem(slot, theWay(his, keep));
+				best.setItem(slot, theWay(his, best.getBlockPos(), keep));
 				best.setChanged();
 				BlockPos at = best.getBlockPos();
 				HerobrineMod.LOGGER.info(
