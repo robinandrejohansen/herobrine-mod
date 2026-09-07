@@ -141,6 +141,13 @@ final class Duel {
 	private int holdFor;
 	private int withoutFor;
 	/** What he says when you come back to a fight you left — by dying, usually. */
+	/** Act one, and you outran him. Said once, to your back. */
+	private static final String[] LET_GO = {
+		"run, then. i know where you sleep",
+		"go on. the road is long and i am on all of it",
+		"run. i will be at the door before you are",
+		"that is the right answer. it will not always be",
+	};
 	private static final String[] RETURNED = {
 		"you came back",
 		"again.",
@@ -170,6 +177,38 @@ final class Duel {
 	/** Where the target stood last tick, and the step they took since: the direction they are running. */
 	private Vec3 targetWas = Vec3.ZERO;
 	private Vec3 targetRun = Vec3.ZERO;
+	/**
+	 * ACT ONE CAN BE LEFT. It is the act he tests you in, and a test you cannot
+	 * walk away from is not one. A player RUNNING from him (fleeing) is not
+	 * blinked after past NO_BLINK_PAST — he walks and throws, and a sprinter
+	 * wins — and past LETS_GO_AT he stops, says one thing to their back, and
+	 * rests: stands, faces them, throws nothing, until they are back inside
+	 * LETS_GO_AT. The salvo is for people who stand off and shoot, not for
+	 * people running, so keptAway ignores a fleeing player in act one. From act
+	 * two there is no leaving; from act three he flies.
+	 */
+	private static final double NO_BLINK_PAST = 20.0;
+	private static final double LETS_GO_AT = 40.0;
+	private static final double RUNS_AT = 0.12;      // blocks a tick, horizontal: a walk is 0.2, a sprint 0.28
+	private boolean resting;
+
+	private boolean fleeing(ServerPlayer target) {
+		if (this.him.actNow() != 1 || this.targetRun.horizontalDistanceSqr() < RUNS_AT * RUNS_AT) {
+			return false;
+		}
+		Vec3 away = target.position().subtract(this.him.position());
+		return this.targetRun.x * away.x + this.targetRun.z * away.z > 0.0;      // and away from him, not toward
+	}
+
+	private void letGo(ServerLevel here, ServerPlayer target, double d) {
+		this.resting = true;
+		this.him.getNavigation().stop();
+		this.him.face(target);
+		target.sendSystemMessage(Sayings.his(LET_GO[this.him.getRandom().nextInt(LET_GO.length)]));
+		here.playSound(null, this.him.getX(), this.him.getY(), this.him.getZ(),
+			net.minecraft.sounds.SoundEvents.WARDEN_AMBIENT, this.him.getSoundSource(), 3.0F, 0.4F);
+		this.say(here, "let them go at " + (int) d + " blocks — act one, and they ran");
+	}
 
 	// ---- THE SIEGE ---------------------------------------------------------
 	//
@@ -299,6 +338,18 @@ final class Duel {
 			this.him.getNavigation().stop();
 			this.him.face(target);
 			return;
+		}
+		if (this.resting) {
+			if (this.him.actNow() != 1 || this.him.distanceTo(target) <= LETS_GO_AT) {
+				this.resting = false;
+				target.sendSystemMessage(Sayings.his(RETURNED[this.him.getRandom().nextInt(RETURNED.length)]));
+				this.growlIn = 10;
+				this.say(here, "they came back inside forty — resuming");
+			} else {
+				this.him.getNavigation().stop();
+				this.him.face(target);
+				return;
+			}
 		}
 		if (this.him.inTheAir() && !this.flies()) {
 			this.him.down();     // whatever put him up, the fight is on the ground
@@ -738,7 +789,7 @@ final class Duel {
 	 * move exists to make distance a choice with a price, not to replace anything.
 	 */
 	private boolean keptAway(ServerLevel here, ServerPlayer target, double d) {
-		if (d <= KEPT_PAST) {
+		if (d <= KEPT_PAST || this.fleeing(target)) {
 			this.keptOff = 0;
 			return false;
 		}
@@ -941,7 +992,16 @@ final class Duel {
 		if (this.keptAway(here, target, d)) {
 			return;
 		}
+		boolean running = this.fleeing(target);
+		if (running && d > LETS_GO_AT) {
+			this.letGo(here, target, d);
+			return;
+		}
 		this.cast(here, target);
+		if (running && d > NO_BLINK_PAST) {
+			this.him.getNavigation().moveTo(target, WALK);      // act one: he does not blink after a runner. Walk, and throw
+			return;
+		}
 		if (this.blinkIn <= 0) {
 			boolean behindFirst = this.him.actNow() == 1;      // act one: behind them first, in view only if there is nowhere else
 			if (this.appear(here, target, 6.0, 9.0, !behindFirst)

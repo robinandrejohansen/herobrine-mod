@@ -235,7 +235,11 @@ than every second, blinks about half as often, and waits five to seven seconds
 between casts. And nothing he throws in act one catches — the fireballs still
 hit and still burst, but the ground does not burn and neither do you. His fire
 bursts softer, his lightning is a point weaker, and
-when you run he lands behind you, never ahead. Act two brings the edge up to
+when you run he lands behind you, never ahead. And you can leave it: run, and
+past twenty blocks he stops blinking after you and walks; past forty he stops
+altogether, says one thing to your back, and waits — the fight rests until you
+come back inside forty. The salvo is for people who stand off and shoot, not for
+people running. From act two there is no leaving. Act two brings the edge up to
 seven with four seconds of fire; act three is the whole sword — nine and a half,
 twenty seconds of burning, knockback that is a wall. That is when you respect
 him. The sword you take off him is always the whole one.
