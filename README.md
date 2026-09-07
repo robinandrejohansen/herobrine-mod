@@ -262,6 +262,13 @@ from act two. Hide in a hole with one block open and he reads the cover and blow
 it out. Stand in a room too low for him and he takes the ceiling off rather than
 leave. Crowd him and he sweeps the lot of you back.
 
+**Act three is in the air.** From the third act he neither walks nor blinks: he
+flies — seventeen blocks a second — and through whatever is in the way, the way
+the dragon goes through a tower, and hangs an arm's length off you to swing,
+drifting side to side so he never stands still. Walls do not slow him, holes do
+not hide you, and distance does not keep him. Config `actThreeFlies` puts him
+back on his feet.
+
 **Helpers.** Golems, wolves, Addexio — every fourth helper hit counts as a blow.
 He deals with them himself, between you: Addexio takes twelve at a time, anything
 else dies.
@@ -271,7 +278,11 @@ light going out of him, through the ceiling if there is one; hangs against the
 sky while a ring of lightning comes down round him; drops, faster every tick;
 and lands with a blast that throws everybody within seven blocks and takes the
 walls round him. Act two he stands 1.4×. **Act three he stands 1.7× and stays
-dark** — unlit, smoking, two white eyes — for the rest of it.
+dark** — unlit, smoking, two white eyes — for the rest of it. And the third rise
+is a demonstration: he hangs against the sky for eleven seconds instead of two
+and a half, throwing fire at whoever he can see and into the air besides, twice
+a second, while real lightning walks a ring nine to eighteen blocks round you
+and visual bolts come down further out. Then he drops.
 
 **If you die** and nobody else is standing, the fight falls back to the start of
 the act you were in. `/herobrine boss` resumes a bound fight; `/herobrine boss
@@ -373,6 +384,7 @@ decides; a player's own does nothing. The ones worth knowing:
 | `houses` · `town` · `villageDecay` | true | the places, and what happens to villages |
 | `weather` · `longerNights` · `endlessNight` | true | the storm and the night in the later phases |
 | `quietDeaths` | true | no death messages for what he takes |
+| `actThreeFlies` | true | act three in the air: flight through blocks, no blinks, strikes from where he hangs |
 | `corpses` | true | the dead stay where they fell and are looted like chests; players' bodies hold their inventory |
 
 ---

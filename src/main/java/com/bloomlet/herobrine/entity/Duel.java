@@ -300,7 +300,7 @@ final class Duel {
 			this.him.face(target);
 			return;
 		}
-		if (this.him.inTheAir()) {
+		if (this.him.inTheAir() && !this.flies()) {
 			this.him.down();     // whatever put him up, the fight is on the ground
 		}
 
@@ -311,6 +311,10 @@ final class Duel {
 			this.castIn--;
 		}
 		this.wounds(here);
+		if (this.flies()) {
+			this.soar(here, target);
+			return;
+		}
 
 		// WHATEVER THEY BROUGHT, FIRST. A golem on him is dealt with before the
 		// player is — one every two seconds, so a pack buys a few seconds and the
@@ -881,6 +885,56 @@ final class Duel {
 	 * announced, six to nine blocks off — and the band above takes over. Between
 	 * blinks he throws.
 	 */
+	/**
+	 * ACT THREE: HE FLIES.
+	 *
+	 * The third act does not walk, blink, breach or pick rooms: everything below
+	 * this method is for a man on the ground, and he is not one any more. He
+	 * comes at you through the air and through whatever is between — walls,
+	 * floors, the keep — at seventeen blocks a second (HerobrineEntity.glide caps
+	 * it), holds an arm's length off you, drifting to one side and then the
+	 * other so he is never a target that stands still, and swings from there
+	 * (strike wants line of sight, which at arm's length he has). He throws as
+	 * he comes (cast). Holes do not hide you and distance does not keep him.
+	 * Config.actThreeFlies puts him back on his feet.
+	 */
+	private static final double HOVERS_OFF = 2.4;
+	private static final double SOARS_FROM = HOVERS_OFF + 0.8;
+
+	private boolean flies() {
+		return this.him.actNow() >= 3 && com.bloomlet.herobrine.Config.get().actThreeFlies;
+	}
+
+	private void soar(ServerLevel here, ServerPlayer target) {
+		boolean wasUp = this.him.isSoaring();
+		this.him.wing();
+		if (!wasUp) {
+			this.say(here, "act three — in the air, and through the walls");
+		}
+		this.him.face(target);
+		this.cast(here, target);
+		this.keptOff = 0;
+		Vec3 want = target.position().add(0.0, 0.6, 0.0);
+		Vec3 to = want.subtract(this.him.position());
+		double d = to.length();
+		if (d > SOARS_FROM) {
+			this.him.glide(to.normalize().scale(d - HOVERS_OFF));      // glide caps the speed
+			return;
+		}
+		if (--this.decideIn <= 0) {
+			this.decideIn = 20 + this.him.getRandom().nextInt(30);
+			this.strafeSide = -this.strafeSide;
+		}
+		Vec3 side = new Vec3(-to.z, 0.0, to.x);
+		side = side.lengthSqr() > 1.0E-4 ? side.normalize().scale(0.14 * this.strafeSide) : Vec3.ZERO;
+		this.him.glide(to.normalize().scale((d - HOVERS_OFF) * 0.3).add(side));
+		this.him.slash(target);
+		if (--this.feintIn <= 0) {
+			this.feintIn = 6 + this.him.getRandom().nextInt(4);
+			this.him.swingArm();
+		}
+	}
+
 	private void far(ServerLevel here, ServerPlayer target, double d) {
 		this.him.getNavigation().stop();
 		this.him.face(target);

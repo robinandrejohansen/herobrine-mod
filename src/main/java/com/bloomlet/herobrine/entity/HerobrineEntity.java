@@ -176,6 +176,8 @@ public class HerobrineEntity extends PathfinderMob {
 	private long lastDefiance = -1000L;
 	private boolean flying;
 	private int flyTicks;
+	/** Act three: in the air on purpose, through blocks, and not to be landed by anything but the end. See wing. */
+	private boolean soaring;
 	/**
 	 * THE SKY HAS BEEN TAKEN FROM HIM. Set by the first blow in his castle, never
 	 * cleared while he lives, and kept on the level as well so a save or a fresh
@@ -1736,13 +1738,13 @@ public class HerobrineEntity extends PathfinderMob {
 		// airborne lightning outside a hunt. The backstop is still here for
 		// anything that leaves him up with nobody to fight, which is the actual
 		// failure it exists for.
-		if (this.flying && this.busyWith == null) {
+		if (this.flying && this.busyWith == null && !this.soaring) {
 			this.land();
 		}
 		this.listen();
 		this.giveUpOnUnreachable();
-		if (this.level() instanceof ServerLevel ground) {
-			this.unwedge(ground);
+		if (this.level() instanceof ServerLevel ground && !this.soaring) {
+			this.unwedge(ground);      // a soaring one is inside blocks on purpose
 		}
 		// HE SEES THEM. THAT IS THE HUNT, AND IT IS THE WHOLE RULE.
 		//
@@ -2123,7 +2125,7 @@ public class HerobrineEntity extends PathfinderMob {
 			|| !(this.level() instanceof ServerLevel field)) {
 			this.busyWith = null;
 			// Whatever the duel put in the air, the duel takes out of it.
-			if (this.flying && !this.hunting) {
+			if (this.flying && !this.hunting && !this.soaring) {
 				this.land();
 			}
 			return false;
@@ -3126,6 +3128,15 @@ public class HerobrineEntity extends PathfinderMob {
 	private static final double RISE_HEIGHT = 14.0;
 	private static final int RISE_TAKES = 80;
 	private static final int HANGS_AT_TOP = 50;
+	/**
+	 * THE THIRD RISE IS A DEMONSTRATION. He hangs eleven seconds instead of two
+	 * and a half, and spends them showing what the last act is: fire at whoever
+	 * he can see and into the air besides, twice a second, and real lightning
+	 * walking a ring round the players, with visual bolts further out for the
+	 * sky. See display.
+	 */
+	private static final int HANGS_AT_TOP_ACT_THREE = 220;
+	private int hangsFor = HANGS_AT_TOP;
 	private static final int DROP_MOST = 80;          // a floor he cannot find ends it
 	private static final double SLAM_THROWS = 7.0;
 	private static final double SLAM_CLEARS = 1.9;    // the walls round him, not the floor
@@ -3187,7 +3198,8 @@ public class HerobrineEntity extends PathfinderMob {
 	 * he buys the spectacle by handing the player the only opening in the fight.
 	 */
 	private void ascend(ServerLevel here) {
-		this.ascending = RISE_TAKES + HANGS_AT_TOP;
+		this.hangsFor = this.act() >= 3 ? HANGS_AT_TOP_ACT_THREE : HANGS_AT_TOP;
+		this.ascending = RISE_TAKES + this.hangsFor;
 		this.dropping = false;
 		this.droppingFor = 0;
 		this.roseFrom = this.getY();
@@ -3226,7 +3238,7 @@ public class HerobrineEntity extends PathfinderMob {
 			});
 		}
 		HerobrineMod.LOGGER.info("he rises from y={} — {} up over {} ticks, hangs {}, then comes down",
-			(int) this.roseFrom, (int) RISE_HEIGHT, RISE_TAKES, HANGS_AT_TOP);
+			(int) this.roseFrom, (int) RISE_HEIGHT, RISE_TAKES, this.hangsFor);
 	}
 
 	/** Whatever his body is about to pass through goes. Ceilings up, floors down. */
@@ -3235,6 +3247,100 @@ public class HerobrineEntity extends PathfinderMob {
 		if (gone > 0) {
 			here.playSound(null, at.getX(), at.getY(), at.getZ(),
 				SoundEvents.GENERIC_EXPLODE.value(), this.getSoundSource(), 0.9F, 0.8F);
+		}
+	}
+
+	private static final int DISPLAY_FIRES_EVERY = 9;
+	private static final int DISPLAY_BOLTS_EVERY = 18;
+	private static final double DISPLAY_RING_MIN = 9.0;
+	private static final double DISPLAY_RING_MAX = 18.0;
+	private static final double DISPLAY_REACH = 48.0;
+
+	/** One tick of the third rise's demonstration. See HANGS_AT_TOP_ACT_THREE. */
+	private void display(ServerLevel stage) {
+		List<ServerPlayer> crowd = stage.getPlayers(p -> p.isAlive() && !p.isSpectator()
+			&& p.distanceTo(this) <= DISPLAY_REACH);
+		if (this.ascending % DISPLAY_FIRES_EVERY == 0) {
+			Vec3 from = this.getEyePosition();
+			Vec3 aim;
+			if (!crowd.isEmpty() && this.random.nextInt(3) != 0) {
+				ServerPlayer at = crowd.get(this.random.nextInt(crowd.size()));
+				aim = at.position().add(0.0, 0.9, 0.0).subtract(from);
+			} else {
+				aim = new Vec3(this.random.nextDouble() - 0.5,
+					-(0.1 + this.random.nextDouble() * 0.5), this.random.nextDouble() - 0.5);
+			}
+			net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball ball =
+				new net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball(
+					stage, this, aim.normalize(), 1);
+			ball.snapTo(from.x, from.y, from.z, this.getYRot(), this.getXRot());
+			ball.shoot(aim.x, aim.y, aim.z, 1.6F, 6.0F);
+			stage.addFreshEntity(ball);
+			this.swipe();
+			stage.playSound(null, this.getX(), this.getY(), this.getZ(),
+				SoundEvents.BLAZE_SHOOT, this.getSoundSource(), 1.6F, 0.6F + this.random.nextFloat() * 0.3F);
+		}
+		if (this.ascending % DISPLAY_BOLTS_EVERY == 0) {
+			double cx = this.getX();
+			double cz = this.getZ();
+			if (!crowd.isEmpty()) {
+				cx = 0.0;
+				cz = 0.0;
+				for (ServerPlayer p : crowd) {
+					cx += p.getX();
+					cz += p.getZ();
+				}
+				cx /= crowd.size();
+				cz /= crowd.size();
+			}
+			double angle = this.random.nextDouble() * Math.PI * 2.0;
+			double r = DISPLAY_RING_MIN + this.random.nextDouble() * (DISPLAY_RING_MAX - DISPLAY_RING_MIN);
+			double bx = cx + Math.cos(angle) * r;
+			double bz = cz + Math.sin(angle) * r;
+			int by = stage.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+				net.minecraft.util.Mth.floor(bx), net.minecraft.util.Mth.floor(bz));
+			this.boltAt(stage, bx, by, bz, Config.get().realLightning);
+			for (int i = 0; i < 2; i++) {
+				double far = this.random.nextDouble() * Math.PI * 2.0;
+				double out = DISPLAY_RING_MAX + 6.0 + this.random.nextDouble() * 12.0;
+				double fx = cx + Math.cos(far) * out;
+				double fz = cz + Math.sin(far) * out;
+				int fy = stage.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+					net.minecraft.util.Mth.floor(fx), net.minecraft.util.Mth.floor(fz));
+				this.boltAt(stage, fx, fy, fz, false);
+			}
+		}
+	}
+
+	/** A bolt on a spot: the strike, the hurt to whoever stands there, and the crater. callDown's landing, on its own. */
+	private void boltAt(ServerLevel here, double ax, int ay, double az, boolean real) {
+		net.minecraft.world.entity.LightningBolt bolt =
+			net.minecraft.world.entity.EntityTypes.LIGHTNING_BOLT
+				.create(here, net.minecraft.world.entity.EntitySpawnReason.EVENT);
+		if (bolt == null) {
+			return;
+		}
+		bolt.setVisualOnly(!real);
+		bolt.snapTo(ax, ay, az, 0.0F, 0.0F);
+		here.addFreshEntity(bolt);
+		if (!real) {
+			return;
+		}
+		float extra = BOLT_DAMAGE[Math.min(BOLT_DAMAGE.length - 1, this.act() - 1)];
+		for (net.minecraft.world.entity.LivingEntity hit : here.getEntitiesOfClass(
+				net.minecraft.world.entity.LivingEntity.class,
+				new net.minecraft.world.phys.AABB(ax - BOLT_REACH, ay - 1.0, az - BOLT_REACH,
+					ax + BOLT_REACH, ay + 4.0, az + BOLT_REACH),
+				e -> e.isAlive() && !(e instanceof HerobrineEntity)
+					&& !com.bloomlet.herobrine.manifest.TheHunt.isHis(e))) {
+			hit.hurtServer(here, here.damageSources().lightningBolt(), extra);
+			hit.igniteForSeconds(4.0F);
+		}
+		if (Config.get().breakIn
+			&& here.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.MOB_GRIEFING)) {
+			com.bloomlet.herobrine.manifest.HisHost.punch(here,
+				BlockPos.containing(ax, ay - 1, az),
+				BOLT_CRATER[Math.min(BOLT_CRATER.length - 1, this.act() - 1)]);
 		}
 	}
 
@@ -3508,7 +3614,7 @@ public class HerobrineEntity extends PathfinderMob {
 		if (this.ascending > 0 && this.level() instanceof ServerLevel stage) {
 			this.ascending--;
 			this.setNoGravity(true);
-			if (this.ascending >= HANGS_AT_TOP) {
+			if (this.ascending >= this.hangsFor) {
 				// RISING. Slowly, and dark: the smoke is his, the ink is the light
 				// leaving him. The ceiling over his head goes before he reaches it.
 				this.setDeltaMovement(0.0, RISE_HEIGHT / RISE_TAKES, 0.0);
@@ -3524,6 +3630,9 @@ public class HerobrineEntity extends PathfinderMob {
 					this.getX(), this.getY() + 1.0, this.getZ(), 4, 0.6, 1.0, 0.6, 0.01);
 				stage.sendParticles(net.minecraft.core.particles.ParticleTypes.SOUL,
 					this.getX(), this.getY() + 1.2, this.getZ(), 2, 0.5, 0.8, 0.5, 0.01);
+				if (this.act() >= 3) {
+					this.display(stage);
+				}
 			}
 			this.hurtMarked = true;
 			if (this.ascending == 0) {
@@ -4975,6 +5084,8 @@ public class HerobrineEntity extends PathfinderMob {
 
 	private void land() {
 		this.flying = false;
+		this.soaring = false;
+		this.noPhysics = false;
 		this.setNoGravity(false);
 		this.fallDistance = 0.0;
 		this.lastDistance = Double.MAX_VALUE;
@@ -6433,6 +6544,48 @@ public class HerobrineEntity extends PathfinderMob {
 
 	boolean inTheAir() {
 		return this.flying;
+	}
+
+	/**
+	 * ACT THREE: WINGS.
+	 *
+	 * The last act used to be the first two with bigger numbers: walk, blink,
+	 * swing. Now he does not touch the ground. wing() puts him in the air with
+	 * noPhysics, so he goes through walls, floors and the keep itself the way
+	 * the dragon goes through a tower, and glide() moves him — capped at
+	 * FLIES_AT a tick, seventeen blocks a second, far faster than anyone runs.
+	 * Duel.soar steers. Nothing lands him but land(), which the ending calls;
+	 * prowl and the helper-hover leave a soaring one alone. isInWall is false
+	 * for a noPhysics entity, so he does not suffocate in the stone he crosses.
+	 */
+	private static final double FLIES_AT = 0.85;
+
+	void wing() {
+		if (!this.flying) {
+			this.flying = true;
+			this.flyTicks = 0;
+		}
+		this.soaring = true;
+		this.setNoGravity(true);
+		this.noPhysics = true;
+		this.getNavigation().stop();
+	}
+
+	boolean isSoaring() {
+		return this.soaring;
+	}
+
+	void glide(Vec3 velocity) {
+		double speed = velocity.length();
+		if (speed > FLIES_AT) {
+			velocity = velocity.scale(FLIES_AT / speed);
+		}
+		this.setDeltaMovement(velocity);
+		this.hurtMarked = true;
+		if (speed > 0.3 && this.tickCount % 24 == 0 && this.level() instanceof ServerLevel here) {
+			here.playSound(null, this.getX(), this.getY(), this.getZ(),
+				SoundEvents.ENDER_DRAGON_FLAP, this.getSoundSource(), 1.6F, 0.55F);
+		}
 	}
 
 	int hitsTaken() {
