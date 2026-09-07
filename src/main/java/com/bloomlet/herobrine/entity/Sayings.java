@@ -147,6 +147,24 @@ public final class Sayings {
 		"Your things are here. All of it. I counted.",
 	};
 
+	/** He is near, he cannot get to you, and you have not seen him. */
+	public static final String[] OVER_HERE = {
+		"Down here. I'm not climbing that.",
+		"Over here. By the trees.",
+		"I can see you. Come down, I'm not shouting the rest.",
+		"I'm here. Get down where I can talk to you.",
+		"Up there is his. Down here is mine. Come down.",
+	};
+
+	/** You hit him. */
+	public static final String[] STRUCK = {
+		"Don't.",
+		"That's one. I don't count to two.",
+		"Hit him, not me.",
+		"I have been hit by worse. Don't make it a habit.",
+		"Save it for him.",
+	};
+
 	public static final String[] WALKED_TO_YOU = {
 		"I waited. Then I walked.",
 		"You didn't come back, so I came to you.",

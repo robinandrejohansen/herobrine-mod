@@ -85,9 +85,22 @@ anyone comes within sight of a place, before they are close enough to see it
 happen: three of the turned and a gaunt at the town, growing to six and three at
 the last house. A posted turned has twice the health, iron on him and no
 daylight rule; he stands his ground rather than stalks, comes for anyone within
-twenty blocks of the door, and lets go of anyone who gets thirty-six away. They
+twenty blocks of the door, and lets go of anyone who gets fifty-six away. They
 do not despawn and they will not follow you home. The book is inside. You go
 through them.
+
+**The turned are not harmless.** Stand and stare at one for three seconds and it
+knows it is seen, and comes — by day as well as by night. Once one has you it
+keeps you through walls, and a wall of wood does not stop it: it has the axe,
+and it chops through planks, logs, fences and leaves two blocks high, a block
+every two to five seconds, sometimes standing a moment to look at the hole
+before the next. Doors, glass and bars as before. Addexio fights any that have
+put the pretence down, and they fight him back; he cannot kill one — the last
+blow is yours.
+
+**A gaunt holds still while you look at it** — for a second and a half. Then the
+dark comes down on you, it is nearer every time the dark lifts, and inside six
+blocks it does not care who is looking.
 
 ### Every place is a battlefield
 
@@ -118,6 +131,12 @@ follows, fights, and talks.
   swings at him. Twenty hearts.
 - Fights monsters and anything of Herobrine's. Eats when he is hurt and it is
   quiet; faces what attacks him.
+- Comes in from the trees fifty to eighty blocks off and walks to whoever is
+  nearest. He speaks when he reaches you; if you are up a tree or on a roof he
+  calls out first, then gives the introduction from where he stands once he can
+  see you.
+- Hit him and he hits back once, an open hand, and lets it go. He does not
+  fight the people he walks with.
 - Follows like a person: keeps five blocks off you, jogs only when you are well
   ahead, and in a fight lets you range while he has his own. Lose him entirely
   and he comes back through the trees eight to thirteen blocks off — never onto

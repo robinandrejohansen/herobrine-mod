@@ -47,7 +47,7 @@ public final class Watch {
 
 	/** How far from the post a guard will wander, and how far it will chase before it lets go. */
 	public static final int HOLDS = 20;
-	public static final double LETS_GO = 36.0;
+	public static final double LETS_GO = 56.0;      // was 36: they gave up as soon as you ran, and looked harmless for it
 
 	/** The Turned and the Gaunts posted, by chapter: homestead, town, tower, gaol, church, threshold. */
 	private static final int[] TURNED = {0, 3, 3, 4, 5, 6};

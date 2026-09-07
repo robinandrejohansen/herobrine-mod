@@ -72,10 +72,10 @@ public class GauntEntity extends PathfinderMob {
 	private static final double IN_VIEW = 0.5;
 
 	/** Inside this it stops caring whether it is watched. */
-	private static final double REACHES = 3.2;
+	private static final double REACHES = 6.0;      // was 3.2: one standing five blocks off looking back at you for ever was the complaint
 
 	/** Continuous ticks of being looked at before the looking starts to cost. */
-	private static final int STARE_COSTS = 70;
+	private static final int STARE_COSTS = 30;      // was 70: a second and a half of looking, and the dark starts
 	private static final int DARK_FOR = 60;
 
 	private int watchedFor;

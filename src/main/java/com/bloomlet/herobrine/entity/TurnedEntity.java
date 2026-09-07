@@ -403,7 +403,10 @@ public class TurnedEntity extends PathfinderMob {
 		// through whatever is in the way. See Forces.
 		this.goalSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.OpenDoorGoal(
 			this, false));
-		this.goalSelector.addGoal(1, new Forces(this));
+		// Above the melee goal, not beside it: two goals on one priority never
+		// take MOVE off each other, so with a wall between him and you the melee
+		// goal kept the flag and stood there, and this one never ran.
+		this.goalSelector.addGoal(0, new Forces(this));
 		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0, true));
 		// Awake, and visibly with nothing to do. Villagers at night are in
 		// their beds; the whole event is one man walking the square.
@@ -456,13 +459,38 @@ public class TurnedEntity extends PathfinderMob {
 				net.minecraft.world.entity.ai.goal.Goal.Flag.MOVE));
 		}
 
+		/**
+		 * Doors, glass and bars, as before — and now anything made of wood, and
+		 * leaves. A wall of planks with no door in it used to be the one thing
+		 * that stopped him: he stood outside it with an axe in his hand. He has
+		 * the axe. He uses it, two blocks high, the way a zombie takes a door.
+		 */
 		private static boolean inTheWay(net.minecraft.world.level.block.state.BlockState state) {
 			return state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock
 				|| state.getBlock() instanceof net.minecraft.world.level.block.TrapDoorBlock
 				|| state.is(net.minecraft.tags.BlockTags.IMPERMEABLE)
 				|| state.getBlock()
-					instanceof net.minecraft.world.level.block.IronBarsBlock;
+					instanceof net.minecraft.world.level.block.IronBarsBlock
+				|| state.is(net.minecraft.tags.BlockTags.PLANKS)
+				|| state.is(net.minecraft.tags.BlockTags.LOGS)
+				|| state.is(net.minecraft.tags.BlockTags.WOODEN_SLABS)
+				|| state.is(net.minecraft.tags.BlockTags.WOODEN_STAIRS)
+				|| state.is(net.minecraft.tags.BlockTags.WOODEN_FENCES)
+				|| state.is(net.minecraft.tags.BlockTags.FENCE_GATES)
+				|| state.is(net.minecraft.tags.BlockTags.LEAVES);
 		}
+
+		/** How far ahead he looks for the wall — right in front of him first, then further out. */
+		private static final double[] REACHES = {1.0, 1.8, FORCES_REACH};
+		/** One block takes between two and five and a half seconds. */
+		private static final int TAKES_MIN = 40;
+		private static final int TAKES_SPREAD = 70;
+		/** And now and then, when one is through, he stands and looks at the hole for a bit. Not clever. Gets there. */
+		private static final int DAWDLES_ONE_IN = 3;
+		private static final int DAWDLES_MIN = 20;
+		private static final int DAWDLES_SPREAD = 40;
+		private int takes = FORCES_TICKS;
+		private int dawdleUntil;
 
 		private net.minecraft.core.@org.jspecify.annotations.Nullable BlockPos ahead() {
 			net.minecraft.world.entity.LivingEntity at = this.him.getTarget();
@@ -474,13 +502,15 @@ public class TurnedEntity extends PathfinderMob {
 			if (way.lengthSqr() < 0.01) {
 				return null;
 			}
-			net.minecraft.world.phys.Vec3 step = this.him.position()
-				.add(way.normalize().scale(FORCES_REACH));
-			for (int up = 0; up <= 1; up++) {
-				net.minecraft.core.BlockPos pos = net.minecraft.core.BlockPos.containing(
-					step.x, this.him.getY() + up, step.z);
-				if (inTheWay(this.him.level().getBlockState(pos))) {
-					return pos;
+			net.minecraft.world.phys.Vec3 toward = way.normalize();
+			for (double reach : REACHES) {
+				net.minecraft.world.phys.Vec3 step = this.him.position().add(toward.scale(reach));
+				for (int up = 0; up <= 1; up++) {
+					net.minecraft.core.BlockPos pos = net.minecraft.core.BlockPos.containing(
+						step.x, this.him.getY() + up, step.z);
+					if (inTheWay(this.him.level().getBlockState(pos))) {
+						return pos;
+					}
 				}
 			}
 			return null;
@@ -495,6 +525,9 @@ public class TurnedEntity extends PathfinderMob {
 			if (at == null || this.him.distanceTo(at) < 2.0) {
 				return false;      // he can reach them. nothing is in the way.
 			}
+			if (this.him.tickCount < this.dawdleUntil) {
+				return false;      // looking at the last hole
+			}
 			this.onIt = this.ahead();
 			return this.onIt != null;
 		}
@@ -508,6 +541,7 @@ public class TurnedEntity extends PathfinderMob {
 		@Override
 		public void start() {
 			this.worked = 0;
+			this.takes = TAKES_MIN + this.him.random.nextInt(TAKES_SPREAD);
 		}
 
 		@Override
@@ -529,16 +563,19 @@ public class TurnedEntity extends PathfinderMob {
 			// The cracks, so it is legible from the other side of the glass that
 			// something is coming through and roughly when.
 			here.destroyBlockProgress(this.him.getId(), this.onIt,
-				(int) (this.worked / (float) FORCES_TICKS * 10.0F));
+				(int) (this.worked / (float) this.takes * 10.0F));
 			if (this.worked % 8 == 0) {
 				here.playSound(null, this.onIt, net.minecraft.sounds.SoundEvents.ZOMBIE_ATTACK_WOODEN_DOOR,
 					this.him.getSoundSource(), 1.0F, 0.6F);
 			}
-			if (this.worked >= FORCES_TICKS) {
+			if (this.worked >= this.takes) {
 				here.destroyBlock(this.onIt, true, this.him);
 				here.destroyBlockProgress(this.him.getId(), this.onIt, -1);
 				this.onIt = null;
 				this.worked = 0;
+				if (this.him.random.nextInt(DAWDLES_ONE_IN) == 0) {
+					this.dawdleUntil = this.him.tickCount + DAWDLES_MIN + this.him.random.nextInt(DAWDLES_SPREAD);
+				}
 			}
 		}
 	}
@@ -921,6 +958,28 @@ public class TurnedEntity extends PathfinderMob {
 		// reads as losing track of them.
 		this.getLookControl().setLookAt(watching.getX(), watching.getEyeY(),
 			watching.getZ(), 90.0F, 90.0F);
+		// STARE BACK LONG ENOUGH AND IT KNOWS IT IS SEEN. Standing still and
+		// looking at one used to be perfectly safe, by day, for as long as you
+		// liked; it stood there and looked back. Now it gives you three seconds.
+		if (this.looking(watching)) {
+			if (++this.staredFor >= STARED_OUT) {
+				this.staredFor = 0;
+				this.snap(watching, false);
+			}
+		} else {
+			this.staredFor = 0;
+		}
+	}
+
+	private static final int STARED_OUT = 60;
+	private static final double STARES_WITHIN = 0.8;      // cos of the cone: about 37 degrees either side
+	private int staredFor;
+
+	private boolean looking(Player who) {
+		net.minecraft.world.phys.Vec3 eye = who.getViewVector(1.0F).normalize();
+		net.minecraft.world.phys.Vec3 toMe = new net.minecraft.world.phys.Vec3(
+			this.getX() - who.getX(), this.getEyeY() - who.getEyeY(), this.getZ() - who.getZ());
+		return eye.dot(toMe.normalize()) > STARES_WITHIN;
 	}
 
 	/** He will not stop muttering, and it is pitched a little low. */
@@ -960,7 +1019,13 @@ public class TurnedEntity extends PathfinderMob {
 			this.snap(striker, true);
 			return super.hurtServer(level, source, damage);
 		}
-		if (source.getEntity() instanceof CompanionEntity) {
+		if (source.getEntity() instanceof CompanionEntity he) {
+			if (!(this.getTarget() instanceof Player)) {      // a player is the prize; otherwise, him
+				this.carry();
+				this.setTarget(he);
+				this.committed = true;
+				this.mark = null;
+			}
 			// ADDEXIO WOUNDS, YOU FINISH. His sword counts — a man swinging forever
 			// at something he cannot dent is a man who never leaves — but it stops at
 			// one heart. The kill is the player's, every time, or the fight is his.
@@ -986,9 +1051,15 @@ public class TurnedEntity extends PathfinderMob {
 	 * type — this only has to catch anything that picked him up as a generic
 	 * nearby living thing.
 	 */
+	/**
+	 * ...unless it has put the pretence down. Addexio's targeting goes through
+	 * TargetingConditions, and that asks this first; a pretender stays nobody's
+	 * enemy, or Addexio walking through a village would give every one of them
+	 * away. One that has committed is fair game.
+	 */
 	@Override
 	public boolean canBeSeenAsEnemy() {
-		return false;
+		return this.committed || this.getTarget() != null;
 	}
 
 	/**

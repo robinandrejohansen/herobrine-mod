@@ -660,6 +660,7 @@ public class CompanionEntity extends PathfinderMob {
 				}
 			}
 			this.keepToTheRoad();
+			this.grudge();
 			this.theWalkIn();
 			this.hop();
 			this.theIntroduction();
@@ -747,13 +748,66 @@ public class CompanionEntity extends PathfinderMob {
 	private static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> INTRODUCED =
 		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.createPersistent(
 			HerobrineMod.id("addexio_introduced"), com.mojang.serialization.Codec.BOOL);
-	private static final double COMES_TO_YOU_FROM = 24.0;
-	private static final double SPEAKS_FROM = 4.0;
+	/**
+	 * HOW FAR HE COMES FROM, AND FROM HOW FAR HE SPEAKS.
+	 *
+	 * Company puts him down fifty to eighty blocks off, in the trees. Before the
+	 * introduction nobody is his companion, so the walk-in has nothing to walk
+	 * to and the only thing that moves him is this — which used to look twenty-
+	 * four blocks and no further, so he stood in the trees until you happened to
+	 * wander near him. Now he looks as far as the path will reach and walks.
+	 *
+	 * And he used to need four blocks. Up a tree, on a roof, behind a fence,
+	 * that never came, and he never spoke. Now: six blocks, or fourteen with a
+	 * clear line of sight once he has tried for three seconds — and once he is
+	 * within twenty-four and has tried for five he says so, so you know he is
+	 * there at all.
+	 */
+	private static final double COMES_TO_YOU_FROM = 96.0;
+	private static final double SPEAKS_FROM = 6.0;
+	private static final double SPEAKS_FROM_AFAR = 14.0;
+	private static final int TRIES_FOR = 60;
+	private static final double CALLS_FROM = 24.0;
+	private static final int CALLS_AFTER = 100;
+	private int approaching;
 	private int introducing;
 	private java.util.@org.jspecify.annotations.Nullable UUID introducingTo;
 	/** Whoever hit him last, and when — a threat whether or not it is one of his. */
 	private net.minecraft.world.entity.@org.jspecify.annotations.Nullable Mob lastAttacker;
 	private long lastAttackedAt;
+
+	/**
+	 * STRUCK BY A PLAYER.
+	 *
+	 * HurtByTargetGoal makes him turn on whoever hit him, and the sword does
+	 * nine. Somebody swung at him to see what happened and he killed them. Now:
+	 * he hits back once, an open hand for two, and drops it — and if he cannot
+	 * reach you inside two seconds he drops it anyway. He does not fight the
+	 * people he walks with. See doHurtTarget and grudge.
+	 */
+	private static final int GRUDGE_FOR = 40;
+	private static final float SLAPS_FOR = 2.0F;
+	private int grudgeUntil;
+
+	private void grudge() {
+		if (this.getTarget() instanceof Player && this.tickCount >= this.grudgeUntil) {
+			this.grudgeUntil = 0;
+			this.setTarget(null);
+		}
+	}
+
+	/** One open hand back, for a player who hit him, and that is the end of it. Everything else gets the sword. */
+	@Override
+	public boolean doHurtTarget(ServerLevel level, net.minecraft.world.entity.Entity target) {
+		if (!(target instanceof Player who)) {
+			return super.doHurtTarget(level, target);
+		}
+		this.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+		boolean landed = who.hurtServer(level, this.damageSources().mobAttack(this), SLAPS_FOR);
+		this.grudgeUntil = 0;
+		this.setTarget(null);
+		return landed;
+	}
 	private static final double GUARDS_WITHIN = 3.5;
 	private static final int GUARD_HOLDS = 20;
 	private static final int GUARD_REST = 25;
@@ -818,12 +872,22 @@ public class CompanionEntity extends PathfinderMob {
 			|| !to.isAlive() || to.isSpectator()) {
 			return;
 		}
-		if (this.distanceTo(to) > SPEAKS_FROM) {
+		double away = this.distanceTo(to);
+		boolean nearEnough = away <= SPEAKS_FROM
+			|| (away <= SPEAKS_FROM_AFAR && this.approaching >= TRIES_FOR
+				&& this.tickCount % 5 == 0 && this.hasLineOfSight(to));
+		if (!nearEnough) {
+			this.approaching++;
 			if (this.tickCount % 10 == 0) {
 				this.getNavigation().moveTo(to, 1.0);
 			}
+			if (away <= CALLS_FROM && this.approaching >= CALLS_AFTER && this.approaching % 200 == 0) {
+				this.getLookControl().setLookAt(to, 60.0F, 60.0F);
+				Sayings.say(here, this, to, Sayings.OVER_HERE);      // once per QUIET_FOR; say() throttles
+			}
 			return;
 		}
+		this.approaching = 0;
 		here.getServer().overworld().setAttached(INTRODUCED, true);
 		this.introducingTo = to.getUUID();
 		this.introducing = Sayings.introductionLength();
@@ -976,6 +1040,11 @@ public class CompanionEntity extends PathfinderMob {
 		// FACE IT. A man who is being hit turns round — before anything else, and
 		// with the sandwich down. He was finishing his bread with his back to a
 		// zombie because the zombie was not one of Herobrine's and so did not count.
+		if (source.getEntity() instanceof Player who && !who.isSpectator()) {
+			this.grudgeUntil = this.tickCount + GRUDGE_FOR;      // HurtByTargetGoal sets the target; this is how long he keeps it
+			this.getLookControl().setLookAt(who, 90.0F, 90.0F);
+			Sayings.say(level, this, who, Sayings.STRUCK);
+		}
 		if (source.getEntity() instanceof Mob attacker && attacker != this) {
 			this.lastAttacker = attacker;
 			this.lastAttackedAt = level.getGameTime();
