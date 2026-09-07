@@ -434,6 +434,14 @@ public class HerobrineEntity extends PathfinderMob {
 	 * arrows, the fire and the lightning are all still coming.
 	 */
 	private static final float RECKONING_DAMAGE = 12.0F;
+	/**
+	 * AND BY THE ACT, on his ground as everywhere else. Twelve flat from the first
+	 * swing, with the damage type scaling "always" — eighteen on hard — killed a
+	 * player in two hits at act two while the sword outside was doing seven. The
+	 * type no longer scales (reckoning.json), and the blow grows with him: seven,
+	 * nine, twelve. Act three is the twelve the table above was written for.
+	 */
+	private static final float[] RECKONING_BY_ACT = { 7.0F, 9.0F, RECKONING_DAMAGE };
 
 	/** Declared in data/herobrine/damage_type/reckoning.json. */
 	private static final net.minecraft.resources.ResourceKey<
@@ -5347,7 +5355,7 @@ public class HerobrineEntity extends PathfinderMob {
 					here.registryAccess()
 						.lookupOrThrow(net.minecraft.core.registries.Registries.DAMAGE_TYPE)
 						.getOrThrow(RECKONING), this),
-				RECKONING_DAMAGE);
+				RECKONING_BY_ACT[Math.min(RECKONING_BY_ACT.length - 1, this.act() - 1)]);
 		} else {
 			landed = this.doHurtTarget(here, player);
 		}

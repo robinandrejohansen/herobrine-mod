@@ -253,7 +253,7 @@ double it, capped at three times.
 | past twelve | appears six to nine blocks in front of you, or throws from where he is |
 | out of sight | three seconds blind and he blows the wall between you open; stubborn hiding and he comes through it |
 
-**His moves.** The sword (twelve, flat, through armour like any hit). Fireballs,
+**His moves.** The sword (seven, nine, twelve by the act on his ground, flat at every difficulty, through armour like any hit). Fireballs,
 more and stronger each act. Lightning: telegraphed by sparks for a second, then
 a bolt that lands on the floor you stand on, hurts by act, and takes a crater.
 The **salvo**: hold him past eight blocks for six seconds and he stops, roars,

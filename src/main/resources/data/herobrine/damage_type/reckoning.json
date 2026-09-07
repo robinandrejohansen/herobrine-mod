@@ -1,6 +1,6 @@
 {
   "message_id": "herobrine.reckoning",
-  "scaling": "always",
+  "scaling": "never",
   "exhaustion": 0.1,
   "effects": "hurt",
   "death_message_type": "default"
