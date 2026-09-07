@@ -249,11 +249,22 @@ public final class Blueprint {
 
 		BlockPos corner = new BlockPos(centre.getX() - sx / 2,
 			centre.getY() - ground, centre.getZ() - sz / 2);
-		for (int cx = corner.getX() >> 4; cx <= (corner.getX() + sx) >> 4; cx++) {
-			for (int cz = corner.getZ() >> 4; cz <= (corner.getZ() + sz) >> 4; cz++) {
-				level.getChunk(cx, cz);
-			}
+		// THE GROUND COMES IN ON THE WORKER THREADS, NOT ON THE TICK. This used to
+		// getChunk every chunk under the footprint right here — thirty of them for
+		// the castle, none of them generated yet in his world — and the server
+		// stopped for close to three seconds ("Can't keep up, 54 ticks behind") at
+		// the moment the keep went up. Now the footprint is asked for with a
+		// loading ticket, and the clear, the beard and the rows each wait for it
+		// (groundIn) before they touch a block. Order is kept by a flag the clear
+		// sets when it is done and the other two wait on. If the ground was
+		// already there, nothing waits and nothing changes.
+		int[] rect = { corner.getX() >> 4, (corner.getX() + sx) >> 4, corner.getZ() >> 4, (corner.getZ() + sz) >> 4 };
+		int waited = 0;
+		if (!groundIn(level, rect)) {
+			askForGround(level, rect);
+			waited = GROUND_PATIENCE;      // the worst case, for the callers' schedules; usually a second or two
 		}
+		java.util.concurrent.atomic.AtomicBoolean cleared = new java.util.concurrent.atomic.AtomicBoolean();
 		// CUT, HOLD UP, BUILD — and all three staged, on one shared clock.
 		//
 		// The clear is the big one and it was not staged at all: a 71x49x72 box is
@@ -266,10 +277,43 @@ public final class Blueprint {
 		// So the three phases queue behind each other rather than each starting at
 		// tick zero. Getting that wrong is worse than not staging: the placing would
 		// run while the clearing was still going and erase what it had just built.
-		int ticks = stagedClear(level, corner, sx, sy, sz, ground);
+		int ticks = stagedClear(level, corner, sx, sy, sz, ground, rect, cleared);
 		com.bloomlet.herobrine.manifest.Cadence.in(level.getServer(), ticks,
-			() -> beard(level, corner, sx, sz));
-		return place(level, corner, name, ticks + 1, rot);
+			() -> once(level.getServer(), cleared, () -> beard(level, corner, sx, sz)));
+		Placed placed = place(level, corner, name, ticks + 1, rot, cleared);
+		return placed == null ? null : new Placed(placed.blocks(), placed.skipped(),
+			placed.sizeX(), placed.sizeY(), placed.sizeZ(), placed.ticks() + waited);
+	}
+
+	private static final net.minecraft.server.level.TicketType STANDING =
+		new net.minecraft.server.level.TicketType(20L * 120L, net.minecraft.server.level.TicketType.FLAG_LOADING);
+	/** How long a pass waits for its ground before going ahead the old way. */
+	private static final int GROUND_PATIENCE = 20 * 60;
+
+	private static boolean groundIn(ServerLevel level, int[] rect) {
+		for (int cx = rect[0]; cx <= rect[1]; cx++) {
+			for (int cz = rect[2]; cz <= rect[3]; cz++) {
+				if (!level.hasChunk(cx, cz)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private static void askForGround(ServerLevel level, int[] rect) {
+		int radius = Math.max(rect[1] - rect[0], rect[3] - rect[2]) / 2 + 1;
+		level.getChunkSource().addTicketWithRadius(STANDING,
+			new net.minecraft.world.level.ChunkPos((rect[0] + rect[1]) / 2, (rect[2] + rect[3]) / 2), radius);
+	}
+
+	/** Runs `then` once `flag` is set, checking every tick. */
+	private static void once(MinecraftServer server, java.util.concurrent.atomic.AtomicBoolean flag, Runnable then) {
+		if (flag.get()) {
+			then.run();
+		} else {
+			Cadence.in(server, 1, () -> once(server, flag, then));
+		}
 	}
 
 	/**
@@ -474,6 +518,12 @@ public final class Blueprint {
 
 	private static @org.jspecify.annotations.Nullable Placed place(
 			ServerLevel level, BlockPos at, String name, int after, Rotation rot) {
+		return place(level, at, name, after, rot, null);      // no clear to wait for
+	}
+
+	private static @org.jspecify.annotations.Nullable Placed place(
+			ServerLevel level, BlockPos at, String name, int after, Rotation rot,
+			java.util.concurrent.atomic.@org.jspecify.annotations.Nullable AtomicBoolean cleared) {
 		JsonObject root = read(name);
 		if (root == null) {
 			return null;
@@ -564,6 +614,10 @@ public final class Blueprint {
 		final int[] cursor = { 0, 0 };           // chunks loaded, rows placed
 		final Runnable[] step = new Runnable[1];
 		step[0] = () -> {
+			if (cleared != null && !cleared.get()) {
+				com.bloomlet.herobrine.manifest.Cadence.in(server, 1, step[0]);      // the clear first, however long its ground takes
+				return;
+			}
 			if (cursor[0] < chunks) {
 				for (int n = 0; n < CHUNKS_PER_TICK && cursor[0] < chunks; n++, cursor[0]++) {
 					level.getChunk(cx0 + cursor[0] % cxN, cz0 + cursor[0] / cxN);
@@ -672,14 +726,19 @@ public final class Blueprint {
 	 * fifty-four.
 	 */
 	private static int stagedClear(ServerLevel level, BlockPos at,
-	                               int sx, int sy, int sz, int ground) {
+	                               int sx, int sy, int sz, int ground, int[] rect,
+	                               java.util.concurrent.atomic.AtomicBoolean cleared) {
 		MinecraftServer server = level.getServer();
 		int columns = sx * sz;
 		int ticks = (columns + COLUMNS_PER_TICK - 1) / COLUMNS_PER_TICK;
 		// One self-rescheduling job, like place(): a cursor over the columns.
-		final int[] cursor = { 0 };
+		final int[] cursor = { 0, 0 };           // columns cleared, ticks waited for the ground
 		final Runnable[] step = new Runnable[1];
 		step[0] = () -> {
+			if (!groundIn(level, rect) && ++cursor[1] <= GROUND_PATIENCE) {
+				Cadence.in(server, 1, step[0]);      // not yet. See stand
+				return;
+			}
 			int end = Math.min(columns, cursor[0] + COLUMNS_PER_TICK);
 			for (int i = cursor[0]; i < end; i++) {
 				int x = at.getX() + i % sx;
@@ -697,6 +756,8 @@ public final class Blueprint {
 			cursor[0] = end;
 			if (cursor[0] < columns) {
 				Cadence.in(server, 1, step[0]);
+			} else {
+				cleared.set(true);
 			}
 		};
 		Cadence.in(server, 0, step[0]);

@@ -192,12 +192,47 @@ final class Duel {
 	private static final double RUNS_AT = 0.12;      // blocks a tick, horizontal: a walk is 0.2, a sprint 0.28
 	private boolean resting;
 
-	private boolean fleeing(ServerPlayer target) {
-		if (this.him.actNow() != 1 || this.targetRun.horizontalDistanceSqr() < RUNS_AT * RUNS_AT) {
-			return false;
-		}
+	/**
+	 * Judged once a tick, with memory: one tick's step is a noisy thing (a jump,
+	 * a stumble, a sidestep) and a rule read off it flickered — he blinked the
+	 * moment a runner's foot landed wrong. Running counts up while they move
+	 * away fast and down twice as fast when they do not; the flag holds from
+	 * half a second of running until a second or so after they stop.
+	 */
+	private static final int RUNS_AFTER = 10;
+	private static final int RUNS_REMEMBERS = 40;
+	private int runningFor;
+	private boolean running;
+
+	private void trackRunning(ServerPlayer target) {
 		Vec3 away = target.position().subtract(this.him.position());
-		return this.targetRun.x * away.x + this.targetRun.z * away.z > 0.0;      // and away from him, not toward
+		boolean now = this.him.actNow() == 1
+			&& this.targetRun.horizontalDistanceSqr() >= RUNS_AT * RUNS_AT
+			&& this.targetRun.x * away.x + this.targetRun.z * away.z > 0.0;      // away from him, not toward
+		this.runningFor = now ? Math.min(RUNS_REMEMBERS, this.runningFor + 1) : Math.max(0, this.runningFor - 2);
+		this.running = this.runningFor >= RUNS_AFTER;
+	}
+
+	private boolean fleeing(ServerPlayer target) {
+		return this.running;
+	}
+
+	/**
+	 * Act one, and they are running, and they are past NO_BLINK_PAST: nothing
+	 * below the dispatch runs — no blink, no wall, no room, no salvo, no "went to
+	 * them instead". He walks after them and throws what he has. Past LETS_GO_AT
+	 * he stops and lets them go. This gate is the whole of "you can leave act
+	 * one"; the same rule used to live in far() only, and far() is one door of
+	 * five, so he kept arriving through the other four.
+	 */
+	private void pursue(ServerLevel here, ServerPlayer target, double d) {
+		if (d > LETS_GO_AT) {
+			this.letGo(here, target, d);
+			return;
+		}
+		this.him.face(target);
+		this.him.getNavigation().moveTo(target, WALK);
+		this.cast(here, target);
 	}
 
 	private void letGo(ServerLevel here, ServerPlayer target, double d) {
@@ -323,6 +358,7 @@ final class Duel {
 		this.withoutFor = 0;
 		Vec3 standing = target.position();
 		this.targetRun = standing.subtract(this.targetWas);      // which way they are going, this tick
+		this.trackRunning(target);
 		this.targetWas = standing;
 		this.him.getLookControl().setLookAt(target, 90.0F, 90.0F);
 
@@ -351,7 +387,7 @@ final class Duel {
 				return;
 			}
 		}
-		if (this.him.inTheAir() && !this.flies()) {
+		if (this.him.inTheAir()) {
 			this.him.down();     // whatever put him up, the fight is on the ground
 		}
 
@@ -362,10 +398,6 @@ final class Duel {
 			this.castIn--;
 		}
 		this.wounds(here);
-		if (this.flies()) {
-			this.soar(here, target);
-			return;
-		}
 
 		// WHATEVER THEY BROUGHT, FIRST. A golem on him is dealt with before the
 		// player is — one every two seconds, so a pack buys a few seconds and the
@@ -423,6 +455,10 @@ final class Duel {
 
 		double d = this.him.distanceTo(target);
 		boolean sees = this.him.hasLineOfSight(target);
+		if (this.running && d > NO_BLINK_PAST) {
+			this.pursue(here, target, d);      // act one, and they are leaving. See pursue
+			return;
+		}
 
 		if (!sees) {
 			this.gone(here, target, d);
@@ -936,72 +972,13 @@ final class Duel {
 	 * announced, six to nine blocks off — and the band above takes over. Between
 	 * blinks he throws.
 	 */
-	/**
-	 * ACT THREE: HE FLIES.
-	 *
-	 * The third act does not walk, blink, breach or pick rooms: everything below
-	 * this method is for a man on the ground, and he is not one any more. He
-	 * comes at you through the air and through whatever is between — walls,
-	 * floors, the keep — at seventeen blocks a second (HerobrineEntity.glide caps
-	 * it), holds an arm's length off you, drifting to one side and then the
-	 * other so he is never a target that stands still, and swings from there
-	 * (strike wants line of sight, which at arm's length he has). He throws as
-	 * he comes (cast). Holes do not hide you and distance does not keep him.
-	 * Config.actThreeFlies puts him back on his feet.
-	 */
-	private static final double HOVERS_OFF = 2.4;
-	private static final double SOARS_FROM = HOVERS_OFF + 0.8;
-
-	private boolean flies() {
-		return this.him.actNow() >= 3 && com.bloomlet.herobrine.Config.get().actThreeFlies;
-	}
-
-	private void soar(ServerLevel here, ServerPlayer target) {
-		boolean wasUp = this.him.isSoaring();
-		this.him.wing();
-		if (!wasUp) {
-			this.say(here, "act three — in the air, and through the walls");
-		}
-		this.him.face(target);
-		this.cast(here, target);
-		this.keptOff = 0;
-		Vec3 want = target.position().add(0.0, 0.6, 0.0);
-		Vec3 to = want.subtract(this.him.position());
-		double d = to.length();
-		if (d > SOARS_FROM) {
-			this.him.glide(to.normalize().scale(d - HOVERS_OFF));      // glide caps the speed
-			return;
-		}
-		if (--this.decideIn <= 0) {
-			this.decideIn = 20 + this.him.getRandom().nextInt(30);
-			this.strafeSide = -this.strafeSide;
-		}
-		Vec3 side = new Vec3(-to.z, 0.0, to.x);
-		side = side.lengthSqr() > 1.0E-4 ? side.normalize().scale(0.14 * this.strafeSide) : Vec3.ZERO;
-		this.him.glide(to.normalize().scale((d - HOVERS_OFF) * 0.3).add(side));
-		this.him.slash(target);
-		if (--this.feintIn <= 0) {
-			this.feintIn = 6 + this.him.getRandom().nextInt(4);
-			this.him.swingArm();
-		}
-	}
-
 	private void far(ServerLevel here, ServerPlayer target, double d) {
 		this.him.getNavigation().stop();
 		this.him.face(target);
 		if (this.keptAway(here, target, d)) {
 			return;
 		}
-		boolean running = this.fleeing(target);
-		if (running && d > LETS_GO_AT) {
-			this.letGo(here, target, d);
-			return;
-		}
 		this.cast(here, target);
-		if (running && d > NO_BLINK_PAST) {
-			this.him.getNavigation().moveTo(target, WALK);      // act one: he does not blink after a runner. Walk, and throw
-			return;
-		}
 		if (this.blinkIn <= 0) {
 			boolean behindFirst = this.him.actNow() == 1;      // act one: behind them first, in view only if there is nowhere else
 			if (this.appear(here, target, 6.0, 9.0, !behindFirst)

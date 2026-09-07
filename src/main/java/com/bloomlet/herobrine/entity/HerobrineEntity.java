@@ -176,8 +176,6 @@ public class HerobrineEntity extends PathfinderMob {
 	private long lastDefiance = -1000L;
 	private boolean flying;
 	private int flyTicks;
-	/** Act three: in the air on purpose, through blocks, and not to be landed by anything but the end. See wing. */
-	private boolean soaring;
 	/**
 	 * THE SKY HAS BEEN TAKEN FROM HIM. Set by the first blow in his castle, never
 	 * cleared while he lives, and kept on the level as well so a save or a fresh
@@ -1738,13 +1736,13 @@ public class HerobrineEntity extends PathfinderMob {
 		// airborne lightning outside a hunt. The backstop is still here for
 		// anything that leaves him up with nobody to fight, which is the actual
 		// failure it exists for.
-		if (this.flying && this.busyWith == null && !this.soaring) {
+		if (this.flying && this.busyWith == null) {
 			this.land();
 		}
 		this.listen();
 		this.giveUpOnUnreachable();
-		if (this.level() instanceof ServerLevel ground && !this.soaring) {
-			this.unwedge(ground);      // a soaring one is inside blocks on purpose
+		if (this.level() instanceof ServerLevel ground) {
+			this.unwedge(ground);
 		}
 		// HE SEES THEM. THAT IS THE HUNT, AND IT IS THE WHOLE RULE.
 		//
@@ -2125,7 +2123,7 @@ public class HerobrineEntity extends PathfinderMob {
 			|| !(this.level() instanceof ServerLevel field)) {
 			this.busyWith = null;
 			// Whatever the duel put in the air, the duel takes out of it.
-			if (this.flying && !this.hunting && !this.soaring) {
+			if (this.flying && !this.hunting) {
 				this.land();
 			}
 			return false;
@@ -5084,8 +5082,6 @@ public class HerobrineEntity extends PathfinderMob {
 
 	private void land() {
 		this.flying = false;
-		this.soaring = false;
-		this.noPhysics = false;
 		this.setNoGravity(false);
 		this.fallDistance = 0.0;
 		this.lastDistance = Double.MAX_VALUE;
@@ -6546,47 +6542,6 @@ public class HerobrineEntity extends PathfinderMob {
 		return this.flying;
 	}
 
-	/**
-	 * ACT THREE: WINGS.
-	 *
-	 * The last act used to be the first two with bigger numbers: walk, blink,
-	 * swing. Now he does not touch the ground. wing() puts him in the air with
-	 * noPhysics, so he goes through walls, floors and the keep itself the way
-	 * the dragon goes through a tower, and glide() moves him — capped at
-	 * FLIES_AT a tick, seventeen blocks a second, far faster than anyone runs.
-	 * Duel.soar steers. Nothing lands him but land(), which the ending calls;
-	 * prowl and the helper-hover leave a soaring one alone. isInWall is false
-	 * for a noPhysics entity, so he does not suffocate in the stone he crosses.
-	 */
-	private static final double FLIES_AT = 0.85;
-
-	void wing() {
-		if (!this.flying) {
-			this.flying = true;
-			this.flyTicks = 0;
-		}
-		this.soaring = true;
-		this.setNoGravity(true);
-		this.noPhysics = true;
-		this.getNavigation().stop();
-	}
-
-	boolean isSoaring() {
-		return this.soaring;
-	}
-
-	void glide(Vec3 velocity) {
-		double speed = velocity.length();
-		if (speed > FLIES_AT) {
-			velocity = velocity.scale(FLIES_AT / speed);
-		}
-		this.setDeltaMovement(velocity);
-		this.hurtMarked = true;
-		if (speed > 0.3 && this.tickCount % 24 == 0 && this.level() instanceof ServerLevel here) {
-			here.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.ENDER_DRAGON_FLAP, this.getSoundSource(), 1.6F, 0.55F);
-		}
-	}
 
 	int hitsTaken() {
 		return this.hits;

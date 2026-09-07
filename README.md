@@ -236,9 +236,10 @@ between casts. And nothing he throws in act one catches — the fireballs still
 hit and still burst, but the ground does not burn and neither do you. His fire
 bursts softer, his lightning is a point weaker, and
 when you run he lands behind you, never ahead. And you can leave it: run, and
-past twenty blocks he stops blinking after you and walks; past forty he stops
-altogether, says one thing to your back, and waits — the fight rests until you
-come back inside forty. The salvo is for people who stand off and shoot, not for
+past twenty blocks he stops blinking after you — through walls, into rooms, to
+your side, none of it — and walks; past forty he stops altogether, says one
+thing to your back, and waits — the fight rests until you come back inside
+forty. The salvo is for people who stand off and shoot, not for
 people running. From act two there is no leaving. Act two brings the edge up to
 seven with four seconds of fire; act three is the whole sword — nine and a half,
 twenty seconds of burning, knockback that is a wall. That is when you respect
@@ -265,13 +266,6 @@ and fires six to ten shots three ticks apart — blaze fire in act one, ghast fi
 from act two. Hide in a hole with one block open and he reads the cover and blows
 it out. Stand in a room too low for him and he takes the ceiling off rather than
 leave. Crowd him and he sweeps the lot of you back.
-
-**Act three is in the air.** From the third act he neither walks nor blinks: he
-flies — seventeen blocks a second — and through whatever is in the way, the way
-the dragon goes through a tower, and hangs an arm's length off you to swing,
-drifting side to side so he never stands still. Walls do not slow him, holes do
-not hide you, and distance does not keep him. Config `actThreeFlies` puts him
-back on his feet.
 
 **Helpers.** Golems, wolves, Addexio — every fourth helper hit counts as a blow.
 He deals with them himself, between you: Addexio takes twelve at a time, anything
@@ -334,6 +328,11 @@ even if it works.
   queue entry per batch. `Cadence` warns if it is ever asked to drop work.
 - **First-join buildings are staggered.** The homestead's outbuilding,
   passage, tower and tracks go down a few ticks apart, in dependency order.
+- **Blueprints wait for their ground.** Standing a blueprint — the keep, the
+  last village — used to load every chunk under it on the tick, thirty of them
+  for the castle, three seconds of "Can't keep up" as the keep went up. Now the
+  footprint is asked for with a loading ticket and the clear, the fill and the
+  rows each wait for it before they touch a block.
 - **The next place's ground is loaded in the background too.** Siting a place
   used to generate the candidate's chunks on the tick, up to a thousand blocks
   out — two seconds of "Can't keep up" every time a place was found. Now a
@@ -388,7 +387,6 @@ decides; a player's own does nothing. The ones worth knowing:
 | `houses` · `town` · `villageDecay` | true | the places, and what happens to villages |
 | `weather` · `longerNights` · `endlessNight` | true | the storm and the night in the later phases |
 | `quietDeaths` | true | no death messages for what he takes |
-| `actThreeFlies` | true | act three in the air: flight through blocks, no blinks, strikes from where he hangs |
 | `corpses` | true | the dead stay where they fell and are looted like chests; players' bodies hold their inventory |
 
 ---

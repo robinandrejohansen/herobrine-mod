@@ -184,15 +184,6 @@ public final class Config {
 	 */
 	public boolean hisKeep = true;
 	/**
-	 * ACT THREE IS IN THE AIR.
-	 *
-	 * From the third act he does not walk and he does not blink: he flies, fast,
-	 * through whatever is in the way, and swings from where he hangs. Off puts
-	 * him back on his feet for the last act — for testing, or for a server that
-	 * finds the flight too much.
-	 */
-	public boolean actThreeFlies = true;
-	/**
 	 * WHICH CASTLE STANDS IN HIS WORLD.
 	 *
 	 * A blueprint name, looked for in config/herobrine/blueprints/<name>.json. If
