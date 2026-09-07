@@ -1316,7 +1316,13 @@ public final class Dwellings {
 			level.setAttached(place.met, true);
 			// AND THE STORY MOVES, because somebody found one of his places. This
 			// is the only call site that advances a phase anywhere in the mod.
-			Wrath.discovered(level.getServer());
+			if (place != Place.CHURCH) {
+				// THE WORLD STAYS ORDINARY UNTIL THE LAST HOUSE. Five places move the
+				// story one phase each; the church does not, so SIEGE — the night that
+				// stops, the storm, the grey — begins when the last house is found, at
+				// the door itself, and not on the road to it.
+				Wrath.discovered(level.getServer());
+			}
 			com.bloomlet.herobrine.manifest.Company.placeFound(level, place.name());
 			// AND AT THE FIRST HOUSE, SOMEBODY COMES OVER THE RIDGE.
 			//
@@ -1659,11 +1665,31 @@ public final class Dwellings {
 			}
 			swapped += swapBooks(over, BlockPos.of(site), place.ordinal() <= 1 ? 1 : place.ordinal() <= 3 ? 2 : 3);
 		}
-		HerobrineMod.LOGGER.info("refresh: standing {}, battlefields laid now for {}, {} old books swapped", standing, dressed, swapped);
+		// THE PHASE, RECOMPUTED FROM WHAT HAS BEEN FOUND. An older server that found the
+		// church under the old rule is sitting in SIEGE a chapter early; this puts it
+		// back where the places say it should be.
+		Phase should = Phase.RUMOUR;
+		for (Place place : Place.values()) {
+			if (Boolean.TRUE.equals(over.getAttached(place.met))) {
+				should = switch (place) {
+					case HOMESTEAD -> Phase.WATCHER;
+					case TOWN -> Phase.TRESPASSER;
+					case TOWER -> Phase.MIMIC;
+					case GAOL, CHURCH -> Phase.HUNTER;
+					case THRESHOLD -> Phase.SIEGE;
+				};
+			}
+		}
+		String phaseNote = "";
+		if (Wrath.phase(level.getServer()) != should) {
+			phaseNote = " phase set to " + should.name() + " (was " + Wrath.phase(level.getServer()).name() + ").";
+			Wrath.jumpTo(level.getServer(), should);
+		}
+		HerobrineMod.LOGGER.info("refresh: standing {}, battlefields laid now for {}, {} old books swapped{}", standing, dressed, swapped, phaseNote);
 		return "standing: " + (standing.isEmpty() ? "nothing yet" : String.join(", ", standing))
 			+ ". battlefields laid now: " + (dressed.isEmpty() ? "none needed" : String.join(", ", dressed))
 			+ ". old written books swapped for enchanted ones: " + swapped
-			+ ". Places not yet built will get every new thing when they are.";
+			+ "." + phaseNote + " Places not yet built will get every new thing when they are.";
 	}
 
 	/**

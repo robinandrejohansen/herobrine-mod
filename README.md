@@ -56,8 +56,8 @@ Nothing is announced. The story is six phases, and exactly one thing moves it:
 steps into the next phase; nothing else — not kills, not deaths, not time —
 does. Each phase has its own events and one **place** the players are led to,
 and the overworld stays an ordinary world — its own weather, its own nights,
-its own sky and music — until SIEGE, the phase of the last house, when the
-night stops, the storm does not, and the sky goes grey. His world is his at
+its own sky and music — until SIEGE, which begins the moment the last house
+is found: then the night stops, the storm does not, and the sky goes grey. His world is his at
 every phase.
 
 | Phase | Begins when | What happens | The place |
@@ -66,8 +66,8 @@ every phase.
 | WATCHER | the farm is found | the stare, the passages, the one who does not sleep, a camp somebody slept in with the furnace still lit, a cross cut deep into the ground, groves stripped bare over dead earth | **the town** — boarded, an undercity beneath it, the mapmaker's house |
 | TRESPASSER | the town is found | signs — many with your name on them, on walls or on posts in the open —, ruins, the sealed shaft | **his tower** — and under the hill beneath it, the house he lived in: a table set for two, a gallery, his bed, the shelves of names, the pool |
 | MIMIC | his house is found | possessed animals, the herd | **the prison** — eighty blocks of hall, eighteen cells, six of them still shut with something tall inside; cell nine; and the tunnel the last of them dug out through the back wall |
-| HUNTER | the prison is found | the hunt, the dark | **the church** — he lived under the altar |
-| SIEGE | the church is found | the night stops, the storm never ends, the animals watch | **the last house** — and the way through |
+| HUNTER | the prison is found (the church does not move the story) | the hunt, the dark | **the church** — he lived under the altar |
+| SIEGE | the last house is found | the night stops, the storm never ends, the animals watch | **the last house** — and the way through |
 
 The first place is not on any map. On the first morning after you have lived a
 full day — on the surface, in daylight, not in a fight — Addexio walks out of the
