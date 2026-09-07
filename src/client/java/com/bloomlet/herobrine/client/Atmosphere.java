@@ -491,6 +491,10 @@ public final class Atmosphere {
 		if (in == null) {
 			return 0.0F;
 		}
+		boolean his = client.level.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD);
+		if (!his && phase() != Phase.SIEGE) {
+			return 0.0F;      // the places on the road do not darken the sky around them until the end
+		}
 		float held = net.minecraft.util.Mth.clamp(in, 0.0F, 1.0F);
 
 		// AND IT FOLLOWS THE STORY, WHICH IT NEVER DID.
@@ -532,6 +536,21 @@ public final class Atmosphere {
 			return Phase.RUMOUR;
 		}
 		Minecraft client = Minecraft.getInstance();
-		return client.player == null ? Phase.RUMOUR : Wrath.shownTo(client.player);
+		if (client.player == null) {
+			return Phase.RUMOUR;
+		}
+		Phase real = Wrath.shownTo(client.player);
+		// THE OVERWORLD STAYS AN ORDINARY WORLD UNTIL THE END. Nobody liked the grey
+		// sky, the long nights, the fog and the quiet music creeping in from the
+		// third house on; a horror world that is also your survival world has to
+		// stay yours. So every effect this file drives — gloom, pall, fog distance,
+		// music, red rain — reads RUMOUR here until SIEGE, the phase of the last
+		// house, and only then does the world turn. His world is his at every phase.
+		if (client.level != null
+			&& !client.level.dimension().equals(com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD)
+			&& real != Phase.SIEGE) {
+			return Phase.RUMOUR;
+		}
+		return real;
 	}
 }

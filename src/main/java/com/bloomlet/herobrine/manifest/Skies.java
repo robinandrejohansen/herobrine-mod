@@ -77,8 +77,8 @@ public final class Skies {
 	 */
 	public static void turn(ServerLevel level) {
 		MinecraftServer server = level.getServer();
-		if (server == null) {
-			return;
+		if (server == null || Wrath.phase(server) != Phase.SIEGE) {
+			return;      // the sky is vanilla's until the last house; see onTick
 		}
 		RandomSource random = level.getRandom();
 		int length = STORM_MIN + random.nextInt(STORM_SPREAD);
@@ -132,30 +132,10 @@ public final class Skies {
 			return;
 		}
 
-		// ALREADY WET? Then leave it entirely alone.
-		//
-		// The old version rolled again every two minutes while it was already
-		// raining, to decide whether to add thunder — and setting the weather
-		// again RESTARTS the timer, so a shower that should have blown over in
-		// eight minutes kept renewing itself for as long as the dice were kind.
-		// That, far more than the probabilities, is why it never stopped.
-		//
-		// One decision per storm, taken when it starts. After that the weather
-		// runs down on its own and the sky is allowed to clear.
-		if (server.overworld().isRaining()) {
-			return;
-		}
-
-		if (random.nextFloat() >= rollFor(phase)) {
-			return;
-		}
-		// Longer than vanilla, because a storm you notice has to outlast the
-		// walk back indoors — and rare enough that the length is affordable.
-		int length = STORM_MIN + random.nextInt(STORM_SPREAD);
-		boolean teeth = random.nextFloat() < thunderShare(phase);
-		server.setWeatherParameters(0, length, true, teeth);
-		HerobrineMod.LOGGER.info("the weather turns: {} at {} for {} min",
-			teeth ? "thunder" : "rain", phase.name(), length / 1200);
+		// BEFORE SIEGE THE WEATHER IS VANILLA'S. The extra rain and the early thunder
+		// were the first thing every group noticed and the first thing they disliked:
+		// a world that is wrong from the second house on is not a world you want to
+		// live in. The storm belongs to the end, and the end is the block above.
 	}
 
 	/**

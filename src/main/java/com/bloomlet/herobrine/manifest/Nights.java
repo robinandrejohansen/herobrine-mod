@@ -180,11 +180,9 @@ public final class Nights {
 	 */
 	private static float rateFor(Phase phase) {
 		return switch (phase) {
-			case RUMOUR -> 1.0F;
-			case WATCHER -> 0.9F;
-			case TRESPASSER -> 0.8F;
-			case MIMIC -> 0.8F;
-			case HUNTER -> 0.7F;
+			// Ordinary nights until the last house. The slow creep from WATCHER on was
+			// felt as the world going wrong long before the story said so.
+			case RUMOUR, WATCHER, TRESPASSER, MIMIC, HUNTER -> 1.0F;
 			case SIEGE -> 0.5F;
 		};
 	}

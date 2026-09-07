@@ -55,9 +55,10 @@ Nothing is announced. The story is six phases, and exactly one thing moves it:
 **finding a place**. Stand within sixty blocks of a raised place and the world
 steps into the next phase; nothing else — not kills, not deaths, not time —
 does. Each phase has its own events and one **place** the players are led to,
-and each phase darkens the world a little more: longer nights, more rain, a
-greyer sky, until SIEGE, where the night does not end and the storm does not
-stop.
+and the overworld stays an ordinary world — its own weather, its own nights,
+its own sky and music — until SIEGE, the phase of the last house, when the
+night stops, the storm does not, and the sky goes grey. His world is his at
+every phase.
 
 | Phase | Begins when | What happens | The place |
 |---|---|---|---|
