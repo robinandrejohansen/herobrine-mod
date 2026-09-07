@@ -167,6 +167,25 @@ public class GauntEntity extends PathfinderMob {
 	/** How close somebody has to get before the bolt goes over on its own. */
 	private static final int LETS_ITSELF_OUT = 7;
 
+	/**
+	 * ONE OF THE WOODS.
+	 *
+	 * Every other gaunt guards a post or a cell and never goes away. The ones
+	 * HisWoods stands up behind you in his forest are marked here and fade once
+	 * nobody is within FADES_AT blocks, so the forest never fills up. Saved, so a
+	 * reload does not turn a stray into a permanent resident.
+	 */
+	private boolean woods;
+	private static final double FADES_AT = 96.0;
+
+	public void roam() {
+		this.woods = true;
+	}
+
+	public boolean roams() {
+		return this.woods;
+	}
+
 	public void keptBehind(BlockPos door) {
 		this.cell = door;
 	}
@@ -1050,6 +1069,9 @@ public class GauntEntity extends PathfinderMob {
 	public void addAdditionalSaveData(net.minecraft.world.level.storage.ValueOutput output) {
 		super.addAdditionalSaveData(output);
 		output.putInt("Met", this.met);
+		if (this.woods) {
+			output.putBoolean("Woods", true);
+		}
 		// The cell has to survive a reload or the one in the gaol loses its door
 		// and goes back to waiting on the lever for good.
 		if (this.cell != null) {
@@ -1061,13 +1083,15 @@ public class GauntEntity extends PathfinderMob {
 	public void readAdditionalSaveData(net.minecraft.world.level.storage.ValueInput input) {
 		super.readAdditionalSaveData(input);
 		this.met = input.getIntOr("Met", 0);
+		this.woods = input.getBooleanOr("Woods", false);
 		long door = input.getLongOr("Cell", 0L);
 		this.cell = door == 0L ? null : BlockPos.of(door);
 	}
 
+	/** Guards and gaolers stay for good. The woods ones fade once everybody is FADES_AT blocks away. */
 	@Override
 	public boolean removeWhenFarAway(double distanceSquared) {
-		return false;
+		return this.woods && distanceSquared > FADES_AT * FADES_AT;
 	}
 
 	/** Addexio wounds it, down to one heart, and no further. The last blow is yours. See TurnedEntity.hurtServer. */

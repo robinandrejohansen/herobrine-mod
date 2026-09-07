@@ -49,6 +49,7 @@ public class HerobrineMod implements ModInitializer {
 		Skies.register();
 		com.bloomlet.herobrine.manifest.HisWeather.register();
 		com.bloomlet.herobrine.manifest.HisHost.register();
+		com.bloomlet.herobrine.manifest.HisWoods.register();
 		com.bloomlet.herobrine.structure.Keep.register();
 		Nights.register();
 		TheHerd.register();

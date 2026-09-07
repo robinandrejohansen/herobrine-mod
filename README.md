@@ -158,6 +158,13 @@ graves under the trees — and over it **the keep**: a castle raised from a
 blueprint (`tutorial_castle`, 71×49×72), stocked with eighteen chests of food
 and stone and, rarely, an enchanted golden apple. He is over it when you arrive.
 
+The forest between is not empty either. Now and then **one to three gaunts**
+stand up under the trees, twenty-four to forty blocks behind you — never in
+front, never in view — and do what gaunts do: hold still while you look, come on
+when you don't, and sense you twenty blocks through the trunks. They keep clear
+of the city and the castle, which have their own garrisons, and they fade again
+once nobody is within ninety-six blocks, so the woods never fill up.
+
 Nothing in his world belongs to you. Fire spreads there. Nothing hurts the city
 or the castle except him.
 
