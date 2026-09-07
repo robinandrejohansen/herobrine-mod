@@ -65,7 +65,7 @@ every phase.
 | RUMOUR | the world starts | a glimpse, footsteps, a torch that goes out, breathing | **the farm** — where Addexio lived; the first book and the first map |
 | WATCHER | the farm is found | the stare, the passages, the one who does not sleep, a camp somebody slept in with the furnace still lit, a cross cut deep into the ground, groves stripped bare over dead earth | **the town** — boarded, an undercity beneath it, the mapmaker's house |
 | TRESPASSER | the town is found | signs — many with your name on them, on walls or on posts in the open —, ruins, the sealed shaft | **his tower** — and under the hill beneath it, the house he lived in: a table set for two, a gallery, his bed, the shelves of names, the pool |
-| MIMIC | his house is found | possessed animals, the herd | **the prison** — eighty blocks of hall, eighteen cells, eleven of them still shut with something tall inside that comes out for you the moment you look away; cell nine; and the tunnel the last of them dug out through the back wall |
+| MIMIC | his house is found | possessed animals, the herd | **the prison** — eighty blocks of hall, eighteen cells, eleven of them still shut with something tall inside that knows where you are through the door and comes out for you the moment you look away; cell nine; and the tunnel the last of them dug out through the back wall |
 | HUNTER | the prison is found (the church does not move the story) | the hunt, the dark | **the church** — he lived under the altar |
 | SIEGE | the last house is found | the night stops, the storm never ends, the animals watch | **the last house** — and the way through |
 

@@ -470,6 +470,29 @@ public class GauntEntity extends PathfinderMob {
 		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(
 			this, LivingEntity.class, 10, true, false,
 			(who, level) -> CompanionEntity.canBeHurtBy(who)));
+		this.targetSelector.addGoal(2, new Senses(this));
+	}
+
+	/**
+	 * IT KNOWS WHERE YOU ARE BEFORE YOU KNOW IT EXISTS. Sight is the long-range
+	 * sense, sixty-four blocks with a line to you. This is the short one: twenty
+	 * blocks, through anything. A wall, a door, a floor — it has you, and it comes
+	 * the moment you are not looking, so what you meet in a corridor is something
+	 * that was already walking toward you before you turned the corner. Kept short
+	 * on purpose: at the sight range every one of them in the forest would be on
+	 * the way at once, and a thing that always comes is not a thing that appears.
+	 */
+	private static final class Senses extends NearestAttackableTargetGoal<LivingEntity> {
+		private static final double THROUGH_WALLS = 20.0;
+
+		Senses(GauntEntity it) {
+			super(it, LivingEntity.class, 20, false, false, (who, level) -> CompanionEntity.canBeHurtBy(who));
+		}
+
+		@Override
+		protected double getFollowDistance() {
+			return THROUGH_WALLS;
+		}
 	}
 
 	// ---- BEING LOOKED AT ---------------------------------------------------
