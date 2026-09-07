@@ -1155,114 +1155,6 @@ public final class Loot {
 	 * The `book` field is the one it belongs to, and it is in the title so a
 	 * player who is collecting them knows what they have got.
 	 */
-	private record Scrap(String title, String hand, String page) {}
-
-	private static final Scrap[] SCRAPS = {
-		// ---- 1-2. THE FARM
-		new Scrap("Otto, on the shutters", "Otto",
-			"Addexio came round with a bag of nails and would not say why.\n\n"
-			+ "He did my windows and then he did old Bren's, and then he sat on my "
-			+ "wall for a long time not talking.\n\n"
-			+ "I asked him straight out what he had seen in his wheat. He said "
-			+ "nothing, and then he said: keep the children in."),
-
-		new Scrap("Marek, before the town", "Marek",
-			"Four children and one horse. Addexio has taken the two youngest ahead "
-			+ "to Ashfold and is coming back for the others.\n\n"
-			+ "I am writing this while I wait because if I stop moving I will think "
-			+ "about it.\n\n"
-			+ "He says the walls there are good. I have seen the walls. They are "
-			+ "good."),
-
-		// ---- 3-4. THE TOWN
-		new Scrap("Bren, on the thing in the street", "Bren",
-			"I put two arrows in it from the smithy roof.\n\n"
-			+ "The first one went in under the arm and the second one went in the "
-			+ "neck, and I have shot deer for fifty years and I know what those two "
-			+ "shots do.\n\n"
-			+ "It turned its head and looked up at me. Then it went on walking.\n\n"
-			+ "Do not fight it in the open. Get above it or get behind a door."),
-
-		new Scrap("a warning, pinned to the well", "unsigned",
-			"THE ONES IN THE STREET ARE NOT THE PEOPLE.\n\n"
-			+ "Nine of them by my count. They have the names right.\n\n"
-			+ "Ask them something only the person would know. Ask them what their "
-			+ "husband is called. They smile and they do not answer.\n\n"
-			+ "Do not go anywhere on your own. It only tries this when you are "
-			+ "alone."),
-
-		new Scrap("the tally at the square", "unsigned",
-			"Kept because somebody has to keep it.\n\n"
-			+ "Through the door, by name, in the order they went: eleven on the "
-			+ "first night, nineteen on the second, eleven on the third.\n\n"
-			+ "Forty-one. None of them have come back out of it.\n\n"
-			+ "The air that comes off it is cold and it smells like a struck match."),
-
-		// ---- 5. THE TOWER
-		new Scrap("Pip, the night before", "Pip",
-			"Nobody believes me so I am writing it down and then it is written "
-			+ "down.\n\n"
-			+ "There is a hole in the rock by the spring that was not there "
-			+ "yesterday. There are steps in it and the steps are CUT. Somebody cut "
-			+ "them square.\n\n"
-			+ "There is a light at the bottom the colour of a bruise.\n\n"
-			+ "And I could hear somebody counting. I am going down in the morning "
-			+ "with Addexio and Otto and I would rather not."),
-
-		new Scrap("two of us came back", "unsigned",
-			"Four went down at first light. Addexio, Otto, Pip, and me.\n\n"
-			+ "I am not going to write what is down there. I will write the useful "
-			+ "part.\n\n"
-			+ "The steps are ours. Men from our own town cut them, and they have "
-			+ "been cutting them the whole nine years we spent on top of that tower "
-			+ "watching the sky."),
-
-		// ---- 6-7. THE GAOL
-		new Scrap("Joren, on his own ledger", "Joren",
-			"Two columns. In, and out.\n\n"
-			+ "I have counted them twice and the second column is shorter, and I am "
-			+ "the man who writes both of them.\n\n"
-			+ "I asked the man with the book where the difference goes. He said the "
-			+ "question was not useful.\n\n"
-			+ "COUNT THEM IN. COUNT THEM OUT. I painted that on the wall myself and "
-			+ "I meant it as a kindness."),
-
-		new Scrap("scratched inside cell four", "unsigned",
-			"Nine days with the lamp on.\n\n"
-			+ "I have said my wife's name every hour so that I would still have it "
-			+ "at the end, and I still have it.\n\n"
-			+ "So write it down: the lamp does not work. Whatever you are looking "
-			+ "for, it is not in here.\n\n"
-			+ "I was never one of them."),
-
-		new Scrap("Steve, one page of many", "Steve",
-			"Subject three continues to answer correctly. This is not evidence of "
-			+ "anything and I have told them so.\n\n"
-			+ "The answers do not matter. Watch the hands.\n\n"
-			+ "The ordinary ones have to be tested the same way or the numbers mean "
-			+ "nothing, and if that reads badly then it reads badly.\n\n"
-			+ "I need to know whether a man comes up out of that hole the same man. "
-			+ "I have a reason for needing to know."),
-
-		// ---- 8. THE CHURCH
-		new Scrap("Wendel, the question", "Wendel",
-			"They would not let me say it in the room so I am saying it here.\n\n"
-			+ "Before you let that man near you, ask Steve what he did to Herobrine "
-			+ "under the hill.\n\n"
-			+ "Not what happened to him. What Steve DID.\n\n"
-			+ "I am old and I am not brave and I am the only one of us who has "
-			+ "asked it out loud."),
-
-		// ---- 9. THE LAST HOUSE
-		new Scrap("on the sealing of the stair", "unsigned",
-			"Stone, then more stone, then earth, and warnings cut in three hands so "
-			+ "that nobody takes it for a cellar.\n\n"
-			+ "Sixty-one of us died in the hall above this. It took about as long as "
-			+ "it takes to boil a pot.\n\n"
-			+ "We could not kill him. This is the other thing.\n\n"
-			+ "We are going up to tell the valley it is finished. It is not "
-			+ "finished. People need to plant wheat."),
-	};
 
 	/**
 	 * How much a written book leaf holds before it silently stops drawing.
@@ -1328,21 +1220,6 @@ public final class Loot {
 	 * vanilla puts "by so-and-so", and these were all signed with an em dash —
 	 * which is the one thing a note corroborating somebody's account must not be.
 	 */
-	private static ItemStack scrap(RandomSource random) {
-		Scrap what = SCRAPS[random.nextInt(SCRAPS.length)];
-		java.util.List<net.minecraft.server.network.Filterable<
-			net.minecraft.network.chat.Component>> leaves = new ArrayList<>();
-		for (String leaf : Pages.bind(what.page())) {
-			leaves.add(net.minecraft.server.network.Filterable.passThrough(
-				net.minecraft.network.chat.Component.literal(leaf)));
-		}
-		ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
-		book.set(DataComponents.WRITTEN_BOOK_CONTENT,
-			new net.minecraft.world.item.component.WrittenBookContent(
-				net.minecraft.server.network.Filterable.passThrough(title(what.title())),
-				what.hand(), 0, leaves, true));
-		return book;
-	}
 
 	private static ItemStack roll(Entry[] pool, RandomSource random,
 	                              @org.jspecify.annotations.Nullable RegistryAccess access) {
@@ -1371,7 +1248,7 @@ public final class Loot {
 			// two seconds — which is what a title like "what the well is for" does
 			// and what "Book" does not.
 			if (stack.is(Items.BOOK)) {
-				stack = scrap(random);
+				stack = new ItemStack(Items.ENCHANTED_BOOK);      // no written notes any more: every book you find is one you can use
 			}
 			if (stack.is(Items.ENCHANTED_BOOK) && access != null) {
 				// ItemStack.enchant routes a book to STORED_ENCHANTMENTS on its own,

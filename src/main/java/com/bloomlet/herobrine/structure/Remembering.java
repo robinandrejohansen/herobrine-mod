@@ -313,28 +313,20 @@ public final class Remembering {
 					i % 2 == 0 ? Direction.EAST : Direction.WEST)
 				.setValue(BlockStateProperties.HAS_BOOK, true));
 			if (his.getBlockEntity(stand) instanceof LecternBlockEntity lectern) {
-				lectern.setBook(note(NOTES[i]));
+				// No written book, here or anywhere: the lectern stands empty, the way the
+				// rest of the story is told now — by Addexio, out loud.
+				lectern.setBook(net.minecraft.world.item.ItemStack.EMPTY);
+				net.minecraft.world.level.block.state.BlockState desk = his.getBlockState(lectern.getBlockPos());
+				if (desk.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_BOOK)) {
+					his.setBlock(lectern.getBlockPos(), desk.setValue(
+						net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_BOOK, false), 3);
+				}
 				lectern.setChanged();
 			}
 			put(his, at.offset(0, 3, dz), Blocks.SOUL_LANTERN.defaultBlockState());
 		}
 	}
 
-	private static ItemStack note(String[] pages) {
-		List<Filterable<Component>> written = new ArrayList<>();
-		// Same measurement as everything else now. Two of these were over the
-		// limit and losing their last rows. See Pages.reflow.
-		for (int i = 1; i < pages.length; i++) {
-			for (String leaf : com.bloomlet.herobrine.structure.Pages
-					.reflow(pages[i].stripIndent())) {
-				written.add(Filterable.passThrough(Component.literal(leaf)));
-			}
-		}
-		ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
-		book.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
-			Filterable.passThrough(pages[0].strip()), "—", 0, written, true));
-		return book;
-	}
 
 	// ---- THE HOUSE ---------------------------------------------------------
 	/**

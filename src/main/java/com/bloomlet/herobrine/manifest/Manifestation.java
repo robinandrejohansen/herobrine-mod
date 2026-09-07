@@ -79,14 +79,6 @@ public enum Manifestation {
 		}
 	},
 
-	/** A page of someone else's account, on the floor where you will find it. */
-	THE_PAGE(Phase.TRESPASSER, 9) {
-		@Override
-		public boolean run(ServerLevel level, ServerPlayer player) {
-			return Journal.leavePage(level, player);
-		}
-	},
-
 	/** Four words on your wall. The first thing you cannot argue with. */
 	THE_SIGN(Phase.TRESPASSER, 14) {
 		@Override
@@ -321,7 +313,7 @@ public enum Manifestation {
 			case POSSESSED_MOB -> config.possession;
 			case THE_TAKING -> config.theTaking;
 			case THE_RUIN -> config.ruins;
-			case THE_PAGE, THE_SIGN -> config.signsAndPages;
+			case THE_SIGN -> config.signsAndPages;
 			case THE_DARK -> config.theDark;
 			case THE_HUNT -> config.theHunt;
 			case THE_STARE, THE_GLIMPSE, THE_PASSAGE -> config.theStare;
