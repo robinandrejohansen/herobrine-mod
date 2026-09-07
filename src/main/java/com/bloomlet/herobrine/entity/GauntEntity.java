@@ -744,6 +744,16 @@ public class GauntEntity extends PathfinderMob {
 	private static final class Close extends Goal {
 		private final GauntEntity him;
 
+		/**
+		 * A path is asked for this often, not every tick. moveTo recomputes the
+		 * whole route whenever the target has moved a block, and a running player
+		 * does that every few ticks; with the gaol's eleven and the woods' packs
+		 * that was a lot of A* for nothing, since the navigation follows the path
+		 * it has on its own in between.
+		 */
+		private static final int REPATHS_EVERY = 5;
+		private int repathIn;
+
 		private Close(GauntEntity him) {
 			this.him = him;
 			this.setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK));
@@ -771,7 +781,16 @@ public class GauntEntity extends PathfinderMob {
 				return;
 			}
 			this.him.getLookControl().setLookAt(at, 30.0F, 30.0F);
+			if (--this.repathIn > 0) {
+				return;
+			}
+			this.repathIn = REPATHS_EVERY;
 			this.him.getNavigation().moveTo(at, 1.15);
+		}
+
+		@Override
+		public void start() {
+			this.repathIn = 0;
 		}
 	}
 
@@ -1092,6 +1111,16 @@ public class GauntEntity extends PathfinderMob {
 	@Override
 	public boolean removeWhenFarAway(double distanceSquared) {
 		return this.woods && distanceSquared > FADES_AT * FADES_AT;
+	}
+
+	/**
+	 * The constructor pins every gaunt, so Mob.checkDespawn never even asks
+	 * removeWhenFarAway. The woods ones are the exception, and the only way to
+	 * unpin one is to answer the question here. See HisWoods.
+	 */
+	@Override
+	public boolean isPersistenceRequired() {
+		return !this.woods && super.isPersistenceRequired();
 	}
 
 	/** Addexio wounds it, down to one heart, and no further. The last blow is yours. See TurnedEntity.hurtServer. */

@@ -102,8 +102,11 @@ public final class HisWoods {
 				continue;
 			}
 			Long rested = RESTED.get(player.getUUID());
-			if (rested != null && now - rested < REST) {
-				continue;
+			if (rested != null) {
+				if (now - rested < REST) {
+					continue;
+				}
+				RESTED.remove(player.getUUID());
 			}
 			if (random.nextInt(CHANCE) != 0) {
 				continue;
