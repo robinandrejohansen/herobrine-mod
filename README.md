@@ -280,7 +280,7 @@ play.
 | `resite` | forget where the places were going to go; choose again near whoever is online. Leaves what is built |
 | `turned` | put one of the turned in the nearest village |
 | `watch` | post the prison's watch around where you stand: three of the turned and a gaunt, who hold that ground |
-| `refresh` | for a server older than a feature: lay the battlefield round every place already standing (once each), and list which places stand. Houses keep the shape they were built with |
+| `refresh` | for a server older than a feature: lay the battlefield round every place already standing (once each), swap every old written book near a place for an enchanted one, and list which places stand. Houses keep the shape they were built with |
 | `addexio` | bring Addexio now, whatever kept him away (an old save's "has come" mark, the twenty minutes not yet lived, no morning outdoors), and print which it was |
 | `locate` · `here` · `speed` | find him, bring him here, change his pace |
 | `house` · `town` · `castle` · `recastle` · `chamber` · `passage` · `threshold` · `theway` · `aftermath` · `blueprint` | raise a place, or the ending's aftermath, where you stand |

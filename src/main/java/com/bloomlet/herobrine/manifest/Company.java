@@ -320,6 +320,18 @@ public final class Company {
 		}
 	}
 
+	/**
+	 * NEAR THE SURFACE, NOT UNDER OPEN SKY. canSeeSky was false under a roof and
+	 * under leaves, so a player who spent every morning inside their own house
+	 * never met him. Within six blocks of the top of the ground is enough: a room
+	 * under a roof counts, a cave does not. He walks to the door.
+	 */
+	private static boolean nearTheSurface(ServerLevel over, ServerPlayer who) {
+		int surface = over.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+			who.getBlockX(), who.getBlockZ());
+		return who.getBlockY() >= surface - 6;
+	}
+
 	private static void firstLight(MinecraftServer server) {
 		ServerLevel over = server.overworld();
 		if (hasCome(over) || !com.bloomlet.herobrine.Config.get().houses) {
@@ -348,7 +360,7 @@ public final class Company {
 			if (!farmFound && (lived < A_DAY || timeOfDay >= MORNING_ENDS)) {
 				continue;
 			}
-			if (!over.canSeeSky(who.blockPosition()) || who.isInWater() || who.isPassenger()
+			if (!nearTheSurface(over, who) || who.isInWater() || who.isPassenger()
 				|| who.hurtTime > 0) {
 				continue;
 			}

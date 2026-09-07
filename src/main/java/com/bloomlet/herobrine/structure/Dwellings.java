@@ -1645,10 +1645,63 @@ public final class Dwellings {
 			Ruins.around(over, place.name(), BlockPos.of(site));
 			dressed.add(name);
 		}
-		HerobrineMod.LOGGER.info("refresh: standing {}, battlefields laid now for {}", standing, dressed);
+		int swapped = 0;
+		for (Place place : Place.values()) {
+			Long site = over.getAttached(place.site);
+			if (site == null || !Boolean.TRUE.equals(over.getAttached(place.up))) {
+				continue;
+			}
+			swapped += swapBooks(over, BlockPos.of(site), place.ordinal() <= 1 ? 1 : place.ordinal() <= 3 ? 2 : 3);
+		}
+		HerobrineMod.LOGGER.info("refresh: standing {}, battlefields laid now for {}, {} old books swapped", standing, dressed, swapped);
 		return "standing: " + (standing.isEmpty() ? "nothing yet" : String.join(", ", standing))
 			+ ". battlefields laid now: " + (dressed.isEmpty() ? "none needed" : String.join(", ", dressed))
+			+ ". old written books swapped for enchanted ones: " + swapped
 			+ ". Places not yet built will get every new thing when they are.";
+	}
+
+	/**
+	 * THE OLD BOOKS GO. Every written book in every container or on every lectern
+	 * within three chunks of a place — the story books, the lab register, the
+	 * undercity accounts — becomes an enchanted book of the place's quality, or,
+	 * on a lectern, nothing. Block entities are read off the chunks, not the
+	 * blocks, so this is a few hundred lookups and not a few hundred thousand.
+	 */
+	private static int swapBooks(ServerLevel over, BlockPos site, int quality) {
+		int swapped = 0;
+		net.minecraft.util.RandomSource random = over.getRandom();
+		for (int cx = (site.getX() >> 4) - 3; cx <= (site.getX() >> 4) + 3; cx++) {
+			for (int cz = (site.getZ() >> 4) - 3; cz <= (site.getZ() >> 4) + 3; cz++) {
+				for (net.minecraft.world.level.block.entity.BlockEntity entity
+						: java.util.List.copyOf(over.getChunk(cx, cz).getBlockEntities().values())) {
+					if (entity instanceof net.minecraft.world.level.block.entity.LecternBlockEntity lectern) {
+						if (lectern.getBook().is(net.minecraft.world.item.Items.WRITTEN_BOOK)) {
+							lectern.setBook(net.minecraft.world.item.ItemStack.EMPTY);
+							net.minecraft.world.level.block.state.BlockState state = over.getBlockState(entity.getBlockPos());
+							if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_BOOK)) {
+								over.setBlock(entity.getBlockPos(), state.setValue(
+									net.minecraft.world.level.block.state.properties.BlockStateProperties.HAS_BOOK, false), 3);
+							}
+							swapped++;
+						}
+						continue;
+					}
+					if (!(entity instanceof net.minecraft.world.Container box)) {
+						continue;
+					}
+					for (int slot = 0; slot < box.getContainerSize(); slot++) {
+						if (box.getItem(slot).is(net.minecraft.world.item.Items.WRITTEN_BOOK)) {
+							box.setItem(slot, Loot.tome(over.registryAccess(), random, quality));
+							swapped++;
+						}
+					}
+					if (swapped > 0) {
+						entity.setChanged();
+					}
+				}
+			}
+		}
+		return swapped;
 	}
 
 	public static int forget(ServerLevel level) {
