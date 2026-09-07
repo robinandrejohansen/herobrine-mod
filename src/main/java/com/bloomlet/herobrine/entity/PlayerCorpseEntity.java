@@ -114,7 +114,7 @@ public class PlayerCorpseEntity extends Mob {
 
 	@Override
 	protected EntityDimensions getDefaultDimensions(Pose pose) {
-		return EntityDimensions.fixed(2.2F, 1.0F);      // a body lying down: a metre tall and a body-length wide, so it opens from where you stand
+		return EntityDimensions.fixed(2.2F, 0.6F);      // the body, centred: see PlayerCorpseRenderer.setupRotations      // a body lying down: a metre tall and a body-length wide, so it opens from where you stand
 	}
 
 	@Override

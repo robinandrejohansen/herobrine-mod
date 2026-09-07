@@ -19,4 +19,17 @@ public abstract class CorpseStateMixin implements CorpseState {
 	public void herobrine$setCorpse(boolean corpse) {
 		this.herobrine$corpse = corpse;
 	}
+
+	@Unique
+	private float herobrine$tall;
+
+	@Override
+	public float herobrine$tall() {
+		return this.herobrine$tall;
+	}
+
+	@Override
+	public void herobrine$setTall(float tall) {
+		this.herobrine$tall = tall;
+	}
 }

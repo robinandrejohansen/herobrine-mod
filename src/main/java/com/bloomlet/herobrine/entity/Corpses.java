@@ -84,8 +84,33 @@ public final class Corpses {
 		return Boolean.TRUE.equals(what.getAttached(CORPSE));
 	}
 
+	/**
+	 * WHERE YOU FELL, AND THE WAY BACK.
+	 *
+	 * Your body holds everything and lies where you died; finding it again was
+	 * the problem, three hundred blocks of forest later with no coordinates. So
+	 * the spot is kept across the death (copyOnDeath), and when you come back
+	 * to life you are handed a map drawn between where you stand and where you
+	 * fell (Charts), with the coordinates in its name — and one line in chat
+	 * with a button on it. The button runs /fell, which puts you back on the
+	 * spot, once, and forgets it. Not a mechanic he has any say in.
+	 */
+	private static final AttachmentType<Long> FELL_AT = AttachmentRegistry.<Long>builder()
+		.persistent(Codec.LONG)
+		.copyOnDeath()
+		.buildAndRegister(HerobrineMod.id("fell_at"));
+	private static final AttachmentType<String> FELL_IN = AttachmentRegistry.<String>builder()
+		.persistent(Codec.STRING)
+		.copyOnDeath()
+		.buildAndRegister(HerobrineMod.id("fell_in"));
+
 	public static void register() {
 		ServerLivingEntityEvents.ALLOW_DEATH.register(Corpses::onDeath);
+		net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents.AFTER_RESPAWN.register((was, now, alive) -> {
+			if (!alive) {
+				theWayBack(now);
+			}
+		});
 		// The right button opens it, like a chest. The left clears it — see onHit.
 		UseEntityCallback.EVENT.register(Corpses::onUse);
 		AttackEntityCallback.EVENT.register(Corpses::onHit);
@@ -122,6 +147,10 @@ public final class Corpses {
 	}
 
 	private static boolean onDeath(LivingEntity died, DamageSource source, float amount) {
+		if (died instanceof ServerPlayer fell) {
+			fell.setAttached(FELL_AT, fell.blockPosition().asLong());
+			fell.setAttached(FELL_IN, fell.level().dimension().identifier().toString());
+		}
 		if (!Config.get().corpses || !(died.level() instanceof ServerLevel level)) {
 			return true;
 		}
@@ -219,6 +248,87 @@ public final class Corpses {
 		HerobrineMod.LOGGER.info("{} fell at [{}, {}, {}] — the body holds {} stacks",
 			player.getName().getString(), player.getBlockX(), player.getBlockY(), player.getBlockZ(),
 			carried.size());
+	}
+
+	private static void theWayBack(ServerPlayer now) {
+		Long packed = now.getAttached(FELL_AT);
+		String in = now.getAttached(FELL_IN);
+		if (packed == null || in == null || !(now.level() instanceof ServerLevel here)) {
+			return;
+		}
+		net.minecraft.core.BlockPos fell = net.minecraft.core.BlockPos.of(packed);
+		boolean sameWorld = here.dimension().identifier().toString().equals(in);
+		String at = fell.getX() + ", " + fell.getY() + ", " + fell.getZ();
+		if (sameWorld) {
+			ItemStack map = com.bloomlet.herobrine.structure.Charts.between(here, now.blockPosition(), fell,
+				"where you fell — " + at);
+			if (!now.getInventory().add(map)) {
+				now.drop(map, false);
+			}
+		}
+		Component where = Component.literal("You fell at " + at + (sameWorld ? ". " : ", in another world. "))
+			.withStyle(net.minecraft.ChatFormatting.GRAY);
+		Component back = Component.literal("[Go back there]").withStyle(style -> style
+			.withColor(net.minecraft.ChatFormatting.GOLD)
+			.withUnderlined(true)
+			.withClickEvent(new net.minecraft.network.chat.ClickEvent.RunCommand("/fell")));
+		now.sendSystemMessage(where.copy().append(back));
+	}
+
+	/** /fell — back to where you last died, once. Returns whether it happened. */
+	public static boolean goBack(ServerPlayer who) {
+		Long packed = who.getAttached(FELL_AT);
+		String in = who.getAttached(FELL_IN);
+		if (packed == null || in == null) {
+			who.sendSystemMessage(Component.literal("Nowhere to go back to.").withStyle(net.minecraft.ChatFormatting.GRAY));
+			return false;
+		}
+		ServerLevel there = null;
+		for (ServerLevel level : who.level().getServer().getAllLevels()) {
+			if (level.dimension().identifier().toString().equals(in)) {
+				there = level;
+			}
+		}
+		if (there == null) {
+			who.sendSystemMessage(Component.literal("That world is not here any more.").withStyle(net.minecraft.ChatFormatting.GRAY));
+			return false;
+		}
+		net.minecraft.core.BlockPos fell = net.minecraft.core.BlockPos.of(packed);
+		net.minecraft.core.BlockPos feet = footing(there, fell);
+		if (feet == null) {
+			who.sendSystemMessage(Component.literal("There is nothing to stand on where you fell.").withStyle(net.minecraft.ChatFormatting.GRAY));
+			return false;
+		}
+		who.removeAttached(FELL_AT);
+		who.removeAttached(FELL_IN);
+		who.teleportTo(there, feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5,
+			java.util.Set.of(), who.getYRot(), who.getXRot(), true);
+		who.sendSystemMessage(Component.literal("Back where you fell.").withStyle(net.minecraft.ChatFormatting.GRAY));
+		HerobrineMod.LOGGER.info("{} went back to where they fell, [{}, {}, {}]",
+			who.getName().getString(), feet.getX(), feet.getY(), feet.getZ());
+		return true;
+	}
+
+	/** Two blocks of air on something solid, out of the water, within eight of where you died — or nothing. */
+	private static net.minecraft.core.@Nullable BlockPos footing(ServerLevel level, net.minecraft.core.BlockPos fell) {
+		level.getChunk(fell.getX() >> 4, fell.getZ() >> 4);      // once, for one command
+		for (int dy = 0; dy <= 8; dy++) {
+			for (int sign : new int[] { 1, -1 }) {
+				net.minecraft.core.BlockPos feet = fell.above(dy * sign);
+				if (feet.getY() <= level.getMinY() || feet.getY() >= level.getMaxY() - 1) {
+					continue;
+				}
+				if (level.getBlockState(feet).isAir() && level.getBlockState(feet.above()).isAir()
+					&& level.getBlockState(feet.below()).isSolid()
+					&& level.getFluidState(feet).isEmpty() && level.getFluidState(feet.below()).isEmpty()) {
+					return feet;
+				}
+				if (dy == 0) {
+					break;
+				}
+			}
+		}
+		return null;
 	}
 
 	private static InteractionResult onUse(Player player, Level world, InteractionHand hand, Entity entity,

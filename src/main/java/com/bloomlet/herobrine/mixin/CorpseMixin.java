@@ -71,7 +71,11 @@ public abstract class CorpseMixin {
 		// body on the ground is thin: the old 0.6 of height meant looking almost
 		// straight down at it. A metre tall and a body-length plus one wide is a
 		// box you can open from where you are standing.
-		cir.setReturnValue(EntityDimensions.fixed(Math.min(3.5F, Math.max(1.8F, tall + 1.0F)), 1.0F));
+		// THE BOX IS THE BODY. A body-length wide and knee high, and the renderer
+		// lays the body centred on it (CorpseRenderMixin.lieOnTheSide), so what
+		// you click is what opens. It used to hang off the feet end, half the body
+		// outside the box and a metre of nothing inside it.
+		cir.setReturnValue(EntityDimensions.fixed(Math.min(3.5F, Math.max(1.8F, tall + 0.4F)), 0.6F));
 	}
 
 	/** A body does not get shoved about by whoever walks through it. */

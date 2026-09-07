@@ -90,6 +90,22 @@ final class Duel {
 	private static final int DECIDE_SPREAD = 20;
 	private static final int BLINK_REST = 60;
 	private static final int BLINK_REST_PUNISHED = 30;
+	/**
+	 * ACT ONE, SLOWER. The blink-close-swing combo came as fast in the first act
+	 * as the last, and with a fresh player it read as a blur. Now he blinks about
+	 * half as often there, and the cast (Duel.cast) waits longer too; the swing
+	 * itself is slowed in HerobrineEntity.strike.
+	 */
+	private static final int BLINK_REST_ACT_ONE = 110;
+	private static final int BLINK_REST_PUNISHED_ACT_ONE = 60;
+
+	private int blinkRest() {
+		return this.him.actNow() == 1 ? BLINK_REST_ACT_ONE : BLINK_REST;
+	}
+
+	private int blinkRestPunished() {
+		return this.him.actNow() == 1 ? BLINK_REST_PUNISHED_ACT_ONE : BLINK_REST_PUNISHED;
+	}
 	private static final int STUCK_AFTER = 30;
 	private static final int WOUND_WINDOW = 60;
 	/** Blows taken inside the window before he refuses to stand there. Per act. */
@@ -761,7 +777,7 @@ final class Duel {
 			this.say(here, "swept " + caught + " of them off him");
 			if (this.blinkIn <= 0 && (this.appear(here, target, 5.0, 9.0, false)
 				|| this.appear(here, target, 5.0, 9.0, true))) {
-				this.blinkIn = BLINK_REST_PUNISHED;
+				this.blinkIn = this.blinkRestPunished();
 				this.tookRecently = 0;
 				return;
 			}
@@ -772,7 +788,7 @@ final class Duel {
 			this.tookRecently = 0;
 			if (this.appear(here, target, 5.0, 9.0, false)
 				|| this.appear(here, target, 5.0, 9.0, true)) {
-				this.blinkIn = BLINK_REST_PUNISHED;
+				this.blinkIn = this.blinkRestPunished();
 				this.castIn = Math.min(this.castIn, 8);   // and something comes back
 				this.say(here, "blinked out of a fist-fight");
 				return;
@@ -876,7 +892,7 @@ final class Duel {
 			boolean behindFirst = this.him.actNow() == 1;      // act one: behind them first, in view only if there is nowhere else
 			if (this.appear(here, target, 6.0, 9.0, !behindFirst)
 				|| this.appear(here, target, 6.0, 9.0, behindFirst)) {
-				this.blinkIn = BLINK_REST;
+				this.blinkIn = this.blinkRest();
 				this.decideIn = 0;
 				this.say(here, "closed " + (int) d + " blocks without crossing them");
 			} else {
@@ -916,7 +932,7 @@ final class Duel {
 				: (this.toARoom(here, target, 12.0, "came through the wall")
 					|| this.him.beside(target));
 			if (moved) {
-				this.blinkIn = BLINK_REST;
+				this.blinkIn = this.blinkRest();
 				if (stubborn) {
 					this.say(here, "stopped guessing rooms and went to them");
 					this.blindFor = 0;
@@ -940,7 +956,8 @@ final class Duel {
 			return;
 		}
 		int act = this.him.actNow();
-		this.castIn = Math.max(26, 70 - act * 18) + this.him.getRandom().nextInt(20);
+		this.castIn = (act == 1 ? 100 : Math.max(26, 70 - act * 18))
+			+ this.him.getRandom().nextInt(act == 1 ? 40 : 20);      // act one: five to seven seconds between casts
 		// AGAINST A GROUP, EVERY OTHER THROW GOES TO THE ONE HANGING BACK. The archer
 		// at twenty blocks was the safest person in the room; now half of what he
 		// throws is theirs, and the melee player in front of him gets the other half.
@@ -992,7 +1009,7 @@ final class Duel {
 		}
 		if (this.him.upTo(target) || this.him.beside(target)
 			|| this.toARoom(here, target, 10.0, why)) {
-			this.blinkIn = BLINK_REST;
+			this.blinkIn = this.blinkRest();
 			this.say(here, why);
 			return;
 		}

@@ -32,6 +32,7 @@ public abstract class CorpseRenderMixin {
 		at = @At("TAIL"))
 	private void herobrine$markCorpse(LivingEntity entity, LivingEntityRenderState state, float partialTick, CallbackInfo ci) {
 		((CorpseState) state).herobrine$setCorpse(Corpses.isCorpse(entity) && !(entity instanceof PlayerCorpseEntity));
+		((CorpseState) state).herobrine$setTall(entity.getType().getDimensions().height());
 	}
 
 	@Inject(method = "setupRotations(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;FF)V",
@@ -42,5 +43,9 @@ public abstract class CorpseRenderMixin {
 		}
 		poseStack.translate(0.0F, 0.42F * scale, 0.0F);
 		poseStack.mulPose(Axis.ZP.rotationDegrees(this.getFlipDegrees()));
+		// After the flip the model's own y runs along the body, feet at 0 and head
+		// at its height. Half a body back along it and the body is centred on the
+		// entity — which is where its box is. See CorpseMixin.lyingBox.
+		poseStack.translate(0.0F, -0.5F * ((CorpseState) state).herobrine$tall() * scale, 0.0F);
 	}
 }

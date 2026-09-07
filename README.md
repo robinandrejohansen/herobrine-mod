@@ -172,6 +172,14 @@ Players too. Where you die your body lies, in your skin, arms out, and
 everything you carried is in it. Nothing drops, so nothing burns and nothing is
 taken; come back and take it. Herobrine is the one thing that leaves.
 
+When you come back to life you are handed a **map to where you fell**, drawn so
+that you and the body are both on it, with the coordinates in its name — and one
+line in chat with **[Go back there]** on it. Click it, or type `/fell`, and you
+stand where you died. Once per death; anyone can use it.
+
+A body's hitbox is the body: it lies centred on a box a body-length wide and
+knee high, so what you click is what opens. It used to hang off one end of it.
+
 Config: `corpses`.
 
 ### His world
@@ -220,10 +228,17 @@ draws a volley back. Get within twelve blocks and it is a fight; stay out and he
 comes anyway when the time is up. Once per fight. Reach him unseen and strike
 first at arm's length, and none of this happens.
 
-**Act one is the one you can stand in.** He hits for less (a blow is eight, not
-nine and a half), his fire bursts softer, his lightning is a point weaker, and
-when you run he lands behind you, never ahead. From act two nothing is held
-back: that is when you respect him.
+**Act one is the one you can stand in.** His sword is a lesser thing there: a
+blow is three and a half, not nine and a half, it does not set you alight and it
+barely moves you. He is slower there too: he swings every other second rather
+than every second, blinks about half as often, and waits five to seven seconds
+between casts. And nothing he throws in act one catches — the fireballs still
+hit and still burst, but the ground does not burn and neither do you. His fire
+bursts softer, his lightning is a point weaker, and
+when you run he lands behind you, never ahead. Act two brings the edge up to
+seven with four seconds of fire; act three is the whole sword — nine and a half,
+twenty seconds of burning, knockback that is a wall. That is when you respect
+him. The sword you take off him is always the whole one.
 
 **A hundred blows** to put him down (`blowsToKill`), in three acts of a third
 each. The count shows on his boss bar. A blow only counts if it lands ten ticks
@@ -233,7 +248,7 @@ double it, capped at three times.
 
 | Range | What he does |
 |---|---|
-| arm's length | swings once a second, feints between; after 4 / 3 / 2 blows taken in a row he blinks out |
+| arm's length | swings once a second (every other second in act one), feints between; after 4 / 3 / 2 blows taken in a row he blinks out |
 | four to twelve | advances, sidesteps, or holds and throws — rolled, never a metronome |
 | past twelve | appears six to nine blocks in front of you, or throws from where he is |
 | out of sight | three seconds blind and he blows the wall between you open; stubborn hiding and he comes through it |

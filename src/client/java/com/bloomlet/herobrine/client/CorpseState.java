@@ -11,4 +11,6 @@ public interface CorpseState {
 	boolean herobrine$isCorpse();
 
 	void herobrine$setCorpse(boolean corpse);
+	float herobrine$tall();
+	void herobrine$setTall(float tall);
 }

@@ -55,6 +55,18 @@ public class PlayerCorpseRenderer extends HumanoidMobRenderer<
 		return new PlayerCorpseRenderState();
 	}
 
+	/**
+	 * The sleeping pose lays the body out from the feet; the box is centred on the
+	 * feet. Half a body back along the model's own length (its y, after the
+	 * rotations) and the two agree. See PlayerCorpseEntity.getDefaultDimensions.
+	 */
+	@Override
+	protected void setupRotations(PlayerCorpseRenderState state, com.mojang.blaze3d.vertex.PoseStack poseStack,
+	                              float bodyRot, float scale) {
+		super.setupRotations(state, poseStack, bodyRot, scale);
+		poseStack.translate(0.0F, -0.9F * scale, 0.0F);
+	}
+
 	@Override
 	public Identifier getTextureLocation(PlayerCorpseRenderState state) {
 		return state.skin;

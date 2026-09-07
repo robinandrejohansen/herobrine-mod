@@ -34,7 +34,10 @@ public final class HerobrineCommand {
 	private HerobrineCommand() {}
 
 	public static void register() {
-		CommandRegistrationCallback.EVENT.register((dispatcher, registry, environment) ->
+		CommandRegistrationCallback.EVENT.register((dispatcher, registry, environment) -> {
+			// /fell — anyone, no permission: back to where you last died, once. See Corpses.goBack
+			dispatcher.register(Commands.literal("fell")
+				.executes(ctx -> com.bloomlet.herobrine.entity.Corpses.goBack(ctx.getSource().getPlayerOrException()) ? 1 : 0));
 			dispatcher.register(Commands.literal("herobrine")
 				.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
 
@@ -434,7 +437,8 @@ public final class HerobrineCommand {
 							return builder.buildFuture();
 						})
 						.executes(HerobrineCommand::phase)))
-			));
+			);
+		});
 	}
 
 	/**

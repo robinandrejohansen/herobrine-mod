@@ -442,6 +442,7 @@ public class HerobrineEntity extends PathfinderMob {
 			net.minecraft.core.registries.Registries.DAMAGE_TYPE,
 			HerobrineMod.id("reckoning"));
 	private static final int STRIKE_COOLDOWN = 20;   // one a second; the feints fill the gaps
+	private static final int STRIKE_COOLDOWN_ACT_ONE = 35;   // act one: one every other second, near enough. The combo has air in it
 
 	/**
 	 * AND HE DOES NOT LEAVE THE INSTANT HE HAS HIT YOU.
@@ -2180,7 +2181,7 @@ public class HerobrineEntity extends PathfinderMob {
 				this.swipe();
 				com.bloomlet.herobrine.manifest.TheHunt.smite(field, foe);
 				foe.hurtServer(field, this.damageSources().mobAttack(this),
-					STRIKE_DAMAGE * 2.0F);
+					(this.act() >= 2 ? STRIKE_DAMAGE : STRIKE_DAMAGE_ACT_ONE) * 2.0F);      // act one holds back here too
 			}
 			return true;
 		}
@@ -3079,6 +3080,7 @@ public class HerobrineEntity extends PathfinderMob {
 		if (blow != null) {
 			blow.setBaseValue(this.act() >= 2 ? STRIKE_DAMAGE : STRIKE_DAMAGE_ACT_ONE);      // act one held back; see STRIKE_DAMAGE_ACT_ONE
 		}
+		this.blade();      // and the act's sword with it. See hisSword
 		this.setAttached(SHADOW, this.act() >= 3);      // the last form is the dark one
 		if (this.level() instanceof ServerLevel here) {
 			// He grows where you can hear it.
@@ -4668,6 +4670,24 @@ public class HerobrineEntity extends PathfinderMob {
 	 * what the fight is worth.
 	 */
 	public static ItemStack hisSword(ServerLevel here, boolean forHim) {
+		return hisSword(here, forHim, 3);
+	}
+
+	/**
+	 * THE EDGE COMES WITH THE ACT. The enchantments are where the damage was:
+	 * Sharpness 10 is five and a half on top of the base, Fire Aspect 5 is twenty
+	 * seconds of burning, Knockback 5 is a wall. He carried all of it from the
+	 * first swing, so act one — "the one you can stand in" — hit for eight, set
+	 * you on fire and threw you, and that is not an act anybody can stand in.
+	 *
+	 *   act one    Sharpness 1, no fire, Knockback 1     a blow is three and a half
+	 *   act two    Sharpness 5, Fire Aspect 1, Knockback 2   seven, and four seconds of fire
+	 *   act three  the whole sword                           nine and a half, twenty seconds, the wall
+	 *
+	 * The sword the player takes off him is always the whole one. blade() hands
+	 * him the act's, and wearTheAct hands him the next.
+	 */
+	public static ItemStack hisSword(ServerLevel here, boolean forHim, int act) {
 		ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
 		if (forHim) {
 			sword.set(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS,
@@ -4683,10 +4703,18 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 		var book = here.registryAccess().lookup(net.minecraft.core.registries.Registries.ENCHANTMENT);
 		if (book.isPresent()) {
-			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.SHARPNESS, 10);
-			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT, 5);
-			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.KNOCKBACK, 5);
-			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.SWEEPING_EDGE, 5);
+			int stage = forHim ? Math.max(1, Math.min(3, act)) : 3;
+			int sharp = stage == 1 ? 1 : stage == 2 ? 5 : 10;
+			int fire = stage == 1 ? 0 : stage == 2 ? 1 : 5;
+			int knock = stage == 1 ? 1 : stage == 2 ? 2 : 5;
+			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.SHARPNESS, sharp);
+			if (fire > 0) {
+				bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.FIRE_ASPECT, fire);
+			}
+			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.KNOCKBACK, knock);
+			if (stage == 3) {
+				bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.SWEEPING_EDGE, 5);
+			}
 			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.UNBREAKING, 10);
 			bite(sword, book.get(), net.minecraft.world.item.enchantment.Enchantments.MENDING, 1);
 		}
@@ -4695,7 +4723,7 @@ public class HerobrineEntity extends PathfinderMob {
 
 	private void blade() {
 		ItemStack sword = this.level() instanceof ServerLevel here
-			? hisSword(here, true) : new ItemStack(Items.DIAMOND_SWORD);
+			? hisSword(here, true, this.act()) : new ItemStack(Items.DIAMOND_SWORD);
 		this.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, sword);
 	}
 
@@ -5257,7 +5285,7 @@ public class HerobrineEntity extends PathfinderMob {
 		}
 
 		long now = here.getGameTime();
-		if (now < this.lastStruck + STRIKE_COOLDOWN) {
+		if (now < this.lastStruck + (this.act() == 1 ? STRIKE_COOLDOWN_ACT_ONE : STRIKE_COOLDOWN)) {
 			return;
 		}
 		this.lastStruck = now;
@@ -5739,6 +5767,9 @@ public class HerobrineEntity extends PathfinderMob {
 					here, this, to.normalize(), Math.min(3, act));
 			ball.snapTo(from.x, from.y, from.z, this.getYRot(), this.getXRot());
 			ball.shoot(to.x, to.y, to.z, 1.3F, spread);
+			if (act == 1) {
+				ball.setAttached(COLD, true);
+			}
 			here.addFreshEntity(ball);
 		}
 		here.playSound(null, this.getX(), this.getY(), this.getZ(),
@@ -6512,6 +6543,13 @@ public class HerobrineEntity extends PathfinderMob {
 	/** The block he aimed the breach at, so the hole is there even if the ball hits short. */
 	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Long> BREACH_AT =
 		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.create(HerobrineMod.id("breach_at"));
+	/**
+	 * ACT ONE FIRE. A ball thrown in the first act carries this, and it still hits
+	 * and still bursts, but nothing catches: no fire on the ground, none on you.
+	 * See ColdFireballMixin (the blaze kind) and HisFireballMixin (the ghast kind).
+	 */
+	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> COLD =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.create(HerobrineMod.id("cold_fire"));
 
 	/** The arm, without the blow: the swing animation and a short sound, nothing else. */
 	void swingArm() {
@@ -6575,6 +6613,9 @@ public class HerobrineEntity extends PathfinderMob {
 			ball.snapTo(eye.x, eye.y, eye.z, this.getYRot(), this.getXRot());
 			ball.shoot(along.x, along.y, along.z, 1.4F, 0.4F);
 			ball.setAttached(BREACH, true);
+			if (this.act() == 1) {
+				ball.setAttached(COLD, true);
+			}
 			ball.setAttached(BREACH_AT, wall.asLong());
 			here.addFreshEntity(ball);
 		}
@@ -6620,6 +6661,9 @@ public class HerobrineEntity extends PathfinderMob {
 			ball.snapTo(from.x, from.y, from.z, this.getYRot(), -90.0F);
 			ball.shoot(0.0, 1.0, 0.0, 1.2F, 0.0F);
 			ball.setAttached(BREACH, true);
+			if (this.act() == 1) {
+				ball.setAttached(COLD, true);
+			}
 			ball.setAttached(BREACH_AT, lid.asLong());
 			here.addFreshEntity(ball);
 		}
@@ -6672,6 +6716,9 @@ public class HerobrineEntity extends PathfinderMob {
 							here, this, to.normalize());
 				fire.snapTo(from.x, from.y, from.z, this.getYRot(), this.getXRot());
 				fire.shoot(to.x, to.y, to.z, 1.7F, act >= 2 ? 3.0F : 4.0F);
+				if (act == 1) {
+					fire.setAttached(COLD, true);
+				}
 				here.addFreshEntity(fire);
 				this.swipe();
 				here.playSound(null, this.getX(), this.getY(), this.getZ(),
@@ -6721,6 +6768,9 @@ public class HerobrineEntity extends PathfinderMob {
 			ball.snapTo(eye.x, eye.y, eye.z, this.getYRot(), this.getXRot());
 			ball.shoot(along.x, along.y, along.z, 1.4F, 0.6F);
 			ball.setAttached(BREACH, true);
+			if (this.act() == 1) {
+				ball.setAttached(COLD, true);
+			}
 			ball.setAttached(BREACH_AT, wall.asLong());
 			here.addFreshEntity(ball);
 		}

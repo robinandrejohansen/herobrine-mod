@@ -12,6 +12,7 @@ import net.minecraft.world.phys.HitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -42,6 +43,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(LargeFireball.class)
 public abstract class HisFireballMixin {
+	/** Act one: the burst without the fire. See HerobrineEntity.COLD. */
+	@Redirect(method = "onHit", at = @At(value = "INVOKE",
+		target = "Lnet/minecraft/world/level/Level;explode(Lnet/minecraft/world/entity/Entity;DDDFZLnet/minecraft/world/level/Level$ExplosionInteraction;)V"))
+	private void herobrine$coldBurst(net.minecraft.world.level.Level level, net.minecraft.world.entity.Entity source,
+	                                 double x, double y, double z, float power, boolean fire,
+	                                 net.minecraft.world.level.Level.ExplosionInteraction kind) {
+		boolean cold = Boolean.TRUE.equals(((LargeFireball) (Object) this)
+			.getAttached(com.bloomlet.herobrine.entity.HerobrineEntity.COLD));
+		level.explode(source, x, y, z, power, fire && !cold, kind);
+	}
+
 
 	@Inject(method = "onHit", at = @At("TAIL"))
 	private void herobrine$dent(HitResult hit, CallbackInfo info) {
