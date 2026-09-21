@@ -55,6 +55,7 @@ public class HerobrineMod implements ModInitializer {
 		TheHerd.register();
 		Villages.register();
 		com.bloomlet.herobrine.manifest.TheTurning.register();
+		com.bloomlet.herobrine.manifest.TurnedVillages.register();
 		Signs.register();
 		Journal.register();
 		Possession.register();

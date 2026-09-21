@@ -111,6 +111,12 @@ blocks it does not care who is looking. Its hands come up and shake while you
 watch, reach out when it has you, and its jaw hangs open and works when it
 speaks or strikes.
 
+**From the third place, the villages are his.** Every villager in a vanilla
+village becomes one of the turned the moment its chunk loads — the same pretence
+by day, the same coming at night or when you stare — and every iron golem
+changes sides: it stops touching the monsters and comes for you. Addexio can
+wound them; only you can finish them. Config `theTurning` covers all of it.
+
 ### Every place is a battlefield
 
 He came down out of the sky, stood in the street and stared, then killed everyone
@@ -385,7 +391,7 @@ decides; a player's own does nothing. The ones worth knowing:
 | `breakIn` | true | he breaks through walls, doors and cover; everything he breaks drops |
 | `realLightning` | true | his bolts hurt and burn |
 | `blowsToKill` | 100 | the length of the fight, at one player |
-| `theTurning` | true | the one who does not sleep |
+| `theTurning` | true | the one who does not sleep; from the third place every villager is turned and every golem is his |
 | `theHunt` · `theDark` · `possession` · `signs` · `traces` · `ruins` | true | the phase events |
 | `hisHost` · `hostileAnimals` · `theTaking` | true | what he does to the world's mobs and animals |
 | `hisKeep` · `keepBlueprint` | true · `tutorial_castle` | the castle |
