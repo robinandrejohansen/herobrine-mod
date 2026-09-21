@@ -340,14 +340,16 @@ final class Duel {
 		}
 
 		ServerPlayer target = this.pick(watchers);
-		if (target == null) {
+		if (target == null || this.outsideTheArena(here, target)) {
 			this.withoutFor++;
+			this.keepToTheKeep(here);
 			return;
 		}
 		// YOU CAME BACK. Ten seconds or more with nobody, then somebody: he does not
 		// start over and he does not orbit. He says one thing, the heart under the
 		// floor speeds up, and the fight resumes at the range it finds you at —
 		// which, through gone() and far(), means he is on you inside a few seconds.
+		this.saidKept = false;
 		if (this.withoutFor > 200) {
 			target.sendSystemMessage(Sayings.his(RETURNED[this.him.getRandom().nextInt(RETURNED.length)]));
 			here.playSound(null, this.him.getX(), this.him.getY(), this.him.getZ(),
@@ -541,6 +543,38 @@ final class Duel {
 	private int surface;
 	private @Nullable BlockPos corner;
 	private @Nullable BlockPos size;
+
+	/**
+	 * THE ARENA. The fight lives within ARENA blocks of the keep. It used to live
+	 * wherever the players were: WATCH_RANGE is ninety-six, the landing is eighty
+	 * to a hundred from the keep, so a player who died and came back through the
+	 * door — or who ran — found him arriving at the door, because the bound duel
+	 * picked them up from there and gone() blinked him over. Now a player outside
+	 * the arena is nobody to him: he goes back to the keep and circles it, the way
+	 * he did before anyone struck him, and the moment somebody steps back inside
+	 * the fight picks up where it was (the "came back" line, from withoutFor). He
+	 * does not come to the door for you.
+	 */
+	private static final double ARENA = 64.0;
+	private boolean saidKept;
+
+	private boolean outsideTheArena(ServerLevel here, ServerPlayer target) {
+		BlockPos site = Keep.site(here);
+		if (site == null) {
+			return false;
+		}
+		double dx = target.getX() - (site.getX() + 0.5);
+		double dz = target.getZ() - (site.getZ() + 0.5);
+		return dx * dx + dz * dz > ARENA * ARENA;
+	}
+
+	private void keepToTheKeep(ServerLevel here) {
+		if (!this.saidKept) {
+			this.saidKept = true;
+			this.say(here, "nobody inside the arena — back to the keep, circling");
+		}
+		this.him.circleTheKeep();
+	}
 
 	private void idle(ServerLevel here, List<Player> watchers) {
 		ServerPlayer target = this.pick(watchers);

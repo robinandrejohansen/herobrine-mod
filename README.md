@@ -215,6 +215,11 @@ One class owns it: `Duel`. From the first blow, nothing else moves him.
 in the great hall. He whispers. He does not strike first unless you stand next to
 him for four seconds.
 
+**The arena.** The fight lives within sixty-four blocks of the keep. Leave it —
+dead and back through the door, or running — and he goes back to the keep and
+circles it; step inside again and he picks up where he was. He does not come to
+the door for you.
+
 **The first blow takes the sky from him.** He is *bound*: grounded for the rest
 of the fight, and the level remembers it — a save, a respawn, a reload all find
 him bound, at the right act, in the right form. Come back after leaving and he
