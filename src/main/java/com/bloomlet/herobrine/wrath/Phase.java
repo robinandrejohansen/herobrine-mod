@@ -55,6 +55,16 @@ public enum Phase {
 		return this.duesMinutes * 1200L;
 	}
 
+	/**
+	 * A pool to draw words from, at random. Phases decide which house comes
+	 * next and nothing else; the sign lines, grave lines and other tiered words
+	 * that used to read the phase draw from any tier instead, so they vary.
+	 */
+	public static Phase any(net.minecraft.util.RandomSource random) {
+		Phase[] all = values();
+		return all[random.nextInt(all.length)];
+	}
+
 	public boolean atLeast(Phase other) {
 		return this.ordinal() >= other.ordinal();
 	}

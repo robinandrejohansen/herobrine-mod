@@ -9,6 +9,9 @@ import net.minecraft.client.renderer.entity.EntityRenderers;
 public class HerobrineModClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
+		net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(
+			com.bloomlet.herobrine.manifest.Peace.Shown.TYPE,
+			(payload, context) -> context.client().gui.setScreen(new PeaceScreen()));
 		EntityRenderers.register(ModEntities.HEROBRINE, HerobrineRenderer::new);
 		EntityRenderers.register(ModEntities.INFECTED, InfectedRenderer::new);
 		EntityRenderers.register(ModEntities.TURNED, TurnedRenderer::new);
@@ -37,6 +40,8 @@ public class HerobrineModClient implements ClientModInitializer {
 	 * values back toward whatever the server says the weather is — which is
 	 * clear — and would fade this out over a few seconds.
 	 */
+	private static float hisRain;
+
 	private static void hisWeather() {
 		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK
 			.register(client -> {
@@ -50,9 +55,15 @@ public class HerobrineModClient implements ClientModInitializer {
 				// THE CLIENT FORCES THE RAIN OVER HIS WORLD — which is why the server's
 				// "it is dry now" packets never showed: this line put it back every
 				// tick. Once his sky is clear, it forces the opposite.
+				// Dry unless he is near somebody — the server says which (HisWeather.STORMING) —
+				// and eased, so the rain comes and goes instead of switching.
 				boolean clear = Boolean.TRUE.equals(
-					client.level.getAttached(com.bloomlet.herobrine.wrath.Wrath.CLEAR_SKY));
-				client.level.setRainLevel(clear ? 0.0F : 1.0F);
+					client.level.getAttached(com.bloomlet.herobrine.wrath.Wrath.CLEAR_SKY))
+					|| !Boolean.TRUE.equals(client.level.getAttached(
+						com.bloomlet.herobrine.manifest.HisWeather.STORMING));
+				float want = clear ? 0.0F : 1.0F;
+				hisRain += Math.max(-0.01F, Math.min(0.01F, want - hisRain));
+				client.level.setRainLevel(hisRain);
 				// Thunder level is what darkens the sky and deepens the sound.
 				//
 				// PULLED BACK FROM 0.85, and the reasoning that set it there was
@@ -63,7 +74,7 @@ public class HerobrineModClient implements ClientModInitializer {
 				// up to atmosphere, they add up to a black screen — you could not
 				// see the castle from the city, which is the one shot the whole
 				// dimension is built for.
-				client.level.setThunderLevel(clear ? 0.0F : 0.6F);
+				client.level.setThunderLevel(0.6F * hisRain);
 			});
 	}
 }

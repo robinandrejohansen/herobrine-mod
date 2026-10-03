@@ -161,7 +161,7 @@ public final class Corpses {
 		if (!(died instanceof Mob mob) || isCorpse(mob)
 			|| died instanceof HerobrineEntity || died instanceof CompanionEntity
 			|| died instanceof PlayerCorpseEntity
-			|| !(source.getEntity() instanceof LivingEntity)) {
+			|| !leavesABody(source.getEntity())) {
 			return true;
 		}
 		if (mob.getType() == EntityTypes.ENDERMAN || mob.getType() == EntityTypes.ENDER_DRAGON
@@ -200,8 +200,53 @@ public final class Corpses {
 		lay(mob, loot);
 	}
 
+	/**
+	 * WHO LEAVES A BODY. Anything killed by anything living used to: an iron golem
+	 * at a farm, a wolf, an axolotl — and every body was persistent, so one mob
+	 * farm on a shared server grew thousands of them and the server slowed without
+	 * limit. Now a body is left by a player, Addexio, him, or one of his.
+	 */
+	private static boolean leavesABody(@Nullable Entity killer) {
+		return killer instanceof Player || killer instanceof CompanionEntity
+			|| killer instanceof HerobrineEntity
+			|| (killer instanceof Mob m && com.bloomlet.herobrine.manifest.TheHunt.isHis(m));
+	}
+
+	/**
+	 * AND IT LIES THERE TEN MINUTES, not for ever. When it goes, whatever is
+	 * still in it goes on the ground where it lay, like a body you swing at.
+	 * Players' bodies are not touched: they hold everything you carried.
+	 */
+	public static final int LIES_FOR = 20 * 60 * 10;
+	private static final AttachmentType<Long> DIED_AT =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("corpse_died_at"), Codec.LONG);
+
+	/** Called a few times a second on each body by CorpseMixin. */
+	public static void age(ServerLevel level, LivingEntity dead) {
+		Long died = dead.getAttached(DIED_AT);
+		long now = level.getGameTime();
+		if (died == null || died > now) {
+			dead.setAttached(DIED_AT, now);      // an old save's body, or a different clock: from now
+			return;
+		}
+		if (now - died < LIES_FOR) {
+			return;
+		}
+		for (ItemStack stack : dead.getAttachedOrElse(LOOT, List.of())) {
+			if (!stack.isEmpty()) {
+				dead.spawnAtLocation(level, stack.copy());
+			}
+		}
+		level.sendParticles(ParticleTypes.POOF, dead.getX(), dead.getY() + 0.4, dead.getZ(),
+			8, 0.5, 0.2, 0.5, 0.01);
+		dead.discard();
+	}
+
 	private static void lay(Mob mob, List<ItemStack> loot) {
 		mob.setHealth(1.0F);
+		if (mob.level() instanceof ServerLevel here) {
+			mob.setAttached(DIED_AT, here.getGameTime());
+		}
 		mob.setAttached(CORPSE, true);
 		mob.setAttached(LOOT, loot);
 		mob.setTarget(null);

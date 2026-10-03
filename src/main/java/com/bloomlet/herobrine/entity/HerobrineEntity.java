@@ -4591,6 +4591,7 @@ public class HerobrineEntity extends PathfinderMob {
 		// next storm, TheTurning put another wrong villager in the town, and
 		// Whereabouts stood a fresh one of him over the keep he had just died in.
 		com.bloomlet.herobrine.wrath.Wrath.remove(server);
+		com.bloomlet.herobrine.manifest.Peace.begin(server);      // and in three minutes, the end. See Peace
 		here.setAttached(com.bloomlet.herobrine.wrath.Wrath.CLEAR_SKY, true);
 		here.setAttached(com.bloomlet.herobrine.wrath.Wrath.CLEARED_AT, here.getGameTime());
 
@@ -5648,7 +5649,7 @@ public class HerobrineEntity extends PathfinderMob {
 		if (!(source.getEntity() instanceof ServerPlayer) || !Config.get().theReckoning) {
 			return true;
 		}
-		return Wrath.phase(level.getServer()) != Phase.SIEGE;
+		return !this.hisGround();      // the fight is in his world; out here nothing lands
 	}
 
 	/**

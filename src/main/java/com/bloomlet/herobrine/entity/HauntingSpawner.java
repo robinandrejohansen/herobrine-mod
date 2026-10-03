@@ -90,13 +90,8 @@ public final class HauntingSpawner {
 	 * field at all.
 	 */
 	private static void omen(ServerLevel level, BlockPos pos) {
-		Phase phase = Wrath.phase(level.getServer());
-		int bolts = switch (phase) {
-			case RUMOUR, WATCHER -> 0;
-			case TRESPASSER, MIMIC -> 1;
-			case HUNTER -> 2 + level.getRandom().nextInt(2);
-			case SIEGE -> 3 + level.getRandom().nextInt(2);
-		};
+		int roll = level.getRandom().nextInt(10);      // at random, not by phase: none, one, two or three
+		int bolts = roll < 4 ? 0 : roll < 7 ? 1 : roll < 9 ? 2 : 3;
 		if (bolts == 0) {
 			return;
 		}
@@ -105,7 +100,7 @@ public final class HauntingSpawner {
 		// difference between weather and an announcement. A player who walks
 		// toward that bolt finds him by accident; one who walks toward a bolt
 		// that struck his feet was told.
-		double spread = phase == Phase.TRESPASSER ? 9.0 : 3.5;
+		double spread = 3.5 + random.nextDouble() * 5.5;
 		for (int i = 0; i < bolts; i++) {
 			double angle = random.nextDouble() * Math.PI * 2.0;
 			double range = random.nextDouble() * spread;
@@ -149,15 +144,8 @@ public final class HauntingSpawner {
 	 * casing: an overcast sky genuinely lowers the light level, so "he turns up
 	 * on grey afternoons" falls out of it for free.
 	 */
-	private static int maxLight(Phase phase) {
-		return switch (phase) {
-			case RUMOUR, WATCHER -> 9;
-			case TRESPASSER -> 11;
-			case MIMIC -> 12;
-			case HUNTER -> 14;
-			case SIEGE -> 15;
-		};
-	}
+	/** How bright a spot may be and still have him standing in it. */
+	private static final int MAX_LIGHT = 12;
 	/**
 	 * There is only ever ONE of him, in the entire world.
 	 *
@@ -416,7 +404,7 @@ public final class HauntingSpawner {
 				}
 
 				if (!ignoreLight && level.getMaxLocalRawBrightness(pos)
-					> maxLight(Wrath.phase(level.getServer()))) {
+					> MAX_LIGHT) {
 					tooBright++;
 					continue;
 				}

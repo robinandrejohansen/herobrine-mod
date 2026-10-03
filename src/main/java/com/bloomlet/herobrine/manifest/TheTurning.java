@@ -86,16 +86,8 @@ public final class TheTurning {
 	 * which is the only version of this that stays frightening after the first
 	 * time.
 	 */
-	private static int chanceIn(Phase phase) {
-		return switch (phase) {
-			case RUMOUR -> 0;          // never; the world is still ordinary
-			case WATCHER -> 6;
-			case TRESPASSER -> 5;
-			case MIMIC -> 4;
-			case HUNTER -> 3;
-			case SIEGE -> 2;
-		};
-	}
+	/** One village night in this many has one of them in it. Not by phase. */
+	private static final int CHANCE_IN = 4;
 
 	/**
 	 * How many can be alive at once, anywhere.
@@ -129,10 +121,6 @@ public final class TheTurning {
 		if (!Config.get().enabled || !Config.get().theTurning) {
 			return;
 		}
-		Phase phase = Wrath.phase(server);
-		if (chanceIn(phase) == 0) {
-			return;
-		}
 
 		for (ServerLevel level : server.getAllLevels()) {
 			// AFTER DARK, AND ONLY AFTER DARK. He is a thing you find because
@@ -142,7 +130,7 @@ public final class TheTurning {
 				continue;
 			}
 			if (alive(level) >= AT_ONCE) {
-				return;
+				continue;      // this level is full; the next may not be
 			}
 			for (ServerPlayer player : level.players()) {
 				StructureStart village = level.structureManager()
@@ -150,7 +138,7 @@ public final class TheTurning {
 				if (village == null || !village.isValid()) {
 					continue;
 				}
-				if (consider(level, player, village, phase)) {
+				if (consider(level, player, village)) {
 					return;   // one a tick at the very most
 				}
 			}
@@ -158,7 +146,7 @@ public final class TheTurning {
 	}
 
 	private static boolean consider(ServerLevel level, ServerPlayer player,
-	                                StructureStart village, Phase phase) {
+	                                StructureStart village) {
 		String key = village.getChunkPos().toString();
 		Map<String, Integer> last = level.getServer().overworld()
 			.getAttachedOrElse(LAST, Map.of());
@@ -182,7 +170,7 @@ public final class TheTurning {
 		updated.put(key, today);
 		level.getServer().overworld().setAttached(LAST, updated);
 
-		if (random.nextInt(chanceIn(phase)) != 0) {
+		if (random.nextInt(CHANCE_IN) != 0) {
 			HerobrineMod.LOGGER.debug("village {} kept its night", key);
 			return false;
 		}
@@ -200,7 +188,7 @@ public final class TheTurning {
 			random.nextFloat() * 360.0F, 0.0F);
 		level.addFreshEntity(him);
 		HerobrineMod.LOGGER.info("one of them turned at [{}, {}, {}] in village {} ({})",
-			spot.getX(), spot.getY(), spot.getZ(), key, phase.name());
+			spot.getX(), spot.getY(), spot.getZ(), key, "a night");
 		return true;
 	}
 

@@ -91,10 +91,6 @@ public final class Villages {
 		if (!com.bloomlet.herobrine.Config.get().enabled || !com.bloomlet.herobrine.Config.get().villageDecay) {
 			return;
 		}
-		Phase phase = Wrath.phase(server);
-		if (!phase.atLeast(Phase.TRESPASSER)) {
-			return;   // the world is still ordinary
-		}
 
 		for (ServerLevel level : server.getAllLevels()) {
 			for (ServerPlayer player : level.players()) {
@@ -103,7 +99,9 @@ public final class Villages {
 				if (village == null || !village.isValid()) {
 					continue;
 				}
-				visit(level, player, village, phase);
+				if (TurnedVillages.isHis(level, village)) {
+					visit(level, player, village);      // only the villages that are his; worked over once
+				}
 			}
 		}
 	}
@@ -118,29 +116,29 @@ public final class Villages {
 	 * looks like — one street gone and the next one fine.
 	 */
 	private static void visit(ServerLevel level, ServerPlayer player,
-	                          StructureStart village, Phase phase) {
+	                          StructureStart village) {
 		String key = village.getChunkPos().toString();
 		Map<String, Integer> touched = level.getServer().overworld()
 			.getAttachedOrElse(TOUCHED, Map.of());
 		int already = touched.getOrDefault(key, -1);
-		if (already >= phase.ordinal()) {
+		if (already >= 0) {
 			return;
 		}
 
 		BoundingBox bounds = village.getBoundingBox();
 		RandomSource random = level.getRandom();
-		int severity = phase.ordinal() - Phase.TRESPASSER.ordinal() + 1;
+		int severity = 1 + Math.floorMod(village.getChunkPos().pack() * 31L, 3);      // one to three, fixed per village
 
 		int boarded = board(level, player, village, random, severity * 3);
-		int dug = graves(level, player, bounds, random, severity, phase);
+		int dug = graves(level, player, bounds, random, severity, Phase.TRESPASSER);
 		age(level, player, bounds, random, severity * 6);
 
 		Map<String, Integer> updated = new HashMap<>(touched);
-		updated.put(key, phase.ordinal());
+		updated.put(key, severity);
 		level.getServer().overworld().setAttached(TOUCHED, updated);
 
 		HerobrineMod.LOGGER.info("village at {} worked over at {}: {} boarded, {} graves",
-			key, phase.name(), boarded, dug);
+			key, "severity " + severity, boarded, dug);
 	}
 
 	/**

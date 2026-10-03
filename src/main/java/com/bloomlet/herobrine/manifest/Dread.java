@@ -176,8 +176,11 @@ public final class Dread {
 			doused.computeIfAbsent(level.dimension(), k -> new java.util.HashMap<>());
 		BlockPos at = him.blockPosition();
 		for (int dx = -DARKENS_AT; dx <= DARKENS_AT; dx++) {
-			for (int dy = -DARKENS_DEEP; dy <= DARKENS_DEEP; dy++) {
-				for (int dz = -DARKENS_AT; dz <= DARKENS_AT; dz++) {
+			for (int dz = -DARKENS_AT; dz <= DARKENS_AT; dz++) {
+				if (!level.hasChunk((at.getX() + dx) >> 4, (at.getZ() + dz) >> 4)) {
+					continue;      // never load a chunk to redden a torch in it
+				}
+				for (int dy = -DARKENS_DEEP; dy <= DARKENS_DEEP; dy++) {
 					BlockPos pos = at.offset(dx, dy, dz);
 					BlockState was = level.getBlockState(pos);
 					BlockState red = redOf(was);
@@ -229,8 +232,10 @@ public final class Dread {
 			}
 			// Only if it is still the red one. Somebody who mined it, replaced it
 			// or built over it has had the last word.
-			if (level.isLoaded(one.getKey())
-				&& redOf(one.getValue()) != null
+			if (!level.hasChunk(one.getKey().getX() >> 4, one.getKey().getZ() >> 4)) {
+				continue;      // keep it: put it back when its chunk is here again
+			}
+			if (redOf(one.getValue()) != null
 				&& level.getBlockState(one.getKey()).getBlock()
 					== redOf(one.getValue()).getBlock()) {
 				level.setBlock(one.getKey(), one.getValue(), 2);

@@ -131,10 +131,12 @@ public final class Config {
 	public boolean realLightning = true;
 
 	// ---- the world ---------------------------------------------------------
+	/**
+	 * The sky turns only for him: a storm while he is near somebody, and a short
+	 * turn when he does something. Otherwise the weather is vanilla's. Off and
+	 * the mod never touches the overworld's weather at all. See Storm.
+	 */
 	public boolean weather = true;
-	public boolean longerNights = true;
-	/** The SIEGE night that never ends. Separable from longer nights. */
-	public boolean endlessNight = true;
 	/**
 	 * One of the villagers has gone wrong.
 	 *

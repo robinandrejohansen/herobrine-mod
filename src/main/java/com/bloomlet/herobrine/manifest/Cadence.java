@@ -38,6 +38,10 @@ public final class Cadence {
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(Cadence::onTick);
+		// Jobs hold levels and entities. One left over from a world just closed
+		// would run against the next one opened in the same session.
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED
+			.register(server -> pending.clear());
 	}
 
 	/** Run this in {@code ticks} ticks' time, on the server thread. */
@@ -81,7 +85,13 @@ public final class Cadence {
 			due.add(next.action());
 		}
 		for (Runnable action : due) {
-			action.run();
+			// ONE BAD JOB IS ONE BAD JOB. Unguarded, a throw here left END_SERVER_TICK
+			// and took the server down, and every other job due this tick with it.
+			try {
+				action.run();
+			} catch (RuntimeException failed) {
+				com.bloomlet.herobrine.HerobrineMod.LOGGER.error("cadence: a scheduled job failed", failed);
+			}
 		}
 	}
 }

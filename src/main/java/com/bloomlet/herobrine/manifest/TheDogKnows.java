@@ -176,7 +176,7 @@ public final class TheDogKnows {
 		wolf.setYBodyRot(yaw);
 		wolf.yHeadRot = yaw;
 
-		if (level.getGameTime() % GROWL_INTERVAL == 0) {
+		if (level.getGameTime() % GROWL_INTERVAL < CHECK_INTERVAL) {      // checked every CHECK_INTERVAL; a window, or it never lines up
 			SoundEvent growl = growlOf(wolf);
 			if (growl != null) {
 				level.playSound(null, wolf.getX(), wolf.getY(), wolf.getZ(),

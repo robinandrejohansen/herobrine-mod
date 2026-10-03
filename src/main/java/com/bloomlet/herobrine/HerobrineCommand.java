@@ -318,6 +318,13 @@ public final class HerobrineCommand {
 					return 1;
 				}))
 
+			.then(Commands.literal("ending").executes(ctx -> {
+					// The end screen, now, for whoever typed it — to see it without the fight.
+					ServerPlayer p = ctx.getSource().getPlayerOrException();
+					net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(p,
+						com.bloomlet.herobrine.manifest.Peace.Shown.INSTANCE);
+					return 1;
+				}))
 			.then(Commands.literal("refresh").executes(ctx -> {
 					ServerPlayer p = ctx.getSource().getPlayerOrException();
 					String report = Dwellings.refresh((ServerLevel)p.level());

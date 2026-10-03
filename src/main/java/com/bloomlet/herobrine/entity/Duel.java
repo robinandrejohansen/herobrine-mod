@@ -456,7 +456,7 @@ final class Duel {
 		}
 
 		double d = this.him.distanceTo(target);
-		boolean sees = this.him.hasLineOfSight(target);
+		boolean sees = this.him.getSensing().hasLineOfSight(target);
 		if (this.running && d > NO_BLINK_PAST) {
 			this.pursue(here, target, d);      // act one, and they are leaving. See pursue
 			return;
@@ -770,7 +770,7 @@ final class Duel {
 		}
 		this.hallFor++;
 		double d = this.him.distanceTo(target);
-		boolean sees = this.him.hasLineOfSight(target);
+		boolean sees = this.him.getSensing().hasLineOfSight(target);
 		this.him.face(target);
 
 		if (sees && d <= SPEAKS_WITHIN && here.getGameTime() - this.spokeAt > SPEAK_REST) {
@@ -864,7 +864,7 @@ final class Duel {
 			return false;
 		}
 		this.keptOff++;
-		if (this.keptOff < KEPT_FOR || this.barrageIn > 0 || !this.him.hasLineOfSight(target)) {
+		if (this.keptOff < KEPT_FOR || this.barrageIn > 0 || !this.him.getSensing().hasLineOfSight(target)) {
 			return false;
 		}
 		this.keptOff = 0;
@@ -1076,7 +1076,7 @@ final class Duel {
 	 * came up lightning the way a fireball means they came up fire.
 	 */
 	private void cast(ServerLevel here, ServerPlayer target) {
-		if (this.castIn > 0 || !this.him.hasLineOfSight(target)
+		if (this.castIn > 0 || !this.him.getSensing().hasLineOfSight(target)
 			|| this.him.distanceTo(target) < 4.0) {
 			return;
 		}
@@ -1259,7 +1259,7 @@ final class Duel {
 		}
 		long now = here.getGameTime();
 		if (this.besieging(here) && d > SIEGE_HOLDS && now - this.siegeAnsweredAt >= SIEGE_ANSWER_REST
-			&& this.him.hasLineOfSight(striker)) {
+			&& this.him.getSensing().hasLineOfSight(striker)) {
 			this.siegeAnsweredAt = now;
 			this.him.volley(here, striker, this.him.actNow());
 			this.say(here, "answered a shot from " + (int) d + " blocks");
@@ -1282,7 +1282,7 @@ final class Duel {
 	private void siege(ServerLevel here, ServerPlayer target) {
 		this.him.getNavigation().stop();
 		this.him.face(target);
-		if (!this.him.hasLineOfSight(target)) {
+		if (!this.him.getSensing().hasLineOfSight(target)) {
 			if (++this.siegeBlind > SIEGE_BLIND_TOO_LONG) {
 				this.siegeUntil = Long.MIN_VALUE;
 				this.say(here, "lost them from the walls — coming down");
@@ -1354,7 +1354,7 @@ final class Duel {
 						lonely = Math.min(lonely, p.distanceTo(other));
 					}
 				}
-				score = -lonely + (this.him.hasLineOfSight(p) ? 0.0 : 12.0);
+				score = -lonely + (this.him.getSensing().hasLineOfSight(p) ? 0.0 : 12.0);
 			} else {
 				score = this.him.distanceTo(p);
 				if (struckBy != null && struckBy.equals(p.getUUID()) && score < 40.0) {
@@ -1398,7 +1398,7 @@ final class Duel {
 		double farAt = 0.0;
 		for (Player who : this.watchers) {
 			if (who instanceof ServerPlayer p && p != not && p.isAlive() && !p.isSpectator()
-				&& this.him.hasLineOfSight(p) && this.him.distanceTo(p) > farAt) {
+				&& this.him.getSensing().hasLineOfSight(p) && this.him.distanceTo(p) > farAt) {
 				farAt = this.him.distanceTo(p);
 				far = p;
 			}

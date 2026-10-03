@@ -493,6 +493,9 @@ public final class Keep {
 		Long town = his.getAttached(CITY);
 		if (town == null) {
 			ServerPlayer first = his.players().get(0);
+			if (!groundFor(his, first.blockPosition(), CITY_NEAR, CITY_FAR)) {
+				return;      // the ground is coming in on the worker threads; next pass
+			}
 			BlockPos at = pick(his, first.blockPosition(), CITY_NEAR, CITY_FAR);
 			his.setAttached(CITY, at.asLong());
 			HerobrineMod.LOGGER.info("his city will stand at [{}, {}]",
@@ -520,6 +523,9 @@ public final class Keep {
 		if (chosen == null) {
 			// Sited from wherever the first person came out, which is the only
 			// fixed point this dimension has.
+			if (!groundFor(his, city, NEAR, FAR)) {
+				return;      // the ground is coming in on the worker threads; next pass
+			}
 			BlockPos site = pick(his, city, NEAR, FAR);
 			his.setAttached(SITE, site.asLong());
 			HerobrineMod.LOGGER.info(
@@ -578,6 +584,57 @@ public final class Keep {
 		}
 	}
 
+	/** The attempt-th bearing pick() looks at from `from`. Deterministic, so groundFor can ask for it first. */
+	private static BlockPos bearing(BlockPos from, int near, int far, int attempt) {
+		long h = (from.getX() * 341873128712L + from.getZ() * 132897987541L
+			+ attempt * 6364136223846793005L);
+		h = (h ^ (h >>> 29)) * 0x94D049BB133111EBL;
+		h = h ^ (h >>> 32);
+		double angle = ((h >>> 12) & 0xFFFF) / 65536.0 * Math.PI * 2.0;
+		double range = near + ((h >>> 28) & 0xFF) / 255.0 * (far - near);
+		int x = from.getX() + (int)Math.round(Math.cos(angle) * range);
+		int z = from.getZ() + (int)Math.round(Math.sin(angle) * range);
+		return new BlockPos(x, from.getY(), z);
+	}
+
+	private static final net.minecraft.server.level.TicketType SITING =
+		new net.minecraft.server.level.TicketType(20L * 120L, net.minecraft.server.level.TicketType.FLAG_LOADING);
+
+	/**
+	 * THE GROUND UNDER EVERY BEARING, ASKED FOR IN THE BACKGROUND. pick() reads
+	 * sixteen bearings 240 to 340 blocks out and highest() points up to two chunks
+	 * round the one it takes, and none of that ground exists in a fresh dimension —
+	 * so it generated thirty or forty chunks on the server thread in one tick, a
+	 * stall of seconds. The polling path now asks for all of it with a loading
+	 * ticket and comes back when hasChunk says it is there. The boss command still
+	 * picks on the spot; a test command can afford the wait.
+	 */
+	private static boolean groundFor(ServerLevel his, BlockPos from, int near, int far) {
+		boolean ready = true;
+		for (int attempt = 0; attempt < 16 && ready; attempt++) {
+			BlockPos at = bearing(from, near, far, attempt);
+			int cx = at.getX() >> 4;
+			int cz = at.getZ() >> 4;
+			for (int dx = -2; dx <= 2 && ready; dx++) {
+				for (int dz = -2; dz <= 2; dz++) {
+					if (!his.hasChunk(cx + dx, cz + dz)) {
+						ready = false;
+						break;
+					}
+				}
+			}
+		}
+		if (ready) {
+			return true;
+		}
+		for (int attempt = 0; attempt < 16; attempt++) {
+			BlockPos at = bearing(from, near, far, attempt);
+			his.getChunkSource().addTicketWithRadius(SITING,
+				new net.minecraft.world.level.ChunkPos(at.getX() >> 4, at.getZ() >> 4), 2);
+		}
+		return false;
+	}
+
 	/**
 	 * A bearing and a distance, derived rather than rolled.
 	 *
@@ -601,15 +658,9 @@ public final class Keep {
 		// "different" bearings would have clustered.
 		BlockPos fallback = null;
 		for (int attempt = 0; attempt < 16; attempt++) {
-			long h = (from.getX() * 341873128712L + from.getZ() * 132897987541L
-				+ attempt * 6364136223846793005L);
-			h = (h ^ (h >>> 29)) * 0x94D049BB133111EBL;
-			h = h ^ (h >>> 32);
-			double angle = ((h >>> 12) & 0xFFFF) / 65536.0 * Math.PI * 2.0;
-			double range = near + ((h >>> 28) & 0xFF) / 255.0 * (far - near);
-			int x = from.getX() + (int)Math.round(Math.cos(angle) * range);
-			int z = from.getZ() + (int)Math.round(Math.sin(angle) * range);
-			BlockPos at = new BlockPos(x, from.getY(), z);
+			BlockPos at = bearing(from, near, far, attempt);
+			int x = at.getX();
+			int z = at.getZ();
 			if (fallback == null) {
 				fallback = at;
 			}

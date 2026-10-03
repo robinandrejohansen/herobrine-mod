@@ -721,8 +721,7 @@ public final class Loot {
 		// carry stolen goods too, which is a wider net than "the last houses".
 		// That reads fine — he keeps things underground as well.
 		if (!free.isEmpty() && chest.getLevel() instanceof net.minecraft.server.level.ServerLevel here
-			&& com.bloomlet.herobrine.wrath.Wrath.phase(here.getServer())
-				.atLeast(com.bloomlet.herobrine.wrath.Phase.HUNTER)) {
+			&& random.nextInt(3) == 0) {      // one in three, not by phase
 			net.minecraft.world.item.ItemStack stolen =
 				com.bloomlet.herobrine.manifest.Hoard.draw(here, random);
 			if (stolen != null) {

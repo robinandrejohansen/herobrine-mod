@@ -48,6 +48,7 @@ public class TurnedRenderer
 		super(context, new VillagerModel(context.bakeLayer(ModelLayers.VILLAGER)), 0.5F);
 		this.items = context.getItemModelResolver();
 		this.addLayer(new CrossedArmsItemLayer<>(this));
+		this.addLayer(new TurnedEyesLayer(this));
 		swellTheNose(this.getModel());
 	}
 

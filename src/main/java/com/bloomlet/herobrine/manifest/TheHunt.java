@@ -85,77 +85,9 @@ public final class TheHunt {
 
 
 	// ---- AND THE SKY GOES WITH HIM -----------------------------------------
-	/**
-	 * THE STORM CAME WITH HIM AND IT SHOULD LEAVE WITH HIM.
-	 *
-	 * The opening turns the sky, which is most of why a hunt lands — a storm
-	 * that arrives BECAUSE of something reads nothing like one that arrived on a
-	 * timer. But Skies.turn books nine to eighteen minutes of weather and the
-	 * hunt is three, so for the next quarter of an hour the player was standing
-	 * in his thunderstorm with nothing in it. The causality that made the
-	 * arrival work was undone by the same weather five minutes later.
-	 *
-	 * So it eases off behind him, and in that order: THE THUNDER STOPS FIRST,
-	 * half a minute after he goes, and the rain thins out a minute after that.
-	 * Which is what real weather does — the lightning always passes before the
-	 * cloud — and it means the player gets a slow all-clear rather than a switch
-	 * being thrown. Standing in the rain listening for thunder that has stopped
-	 * is a better ninety seconds than either a storm or a clear sky.
-	 *
-	 * ONLY IF WE STARTED IT. A world that was already under weather when the
-	 * hunt began keeps it: clearing somebody's genuine storm because a hunt
-	 * happened to end would be the mod reaching further than it was asked to.
-	 * The flag is session-scoped on purpose — after a restart the storm simply
-	 * runs its natural course, which is the old behaviour and is harmless.
-	 */
-	private static boolean ours;
-	/**
-	 * WHICH HUNT'S SKY THIS IS.
-	 *
-	 * passes() does not clear the weather, it SCHEDULES the clearing — minutes
-	 * later, so the last of the storm fades instead of stopping between one step
-	 * and the next. Which is right, and which means the callback outlives the hunt
-	 * that booked it.
-	 *
-	 * The playtest caught what that costs: hunt one ended at 11:03:59, hunt two
-	 * opened its own storm at 11:05:08, and at 11:05:33 hunt one's callback came
-	 * due and put the sky back — twenty-five seconds into somebody else's hunt.
-	 * The `ours` flag could not catch it because it had already been handed to the
-	 * second storm.
-	 *
-	 * So the sky is stamped when he takes it, and a scheduled clearing only acts if
-	 * the stamp is still the one it was booked under. A later hunt silently voids
-	 * an earlier hunt's cleanup, which is exactly the intent — that storm is not
-	 * over, it has been replaced.
-	 */
-	private static int skyOwner;
-	private static final int THUNDER_STOPS = 600;
-	private static final int RAIN_STOPS = 1800;
-
+	/** The hunt is over. The storm it brought clears on Storm's usual delay. */
 	public static void passes(ServerLevel level) {
-		MinecraftServer server = level.getServer();
-		if (server == null || !ours) {
-			return;
-		}
-		ours = false;
-		final int mine = skyOwner;
-		Cadence.in(server, THUNDER_STOPS, () -> {
-			if (mine == skyOwner && server.overworld().isThundering()) {
-				// Rain kept, thunder dropped. The weather is still there; the
-				// thing that made it dangerous is not.
-				server.setWeatherParameters(0, RAIN_STOPS + 600, true, false);
-				HerobrineMod.LOGGER.debug("the thunder passes");
-			}
-		});
-		Cadence.in(server, RAIN_STOPS, () -> {
-			if (mine == skyOwner && server.overworld().isRaining()) {
-				// Cleared over a long spell rather than switched off, so the
-				// last of it fades instead of stopping between one step and the
-				// next.
-				server.setWeatherParameters(12000, 0, false, false);
-				HerobrineMod.LOGGER.info("the sky goes back to what it was");
-			}
-		});
+		Storm.release(level);
 	}
 
 
@@ -389,9 +321,7 @@ public final class TheHunt {
 		if (!Config.get().huntWrecks) {
 			return;
 		}
-		Skies.turn(level);
-		ours = true;
-		skyOwner++;
+		Storm.hold(level, 2400);      // and Storm keeps it while he is near
 		RandomSource random = level.getRandom();
 		BlockPos from = player.blockPosition();
 		int bolts = OPENING_BOLTS_MIN + random.nextInt(OPENING_BOLTS_SPREAD);

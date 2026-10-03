@@ -232,7 +232,7 @@ public final class Feral {
 		// and two heartbeats that are close but not together is far worse than
 		// either one alone.
 		long own = Math.floorMod(mob.getUUID().hashCode(), HEARTBEAT);
-		if ((level.getGameTime() + own) % HEARTBEAT == 0) {
+		if ((level.getGameTime() + own) % HEARTBEAT < LOOKS_EVERY) {      // checked every LOOKS_EVERY ticks, so a window, not a tick
 			level.playSound(null, mob.getX(), mob.getY(), mob.getZ(),
 				com.bloomlet.herobrine.sound.ModSounds.BREATH, SoundSource.HOSTILE, 0.45F, 1.1F);
 		}

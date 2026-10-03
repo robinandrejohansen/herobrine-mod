@@ -636,7 +636,16 @@ public final class Dwellings {
 	 * has earned it by being five buildings deep and by being written by somebody
 	 * who is plainly past caring who reads it.
 	 */
+	/** Tries left for the last word. Each is a 49-cube scan; a threshold with nowhere to put it should stop asking. */
+	private static int lastWordTries = 90;
+
 	private static boolean theLastWord(ServerLevel over, BlockPos threshold) {
+		if (--lastWordTries < 0) {
+			if (lastWordTries == -1) {
+				HerobrineMod.LOGGER.warn("nowhere in the threshold to leave the last word — stopped looking");
+			}
+			return true;      // so the caller stops asking
+		}
 		Long home = over.getAttached(Place.HOMESTEAD.site);
 		if (home == null) {
 			return false;
@@ -657,6 +666,15 @@ public final class Dwellings {
 
 		// Scale two and the coordinates in the name, same as every other map on the
 		// trail. Four is two thousand blocks across and the arrow falls off it.
+		int free = 0;
+		for (int slot = 0; slot < box.getContainerSize(); slot++) {
+			if (box.getItem(slot).isEmpty()) {
+				free++;
+			}
+		}
+		if (free < 2) {
+			return false;      // a full barrel: try again, and do not mint a map file every two seconds while doing it
+		}
 		net.minecraft.world.item.ItemStack map = Charts.between(over, holder.getBlockPos(), house,
 			"back to the first house — " + house.getX() + ", " + house.getZ());
 
@@ -1018,7 +1036,7 @@ public final class Dwellings {
 				overworld.setAttached(place.up, true);
 				// Roads, smoke and a sign, laid at build time for the same reason
 				// the building is: nobody is close enough to watch it happen.
-				Approach.lay(overworld, site, phase);
+				Approach.lay(overworld, site, place.from);
 			}
 			return;         // whatever happened, the next one is not due yet
 		}
@@ -1054,7 +1072,7 @@ public final class Dwellings {
 			return;
 		}
 		level.setAttached(place.rifled, true);
-		com.bloomlet.herobrine.manifest.Skies.turn(level);
+		com.bloomlet.herobrine.manifest.Storm.omen(level, site);
 		int snuffed = 0;
 		for (BlockPos pos : BlockPos.betweenClosed(
 				site.offset(-16, -12, -16), site.offset(16, 12, 16))) {
@@ -1254,7 +1272,7 @@ public final class Dwellings {
 		// anybody stood inside, and each time it called down another storm: an hour
 		// in the town was an hour of thunder. The sky turns the first time only.
 		if (skyTurned.add(place)) {
-			com.bloomlet.herobrine.manifest.Skies.turn(level);
+			com.bloomlet.herobrine.manifest.Storm.omen(level, site);
 		}
 		// THE ARGUMENTS WERE THE WRONG WAY ROUND, AND HE HAS NEVER ONCE HUNTED
 		// HERE. place() takes (ignoreLight, hunting) and this passed

@@ -34,8 +34,8 @@ follow the books: the town, his tower, the prison, the church he lived under,
 the last house where they lost him. And in the last house you find what the
 village never had — **a way through**. A door into the place he goes.
 
-On the other side is his world: a forest where it is always midnight and always
-raining, a city he built and filled with the people he took, and above it his
+On the other side is his world: a forest where it is always midnight, a storm
+that comes when he does, a city he built and filled with the people he took, and above it his
 castle, lit and standing, the one competent building he ever made. You go in.
 He is waiting. The door behind you is dead.
 
@@ -51,23 +51,48 @@ forgets what it cost.
 
 ### The arc
 
-Nothing is announced. The story is six phases, and exactly one thing moves it:
-**finding a place**. Stand within sixty blocks of a raised place and the world
-steps into the next phase; nothing else — not kills, not deaths, not time —
-does. Each phase has its own events and one **place** the players are led to,
-and the overworld stays an ordinary world — its own weather, its own nights,
-its own sky and music — until SIEGE, which begins the moment the last house
-is found: then the night stops, the storm does not, and the sky goes grey. His world is his at
-every phase.
+Nothing is announced. The story is six phases, and **a phase does exactly one
+thing: it decides which house comes next.** Finding a place moves it — stand
+within sixty blocks of a raised place and the next house is sited and the map
+to it left behind; nothing else — not kills, not deaths, not time — does. And
+nothing else hangs off it: the weather, the nights, the sky, the music and every
+one of his works are the same from the first night to the last.
 
-| Phase | Begins when | What happens | The place |
-|---|---|---|---|
-| RUMOUR | the world starts | a glimpse, footsteps, a torch that goes out, breathing | **the farm** — where Addexio lived: boarded up, dark, gone to moss and cobweb, the furniture still in it |
-| WATCHER | the farm is found | the stare, the passages, the one who does not sleep, a camp somebody slept in with the furnace still lit, a cross cut deep into the ground, groves stripped bare over dead earth | **the town** — boarded, an undercity beneath it, the mapmaker's house |
-| TRESPASSER | the town is found | signs — many with your name on them, on walls or on posts in the open —, ruins, the sealed shaft | **his tower** — and under the hill beneath it, the house he lived in: a table set for two, a gallery, his bed, the shelves of names, the pool |
-| MIMIC | his house is found | possessed animals, the herd | **the prison** — eighty blocks of hall, eighteen cells, eleven of them still shut with something tall inside that knows where you are through the door and comes out for you the moment you look away; cell nine; and the tunnel the last of them dug out through the back wall |
-| HUNTER | the prison is found (the church does not move the story) | the hunt, the dark | **the church** — he lived under the altar |
-| SIEGE | the last house is found | the night stops, the storm never ends, the animals watch | **the last house** — and the way through |
+| Phase | Begins when | The place it leads to |
+|---|---|---|
+| RUMOUR | the world starts | **the farm** — where Addexio lived: boarded up, dark, gone to moss and cobweb, the furniture still in it |
+| WATCHER | the farm is found | **the town** — boarded, an undercity beneath it, the mapmaker's house |
+| TRESPASSER | the town is found | **his tower** — and under the hill beneath it, the house he lived in: a table set for two, a gallery, his bed, the shelves of names, the pool |
+| MIMIC | his house is found | **the prison** — eighty blocks of hall, eighteen cells, eleven of them still shut with something tall inside that knows where you are through the door and comes out for you; cell nine; and the tunnel the last of them dug out through the back wall |
+| HUNTER | the prison is found (the church does not move the story) | **the church** — he lived under the altar |
+| SIEGE | the last house is found | **the last house** — and the way through |
+
+### What he does, and when
+
+**At random, from the first night.** Every four to eighteen minutes — a wide
+window, so it is never a rhythm — one of his works happens near one of you,
+picked by weight from all of them: footsteps, a sound that is wrong, a torch
+that goes out, a fuse, breathing in the dark, a glimpse of him on a ridge, the
+stare, a passage, a camp somebody slept in with the furnace still lit, a cross
+cut deep into the ground, a grove stripped over dead earth, a sealed shaft, a
+sign (often with your name on it), a ruin, something taken from your chest,
+the dark, a door or a trapdoor or a chest opening on its own, a stand of trees
+losing every leaf at once, a fire starting in a field, and animals with white
+eyes — some follow you, some come for you, and now and then a villager with
+white eyes walks behind you wherever you go.
+
+**The weather is vanilla's, unless he is near.** When he is within about a
+hundred blocks of one of you — a glimpse, a stare, a hunt — the sky turns: rain
+and thunder while he is there and a little after, and then it clears. His works
+move the sky too, at random: a short storm, a short rain, or thunder rolling dry
+on the horizon. The fog thickens, the light goes out of the sky and the rain
+runs red only by how close he is. The same rule holds in his world: it is dry
+there unless he is near — which, at the keep, he is.
+
+**Half the villages are his.** Each village rolls once, from the world seed and
+where it stands, so the answer never changes and the next village over may be
+people. In his, every villager is one of the turned and every iron golem has
+changed sides. Villagers somebody has traded with, or named, are left alone.
 
 The first place is not on any map. On the first morning after you have lived a
 full day — on the surface, in daylight, not in a fight — Addexio walks out of the
@@ -96,26 +121,20 @@ twenty blocks of the door, and lets go of anyone who gets fifty-six away. They
 do not despawn and they will not follow you home. The book is inside. You go
 through them.
 
-**The turned are not harmless.** Stand and stare at one for three seconds and it
-knows it is seen, and comes — by day as well as by night. Once one has you it
-keeps you through walls, and a wall of wood does not stop it: it has the axe,
-and it chops through planks, logs, fences and leaves two blocks high, a block
-every two to five seconds, sometimes standing a moment to look at the hole
-before the next. Doors, glass and bars as before. Addexio fights any that have
-put the pretence down, and they fight him back; he cannot kill one — the last
-blow is yours.
+**The turned** have white eyes with no pupils, glowing, and an axe. They see you
+first — through walls, floors and trees, out to twenty-four blocks — follow you
+at a walk until they are close enough, and then they come; the axe reaches
+further than a fist, like a golem's arm. Hit one and the others near it come
+too. A wall of wood does not stop them: they chop through planks, logs, fences
+and leaves two blocks high, a block every two to five seconds. Addexio fights
+them — and his golems — and they fight him back; he cannot kill one of the
+turned, the last blow is yours.
 
-**A gaunt holds still while you look at it** — for a second and a half. Then the
-dark comes down on you, it is nearer every time the dark lifts, and inside six
-blocks it does not care who is looking. Its hands come up and shake while you
-watch, reach out when it has you, and its jaw hangs open and works when it
-speaks or strikes.
-
-**From the third place, the villages are his.** Every villager in a vanilla
-village becomes one of the turned the moment its chunk loads — the same pretence
-by day, the same coming at night or when you stare — and every iron golem
-changes sides: it stops touching the monsters and comes for you. Addexio can
-wound them; only you can finish them. Config `theTurning` covers all of it.
+**A gaunt** walks at a normal pace and hits from the first swing, from well over
+a block further out than its body. It finds you through twenty blocks of wall.
+What you cannot do is read it: every few seconds, at random, it stops dead with
+its head over, or lunges across the gap, or simply keeps coming. Its hands come
+up when it has you, and its jaw hangs open and works when it speaks or strikes.
 
 ### Every place is a battlefield
 
@@ -165,14 +184,15 @@ follows, fights, and talks.
 
 ### The dead
 
-Nothing that is killed vanishes. A mob killed by somebody — you, Addexio, him,
-another mob — drops where it stands and lies there for good, and what it would
+A mob killed by you, Addexio, him or one of his drops where it stands and lies
+there for ten minutes, and what it would
 have dropped is inside it: right-click the body and it opens like a chest. Hit
 it and it clears — a puff, and whatever was still in it on the ground where it
 lay. Kill a field of them and the field is full of them afterwards, until you
-swing. They keep gravity, so one killed mid-jump lands, and mine the floor out
-from under one and it falls. Natural deaths — falls, lava, drowning, a mob farm
-— drop as they always did.
+swing, or until ten minutes have passed — then whatever was still in it falls out
+on the ground where it lay. They keep gravity, so one killed mid-jump lands.
+Natural deaths, and anything a golem or a wolf kills — falls, lava, a mob farm —
+drop as they always did, so a farm never fills a server with bodies.
 
 Players too. Where you die your body lies, in your skin, arms out, and
 everything you carried is in it. Nothing drops, so nothing burns and nothing is
@@ -194,7 +214,7 @@ Through the way you land in a **vault**: deepslate, a soul lantern, the frame yo
 came through standing behind you — dead. It does not work from this side. In the
 far wall, behind iron bars, a narrow stair climbs to the surface, its steps gone
 to moss, roots and cobweb, its mouth grown over. Break the bars, dig out, and
-you are in a dark forest at permanent midnight, in the rain.
+you are in a dark forest at permanent midnight — dry, until he is near.
 
 Ahead is **his city** — streets, a square, houses you were told not to enter,
 graves under the trees — and over it **the keep**: a castle raised from a
@@ -300,10 +320,13 @@ fresh` starts over.
 **If he dies.** He rises from where he fell, whitens, grows, and goes, over seven
 seconds. *Removed Herobrine.* The music is the old one. Then:
 
-- the rain stops, for good, in his world and yours
+- the storms stop, for good, in his world and yours
 - every villager he turned is a villager again
 - the clock is set to late afternoon and his sky clears over two minutes —
   the first sunset that world has ever had, then a real night, then ordinary days
+- three minutes later, **the end**: a black screen, the lines coming up one at
+  a time — you have beaten Minecraft, for real this time; thank you; there is
+  peace now — and two buttons: stay in the world, or leave it
 - at your feet: his sword, named **Herobrine**, three enchanted golden apples,
   diamonds, netherite, a totem, and the experience
 - on the square of his city: the way home, and behind it his statue — his own
@@ -339,6 +362,13 @@ even if it works.
   queue entry per batch. `Cadence` warns if it is ever asked to drop work.
 - **First-join buildings are staggered.** The homestead's outbuilding,
   passage, tower and tracks go down a few ticks apart, in dependency order.
+- **Bodies do not pile up.** A mob's body lasts ten minutes and only kills by a
+  player, Addexio, him or his leave one — a golem or a wolf at a farm does not.
+- **A scheduled job cannot crash the server.** Each Cadence job runs inside a
+  try/catch, and the queue is emptied when a world closes.
+- **His castle's ground is asked for first.** Siting the city and the keep in his
+  world reads ground three hundred blocks out; it is requested with a loading
+  ticket and picked once it is there, not generated on the tick.
 - **Blueprints wait for their ground.** Standing a blueprint — the keep, the
   last village — used to load every chunk under it on the tick, thirty of them
   for the castle, three seconds of "Can't keep up" as the keep went up. Now the
@@ -371,6 +401,7 @@ play.
 | `resite` | forget where the places were going to go; choose again near whoever is online. Leaves what is built |
 | `turned` | put one of the turned in the nearest village |
 | `watch` | post the prison's watch around where you stand: three of the turned and a gaunt, who hold that ground |
+| `ending` | show the end screen now, for whoever types it |
 | `refresh` | for a server older than a feature: lay the battlefield round every place already standing (once each), swap every old written book near a place for an enchanted one, and list which places stand. Houses keep the shape they were built with |
 | `addexio` | bring Addexio now, whatever kept him away (an old save's "has come" mark, the twenty minutes not yet lived, no morning outdoors), and print which it was |
 | `locate` · `here` · `speed` | find him, bring him here, change his pace |
@@ -391,12 +422,12 @@ decides; a player's own does nothing. The ones worth knowing:
 | `breakIn` | true | he breaks through walls, doors and cover; everything he breaks drops |
 | `realLightning` | true | his bolts hurt and burn |
 | `blowsToKill` | 100 | the length of the fight, at one player |
-| `theTurning` | true | the one who does not sleep; from the third place every villager is turned and every golem is his |
+| `theTurning` | true | the one who does not sleep, and half the villages his: every villager turned, every golem on his side |
 | `theHunt` · `theDark` · `possession` · `signs` · `traces` · `ruins` | true | the phase events |
 | `hisHost` · `hostileAnimals` · `theTaking` | true | what he does to the world's mobs and animals |
 | `hisKeep` · `keepBlueprint` | true · `tutorial_castle` | the castle |
 | `houses` · `town` · `villageDecay` | true | the places, and what happens to villages |
-| `weather` · `longerNights` · `endlessNight` | true | the storm and the night in the later phases |
+| `weather` | true | the sky turns only for him: storms while he is near, short turns when he does something; off and the weather is untouched |
 | `quietDeaths` | true | no death messages for what he takes |
 | `corpses` | true | the dead stay where they fell and are looted like chests; players' bodies hold their inventory |
 
@@ -470,7 +501,7 @@ Loom runs it off `build/classes`.
 ```
 src/main/java/com/bloomlet/herobrine/          common (client + server)
   entity/    him (HerobrineEntity, Duel), Addexio (CompanionEntity), the turned, his mobs
-  manifest/  the phase events, weather, the reckoning, the hunt
+  manifest/  his works (the director), Storm (the only weather), the reckoning, the hunt, Peace (the end)
   structure/ every place: farm, town, tower, prison, church, threshold, the way,
              his city, the keep, the statue
   wrath/     the one number, and the phases

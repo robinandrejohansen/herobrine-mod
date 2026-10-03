@@ -49,6 +49,12 @@ public abstract class CorpseMixin {
 		if (self instanceof PlayerCorpseEntity || (self.tickCount & 3) != 0) {
 			return;
 		}
+		if ((self.tickCount & 63) == 0 && self.level() instanceof net.minecraft.server.level.ServerLevel here) {
+			Corpses.age(here, self);      // ten minutes, then gone; see Corpses.LIES_FOR
+			if (self.isRemoved()) {
+				return;
+			}
+		}
 		if (self.getRemainingFireTicks() > 0) {
 			self.clearFire();
 		}

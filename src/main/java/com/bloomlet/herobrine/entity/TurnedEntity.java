@@ -25,200 +25,52 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.level.Level;
 
 /**
- * The one who does not sleep.
+ * ONE OF THE TURNED. A villager he has had, with white eyes and no pupils and
+ * an axe.
  *
- * A villager who has gone wrong. Not possessed, not infected, not wearing
- * anybody's face — the lab register under the threshold is a list of villagers
- * BY TRADE, and this is what one of those entries looks like from the outside.
+ * Simple on purpose. They see you first — through walls, floors and trees, out
+ * to twenty-four blocks — so a house is no hiding place from one. They follow
+ * you at a walk until they are close enough, and then they come, and the axe
+ * reaches further than a fist. Hit one and the others near it come too. A wall
+ * of wood does not stop them: they chop through it (Forces).
  *
- * ITS OWN MOB RATHER THAN A REAL VILLAGER, and that is not a shortcut. Two
- * separate rules in this repo both point the same way. DESIGN §9 and Villages
- * refuse to remove villagers, because deleting somebody's cleric to stage a
- * scare costs them hours of trading with no warning and no counter-play. And
- * InfectedEntity's whole comment is about what happened the last time this mod
- * reached into vanilla's villager renderer: two startup crashes and three wrong
- * diagnoses. So nothing that already existed is touched. There is simply one
- * more person in the village than there was.
- *
- * ---
- *
- * WHAT MAKES HIM WORK IS THAT HE IS ORDINARY. He has the villager's model, the
- * villager's walk, the villager's voice and the villager's clothes. In a crowd
- * at fifteen blocks there is nothing to see. The three tells are all things the
- * player has to be close enough, or patient enough, to notice:
- *
- *   THE EYES. A black pupil in the middle of the iris, which no villager in the
- *     game has. It is deliberately not emissive and deliberately not red —
- *     white is HIS and red is what a possessed animal wears when it is about to
- *     hurt you. This is a villager's own green eye with something behind it,
- *     and you have to be four blocks away to see it at all.
- *
- *   HE WILL NOT TRADE. No profession and no menu, so right-clicking him does
- *     nothing whatever. That is how anybody checks a villager is real, and it
- *     is the same tell the possessed villager already uses.
- *
- *   HE DOES NOT SLEEP. Night falls, the square empties, and one man is still
- *     standing in it. The contrast does all of it and it costs nothing to
- *     build, because he is not a Villager and has no bed behaviour to suppress.
- *
- * And by day he simply looks at you. Not approaching, not fleeing, not working
- * — the one villager in the village who stops what he is doing when you walk
- * past and turns to watch you go. He is completely harmless until dark.
+ * Its own mob rather than a real Villager, so no trading, no beds, no brain to
+ * suppress. Guards posted at his places (Watch) keep to their post instead of
+ * following (Guarding). Only a player can finish one: Addexio stops at a heart.
+ * When he is gone for good, every one of them is a villager again (redeem).
  */
 public class TurnedEntity extends PathfinderMob {
 
-	/**
-	 * How far he notices somebody, and it is the same by day and by night.
-	 *
-	 * What changes after dark is what he DOES about it, never whether he has
-	 * seen them. A villager who only looks at you when it is convenient is a
-	 * villager with a detection radius; one who has been watching you since you
-	 * came over the bridge, and then the sun goes down, is a person.
-	 */
-	private static final double NOTICES = 20.0;
-
-	/**
-	 * Faster than a zombie, slower than a sprint, and that gap is the whole
-	 * fight.
-	 *
-	 * Sprinting away works. Walking away does not. So being caught out at night
-	 * is a decision — spend the hunger, or turn and deal with him — rather than
-	 * a coin toss, and it is the same bargain the hunt makes, which means the
-	 * player has already been taught how to read it.
-	 */
+	/** Walking pace: how fast they close when they come. */
 	private static final double CHARGE_SPEED = 0.33;
 
 	/**
-	 * Once he has come for you, the morning does not save you.
-	 *
-	 * The day/night split is what the whole thing is built on, so it is
-	 * tempting to have him simply stop at dawn — and that is the version that
-	 * makes him a mechanic. Something that gives up on a schedule can be waited
-	 * out, and a player who has worked out that they only have to survive until
-	 * sunrise is playing a clock rather than running from somebody.
-	 *
-	 * So the night decides whether it STARTS. Nothing decides whether it stops
-	 * except one of them going down.
+	 * THEY SEE YOU FIRST. Through walls, floors and trees, out to SEES; that is
+	 * how they find you, and why there is no hiding in a house from one.
 	 */
-	private boolean committed;
-
-	// ---- HE WATCHES BEFORE HE COMES ----------------------------------------
-	//
-	// The old behaviour was one bit wide: he had a target or he did not, and
-	// having one meant running at you with an axe. Which is a fine thing for a
-	// village to contain one of and a terrible thing for it to contain forty of —
-	// sixteen men sprinting out of sixteen doors is a wave, and a wave is a
-	// difficulty setting rather than a fright.
-	//
-	// So there is a middle. He notices, and then he FOLLOWS at a distance, empty
-	// handed, facing you the whole time. Nothing is happening and nothing is
-	// going to happen, and the player has to decide what to do about that — which
-	// is a far worse position to be in than being chased, because being chased has
-	// an obvious correct answer and this has none.
-	//
-	// THE WHOLE STATE MACHINE IS getTarget() BEING NULL. MeleeAttackGoal cannot
-	// run without a target, so while he is stalking there is nothing to suppress
-	// and nothing to fight with — the stalk goal simply owns his feet. Setting the
-	// target is what ends it, and from that instant the ordinary goal takes over
-	// exactly as it always did. No flags, no priorities to balance, no third
-	// version of "walk toward the player" to keep in step with the other two.
-
-	/** How far off he holds while he is only watching. */
-	private static final double STANDS_OFF = 7.0;
-	/** Slack either side of it, so he is not oscillating on the spot. */
-	private static final double SLACK = 1.5;
-	/** Inside this he stops watching. */
-	private static final double SNAPS_AT = 3.5;
-	/** How long he keeps the mark after losing sight of them. */
-	private static final int REMEMBERS = 400;
-	/** Both of you motionless for this long and he takes a step. */
-	private static final int CREEPS_AFTER = 60;
-	/** How far a step is. */
-	private static final double A_STEP = 1.4;
-	/** How far a shout carries when somebody puts a sword in him. */
+	private static final double SEES = 24.0;
+	/** Past STRIKES_FROM they follow, at a walk. Inside it, they come. */
+	private static final double STRIKES_FROM = 6.0;
+	private static final double FOLLOWS_AT = 0.75;
+	private static final double COMES_AT = 1.2;
+	/** Hit one and every one of them within SHOUT comes too. */
 	private static final double SHOUT = 24.0;
-	/** Under this much movement in a tick, both of you count as standing still. */
-	private static final double STILL = 0.01;
 
-	private java.util.@org.jspecify.annotations.Nullable UUID mark;
-	private net.minecraft.core.@org.jspecify.annotations.Nullable BlockPos markAt;
-	private int patience;
-	private int stillFor;
-	private double standing = STANDS_OFF;
-
-	/** He has seen somebody. Not a target — a mark. */
-	public void notice(Player who) {
-		if (this.getTarget() != null) {
-			return;      // already past watching
-		}
-		if (this.mark == null) {
-			// Each of them picks his own distance, once, and keeps it. A row of
-			// them all holding station at exactly seven blocks is a firing line;
-			// six to nine, chosen per man, is a group of people watching you.
-			this.standing = STANDS_OFF - 1.0 + this.random.nextDouble() * 3.0;
-		}
-		this.mark = who.getUUID();
-		this.markAt = who.blockPosition();
-		this.patience = REMEMBERS;
-		this.empty();
-	}
-
-	/**
-	 * AND NOW HE HAS IT OUT.
-	 *
-	 * @param shout whether the others should hear about it
-	 *
-	 * The axe appearing is the entire transition and it wants to be visible: the
-	 * player has spent a minute being followed by somebody holding nothing, and
-	 * the moment that changes they should be able to SEE that it changed rather
-	 * than infer it from him moving faster.
-	 */
+	/** Hit one, and it — and the others near it — come for you. */
 	public void snap(Player at, boolean shout) {
 		this.carry();
 		this.setTarget(at);
-		this.committed = true;
-		this.mark = null;
-		this.patience = 0;
 		if (!shout || !(this.level() instanceof ServerLevel here)) {
 			return;
 		}
-		// AND THEY ALL COME. Hitting one of them is the loudest thing a player can
-		// do in that town, and it should cost accordingly — every one of them
-		// within the shout drops the pretence at once. It also fixes the reading:
-		// they are not forty individuals who happen to look alike, they are one
-		// thing distributed across forty bodies.
-		int woke = 0;
 		for (TurnedEntity other : here.getEntitiesOfClass(TurnedEntity.class,
 				this.getBoundingBox().inflate(SHOUT))) {
-			if (other == this || other.getTarget() != null) {
-				continue;
+			if (other != this && other.getTarget() == null && !other.isGuard()) {
+				other.carry();
+				other.setTarget(at);
 			}
-			other.carry();
-			other.setTarget(at);
-			other.committed = true;
-			other.mark = null;
-			woke++;
-		}
-		if (woke > 0) {
-			com.bloomlet.herobrine.HerobrineMod.LOGGER.info(
-				"one of them was struck — {} more put the pretence down", woke);
 		}
 	}
-
-	/** Nothing in his hands, which is most of what makes the watching bearable. */
-	private void empty() {
-		this.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-	}
-
-	/** Whoever he is watching, if they are still here. */
-	private @org.jspecify.annotations.Nullable Player marked() {
-		if (this.mark == null || !(this.level() instanceof ServerLevel here)) {
-			return null;
-		}
-		Player who = here.getPlayerByUUID(this.mark);
-		return who != null && who.isAlive() && !who.isSpectator() ? who : null;
-	}
-	// ---- END HE WATCHES ----------------------------------------------------
 
 	/**
 	 * How long since he last said something.
@@ -278,7 +130,6 @@ public class TurnedEntity extends PathfinderMob {
 	public void guard(net.minecraft.core.BlockPos post) {
 		this.setAttached(com.bloomlet.herobrine.manifest.Watch.POST, post.asLong());
 		this.setHomeTo(post, com.bloomlet.herobrine.manifest.Watch.HOLDS);
-		this.committed = true;      // daylight is no protection from a guard
 		this.raise(Attributes.MAX_HEALTH, GUARD_HEALTH);
 		this.raise(Attributes.ARMOR, GUARD_ARMOR);
 		this.raise(Attributes.ATTACK_DAMAGE, GUARD_DAMAGE);
@@ -386,39 +237,100 @@ public class TurnedEntity extends PathfinderMob {
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new FloatGoal(this));
-		// A LOCKED DOOR STOPPED BEING AN ANSWER.
-		//
-		// This used to say: no door-opening, no door-breaking, because a door he
-		// cannot pass is the difference between him and the hunt and it keeps a
-		// village at night survivable. That was written when he lived in a village
-		// in the overworld and the player was outside it.
-		//
-		// In his own world the player is the one indoors, and a creature that stops
-		// at a door is not a threat, it is scenery — you walk into any building and
-		// the whole street stands outside it. Worse, the cottages there have doors
-		// that jam, so half the time the answer was not even a decision somebody
-		// made. It was a bug the mob was politely respecting.
-		//
-		// He opens ordinary doors while he walks, and when he is ANGRY he goes
-		// through whatever is in the way. See Forces.
-		this.goalSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.OpenDoorGoal(
-			this, false));
-		// Above the melee goal, not beside it: two goals on one priority never
-		// take MOVE off each other, so with a wall between him and you the melee
-		// goal kept the flag and stood there, and this one never ran.
 		this.goalSelector.addGoal(0, new Forces(this));
-		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0, true));
-		// Awake, and visibly with nothing to do. Villagers at night are in
-		// their beds; the whole event is one man walking the square.
-		// ABOVE THE STROLL AND BELOW THE MELEE, which is the whole ordering: if he
-		// has a target the melee wins, if he has a mark this wins, and otherwise he
-		// wanders. Three states, one line.
-		this.goalSelector.addGoal(2, new Stalk(this));
+		this.goalSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.OpenDoorGoal(this, false));
+		this.goalSelector.addGoal(1, new Strike(this));
+		this.goalSelector.addGoal(2, new Follow(this));
 		this.goalSelector.addGoal(3, new net.minecraft.world.entity.ai.goal.MoveTowardsRestrictionGoal(this, 0.8));
 		this.goalSelector.addGoal(4, new RandomStrollGoal(this, 0.6));
 		this.targetSelector.addGoal(0, new Guarding(this));
-		this.targetSelector.addGoal(1, new NightWatch(this));
+		this.targetSelector.addGoal(1, new Senses(this));
 		this.carry();
+	}
+
+	/**
+	 * SIMPLE: they find you (Senses, through walls), they follow you at a walk
+	 * (Follow) until they are close enough, and then they come and hit you
+	 * (Strike). That is the whole of it.
+	 */
+	private static final class Senses
+			extends net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<Player> {
+		private final TurnedEntity him;
+
+		Senses(TurnedEntity him) {
+			super(him, Player.class, 10, false, false, (who, level) -> !who.isSpectator() && !((Player) who).isCreative());
+			this.him = him;
+		}
+
+		@Override
+		public boolean canUse() {
+			return !this.him.isGuard() && super.canUse();      // a guard keeps to his post. See Guarding
+		}
+
+		@Override
+		protected double getFollowDistance() {
+			return SEES;
+		}
+	}
+
+	private static final class Follow extends net.minecraft.world.entity.ai.goal.Goal {
+		private final TurnedEntity him;
+		private int pathIn;
+
+		Follow(TurnedEntity him) {
+			this.him = him;
+			this.setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK));
+		}
+
+		@Override
+		public boolean canUse() {
+			LivingEntity at = this.him.getTarget();
+			return at != null && at.isAlive() && this.him.distanceTo(at) > STRIKES_FROM;
+		}
+
+		@Override
+		public void start() {
+			this.pathIn = 0;
+		}
+
+		@Override
+		public void stop() {
+			this.him.getNavigation().stop();
+		}
+
+		@Override
+		public void tick() {
+			LivingEntity at = this.him.getTarget();
+			if (at == null) {
+				return;
+			}
+			this.him.getLookControl().setLookAt(at, 30.0F, 30.0F);
+			if (--this.pathIn <= 0) {
+				this.pathIn = 10;
+				this.him.getNavigation().moveTo(at, FOLLOWS_AT);
+			}
+		}
+	}
+
+	private static final class Strike extends MeleeAttackGoal {
+		private final TurnedEntity him;
+
+		Strike(TurnedEntity him) {
+			super(him, COMES_AT, true);
+			this.him = him;
+		}
+
+		@Override
+		public boolean canUse() {
+			LivingEntity at = this.him.getTarget();
+			return at != null && this.him.distanceTo(at) <= STRIKES_FROM && super.canUse();
+		}
+
+		@Override
+		public boolean canContinueToUse() {
+			LivingEntity at = this.him.getTarget();
+			return at != null && this.him.distanceTo(at) <= STRIKES_FROM + 2.0 && super.canContinueToUse();
+		}
 	}
 
 	/** How long he works at one block before it gives. */
@@ -602,255 +514,7 @@ public class TurnedEntity extends PathfinderMob {
 		this.setDropChance(EquipmentSlot.MAINHAND, 0.0F);
 	}
 
-	/**
-	 * WHO HE COMES FOR, AND WHEN.
-	 *
-	 * Written rather than assembled out of NearestAttackableTargetGoal, because
-	 * that goal is built around the two behaviours this must not have: it drops
-	 * a target the moment line of sight is lost for a few seconds, and it
-	 * re-evaluates every tick to find somebody nearer. Both of those are correct
-	 * for a zombie in a field and wrong for a person who has decided about you.
-	 *
-	 * He picks the nearest player he can actually SEE, after dark, and then he
-	 * keeps them. Going round a corner is not an escape and neither is putting
-	 * somebody else between you.
-	 */
-	/**
-	 * KEEPING PACE, AND NOTHING ELSE.
-	 *
-	 * @see TurnedEntity#notice for why the state is simply getTarget() being null
-	 *
-	 * Three things happen in tick() and they are in order of how much the player
-	 * will notice them. He holds his distance. If neither of you has moved for
-	 * three seconds he closes a step — which is the beat the whole goal exists for,
-	 * because a stalker who only ever mirrors you is a shadow, and one that gains
-	 * ground when you stop is a decision being made. And if he loses sight of you
-	 * he walks to where you were, which is not the same as giving up.
-	 */
-	private static class Stalk extends net.minecraft.world.entity.ai.goal.Goal {
-		private final TurnedEntity him;
-		private net.minecraft.world.phys.Vec3 wasAt =
-			net.minecraft.world.phys.Vec3.ZERO;
 
-		Stalk(TurnedEntity him) {
-			this.him = him;
-			this.setFlags(java.util.EnumSet.of(Flag.MOVE, Flag.LOOK));
-		}
-
-		@Override
-		public boolean canUse() {
-			return !this.him.isGuard() && this.him.getTarget() == null && this.him.marked() != null;
-		}
-
-		@Override
-		public boolean canContinueToUse() {
-			return this.canUse() && this.him.patience > 0;
-		}
-
-		@Override
-		public void stop() {
-			this.him.mark = null;
-			this.him.markAt = null;
-			this.him.stillFor = 0;
-			this.him.getNavigation().stop();
-		}
-
-		@Override
-		public void tick() {
-			Player who = this.him.marked();
-			if (who == null) {
-				return;
-			}
-			// He does not stop looking. Ever. The head is doing more work here than
-			// the feet are — a man keeping pace behind you is ordinary until you
-			// realise he has not once looked anywhere else.
-			this.him.getLookControl().setLookAt(who, 30.0F, 30.0F);
-
-			boolean seen = this.him.hasLineOfSight(who);
-			if (seen) {
-				this.him.markAt = who.blockPosition();
-				this.him.patience = REMEMBERS;
-			} else {
-				// SOME TRACK, NOT PERFECT TRACK. Twenty seconds of walking to the
-				// last place you were, and then he genuinely does not know. Running
-				// away works; running away and then standing still forty blocks off
-				// in the open does not.
-				this.him.patience--;
-				if (this.him.markAt != null) {
-					this.him.getNavigation().moveTo(this.him.markAt.getX() + 0.5,
-						this.him.markAt.getY(), this.him.markAt.getZ() + 0.5, 0.55);
-				}
-				return;
-			}
-
-			double away = this.him.distanceTo(who);
-			if (away < SNAPS_AT) {
-				// TOO CLOSE. Whether they walked into him or he closed the last step
-				// himself does not matter — at arm's length there is nothing left to
-				// watch. No shout: this one is on the player and they can see it
-				// coming, so it stays between the two of them.
-				this.him.snap(who, false);
-				return;
-			}
-
-			net.minecraft.world.phys.Vec3 now = who.position();
-			boolean bothStill = now.distanceToSqr(this.wasAt) < STILL
-				&& this.him.getDeltaMovement().horizontalDistanceSqr() < STILL;
-			this.wasAt = now;
-
-			if (away > this.him.standing + SLACK) {
-				this.him.getNavigation().moveTo(who, 0.62);
-				this.him.stillFor = 0;
-				return;
-			}
-			if (away < this.him.standing - SLACK) {
-				// Backing off, and by position rather than by path — a mob asked to
-				// pathfind AWAY from something turns its back to do it, and the one
-				// thing he must never do is stop facing you.
-				net.minecraft.world.phys.Vec3 back = this.him.position()
-					.subtract(who.position()).normalize().scale(0.06);
-				this.him.setDeltaMovement(this.him.getDeltaMovement()
-					.add(back.x, 0.0, back.z));
-				this.him.stillFor = 0;
-				return;
-			}
-
-			this.him.getNavigation().stop();
-			if (!bothStill) {
-				this.him.stillFor = 0;
-				return;
-			}
-			// AND HERE IS THE ONE THAT LANDS. Stand and look at him and he waits —
-			// and then, three seconds in, he is a block and a half nearer than he
-			// was, and he did not run and there was no sound. Waiting him out is
-			// not an option, and finding that out is the entire point of the state.
-			if (++this.him.stillFor >= CREEPS_AFTER) {
-				this.him.stillFor = 0;
-				net.minecraft.world.phys.Vec3 in = who.position()
-					.subtract(this.him.position()).normalize().scale(A_STEP);
-				this.him.getNavigation().moveTo(this.him.getX() + in.x,
-					this.him.getY(), this.him.getZ() + in.z, 0.4);
-				this.him.standing = Math.max(SNAPS_AT + 0.5,
-					this.him.standing - A_STEP);
-			}
-		}
-	}
-
-	private static class NightWatch extends net.minecraft.world.entity.ai.goal.Goal {
-		private final TurnedEntity him;
-
-		NightWatch(TurnedEntity him) {
-			this.him = him;
-			this.setFlags(java.util.EnumSet.of(Flag.TARGET));
-		}
-
-		@Override
-		public boolean canUse() {
-			if (this.him.isGuard()) {
-				return false;      // Guarding picks for a posted one, and only near the door
-			}
-			if (this.him.getTarget() != null && this.him.getTarget().isAlive()) {
-				return false;
-			}
-			// isBrightOutside rather than a time-of-day comparison, so a
-			// thunderstorm dark enough to spawn mobs is dark enough for him.
-			// That is the right reading of "night": what he waits for is the
-			// village being asleep and the light being gone, and a storm at
-			// four in the afternoon delivers both.
-			//
-			// `committed` gets him past this, which only matters in the window
-			// where the person he was going for has vanished — logged out,
-			// teleported — and somebody else is standing there. He does not go
-			// back to being a villager in the middle of it.
-			if (!this.him.committed && this.him.level().isBrightOutside()) {
-				return false;
-			}
-			return this.pick() != null;
-		}
-
-		/**
-		 * AND THE MORNING IS NOT AN ANSWER.
-		 *
-		 * Nothing about the sky is checked here, and that is the whole of the
-		 * "til you die or he die" rule. The night decides whether it STARTS;
-		 * once it has, the only two things that end it are one of them going
-		 * down. A pursuer who gives up at sunrise can be waited out, and a
-		 * player who has worked that out is playing a clock rather than running
-		 * from somebody.
-		 *
-		 * Distance is not an answer either — there is no forget-range here on
-		 * purpose. Sprinting still gets you away, because he is slower than a
-		 * sprint, but it gets you away with him still coming.
-		 */
-		@Override
-		public boolean canContinueToUse() {
-			LivingEntity target = this.him.getTarget();
-			return target != null && target.isAlive()
-				&& !(target instanceof Player player && (player.isCreative() || player.isSpectator()));
-		}
-
-		/**
-		 * It is over, and he is a villager again.
-		 *
-		 * Reached only when the person is dead or gone, because nothing else
-		 * ends canContinueToUse. Clearing `committed` here is what stops one
-		 * night turning him permanently hostile to everybody who walks past for
-		 * the rest of the save.
-		 */
-		@Override
-		public void stop() {
-			this.him.setTarget(null);
-			this.him.committed = false;
-		}
-
-		@Override
-		public void start() {
-			Player quarry = this.pick();
-			if (quarry == null) {
-				return;
-			}
-			// A MARK, NOT A TARGET. This used to hand him a target directly, which
-			// meant the first thing the night ever did was start a fight. He notices
-			// now, and what happens next is up to how close the player comes.
-			this.him.notice(quarry);
-			// THE MOMENT, and it wants exactly one sound. He has been standing
-			// there muttering all evening and now he is not.
-			if (!this.him.committed) {
-				this.him.committed = true;
-				this.him.level().playSound(null, this.him.getX(), this.him.getY(),
-					this.him.getZ(), SoundEvents.VILLAGER_NO,
-					this.him.getSoundSource(), 1.6F, 0.6F);
-				HerobrineMod.LOGGER.info("the turned one has come for {} at [{}, {}, {}]",
-					quarry.getName().getString(), this.him.blockPosition().getX(),
-					this.him.blockPosition().getY(), this.him.blockPosition().getZ());
-			}
-		}
-
-		/** Nearest, and he has to be able to see them. */
-		private @org.jspecify.annotations.Nullable Player pick() {
-			Player best = null;
-			double nearest = Double.MAX_VALUE;
-			for (Player player : this.him.level().players()) {
-				if (!player.isAlive() || player.isSpectator() || player.isCreative()) {
-					continue;
-				}
-				double away = this.him.distanceTo(player);
-				if (away > NOTICES || away >= nearest) {
-					continue;
-				}
-				// SEEN, not merely near. "If you are seen he comes running" is
-				// the whole rule, and it is also the counter-play: staying
-				// behind the wall works, and works for as long as you keep it
-				// between you.
-				if (!this.him.hasLineOfSight(player)) {
-					continue;
-				}
-				nearest = away;
-				best = player;
-			}
-			return best;
-		}
-	}
 
 	/**
 	 * BY DAY HE WATCHES, AND THAT IS ALL HE DOES.
@@ -905,9 +569,6 @@ public class TurnedEntity extends PathfinderMob {
 		this.discard();
 	}
 
-	/** Who had his eye at the last look; see tick(). */
-	private @org.jspecify.annotations.Nullable Player watcher;
-
 	@Override
 	public void tick() {
 		super.tick();
@@ -915,7 +576,7 @@ public class TurnedEntity extends PathfinderMob {
 			return;
 		}
 		if (Corpses.isCorpse(this)) {
-			return;      // a dead one does not talk, watch, or turn to face you
+			return;      // a dead one does not talk or come
 		}
 		if (this.tickCount % 20 == 0 && this.level().getServer() != null
 			&& com.bloomlet.herobrine.wrath.Wrath.removed(this.level().getServer())) {
@@ -925,61 +586,16 @@ public class TurnedEntity extends PathfinderMob {
 		this.talk();
 		if (this.isGuard()) {
 			this.hold();
-			return;      // a guard does not play the game below. See Watch
-		}
-		if (this.getTarget() != null) {
-			return;      // he is busy
-		}
-		if ((this.tickCount & 3) == 0) {
-			// A village holds many of these. The look, nearest player then a raycast,
-			// is taken every fourth tick and remembered. The freeze below runs every
-			// tick, or he would creep three ticks in four while being watched.
-			Player near = this.level().getNearestPlayer(this, NOTICES);
-			this.watcher = near != null && this.hasLineOfSight(near) ? near : null;
-		}
-		Player watching = this.watcher;
-		if (watching == null || watching.isRemoved()) {
-			return;
-		}
-		this.getNavigation().stop();
-		float yaw = (float)(net.minecraft.util.Mth.atan2(
-			watching.getZ() - this.getZ(), watching.getX() - this.getX())
-			* (180.0 / Math.PI)) - 90.0F;
-		this.setYRot(yaw);
-		this.yHeadRot = yaw;
-		// The previous-tick value as well, or the client interpolates from
-		// wherever he was facing and the turn arrives as a visible snap.
-		this.yHeadRotO = yaw;
-		this.setYBodyRot(yaw);
-		// The yaw is pinned above; this is only here for the PITCH, so he looks
-		// up at somebody on a roof and down at somebody in a ditch. Exactly the
-		// split HerobrineEntity.faceOneOf uses, and for the same reason — the
-		// look control on its own lags behind anybody walking round him, which
-		// reads as losing track of them.
-		this.getLookControl().setLookAt(watching.getX(), watching.getEyeY(),
-			watching.getZ(), 90.0F, 90.0F);
-		// STARE BACK LONG ENOUGH AND IT KNOWS IT IS SEEN. Standing still and
-		// looking at one used to be perfectly safe, by day, for as long as you
-		// liked; it stood there and looked back. Now it gives you three seconds.
-		if (this.looking(watching)) {
-			if (++this.staredFor >= STARED_OUT) {
-				this.staredFor = 0;
-				this.snap(watching, false);
-			}
-		} else {
-			this.staredFor = 0;
 		}
 	}
 
-	private static final int STARED_OUT = 60;
-	private static final double STARES_WITHIN = 0.8;      // cos of the cone: about 37 degrees either side
-	private int staredFor;
-
-	private boolean looking(Player who) {
-		net.minecraft.world.phys.Vec3 eye = who.getViewVector(1.0F).normalize();
-		net.minecraft.world.phys.Vec3 toMe = new net.minecraft.world.phys.Vec3(
-			this.getX() - who.getX(), this.getEyeY() - who.getEyeY(), this.getZ() - who.getZ());
-		return eye.dot(toMe.normalize()) > STARES_WITHIN;
+	/**
+	 * A LONG ARM, LIKE A GOLEM'S. The axe reaches further than a fist: a swing
+	 * lands from most of a block further out than a zombie's would.
+	 */
+	@Override
+	protected net.minecraft.world.phys.AABB getAttackBoundingBox(double expansion) {
+		return super.getAttackBoundingBox(expansion).inflate(0.9, 0.0, 0.9);
 	}
 
 	/** He will not stop muttering, and it is pitched a little low. */
@@ -1023,8 +639,6 @@ public class TurnedEntity extends PathfinderMob {
 			if (!(this.getTarget() instanceof Player)) {      // a player is the prize; otherwise, him
 				this.carry();
 				this.setTarget(he);
-				this.committed = true;
-				this.mark = null;
 			}
 			// ADDEXIO WOUNDS, YOU FINISH. His sword counts — a man swinging forever
 			// at something he cannot dent is a man who never leaves — but it stops at
@@ -1042,24 +656,10 @@ public class TurnedEntity extends PathfinderMob {
 		return false;
 	}
 
-	/**
-	 * And zombies do not queue up for him either.
-	 *
-	 * Refusing the damage stops him dying and does not stop six of them
-	 * following him round the square all night, which looks ridiculous and
-	 * pins his pathfinding. He is not a Villager, so nothing targets him by
-	 * type — this only has to catch anything that picked him up as a generic
-	 * nearby living thing.
-	 */
-	/**
-	 * ...unless it has put the pretence down. Addexio's targeting goes through
-	 * TargetingConditions, and that asks this first; a pretender stays nobody's
-	 * enemy, or Addexio walking through a village would give every one of them
-	 * away. One that has committed is fair game.
-	 */
+	/** There is no pretence left to keep: Addexio, golems and everyone else may see him for what he is. */
 	@Override
 	public boolean canBeSeenAsEnemy() {
-		return this.committed || this.getTarget() != null;
+		return true;
 	}
 
 	/**
@@ -1100,13 +700,11 @@ public class TurnedEntity extends PathfinderMob {
 	@Override
 	public void addAdditionalSaveData(net.minecraft.world.level.storage.ValueOutput output) {
 		super.addAdditionalSaveData(output);
-		output.putBoolean("Committed", this.committed);
 	}
 
 	@Override
 	public void readAdditionalSaveData(net.minecraft.world.level.storage.ValueInput input) {
 		super.readAdditionalSaveData(input);
-		this.committed = input.getBooleanOr("Committed", false);
 	}
 
 	@Override

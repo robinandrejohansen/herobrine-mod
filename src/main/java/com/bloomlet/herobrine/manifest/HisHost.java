@@ -106,7 +106,7 @@ public final class HisHost {
 		}
 		java.util.List<ItemStack> drops = net.minecraft.world.level.block.Block.getDrops(
 			state, here, pos, be, player, player.getMainHandItem());
-		if (drops.isEmpty()) {
+		if (drops.isEmpty() || be != null) {      // a shulker box drops with its contents: three of those is a dupe
 			return;
 		}
 		for (int again = 1; again < TIMES; again++) {

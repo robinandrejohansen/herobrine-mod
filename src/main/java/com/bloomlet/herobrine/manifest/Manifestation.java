@@ -1,7 +1,6 @@
 package com.bloomlet.herobrine.manifest;
 
 import com.bloomlet.herobrine.entity.HauntingSpawner;
-import com.bloomlet.herobrine.wrath.Phase;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,7 +16,7 @@ import net.minecraft.server.level.ServerPlayer;
 public enum Manifestation {
 
 	/** Footsteps behind you, once, with nothing there. */
-	FOOTSTEPS(Phase.RUMOUR, 10) {
+	FOOTSTEPS(10, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Traces.footsteps(level, player);
@@ -25,7 +24,7 @@ public enum Manifestation {
 	},
 
 	/** A sound that belongs somewhere else. */
-	WRONG_SOUND(Phase.RUMOUR, 8) {
+	WRONG_SOUND(8, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Traces.wrongSound(level, player);
@@ -33,7 +32,7 @@ public enum Manifestation {
 	},
 
 	/** A torch you placed, on the ground, unlit. */
-	SNUFFED_TORCH(Phase.RUMOUR, 12) {
+	SNUFFED_TORCH(12, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Traces.snuffTorch(level, player);
@@ -41,7 +40,7 @@ public enum Manifestation {
 	},
 
 	/** A creeper behind you that never goes off. */
-	THE_FUSE(Phase.RUMOUR, 6) {
+	THE_FUSE(6, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Traces.fuse(level, player);
@@ -49,7 +48,7 @@ public enum Manifestation {
 	},
 
 	/** One of your animals stops being an animal. */
-	POSSESSED_MOB(Phase.MIMIC, 12) {
+	POSSESSED_MOB(12, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Possession.take(level, player);
@@ -64,7 +63,7 @@ public enum Manifestation {
 	 * and it is the one with the strictest rule behind it: everything taken is
 	 * kept and comes back. See Hoard.
 	 */
-	THE_TAKING(Phase.TRESPASSER, 5) {
+	THE_TAKING(5, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Hoard.steal(level, player);
@@ -72,7 +71,7 @@ public enum Manifestation {
 	},
 
 	/** Something old, at the edge of your world, that was not there yesterday. */
-	THE_RUIN(Phase.TRESPASSER, 8) {
+	THE_RUIN(8, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Ruins.raise(level, player);
@@ -80,7 +79,7 @@ public enum Manifestation {
 	},
 
 	/** Four words on your wall. The first thing you cannot argue with. */
-	THE_SIGN(Phase.TRESPASSER, 14) {
+	THE_SIGN(14, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Signs.write(level, player);
@@ -94,7 +93,7 @@ public enum Manifestation {
 	 * time — it needs the player deep, roofed, and away from the real ones, so
 	 * the effective rate is far lower than the number suggests.
 	 */
-	THE_BREATHING(Phase.RUMOUR, 11) {
+	THE_BREATHING(11, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Deeps.breathing(level, player);
@@ -108,7 +107,7 @@ public enum Manifestation {
 	 * before this is deniable and local; nobody talks themselves out of the
 	 * afternoon ending.
 	 */
-	THE_DARK(Phase.HUNTER, 12) {
+	THE_DARK(6, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return TheDark.fall(level, player);
@@ -138,7 +137,7 @@ public enum Manifestation {
 	 * The entry stays so that the config switch, the ordinal and every saved
 	 * suppression list keep working. It simply never runs.
 	 */
-	THE_HUNT(Phase.HUNTER, 0) {
+	THE_HUNT(0, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return false;
@@ -162,7 +161,7 @@ public enum Manifestation {
 	 * a player who finds three over a week has assembled something nobody wrote
 	 * down for them.
 	 */
-	THE_CHAMBER(Phase.RUMOUR, 12) {
+	THE_CHAMBER(12, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Chambers.cut(level, player);
@@ -170,7 +169,7 @@ public enum Manifestation {
 	},
 
 	/** Trees with every leaf taken off, in a rough circle. */
-	THE_GROVE(Phase.RUMOUR, 13) {
+	THE_GROVE(13, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Signature.grove(level, player);
@@ -178,7 +177,7 @@ public enum Manifestation {
 	},
 
 	/** One redstone torch, burning, in a cave nobody has been in. */
-	THE_TORCH(Phase.RUMOUR, 12) {
+	THE_TORCH(12, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Signature.torch(level, player);
@@ -192,7 +191,7 @@ public enum Manifestation {
 	 * most of the time inland — not because it is too strong for phase one. If
 	 * anything it is the most deniable thing in the mod: it is just sand.
 	 */
-	THE_PYRAMID(Phase.WATCHER, 11) {
+	THE_PYRAMID(11, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Signature.pyramid(level, player);
@@ -200,7 +199,7 @@ public enum Manifestation {
 	},
 
 	/** Two blocks square, dead straight, eighty long, going nowhere. */
-	THE_TUNNEL(Phase.WATCHER, 12) {
+	THE_TUNNEL(12, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Signature.tunnel(level, player);
@@ -214,7 +213,7 @@ public enum Manifestation {
 	 * it waits until TRESPASSER — the phase whose whole job is him crossing
 	 * from being in your world to being in your business.
 	 */
-	THE_SEAL(Phase.TRESPASSER, 11) {
+	THE_SEAL(11, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Signature.seal(level, player);
@@ -231,7 +230,7 @@ public enum Manifestation {
 	 * player never gets long enough to be sure. A stare at RUMOUR would answer
 	 * the question the whole phase exists to keep open. A glimpse asks it.
 	 */
-	THE_GLIMPSE(Phase.RUMOUR, 12) {
+	THE_GLIMPSE(12, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return HauntingSpawner.glimpse(level, player)
@@ -246,7 +245,7 @@ public enum Manifestation {
 	 * WATCHER, because unlike the glimpse this one IS resolvable — you get
 	 * long enough to be certain — and being certain is what WATCHER is for.
 	 */
-	THE_PASSAGE(Phase.WATCHER, 14) {
+	THE_PASSAGE(14, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return HauntingSpawner.passage(level, player)
@@ -265,7 +264,7 @@ public enum Manifestation {
 	 * still not have met HIM, which is the wrong way round.
 	 */
 	/** A small perfect room in a hillside; a bed slept in, a furnace still lit. */
-	THE_CAMP(Phase.WATCHER, 13) {
+	THE_CAMP(13, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Marks.camp(level, player);
@@ -273,14 +272,14 @@ public enum Manifestation {
 	},
 
 	/** A cross cut straight down into the ground, a red torch at the bottom. */
-	THE_CROSS(Phase.WATCHER, 12) {
+	THE_CROSS(12, true) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			return Marks.cross(level, player);
 		}
 	},
 
-	THE_STARE(Phase.WATCHER, 18) {
+	THE_STARE(18, false) {
 		@Override
 		public boolean run(ServerLevel level, ServerPlayer player) {
 			HauntingSpawner.Outcome outcome = HauntingSpawner.place(level, player, false);
@@ -289,6 +288,27 @@ public enum Manifestation {
 			}
 			ManifestationDirector.refused(outcome.reason());
 			return false;
+		}
+	},
+	/** A door, a trapdoor or a chest near you opens on its own. */
+	THE_DOOR(12, true) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Omens.opens(level, player);
+		}
+	},
+	/** A stand of trees in sight loses every leaf at once. */
+	THE_BARE(9, true) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Omens.bare(level, player);
+		}
+	},
+	/** A fire starts in the open, where you can see it. */
+	THE_FIRE(6, true) {
+		@Override
+		public boolean run(ServerLevel level, ServerPlayer player) {
+			return Omens.fire(level, player);
 		}
 	};
 
@@ -306,9 +326,9 @@ public enum Manifestation {
 			return false;
 		}
 		return switch (this) {
-			case FOOTSTEPS, WRONG_SOUND, SNUFFED_TORCH, THE_FUSE -> config.traces;
+			case FOOTSTEPS, WRONG_SOUND, SNUFFED_TORCH, THE_FUSE, THE_DOOR -> config.traces;
 			case THE_GROVE, THE_TORCH, THE_PYRAMID, THE_TUNNEL, THE_SEAL,
-			     THE_CHAMBER, THE_CAMP, THE_CROSS -> config.signs;
+			     THE_CHAMBER, THE_CAMP, THE_CROSS, THE_BARE, THE_FIRE -> config.signs;
 			case THE_BREATHING -> config.theBreathing;
 			case POSSESSED_MOB -> config.possession;
 			case THE_TAKING -> config.theTaking;
@@ -321,13 +341,14 @@ public enum Manifestation {
 	}
 
 	/** Earliest phase this can appear in. */
-	public final Phase minimum;
-	/** Relative likelihood among everything else eligible. */
+	/** How likely, against the others. Not by phase: every one of them can happen from the first night. */
 	public final int weight;
+	/** Whether the weather answers it — one of his works, not just a sound. See Storm.omen. */
+	public final boolean omen;
 
-	Manifestation(Phase minimum, int weight) {
-		this.minimum = minimum;
+	Manifestation(int weight, boolean omen) {
 		this.weight = weight;
+		this.omen = omen;
 	}
 
 	/**

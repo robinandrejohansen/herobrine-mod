@@ -84,16 +84,11 @@ public final class Deeps {
 			return false;
 		}
 
-		Phase phase = Wrath.phase(level.getServer());
 		// It goes on longer the further in you are. Early it is four or five
 		// beats and easy to miss; by the end it will keep at it for half a
 		// minute, which is long enough that a player has to decide whether to
 		// stay down here.
-		int beats = switch (phase) {
-			case RUMOUR, WATCHER -> 4 + random.nextInt(3);
-			case TRESPASSER, MIMIC -> 6 + random.nextInt(4);
-			case HUNTER, SIEGE -> 9 + random.nextInt(5);
-		};
+		int beats = 4 + random.nextInt(11);      // four to fourteen, at random
 
 		Vec3 at = from;
 		int when = 0;

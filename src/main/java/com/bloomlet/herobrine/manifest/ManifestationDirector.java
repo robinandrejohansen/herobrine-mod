@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.bloomlet.herobrine.HerobrineMod;
-import com.bloomlet.herobrine.wrath.Phase;
 import com.bloomlet.herobrine.wrath.Heat;
 import com.bloomlet.herobrine.wrath.Wrath;
 
@@ -41,8 +40,8 @@ public final class ManifestationDirector {
 	private ManifestationDirector() {}
 
 	/** Design target. Long on purpose — the quiet is the majority state. */
-	private static final int WINDOW_MIN_TICKS = 8 * 60 * 20;
-	private static final int WINDOW_MAX_TICKS = 20 * 60 * 20;
+	private static final int WINDOW_MIN_TICKS = 4 * 60 * 20;      // four to eighteen minutes: wide, so it is never a metronome
+	private static final int WINDOW_MAX_TICKS = 18 * 60 * 20;
 	/** How many recent manifestations are blocked from repeating. */
 	private static final int SUPPRESS_LAST = 2;
 	private static final int CHECK_INTERVAL = 100;
@@ -135,13 +134,12 @@ public final class ManifestationDirector {
 	 */
 	public static Manifestation attempt(MinecraftServer server, ServerLevel level,
 	                                    ServerPlayer player, boolean forced) {
-		Phase phase = Wrath.phase(server);
 		RandomSource random = level.getRandom();
 
 		Deque<Manifestation> mine = recentFor(player);
 		List<Manifestation> eligible = new ArrayList<>();
 		for (Manifestation m : Manifestation.values()) {
-			if (m.allowed() && phase.atLeast(m.minimum) && !mine.contains(m)) {
+			if (m.allowed() && m.weight > 0 && !mine.contains(m)) {
 				eligible.add(m);
 			}
 		}
@@ -159,7 +157,7 @@ public final class ManifestationDirector {
 		boolean happened = false;
 		List<Manifestation> remaining = new ArrayList<>(eligible);
 		while (!remaining.isEmpty() && !happened) {
-			chosen = pick(remaining, phase, random);
+			chosen = pick(remaining, random);
 			remaining.remove(chosen);
 			happened = chosen.run(level, player);
 			if (!happened) {
@@ -174,6 +172,12 @@ public final class ManifestationDirector {
 			}
 			// Logged so a playtester can correlate what fired with what they
 			// felt. Without this the only record of a scare is a memory.
+			// HIS WORKS MOVE THE SKY, sometimes. Half of them, at random, and
+			// Storm decides the shape. See Manifestation.omen.
+			if (chosen.omen && random.nextBoolean()) {
+				BlockPos where = lastLocation != null ? lastLocation : player.blockPosition();
+				Storm.omen(level, where);
+			}
 			HerobrineMod.LOGGER.info("{} at [{}, {}, {}] for {}{}",
 				chosen.name(),
 				(int)player.getX(), (int)player.getY(), (int)player.getZ(),
@@ -187,57 +191,20 @@ public final class ManifestationDirector {
 		return happened ? chosen : null;
 	}
 
-	/**
-	 * Weighted pick, with the CURRENT phase's own content favoured heavily.
-	 *
-	 * Without this, every phase dilutes the one before it: by WATCHER the
-	 * stare is one option in four and you barely ever see him, even though he
-	 * is the entire point of that phase. Older content still appears — a late
-	 * world should still get a quiet footstep — it just stops drowning out
-	 * whatever the phase actually unlocked.
-	 */
-	private static final int CURRENT_PHASE_BOOST = 3;
-
-	private static Manifestation pick(List<Manifestation> pool, Phase phase, RandomSource random) {
-		Phase newest = newestWithContent(phase, pool);
+	/** Weighted at random. Every one can happen from the first night; nothing is held back for later. */
+	private static Manifestation pick(List<Manifestation> pool, RandomSource random) {
 		int total = 0;
 		for (Manifestation m : pool) {
-			total += weightIn(m, newest);
+			total += m.weight;
 		}
 		int roll = random.nextInt(Math.max(1, total));
 		for (Manifestation m : pool) {
-			roll -= weightIn(m, newest);
+			roll -= m.weight;
 			if (roll < 0) {
 				return m;
 			}
 		}
 		return pool.get(pool.size() - 1);
-	}
-
-	private static int weightIn(Manifestation m, Phase newest) {
-		return m.minimum == newest ? m.weight * CURRENT_PHASE_BOOST : m.weight;
-	}
-
-	/**
-	 * The most recent phase that actually unlocked something.
-	 *
-	 * Not simply the current phase. A phase with no content of its own — which
-	 * every phase is until it gets built — would boost nothing, so the
-	 * previous phase's signature event silently loses its advantage and gets
-	 * outweighed by the older traces again. Crossing into TRESPASSER would
-	 * have made him appear LESS often than at WATCHER, which is backwards.
-	 *
-	 * Boosting the newest content the player has actually unlocked keeps the
-	 * most recent thing prominent regardless of which phases are still empty.
-	 */
-	private static Phase newestWithContent(Phase current, List<Manifestation> pool) {
-		Phase newest = Phase.RUMOUR;
-		for (Manifestation m : pool) {
-			if (current.atLeast(m.minimum) && m.minimum.ordinal() > newest.ordinal()) {
-				newest = m.minimum;
-			}
-		}
-		return newest;
 	}
 
 	private static void reschedule(ServerPlayer player, ServerLevel level, MinecraftServer server) {
@@ -265,38 +232,7 @@ public final class ManifestationDirector {
 	 * meant to be felt as a tightening rather than noticed as a number.
 	 */
 	private static int windowFor(ServerPlayer player, RandomSource random) {
-		// One dial, applied once. This used to multiply Wrath.into here AND the
-		// per-player share inside attentionFactor — two readings of the same
-		// climbing total, compounding, which is how the gap between events could
-		// quietly collapse to the forty-tick floor and stay there.
-		// AND THE GAP CLOSES AS HE GETS WORSE.
-		//
-		// The POOL grew with the phase — nine things are possible at RUMOUR and
-		// twenty-two by HUNTER — but the CLOCK never did, so the rate was one trace
-		// every eight to twenty minutes from the first night to the last. Which
-		// reads exactly as reported: something happens on the walk to the town, and
-		// then it goes quiet, and stays quiet, because eight to twenty minutes is a
-		// long time to be walking and nothing is broken.
-		//
-		// More KINDS of event at the same rate is variety. Escalation is the job.
-		//
-		// FLOORED AT TWO MINUTES, and that floor is the whole reason this is safe to
-		// add. The comment above records what happened last time two climbing scales
-		// were multiplied together: the gap collapsed to the forty-tick floor and
-		// stayed there. Heat is the player's own attention and phase is the world's
-		// state, so they are genuinely different axes — but two multipliers is two
-		// multipliers, and a hard floor costs nothing and cannot be argued with.
-		float tighter = switch (com.bloomlet.herobrine.wrath.Wrath.phase(
-				((ServerLevel) player.level()).getServer())) {
-			case RUMOUR -> 1.0F;
-			case WATCHER -> 0.88F;
-			case TRESPASSER -> 0.76F;
-			case MIMIC -> 0.64F;
-			case HUNTER -> 0.54F;
-			case SIEGE -> 0.45F;
-		};
-		return Math.max(NEVER_TIGHTER,
-			(int)(window(random) * tighter / attentionFactor(player)));
+		return Math.max(NEVER_TIGHTER, (int)(window(random) / attentionFactor(player)));
 	}
 
 	private static int window(RandomSource random) {
@@ -342,11 +278,10 @@ public final class ManifestationDirector {
 
 	/** What is eligible right now, for debug reporting. */
 	public static List<Manifestation> eligible(MinecraftServer server, ServerPlayer player) {
-		Phase phase = Wrath.phase(server);
 		Deque<Manifestation> mine = recentFor(player);
 		List<Manifestation> out = new ArrayList<>();
 		for (Manifestation m : Manifestation.values()) {
-			if (m.allowed() && phase.atLeast(m.minimum) && !mine.contains(m)) {
+			if (m.allowed() && m.weight > 0 && !mine.contains(m)) {
 				out.add(m);
 			}
 		}

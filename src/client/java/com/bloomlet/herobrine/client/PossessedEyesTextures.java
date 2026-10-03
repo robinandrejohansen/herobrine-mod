@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.bloomlet.herobrine.HerobrineMod;
-import com.bloomlet.herobrine.wrath.Phase;
 
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
@@ -87,34 +86,6 @@ public final class PossessedEyesTextures {
 		HUNTING.put(type, HerobrineMod.id("textures/entity/possessed/" + name + "_hunting.png"));
 	}
 
-	/**
-	 * What the WHOLE herd is wearing, by phase, whether he took it or not.
-	 *
-	 * Possession takes one animal and means something by it. This means
-	 * something else: by HUNTER it is not one cow, it is every cow, and the
-	 * player looks up from a fence line to find the entire field looking back.
-	 * Nothing has been done to them and nothing needs to be — the point is
-	 * precisely that it is not personal any more.
-	 *
-	 * Decided on the CLIENT from the phase it already knows, rather than by
-	 * writing an attachment onto every animal in the world. The server would
-	 * have to touch and sync thousands of entities to say something it has
-	 * already told the client once, and the answer would be identical.
-	 *
-	 * Villagers are left out. They get eyes only by being taken, because a
-	 * whole town of them staring is a different story from the one this tells,
-	 * and normal villagers were asked for by name.
-	 */
-	public static int herdMenace(EntityType<?> type, Phase phase) {
-		if (type != EntityTypes.COW && type != EntityTypes.PIG
-			&& type != EntityTypes.SHEEP && type != EntityTypes.CHICKEN) {
-			return 0;
-		}
-		if (phase.atLeast(Phase.SIEGE)) {
-			return 2;
-		}
-		return phase.atLeast(Phase.HUNTER) ? 1 : 0;
-	}
 
 	/**
 	 * @param menace 0 while it is still stalking, 1 locked on, 2 hunting
@@ -125,6 +96,6 @@ public final class PossessedEyesTextures {
 		if (menace <= 0) {
 			return null;   // stalking animals look like animals
 		}
-		return (menace >= 2 ? HUNTING : LOCKED).get(type);
+		return LOCKED.get(type);      // white, whether it follows you or comes for you
 	}
 }

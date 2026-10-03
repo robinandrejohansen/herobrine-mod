@@ -395,7 +395,7 @@ public class GauntEntity extends PathfinderMob {
 			//
 			// Well under a player's walk. It never catches anybody who is moving.
 			// It catches people who stopped.
-			.add(Attributes.MOVEMENT_SPEED, 0.30)      // it covers ground when you are not looking; 0.25 read as a shuffle
+			.add(Attributes.MOVEMENT_SPEED, BASE_SPEED)      // it covers ground when you are not looking; 0.25 read as a shuffle
 			.add(Attributes.FOLLOW_RANGE, 64.0)
 			.add(Attributes.STEP_HEIGHT, 1.0);
 	}
@@ -475,7 +475,7 @@ public class GauntEntity extends PathfinderMob {
 		// Melee stays, and it is deliberately allowed to run while frozen. isImmobile
 		// stops the body; the goal still swings. Something that has reached you does
 		// not politely wait for you to look away.
-		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.15, true));
+		this.goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.0, true));
 		this.goalSelector.addGoal(2, new Close(this));
 		this.goalSelector.addGoal(3, new Return(this));
 		// AND IT LOOKS FOR HER TOO, which is what makes her mortal enough to matter.
@@ -566,23 +566,16 @@ public class GauntEntity extends PathfinderMob {
 	 */
 	@Override
 	protected boolean isImmobile() {
-		return super.isImmobile() || this.frozen();
+		return super.isImmobile() || this.halted > 0;
 	}
 
 	/** Ticks after a blow during which being watched does not hold it: it goes for whoever struck. */
 	private static final int PROVOKED_FOR = 80;
 	private int provokedUntil;
 
+	/** It stopped dead, on a whim. Nothing to do with who is looking any more. See whims. */
 	private boolean frozen() {
-		// Not once it is on top of you. At that range the game is up and pretending
-		// otherwise would mean a mob that can never land the hit it walked over for.
-		// And not for four seconds after somebody has hit it: the stare is for the
-		// watcher, the swing is for the striker, and the striker wins.
-		if (this.tickCount < this.provokedUntil && this.getTarget() != null) {
-			return false;
-		}
-		return this.watchedFor > 0 && (this.getTarget() == null
-			|| this.distanceTo(this.getTarget()) > REACHES);
+		return this.halted > 0;
 	}
 
 	@Override
@@ -613,57 +606,69 @@ public class GauntEntity extends PathfinderMob {
 
 		// EVERY OTHER TICK. The stare costs a raycast per player in range; nobody
 		// blinks inside a twentieth of a second, so the thing is not made weaker.
-		if ((this.tickCount & 1) == 0) {
-			this.lastWatcher = this.watcher();
+		LivingEntity target = this.getTarget();
+		boolean onYou = target != null && this.distanceToSqr(target) < 16.0 * 16.0;
+		if (this.entityData.get(STARING) != onYou) {
+			this.entityData.set(STARING, onYou);      // the head goes over and the hands come up: see GauntRenderer
 		}
-		Player seen = this.lastWatcher;
-		this.entityData.set(STARING, seen != null);
-		// THE CLOCK STARTS THE MOMENT IT IS IN THE ROOM WITH SOMEBODY.
-		//
-		// Either half will do to start it — being looked at, or having decided
-		// about somebody — and it has to be either, not just the first. Being seen
-		// alone would leave a hole for the one thing this creature is built to do:
-		// close on you while you are facing the other way. It would arrive having
-		// never been looked at, with a clock that had never started, and hold off
-		// forever.
-		if (this.met < HOLDS_OFF && (seen != null || this.getTarget() != null)) {
-			this.met++;
-		}
-		if (seen == null || (this.tickCount < this.provokedUntil && this.getTarget() != null)) {
-			this.watchedFor = 0;
-			return;      // nobody watching — or somebody hit it, and it has stopped caring who watches
-		}
-		this.watchedFor++;
-		if (this.frozen()) {
-			// Beyond reach it does not move while you watch. Within REACHES it does —
-			// that is what REACHES is for — or a thing you could keep off forever by
-			// facing it never lands a hand on anybody, which is what happened.
-			this.getNavigation().stop();
-		}
-		// Squared up, so being watched is being LOOKED BACK AT. A head turned to
-		// you on a body facing the trees reads as a mob mid-pathfind; the whole
-		// body turned reads as attention, and attention is the entire performance.
-		float yaw = (float)(Mth.atan2(seen.getZ() - this.getZ(),
-			seen.getX() - this.getX()) * (180.0 / Math.PI)) - 90.0F;
-		this.setYRot(yaw);
-		this.yHeadRot = yaw;
-		this.yHeadRotO = yaw;
-		this.setYBodyRot(yaw);
-		this.getLookControl().setLookAt(seen.getX(), seen.getEyeY(), seen.getZ(),
-			90.0F, 90.0F);
+		this.whims(target);
+	}
 
-		if (this.watchedFor > STARE_COSTS) {
-			seen.addEffect(new MobEffectInstance(MobEffects.DARKNESS, DARK_FOR, 0,
-				false, false));
-			// AND EVERY TIME THE SCREEN GOES, IT IS NEARER.
-			if (++this.pulsing >= PULSE) {
-				this.pulsing = 0;
-				this.beat();
-				this.step(seen);
+	/**
+	 * IT JUST COMES — AT A NORMAL PACE — BUT YOU CANNOT READ IT.
+	 *
+	 * It used to stop dead whenever anyone looked at it and creep while they did
+	 * not, darken the screen, step in on every heartbeat, and refuse to swing for
+	 * the first ten seconds. All of it is gone. It finds you through walls
+	 * (Senses), it walks at you, it hits you from further out than anything its
+	 * size should (getAttackBoundingBox). What is left of the strangeness is the
+	 * rhythm: every two to six seconds, at random, it stops dead for a moment with
+	 * its head over, or it lunges — a burst of speed across the gap — or it simply
+	 * keeps coming. You never know which.
+	 */
+	private static final double BASE_SPEED = 0.25;
+	private static final double LUNGES_AT = 0.42;
+	private int halted;
+	private int lunging;
+	private int whimIn = 40;
+
+	private void whims(@org.jspecify.annotations.Nullable LivingEntity target) {
+		if (this.halted > 0) {
+			this.halted--;
+			this.getNavigation().stop();
+			if (target != null) {
+				this.getLookControl().setLookAt(target, 90.0F, 90.0F);
 			}
-		} else {
-			this.pulsing = 0;
 		}
+		if (this.lunging > 0 && --this.lunging == 0) {
+			this.pace(BASE_SPEED);
+		}
+		if (target == null || --this.whimIn > 0) {
+			return;
+		}
+		this.whimIn = 40 + this.random.nextInt(80);
+		int roll = this.random.nextInt(10);
+		if (roll < 2) {
+			this.halted = 10 + this.random.nextInt(25);
+		} else if (roll < 4 && this.distanceTo(target) > 4.0) {
+			this.lunging = 12 + this.random.nextInt(12);
+			this.pace(LUNGES_AT);
+			this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+				SoundEvents.WARDEN_STEP, this.getSoundSource(), 1.0F, DEEP);
+		}
+	}
+
+	private void pace(double speed) {
+		net.minecraft.world.entity.ai.attributes.AttributeInstance it = this.getAttribute(Attributes.MOVEMENT_SPEED);
+		if (it != null) {
+			it.setBaseValue(speed);
+		}
+	}
+
+	/** A LONG ARM, LIKE A GOLEM'S: its swing lands from well over a block further out than its body. */
+	@Override
+	protected net.minecraft.world.phys.AABB getAttackBoundingBox(double expansion) {
+		return super.getAttackBoundingBox(expansion).inflate(1.2, 0.0, 1.2);
 	}
 
 	/** Vanilla's DARKNESS period. The screen dips once a second. */
@@ -1078,9 +1083,6 @@ public class GauntEntity extends PathfinderMob {
 		// BEFORE super, so nothing at all happens — no damage, no knockback, no
 		// sound. It reaches you, it swings, and the swing goes through you. See
 		// HOLDS_OFF: the first ten seconds of this creature are free.
-		if (this.met < HOLDS_OFF) {
-			return false;
-		}
 		if (!super.doHurtTarget(level, target)) {
 			return false;
 		}
@@ -1110,6 +1112,7 @@ public class GauntEntity extends PathfinderMob {
 	public void readAdditionalSaveData(net.minecraft.world.level.storage.ValueInput input) {
 		super.readAdditionalSaveData(input);
 		this.met = input.getIntOr("Met", 0);
+		this.pace(BASE_SPEED);      // never saved mid-lunge, and older saves were faster
 		this.woods = input.getBooleanOr("Woods", false);
 		long door = input.getLongOr("Cell", 0L);
 		this.cell = door == 0L ? null : BlockPos.of(door);

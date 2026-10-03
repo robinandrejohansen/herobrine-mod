@@ -129,6 +129,20 @@ public final class HisWeather {
 
 	private static int tickCounter;
 
+	/**
+	 * HIS WORLD'S WEATHER IS HIM TOO. It poured here for ever; now it is dry
+	 * unless he is near somebody — within HE_IS_NEAR — and then it storms, rain
+	 * and the dark of thunder and his bolts, easing in and out over a few
+	 * seconds. Synced so the client draws the same sky the server believes in.
+	 */
+	public static final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Boolean> STORMING =
+		net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry.<Boolean>builder()
+			.syncWith(net.minecraft.network.codec.ByteBufCodecs.BOOL.cast(),
+				net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate.all())
+			.buildAndRegister(HerobrineMod.id("his_storming"));
+	private static final float EASES = 0.01F;
+	private static float rain;
+
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(HisWeather::onTick);
 	}
@@ -165,15 +179,26 @@ public final class HisWeather {
 		// Every tick, and before the interval check — this is what makes it wet
 		// and it has to hold whether or not anybody is standing in it, or a fire
 		// started on the way out keeps burning after they leave.
-		his.setRainLevel(SERVER_RAIN);
+		boolean storming = Boolean.TRUE.equals(his.getAttached(STORMING));
+		float want = storming ? SERVER_RAIN : 0.0F;
+		rain += Math.max(-EASES, Math.min(EASES, want - rain));
+		his.setRainLevel(rain);
 		his.setThunderLevel(SERVER_THUNDER);
 
-		if (++tickCounter % CHECK_INTERVAL != 0 || his.players().isEmpty()) {
+		if (++tickCounter % CHECK_INTERVAL != 0) {
+			return;
+		}
+		boolean near = heIsNear(his);
+		if (near != storming) {
+			his.setAttached(STORMING, near);
+			HerobrineMod.LOGGER.info(near ? "his world: he is near — it storms" : "his world: he is far — the sky clears");
+		}
+		if (his.players().isEmpty()) {
 			return;
 		}
 		RandomSource random = his.getRandom();
 		for (ServerPlayer player : his.players()) {
-			if (random.nextInt(strikeChance(his, player)) == 0 && !Reckoning.bound(his)) {
+			if (near && random.nextInt(strikeChance(his, player)) == 0 && !Reckoning.bound(his)) {
 				strike(his, player, random);
 			}
 			if (random.nextInt(3) == 0) {
@@ -342,6 +367,20 @@ public final class HisWeather {
 	 * visual, still nothing at all once the fight is on.
 	 */
 	private static final double HE_IS_NEAR = 90.0;
+
+	private static boolean heIsNear(ServerLevel his) {
+		com.bloomlet.herobrine.entity.HerobrineEntity him =
+			com.bloomlet.herobrine.entity.HerobrineEntity.oneIn(his);
+		if (him == null || !him.isAlive()) {
+			return false;
+		}
+		for (ServerPlayer player : his.players()) {
+			if (!player.isSpectator() && player.distanceTo(him) <= HE_IS_NEAR) {
+				return true;
+			}
+		}
+		return false;
+	}
 	private static final int STRIKE_CHANCE_NEAR = 8;
 
 	private static int strikeChance(ServerLevel his, ServerPlayer player) {

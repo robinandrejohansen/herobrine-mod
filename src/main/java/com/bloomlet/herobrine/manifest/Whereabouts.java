@@ -485,7 +485,7 @@ public final class Whereabouts {
 	 * chunk or two at a time, which is nothing. If the ground is not ready inside
 	 * PREPARES_PATIENCE it builds on what there is rather than hold the story.
 	 */
-	private static final int PREPARES_RADIUS = 6;
+	private static final int PREPARES_RADIUS = 10;      // the tower and outbuilding stand up to 160 out
 	private static final int PREPARES_PATIENCE = 20 * 120;
 	private static final net.minecraft.server.level.TicketType PREPARING =
 		new net.minecraft.server.level.TicketType(20L * 120L, net.minecraft.server.level.TicketType.FLAG_LOADING);
@@ -601,7 +601,6 @@ public final class Whereabouts {
 			com.bloomlet.herobrine.structure.Spire.raise(over, house, over.getRandom());
 		}
 
-		weather(server, over, house);
 		fog(server, over, house);
 
 		// Already out there in person? Then the entity owns his position and this
@@ -689,32 +688,33 @@ public final class Whereabouts {
 		.buildAndRegister(HerobrineMod.id("near_his"));
 
 	/** Nothing at all this far out. */
-	private static final double FOG_FAR = 200.0;
+	private static final double FOG_FAR = 120.0;
 	/** And everything by here, which is well outside the yard. */
-	private static final double FOG_NEAR = 40.0;
+	private static final double FOG_NEAR = 24.0;
 
+	/**
+	 * THE FOG IS HIM, NOT HIS ADDRESS. It thickened round the farm and the tower
+	 * from the start of the game and over the keep in his world, whether he was
+	 * there or not — part of the world going grey for good. Now it is how close
+	 * HE is: the nearest of him in the player's own level, loaded and in the
+	 * world. When he is gone, it is gone. One walk per level over the loaded
+	 * Herobrines (there is at most one), every step.
+	 */
 	private static void fog(MinecraftServer server, ServerLevel over, BlockPos house) {
-		BlockPos tower = com.bloomlet.herobrine.structure.Spire.site(over);
-		ServerLevel his = server.getLevel(
-			com.bloomlet.herobrine.block.TheWayBlock.HIS_WORLD);
-		BlockPos keep = his == null
-			? null : com.bloomlet.herobrine.structure.Keep.site(his);
+		java.util.Map<ServerLevel, java.util.List<com.bloomlet.herobrine.entity.HerobrineEntity>> found =
+			new java.util.HashMap<>();
 		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+			if (!(player.level() instanceof ServerLevel here)) {
+				continue;
+			}
 			double away = Double.MAX_VALUE;
-			if (player.level() == over) {
-				// EITHER OF THEM. The tower is half the point — it is on the skyline
-				// from further off than the house is, and arriving at the way out
-				// through thickening fog is the better of the two approaches.
-				away = Math.sqrt(player.blockPosition().distSqr(house));
-				if (tower != null) {
-					away = Math.min(away, Math.sqrt(player.blockPosition().distSqr(tower)));
+			for (com.bloomlet.herobrine.entity.HerobrineEntity him
+					: found.computeIfAbsent(here, com.bloomlet.herobrine.entity.HerobrineEntity::all)) {
+				if (him.isAlive() && !him.isRemoved() && him.isPresent()) {
+					away = Math.min(away, Math.sqrt(player.distanceToSqr(him)));
 				}
-			} else if (keep != null && player.level() == his) {
-				away = Math.sqrt(player.blockPosition().distSqr(keep));
 			}
 			float in = thickness(away);
-			// Only when it has actually moved. This runs once a second for every
-			// player on the server and each write is a packet.
 			Float known = player.getAttached(NEAR_HIS);
 			if (known == null || Math.abs(known - in) > 0.01F) {
 				player.setAttached(NEAR_HIS, in);
@@ -742,64 +742,6 @@ public final class Whereabouts {
 	}
 	// ---- END HIS GROUND ---------------------------------------------------
 
-	/** How close counts as being at his address. */
-	private static final double STORM_NEAR = 96.0;
-	/** And how long each arming lasts, refreshed while anybody is inside that. */
-	private static final int STORM_HOLDS = 800;
-	private static boolean stormed;
-
-	private static void weather(MinecraftServer server, ServerLevel over, BlockPos house) {
-		if (!Config.get().weather) {
-			return;
-		}
-		// NOT AT THE FIRST HOUSE. The farm is where you meet Addexio and read book
-		// one, and a storm parked over it from the first visit told the whole story
-		// before it started. The sky turns when the town has been found.
-		if (!com.bloomlet.herobrine.wrath.Wrath.phase(server)
-				.atLeast(com.bloomlet.herobrine.wrath.Phase.TRESPASSER)) {
-			stormed = false;
-			return;
-		}
-		BlockPos tower = com.bloomlet.herobrine.structure.Spire.site(over);
-		boolean near = false;
-		for (ServerPlayer player : over.players()) {
-			if (player.blockPosition().closerThan(house, STORM_NEAR)
-				|| (tower != null && player.blockPosition().closerThan(tower, STORM_NEAR))) {
-				near = true;
-				break;
-			}
-		}
-		if (!near) {
-			stormed = false;
-			return;
-		}
-		// Only when it is not already going. A hunt's storm is nine to eleven
-		// minutes and re-arming over the top of it would cut it to forty seconds —
-		// the loud weather outranks the resident weather.
-		// RAIN FIRST, THUNDER LATER.
-		//
-		// This armed a full thunderstorm — rain AND thunder — inside ninety-six
-		// blocks of the first building in the game, from the first night, forever,
-		// refreshed every time it ran out. Thunder is the loudest weather Minecraft
-		// has and it darkens the sky enough to spawn mobs in daylight, and it was
-		// being used as the ambience of a farmhouse in the phase called RUMOUR.
-		//
-		// It also made the whole approach unreadable: rain, thunder, fog and a grey
-		// sky all arriving together at two hundred blocks means the player has
-		// nothing left to escalate INTO.
-		//
-		// Rain is enough to say this ground is wrong. The thunder waits until he has
-		// earned it.
-		boolean thunder = com.bloomlet.herobrine.wrath.Wrath.phase(server)
-			.atLeast(com.bloomlet.herobrine.wrath.Phase.MIMIC);
-		if (!over.isThundering()) {
-			server.setWeatherParameters(0, STORM_HOLDS, true, thunder);
-		}
-		if (!stormed) {
-			stormed = true;
-			HerobrineMod.LOGGER.info("somebody is at his address — it is raining there");
-		}
-	}
 	// ---- END THE SKY ------------------------------------------------------
 
 	/**
@@ -922,8 +864,8 @@ public final class Whereabouts {
 		//
 		// Absence of evidence is the whole problem, so the fix is to refuse to
 		// answer: if the chunk is not there, say nothing and try again in a second.
-		if (!his.isLoaded(keep)) {
-			return;
+		if (!his.isLoaded(keep) || !his.areEntitiesLoaded(net.minecraft.world.level.ChunkPos.pack(keep))) {
+			return;      // the chunk can be there while its entities are still coming in: wait for both
 		}
 		HerobrineEntity him = ModEntities.HEROBRINE.create(his, EntitySpawnReason.EVENT);
 		if (him == null) {

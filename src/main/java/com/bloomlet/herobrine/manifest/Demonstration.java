@@ -131,7 +131,7 @@ public final class Demonstration {
 		if (com.bloomlet.herobrine.wrath.Wrath.removed(server)) {
 			return;      // Removed Herobrine. See Wrath.removed.
 		}
-		if (server.getTickCount() % WATCHES_EVERY != 0 || !Config.get().enabled) {
+		if ((beat == 0 && server.getTickCount() % WATCHES_EVERY != 0) || !Config.get().enabled) {      // its clock counts ticks: once it starts, every tick
 			return;
 		}
 		ServerLevel end = server.getLevel(Level.END);

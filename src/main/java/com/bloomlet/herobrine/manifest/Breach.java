@@ -111,7 +111,7 @@ public final class Breach {
 		if (server.getTickCount() % CHEWS_EVERY != 0) {
 			return;
 		}
-		if (!Wrath.phase(server).atLeast(Phase.SIEGE)) {
+		if (!Storm.heIsNear()) {      // they get in when he is here, not because of a phase
 			if (!chewing.isEmpty()) {
 				chewing.clear();
 			}

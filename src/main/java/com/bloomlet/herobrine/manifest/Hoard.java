@@ -426,7 +426,7 @@ public final class Hoard {
 		if (level.getBlockEntity(plate)
 				instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign) {
 			String[] lines = SignLines.grave(
-				com.bloomlet.herobrine.wrath.Wrath.phase(level.getServer()),
+				com.bloomlet.herobrine.wrath.Phase.any(random),
 				player, null, random);
 			net.minecraft.world.level.block.entity.SignText text =
 				new net.minecraft.world.level.block.entity.SignText();

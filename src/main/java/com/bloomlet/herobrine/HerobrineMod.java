@@ -7,7 +7,6 @@ import com.bloomlet.herobrine.manifest.Cadence;
 import com.bloomlet.herobrine.manifest.TheHerd;
 import com.bloomlet.herobrine.manifest.Feral;
 import com.bloomlet.herobrine.manifest.Nights;
-import com.bloomlet.herobrine.manifest.Skies;
 import com.bloomlet.herobrine.manifest.Villages;
 import com.bloomlet.herobrine.structure.Dwellings;
 import com.bloomlet.herobrine.manifest.TheDogKnows;
@@ -46,7 +45,8 @@ public class HerobrineMod implements ModInitializer {
 		Wrath.register();
 		Cadence.register();
 		Feral.register();
-		Skies.register();
+		com.bloomlet.herobrine.manifest.Storm.register();
+		com.bloomlet.herobrine.manifest.Peace.register();
 		com.bloomlet.herobrine.manifest.HisWeather.register();
 		com.bloomlet.herobrine.manifest.HisHost.register();
 		com.bloomlet.herobrine.manifest.HisWoods.register();

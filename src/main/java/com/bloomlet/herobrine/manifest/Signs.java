@@ -122,7 +122,7 @@ public final class Signs {
 
 	public static boolean write(ServerLevel level, ServerPlayer player) {
 		List<Placement> options = findWalls(level, player);
-		Phase phase = Wrath.phase(level.getServer());
+		Phase phase = Phase.any(level.getRandom());      // the words come from any tier, at random
 		String[] lines = SignLines.pick(phase, player, level.getRandom());
 		if (lines == null) {
 			return false;   // everything written lately; say nothing

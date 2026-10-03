@@ -390,6 +390,16 @@ public class CompanionEntity extends PathfinderMob {
 			new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(
 				this, net.minecraft.world.entity.monster.Monster.class, 10, true, false,
 				(candidate, level) -> this.worthAFight(candidate)));
+		// AND HIS GOLEMS. In the villages that are his the iron golems change sides
+		// (TurnedVillages) — they are not Monsters, so the goal above never saw them.
+		// One that is his, or that has a player in its sights, is a fight like any other.
+		this.targetSelector.addGoal(2,
+			new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(
+				this, net.minecraft.world.entity.animal.golem.IronGolem.class, 10, true, false,
+				(candidate, level) -> candidate instanceof net.minecraft.world.entity.animal.golem.IronGolem golem
+					&& (Boolean.TRUE.equals(golem.getAttached(com.bloomlet.herobrine.manifest.TurnedVillages.HIS_GOLEM))
+						|| golem.getTarget() instanceof Player)
+					&& this.worthAFight(candidate)));
 	}
 
 	// ---- THE ROAD COMES FIRST ----------------------------------------------

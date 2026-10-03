@@ -373,9 +373,9 @@ public final class Possession {
 	}
 
 	private static void wake(Mob mob) {
-		if (mob.getAttached(LULL) != null) {
-			mob.setAttached(LULL, 0L);
-		mob.setAttached(MENACE, 0);
+		Long lull = mob.getAttached(LULL);
+		if (lull != null && lull != 0L) {
+			mob.removeAttached(LULL);      // and MENACE is left as it was: it holds its eyes and whether it bites
 		}
 	}
 
@@ -413,22 +413,6 @@ public final class Possession {
 		return level == null ? 0 : level;
 	}
 
-	/**
-	 * What the world's phase says they should be by now.
-	 *
-	 * HUNTER is where the whole mod stops being about doubt, so it is where
-	 * they stop pretending to be animals. SIEGE turns them red, which is the
-	 * only red in the mod: white is his, and an animal wearing his eyes reads
-	 * as "he is in there" where red reads as "this is going to hurt you". The
-	 * player has to be able to tell those apart across a field, at a glance,
-	 * while running.
-	 */
-	private static int menaceFor(Phase phase) {
-		if (phase.atLeast(Phase.SIEGE)) {
-			return 2;
-		}
-		return phase.atLeast(Phase.HUNTER) ? 1 : 0;
-	}
 
 	/** True once it has followed you far enough to stop pretending. */
 	public static boolean isRevealed(Mob mob) {
@@ -511,7 +495,7 @@ public final class Possession {
 		// is a statement, and it should only be available once he is past
 		// hinting. They need no herding logic — they all follow you, so they
 		// arrive together and stop at the same distance on their own.
-		int wanted = takeCount(Wrath.phase(level.getServer()));
+		int wanted = 1 + level.getRandom().nextInt(3);
 		java.util.Collections.shuffle(candidates, new java.util.Random(level.getRandom().nextLong()));
 
 		int took = 0;
@@ -522,6 +506,10 @@ public final class Possession {
 			// No idle noise. A cow that stares in silence is worse than one
 			// that stares and then moos, which would break it instantly.
 			claim(taken, player);
+			// White eyes on all of them. A villager follows you; an animal, three
+			// times in five, comes for you. Not by phase — by the roll.
+			boolean villager = taken instanceof net.minecraft.world.entity.npc.villager.AbstractVillager;
+			taken.setAttached(MENACE, villager || level.getRandom().nextInt(5) >= 3 ? 1 : 2);
 			if (took == 0) {
 				ManifestationDirector.noteLocation(taken.blockPosition());
 			}
@@ -548,15 +536,6 @@ public final class Possession {
 			+ " too close, " + alreadyHis + " already his";
 	}
 
-	private static int takeCount(Phase phase) {
-		if (phase.atLeast(Phase.SIEGE)) {
-			return 4;
-		}
-		if (phase.atLeast(Phase.HUNTER)) {
-			return 2;
-		}
-		return 1;
-	}
 
 	/**
 	 * You put one down, and the rest of them know.
@@ -761,7 +740,7 @@ public final class Possession {
 									mob.getType().toShortString(),
 									player.getName().getString());
 							}
-						} else if (owner == player && menace(mob) > 0) {
+						} else if (owner == player && menace(mob) >= 2) {
 							// Head locked on, every tick, no matter where it
 							// is or what is in the way. A stalking one looks
 							// away sometimes; this one never does, and that
@@ -792,7 +771,7 @@ public final class Possession {
 
 					// The world's phase decides, so they all turn together
 					// rather than each at its own private pace.
-					int should = menaceFor(Wrath.phase(server));
+					int should = menace(mob);
 					if (menace(mob) != should) {
 						mob.setAttached(MENACE, should);
 					}
@@ -1066,6 +1045,9 @@ public final class Possession {
 			return;
 		}
 		lastStruck.put(mob.getUUID(), now);
+		if (lastStruck.size() > 256) {
+			lastStruck.values().removeIf(t -> now - t > 1200L);
+		}
 		player.hurtServer(level, level.damageSources().mobAttack(mob), STRIKE_DAMAGE);
 	}
 

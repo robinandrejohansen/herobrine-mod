@@ -75,7 +75,7 @@ public final class TheHerd {
 			|| !com.bloomlet.herobrine.Config.get().hostileAnimals) {
 			return;
 		}
-		if (Wrath.phase(server) != Phase.SIEGE) {
+		if (!Storm.heIsNear()) {      // the animals turn when he is here, not because of a phase
 			return;
 		}
 
@@ -133,6 +133,9 @@ public final class TheHerd {
 			return;
 		}
 		lastNipped.put(animal.getUUID(), now);
+		if (lastNipped.size() > 256) {
+			lastNipped.values().removeIf(t -> now - t > 1200L);      // a long session does not keep every animal it ever met
+		}
 		player.hurtServer(level, level.damageSources().mobAttack(animal), NIP);
 	}
 }

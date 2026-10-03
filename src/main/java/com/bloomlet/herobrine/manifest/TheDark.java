@@ -88,17 +88,14 @@ public final class TheDark {
 		// Winding back to reach midnight would hand the player a whole extra
 		// night they had not earned, and that is a gift, not a threat.
 		MinecraftServer server = level.getServer();
-		if (wasDay) {
-			Optional<? extends Holder<WorldClock>> clock =
-				level.registryAccess().get(WorldClocks.OVERWORLD);
-			clock.ifPresent(held ->
-				server.clockManager().moveToTimeMarker(held, ClockTimeMarkers.MIDNIGHT));
-		}
+		// NO JUMP TO MIDNIGHT ANY MORE. Skipping the whole server's clock to the
+		// middle of the night was the single biggest "the world goes dark and
+		// stays dark" complaint. The lights still go; the day stays the day.
 
 		// Thunder, immediately. A zero clear-time is the honest way to say "and
 		// it is storming now" — anything gentler ramps in over a minute and the
 		// player never connects it to anything.
-		server.setWeatherParameters(0, STORM_TICKS, true, true);
+		Storm.hold(level, STORM_TICKS);
 
 		ManifestationDirector.noteLocation(player.blockPosition());
 		HerobrineMod.LOGGER.info("the dark falls on {}: {} lights taken, day={} calm={}",

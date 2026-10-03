@@ -152,7 +152,7 @@ public final class Ruins {
 				.setValue(WallSignBlock.FACING, facing));
 			if (level.getBlockEntity(signPos) instanceof SignBlockEntity sign) {
 				String[] lines = SignLines.grave(
-					com.bloomlet.herobrine.wrath.Wrath.phase(level.getServer()),
+					com.bloomlet.herobrine.wrath.Phase.any(random),
 					player, someoneElse(level, player), random);
 				sign.setAttached(Signs.HIS, true);
 				sign.updateText(text -> {
