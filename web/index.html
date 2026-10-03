@@ -3,152 +3,60 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Herobrine Dimension — a Minecraft mod</title>
-<meta name="description" content="Can you beat the oldest myth in Minecraft? A story mod for 26.2: something is wrong with your world, a trail leads to a door, and behind it is his dimension — and him.">
-<meta property="og:title" content="Herobrine Dimension">
-<meta property="og:description" content="Can you beat the oldest myth in Minecraft?">
+<title>Herobrine Dimension — Removed Herobrine.</title>
+<meta name="description" content="The myth they deleted from Minecraft's files, back as the last boss Minecraft never shipped. A story mod for Minecraft 26.2 (Fabric). Follow the trail, open the door, end him for real.">
+<meta property="og:title" content="Herobrine Dimension — Removed Herobrine.">
+<meta property="og:description" content="The myth they deleted from Minecraft's files. He was never gone.">
 <meta property="og:image" content="https://herobrine-mod.vercel.app/assets/icon.png">
-<meta name="theme-color" content="#0f0f12">
+<meta name="theme-color" content="#050505">
 <link rel="icon" href="/assets/icon.png">
-<link rel="stylesheet" href="/style.css?v=202609042053">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/home.css?v=202610032300">
 </head>
 <body>
 
-<header class="nav">
-  <a class="wordmark" href="#top"><img src="/assets/icon.png" alt="" width="20" height="20">HEROBRINE<span class="word-dim">&nbsp;DIMENSION</span></a>
-  <nav>
-    <a href="#story">Story</a>
-    <a href="#fight">The fight</a>
-    <a href="#get">Download</a>
-    <a href="/docs">Setup</a>
-    <a class="ghost" href="mailto:hello@dimora.no">Contact</a>
-  </nav>
-</header>
+<main class="file">
 
-<main id="top">
+  <p class="log" aria-hidden="true"><span class="dim">minecraft/changelog.txt</span><br>
+  <span class="dim">…</span><br>
+  <span class="struck">- Removed Herobrine.</span><br>
+  <span class="struck">- Removed Herobrine.</span><br>
+  <span class="struck">- Removed Herobrine.</span><br>
+  <span class="err">ERROR: file restored by unknown user</span></p>
 
-  <section class="hero">
-    <p class="kicker">Minecraft 26.2 · Fabric · free</p>
-    <h1>CAN YOU BEAT<br>HEROBRINE?</h1>
-    <p class="lede">The oldest myth in Minecraft, made real and made beatable. Something is wrong with your world. Follow it far enough and you find a door — and on the other side, his dimension, and him.</p>
-    <div class="cta">
-      <a class="btn mc" id="download" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">
-        <span class="btn-label">Download</span>
-        <span class="btn-meta" id="dl-meta">latest · .jar</span>
-      </a>
-      <a class="btn slate" href="/docs">How to install</a>
-    </div>
-  </section>
+  <canvas id="face" width="8" height="8" aria-label="Herobrine's face: white eyes, no pupils."></canvas>
 
-  <div class="chase-band">
-    <canvas id="chase" width="1" height="1" aria-label="Herobrine chasing two people through a forest, throwing fire, day turning to night."></canvas>
-  </div>
+  <h1 class="glitch" data-text="HE WAS NEVER GONE.">HE WAS NEVER GONE.</h1>
 
-  <section id="story" class="story">
-    <h2 class="section-title reveal">What it is</h2>
-    <p class="section-sub reveal">Not a quest log. Nothing is marked on your map and nobody tells you what to do — you work it out, the way the myth was always supposed to work.</p>
-    <ol class="beats">
-      <li class="reveal"><span>1</span><p><strong>Your world starts going wrong.</strong> Small things first. You will talk yourself out of most of them.</p></li>
-      <li class="reveal"><span>2</span><p><strong>Somebody left a trail.</strong> Maps, books, places to find. Follow it and it gets worse, and clearer.</p></li>
-      <li class="reveal"><span>3</span><p><strong>At the end of the trail is a door.</strong> It goes to his dimension. It shuts behind you.</p></li>
-      <li class="reveal danger"><span>4</span><p><strong>Beat him there and your world comes back.</strong> Lose, and you go again — he remembers.</p></li>
-    </ol>
+  <p class="lede">For ten years every Minecraft update said <em>Removed&nbsp;Herobrine</em>. This mod puts him back — as the last boss Minecraft never shipped. Something goes wrong in your world. A trail leads to a door. Behind it is his dimension, and him. End him, and it's over. For real.</p>
 
-    <details class="spoiler reveal">
-      <summary>Who you'll meet <span>spoilers</span></summary>
-      <div class="cast">
-        <figure>
-          <canvas class="sprite" data-skin="/assets/addexio.png" width="1" height="1" aria-label="A companion"></canvas>
-          <figcaption><strong>A companion</strong><span>You do not walk it alone. He fights, he follows you anywhere, and only one thing in the world can kill him.</span></figcaption>
-        </figure>
-        <figure>
-          <canvas class="sprite" data-skin="/assets/turned.png" data-kind="villager" width="1" height="1" aria-label="Somebody who came back wrong"></canvas>
-          <figcaption><strong>What comes back</strong><span>People go missing. Some of them return. Look at the eyes before you trade.</span></figcaption>
-        </figure>
-        <figure>
-          <canvas class="sprite" data-skin="/assets/herobrine.png" data-eyes="/assets/herobrine_eyes.png" width="1" height="1" aria-label="Herobrine"></canvas>
-          <figcaption><strong>Him</strong><span>A man, until you hit him. Then he grows, goes dark, and does not stop.</span></figcaption>
-        </figure>
-      </div>
-    </details>
-  </section>
+  <a class="btn" id="download" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">
+    <span class="btn-label">Download</span>
+    <span class="btn-meta" id="dl-meta">latest · .jar · Minecraft 26.2 · Fabric</span>
+  </a>
+  <p class="more">
+    <a id="pack" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest">Server modpack (.mrpack)</a>
+    <span class="dim">·</span>
+    <a href="/docs">How to install</a>
+  </p>
 
-  <section id="fight" class="fight">
-    <h2 class="section-title reveal">The fight</h2>
-    <p class="section-sub reveal">100 hits. Three levels. He gets bigger every time. Try it — click him.</p>
+  <ol class="steps">
+    <li><span>1</span>Small things go wrong. A door opens on its own. Leaves fall off a whole wood at once. A villager follows you with white eyes.</li>
+    <li><span>2</span>A man named Addexio finds you, and walks you house to house through what he did.</li>
+    <li><span>3</span>The last house has a door into his world. It shuts behind you. Bring friends.</li>
+  </ol>
 
-    <div class="arena reveal">
-      <div class="bossbar" aria-live="polite">
-        <span class="bossname" id="bossname">Herobrine</span>
-        <div class="bar"><div class="fill" id="bossfill"></div></div>
-        <span class="blows" id="blows">0 / 100 blows</span>
-      </div>
-      <canvas id="stage" width="1" height="1" aria-label="Interactive: click Herobrine to hit him."></canvas>
-      <div class="arena-ui">
-        <div class="levels" role="group" aria-label="Level">
-          <button class="btn mc lvl is-on" data-level="1">Level 1</button>
-          <button class="btn mc lvl" data-level="2">Level 2</button>
-          <button class="btn mc lvl" data-level="3">Level 3</button>
-        </div>
-        <p class="hint" id="hint">Click him.</p>
-      </div>
-    </div>
-
-    <div class="level-cards">
-      <article class="panel level reveal"><span class="chapter">LVL 1</span><h3>A man</h3><p>He walks at you and swings. Hit him four times in a row and he vanishes — then he is behind you.</p></article>
-      <article class="panel level reveal"><span class="chapter">LVL 2</span><h3>Bigger</h3><p>He rises into the sky, drops, and the blast throws you. Walls stop working. So does hiding.</p></article>
-      <article class="panel level danger reveal"><span class="chapter">LVL 3</span><h3>A shadow</h3><p>The light goes out of him for good. Two white eyes in the dark, and ten fireballs at a time.</p></article>
-    </div>
-
-    <ul class="hard reveal">
-      <li><strong>No way home</strong> until he is dead.</li>
-      <li><strong>Die and you lose the level</strong>, not the whole fight. Your body stays where you fell, holding everything.</li>
-      <li><strong>Bring friends</strong> — he gets tougher, but you get hands.</li>
-    </ul>
-  </section>
-
-  <section id="get" class="download">
-    <h2 class="section-title reveal">Get it</h2>
-    <div class="ways">
-      <article class="panel way reveal">
-        <h3>Alone</h3>
-        <p>Fabric for 26.2, then two files in your <code>mods</code> folder: Fabric API and this.</p>
-        <a class="btn mc" id="dl-jar" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download .jar</span><span class="btn-meta" id="jar-meta">latest</span></a>
-      </article>
-      <article class="panel way reveal">
-        <h3>On a server</h3>
-        <p>A server can't install mods for you. Everyone imports the same modpack, so everyone is on the same version.</p>
-        <a class="btn mc" id="pack" href="https://github.com/robinandrejohansen/herobrine-mod/releases/latest"><span class="btn-label">Download .mrpack</span><span class="btn-meta" id="pack-meta">for servers</span></a>
-      </article>
-    </div>
-    <p class="updates reveal">Step-by-step, settings and fixes: <a href="/docs">the setup guide</a>.</p>
-  </section>
-
-  <section id="partner" class="partner">
-    <div class="panel wide reveal">
-      <h2>Want to play it on camera?</h2>
-      <p>Streamers, YouTubers, server owners, other mod makers — write. I answer.</p>
-      <a class="mail" href="mailto:hello@dimora.no">hello@dimora.no</a>
-    </div>
-  </section>
-
-  <section class="rights reveal">
-    <p><strong>© 2026 Robin Johansen · Dimora. All rights reserved.</strong></p>
-    <ul>
-      <li>Play it, stream it, review it — freely. Credit and link here.</li>
-      <li>Link, don't re-upload. No forks or derivative mods without asking.</li>
-      <li>Not affiliated with Mojang or Microsoft.</li>
-    </ul>
-  </section>
 </main>
 
 <footer>
   <span>© 2026 Robin Johansen · Dimora</span>
   <a href="mailto:hello@dimora.no">hello@dimora.no</a>
-  <a href="/docs">Setup guide</a>
-  <a href="https://github.com/robinandrejohansen/herobrine-mod" target="_blank" rel="noopener">Source</a>
+  <a href="/docs">Setup</a>
+  <span class="dim">Not affiliated with Mojang or Microsoft.</span>
 </footer>
 
-<script src="/app.js?v=202609042053" defer></script>
+<script src="/home.js?v=202610032300" defer></script>
 </body>
 </html>
