@@ -279,6 +279,75 @@ final class Duel {
 
 	Duel(HerobrineEntity him) {
 		this.him = him;
+		this.rampage = new Rampage(him);
+	}
+
+	// ---- AMOK ---------------------------------------------------------------
+	//
+	// THE FIRST TWO ACTS ARE HIM WRECKING THE PLACE, NOT HIM ON YOU. He was too
+	// close and too hard on everyone from the first blow; the thing worth having
+	// is the sight of him taking the world apart from a distance you can survive.
+	// So in acts one and two he goes amok (Rampage) — and when somebody hits him
+	// he stops, turns, stares two seconds, and answers. Act one: one throw back,
+	// and every third blow he comes for them for eight seconds. Act two: half the
+	// time he comes, half the time he throws. Act three is the fight it always
+	// was, and the wrecking only while nobody is in sight. Stand at his elbow for
+	// three seconds and that counts as a blow.
+
+	private final Rampage rampage;
+	private static final int ENGAGED_FOR = 160;
+	private static final int CROWDED_FOR = 60;
+	private long engagedUntil = Long.MIN_VALUE;
+	private boolean freshHit;
+	private int crowdedFor;
+	private int amokUnseen;
+
+	private boolean amok(ServerLevel here, ServerPlayer target) {
+		boolean fresh = this.freshHit;
+		this.freshHit = false;
+		int act = this.him.actNow();
+		long now = here.getGameTime();
+		if (now < this.engagedUntil) {
+			return false;      // he came for them: the ordinary fight, for now
+		}
+		if (act >= 3) {
+			this.amokUnseen = this.him.getSensing().hasLineOfSight(target) ? 0 : this.amokUnseen + 1;
+			if (this.amokUnseen < 60) {
+				return false;
+			}
+			this.rampage.tick(here, this.watchers, target.blockPosition(), 3.0, act);
+			return true;
+		}
+		ServerPlayer striker = null;
+		if (fresh && this.him.lastStruckBy() != null
+				&& here.getPlayerByUUID(this.him.lastStruckBy()) instanceof ServerPlayer p) {
+			striker = p;
+		}
+		this.crowdedFor = this.him.distanceTo(target) <= CLOSE ? this.crowdedFor + 1 : 0;
+		if (striker == null && this.crowdedFor >= CROWDED_FOR) {
+			this.crowdedFor = 0;
+			striker = target;      // at his elbow long enough to count
+		}
+		if (striker != null && !this.rampage.staring()) {
+			this.rampage.struck(here, striker);
+			this.say(here, "struck while he was wrecking — he stops and looks");
+		}
+		if (this.rampage.staring()) {
+			ServerPlayer answer = this.rampage.stare(here);
+			if (answer != null) {
+				boolean comes = act == 1 ? this.rampage.hits() % 3 == 0 : this.him.getRandom().nextBoolean();
+				if (comes) {
+					this.engagedUntil = now + ENGAGED_FOR;
+					this.say(here, "he comes for them — eight seconds");
+				} else {
+					this.him.fire(here, answer, act);
+					this.say(here, "one answer, and back to it");
+				}
+			}
+			return true;
+		}
+		this.rampage.tick(here, this.watchers, this.him.blockPosition(), 8.0, act);
+		return true;
 	}
 
 	/**
@@ -427,6 +496,9 @@ final class Duel {
 			}
 			this.siegeUntil = Long.MIN_VALUE;
 			this.say(here, "they came in under the walls — the siege is over");
+		}
+		if (this.amok(here, target)) {
+			return;      // wrecking, staring, or answering. See amok
 		}
 		if (!this.placed) {
 			this.placed = true;
@@ -1234,6 +1306,7 @@ final class Duel {
 		long now = here.getGameTime();
 		if (hits > this.seenHits) {
 			this.seenHits = hits;
+			this.freshHit = true;
 			this.tookRecently++;
 			this.lastBlowAt = now;
 			this.struckFrom(here, hits);

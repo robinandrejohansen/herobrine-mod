@@ -196,7 +196,12 @@ public final class Corpses {
 
 	/** The mob, kept, and put down. */
 	/** A body a builder puts down: the dead in the streets, where he left them. It lies like every other. */
+	/** Laid out by a builder — a battlefield, a ruin. Those stay; only bodies from a kill fade. */
+	private static final AttachmentType<Boolean> KEPT =
+		AttachmentRegistry.createPersistent(HerobrineMod.id("corpse_kept"), Codec.BOOL);
+
 	public static void body(Mob mob, List<ItemStack> loot) {
+		mob.setAttached(KEPT, true);
 		lay(mob, loot);
 	}
 
@@ -223,6 +228,9 @@ public final class Corpses {
 
 	/** Called a few times a second on each body by CorpseMixin. */
 	public static void age(ServerLevel level, LivingEntity dead) {
+		if (Boolean.TRUE.equals(dead.getAttached(KEPT))) {
+			return;      // part of a place; see body
+		}
 		Long died = dead.getAttached(DIED_AT);
 		long now = level.getGameTime();
 		if (died == null || died > now) {

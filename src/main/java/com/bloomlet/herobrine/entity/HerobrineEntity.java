@@ -6577,6 +6577,16 @@ public class HerobrineEntity extends PathfinderMob {
 		this.squareUp(foe);
 	}
 
+	/** For Rampage: a bolt on a spot. */
+	void strikeAt(ServerLevel here, double x, int y, double z, boolean real) {
+		this.boltAt(here, x, y, z, real);
+	}
+
+	/** For Rampage: the arm going over. */
+	void swipeAt() {
+		this.swipe();
+	}
+
 	void slash(ServerPlayer player) {
 		this.strike(player);
 	}

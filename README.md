@@ -228,6 +228,18 @@ when you don't, and sense you twenty blocks through the trunks. They keep clear
 of the city and the castle, which have their own garrisons, and they fade again
 once nobody is within ninety-six blocks, so the woods never fill up.
 
+**And the war before yours is still in the trees.** As you walk his forest, now
+and then the ground ahead has something on it: a watchtower in deepslate and
+moss — half of them fallen, the top lying beside the stump, the standing ones
+with a ladder inside and a chest and a body at the top; a burned siege camp with
+a tower standing against nothing, a tent and a cold fire with the pot still on
+it; the foundations of a house and a doorframe with no house; a gallows, and
+skulls on posts along what was a road; a battlefield of craters with soul fire
+in them, the fallen in their iron, and a grave with a board and no name. Never
+near the city or the castle, one every three or four chunks, remembered across
+restarts. The bodies laid out in places like these stay; only bodies from a
+kill fade.
+
 Nothing in his world belongs to you. Fire spreads there. Nothing hurts the city
 or the castle except him.
 
@@ -245,6 +257,19 @@ him for four seconds.
 dead and back through the door, or running — and he goes back to the keep and
 circles it; step inside again and he picks up where he was. He does not come to
 the door for you.
+
+**He goes amok.** In the first two acts he is not on you — he is taking his own
+world apart, and you watch it: the tallest thing he can see, a stand of trees,
+a wall of his castle, a house in his city, a tower; he blinks to it and spends
+six or eight seconds on it, fire into it, a bolt on top, pieces punched out of
+it, and then the next. Nothing that holds anything is broken, nor the door you
+came in by, nor anything within a few blocks of one of you. Act one does not set
+fire. **Hit him and everything stops**: he turns on the spot, looks at whoever
+did it, and stands two seconds with the heartbeat going. Then he answers — in
+act one a single throw back, and every third blow he comes for you for eight
+seconds; in act two, half the time each — and goes back to what he was doing.
+Stand at his elbow for three seconds and that counts as a blow. Act three is the
+fight it always was, and he only wrecks things while nobody is in sight.
 
 **The first blow takes the sky from him.** He is *bound*: grounded for the rest
 of the fight, and the level remembers it — a save, a respawn, a reload all find
